@@ -49,7 +49,7 @@ function fmtDate(iso) {
   return `${parseInt(day)} ${meses[parseInt(m)-1]} ${y}`;
 }
 
-const CAT_ING  = ["Membresías","Clases extras","Tienda","Personal trainer","Otro"];
+const CAT_ING  = ["Clases extras","Tienda","Personal trainer","Otro"];
 const CAT_GAS  = ["Nómina","Renta","Servicios","Mantenimiento","Insumos","Otro"];
 const CAT_ICON = {
   "Membresías":"👥","Clases extras":"🏋️","Tienda":"🛍️","Personal trainer":"💪",
@@ -121,7 +121,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago 
     monto: String(m.monto), inicio: m.inicio, vence: m.vence,
   });
   const [pagoModal, setPagoModal] = useState(false);
-  const [pago, setPago] = useState({ monto: String(m.monto), desc: `Membresía - ${m.nombre}`, fecha: todayISO() });
+  const [pago, setPago] = useState({ monto: String(m.monto), desc: `Membresía - ${m.nombre}`, desde: todayISO(), hasta: todayISO() });
 
   const historial = txs.filter(t=>t.miembroId===m.id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
   const totalPagado = historial.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+Number(t.monto),0);
@@ -133,9 +133,10 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago 
 
   const handleAddPago = () => {
     if (!pago.monto || !pago.desc) return;
-    onAddPago({ id:uid(), tipo:"ingreso", categoria:"Membresías", desc:pago.desc, monto:Number(pago.monto), fecha:fmtDate(pago.fecha)||today(), miembroId:m.id });
+    const periodoLabel = pago.desde && pago.hasta ? ` (${fmtDate(pago.desde)} – ${fmtDate(pago.hasta)})` : "";
+    onAddPago({ id:uid(), tipo:"ingreso", categoria:"Membresías", desc:pago.desc + periodoLabel, monto:Number(pago.monto), fecha:fmtDate(pago.desde)||today(), miembroId:m.id });
     setPagoModal(false);
-    setPago({ monto:String(m.monto), desc:`Membresía - ${m.nombre}`, fecha:todayISO() });
+    setPago({ monto:String(m.monto), desc:`Membresía - ${m.nombre}`, desde:todayISO(), hasta:todayISO() });
   };
 
   return (
@@ -146,8 +147,12 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago 
           {m.nombre.charAt(0)}
         </div>
         <h2 style={{color:"#fff",fontSize:20,fontWeight:700}}>{m.nombre}</h2>
-        <span style={{background:m.estado==="Activo"?"rgba(74,222,128,.15)":"rgba(248,113,113,.15)",color:m.estado==="Activo"?"#4ade80":"#f87171",borderRadius:10,padding:"4px 14px",fontSize:12,fontWeight:700,marginTop:6,display:"inline-block"}}>{m.estado}</span>
-        <p style={{color:"#22d3ee",fontSize:13,fontWeight:700,marginTop:8,fontFamily:"'DM Mono',monospace"}}>Total pagado: {fmt(totalPagado)}</p>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,marginTop:8}}>
+          <span style={{background:m.estado==="Activo"?"rgba(74,222,128,.15)":"rgba(248,113,113,.15)",color:m.estado==="Activo"?"#4ade80":"#f87171",borderRadius:10,padding:"4px 14px",fontSize:12,fontWeight:700}}>{m.estado}</span>
+          <span style={{color:"#6b7280",fontSize:11,fontWeight:500}}>
+            {m.estado==="Activo" ? `Activo hasta ${m.vence}` : `Vencido desde ${m.vence}`}
+          </span>
+        </div>
       </div>
 
       {/* Sub-tabs */}
@@ -164,8 +169,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago 
             <>
               <Inp label="Nombre" value={form.nombre} onChange={v=>setForm(p=>({...p,nombre:v}))} placeholder="Nombre completo"/>
               <Inp label="Teléfono" value={form.tel} onChange={v=>setForm(p=>({...p,tel:v}))} placeholder="999 000 0000" type="tel"/>
-              <Inp label="Plan" value={form.plan} onChange={v=>setForm(p=>({...p,plan:v,monto:String(PLAN_PRECIO[v]||p.monto)}))} options={PLANES}/>
-              <Inp label="Monto ($)" value={form.monto} onChange={v=>setForm(p=>({...p,monto:v}))} type="number"/>
+              <Inp label="Plan" value={form.plan} onChange={v=>setForm(p=>({...p,plan:v}))} options={PLANES}/>
               <Inp label="Inicio" value={form.inicio} onChange={v=>setForm(p=>({...p,inicio:v}))} placeholder="Ej: 01 Feb 2025"/>
               <Inp label="Vence"  value={form.vence}  onChange={v=>setForm(p=>({...p,vence:v}))}  placeholder="Ej: 01 Mar 2025"/>
               <div style={{display:"flex",gap:10,marginTop:4}}>
@@ -177,7 +181,6 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago 
             <>
               {[
                 {label:"📋 Plan",  val:m.plan},
-                {label:"💰 Monto", val:fmt(m.monto)},
                 {label:"📅 Inicio",val:m.inicio},
                 {label:"⏰ Vence", val:m.vence},
                 {label:"📱 Tel",   val:m.tel||"—"},
@@ -237,13 +240,68 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago 
                 </div>
                 <Inp label="Descripción" value={pago.desc} onChange={v=>setPago(p=>({...p,desc:v}))} placeholder="Ej: Membresía mensual"/>
                 <Inp label="Monto ($)" type="number" value={pago.monto} onChange={v=>setPago(p=>({...p,monto:v}))} placeholder="0.00"/>
-                <Inp label="Fecha" type="date" value={pago.fecha} onChange={v=>setPago(p=>({...p,fecha:v}))}/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  <Inp label="Desde" type="date" value={pago.desde} onChange={v=>setPago(p=>({...p,desde:v}))}/>
+                  <Inp label="Hasta" type="date" value={pago.hasta} onChange={v=>setPago(p=>({...p,hasta:v}))}/>
+                </div>
                 <Btn full onClick={handleAddPago} color="#22d3ee">Guardar pago ✓</Btn>
               </div>
             </div>
           )}
         </>
       )}
+    </Modal>
+  );
+}
+
+/* ─── EDIT TRANSACTION MODAL ─── */
+function EditTxModal({ tx, onClose, onSave, onDelete }) {
+  const isGasto = tx.tipo === "gasto";
+  const cats    = isGasto ? CAT_GAS : CAT_ING;
+  const [form, setForm] = useState({
+    cat:   tx.categoria,
+    desc:  tx.desc,
+    monto: String(tx.monto),
+    fecha: tx.fecha, // stored as "DD Mes YYYY", editable as text
+  });
+  const [confirmDel, setConfirmDel] = useState(false);
+
+  const handleSave = () => {
+    if (!form.desc || !form.monto) return;
+    onSave({ ...tx, categoria: form.cat, desc: form.desc, monto: Number(form.monto), fecha: form.fecha });
+  };
+
+  return (
+    <Modal title={isGasto ? "✏️ Editar Gasto" : "✏️ Editar Ingreso"} onClose={onClose}>
+      {/* tipo badge */}
+      <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
+        <span style={{background:isGasto?"rgba(244,63,94,.15)":"rgba(34,211,238,.15)",color:isGasto?"#f43f5e":"#22d3ee",borderRadius:20,padding:"5px 16px",fontSize:12,fontWeight:700}}>
+          {isGasto?"💸 Gasto":"💰 Ingreso"}
+        </span>
+      </div>
+
+      <Inp label="Categoría" value={form.cat} onChange={v=>setForm(p=>({...p,cat:v}))} options={cats}/>
+      <Inp label="Descripción" value={form.desc} onChange={v=>setForm(p=>({...p,desc:v}))} placeholder="Descripción"/>
+      <Inp label="Monto ($)" type="number" value={form.monto} onChange={v=>setForm(p=>({...p,monto:v}))} placeholder="0.00"/>
+      <Inp label="Fecha" value={form.fecha} onChange={v=>setForm(p=>({...p,fecha:v}))} placeholder="Ej: 24 Feb 2025"/>
+
+      <div style={{display:"flex",gap:10,marginTop:4}}>
+        <Btn full onClick={handleSave} color={isGasto?"#f43f5e":"#22d3ee"}>Guardar cambios ✓</Btn>
+      </div>
+
+      <div style={{marginTop:12}}>
+        {!confirmDel ? (
+          <Btn full outline color="#f43f5e" onClick={()=>setConfirmDel(true)}>🗑 Eliminar</Btn>
+        ) : (
+          <div style={{background:"rgba(244,63,94,.1)",border:"1px solid rgba(244,63,94,.3)",borderRadius:14,padding:14,textAlign:"center"}}>
+            <p style={{color:"#f87171",fontSize:13,marginBottom:12}}>¿Eliminar este movimiento?</p>
+            <div style={{display:"flex",gap:8}}>
+              <Btn full outline color="#6b7280" onClick={()=>setConfirmDel(false)}>Cancelar</Btn>
+              <Btn full color="#f43f5e" onClick={()=>onDelete(tx.id)}>Sí, eliminar</Btn>
+            </div>
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
@@ -256,11 +314,14 @@ export default function App() {
   const [txs, setTxs]           = useState(INIT_TX);
   const [modal, setModal]       = useState(null);
   const [selM, setSelM]         = useState(null);
+  const [editTx, setEditTx]     = useState(null); // tx being edited
   const [filtroEstado, setFiltroEstado] = useState("Todos");
   const [busqueda, setBusqueda] = useState("");
+  const [filtroDesde, setFiltroDesde] = useState(()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`; });
+  const [filtroHasta, setFiltroHasta] = useState(todayISO);
 
-  const [fI, setFI] = useState({ cat:"Membresías", desc:"", monto:"", fecha:"" });
-  const [fG, setFG] = useState({ cat:"Nómina", desc:"", monto:"", fecha:"" });
+  const [fI, setFI] = useState({ cat:"Clases extras", desc:"", monto:"", fecha:todayISO() });
+  const [fG, setFG] = useState({ cat:"Nómina", desc:"", monto:"", fecha:todayISO() });
   const [fM, setFM] = useState(()=>{ const ini=todayISO(); return {nombre:"",tel:"",plan:"Mensual",monto:"850",inicio:ini,vence:calcVence(ini,"Mensual")}; });
 
   const totalIng = useMemo(()=>txs.filter(t=>t.tipo==="ingreso").reduce((s,t)=>s+Number(t.monto),0),[txs]);
@@ -278,8 +339,8 @@ export default function App() {
     return Object.entries(map).map(([categoria,monto])=>({categoria,monto,icono:CAT_ICON[categoria]||"📝"})).sort((a,b)=>b.monto-a.monto);
   };
 
-  const addIng = ()=>{ if(!fI.desc||!fI.monto)return; setTxs(p=>[{id:uid(),tipo:"ingreso",categoria:fI.cat,desc:fI.desc,monto:Number(fI.monto),fecha:fI.fecha||today()},...p]); setFI({cat:"Membresías",desc:"",monto:"",fecha:""}); setModal(null); };
-  const addGas = ()=>{ if(!fG.desc||!fG.monto)return; setTxs(p=>[{id:uid(),tipo:"gasto",categoria:fG.cat,desc:fG.desc,monto:Number(fG.monto),fecha:fG.fecha||today()},...p]); setFG({cat:"Nómina",desc:"",monto:"",fecha:""}); setModal(null); };
+  const addIng = ()=>{ if(!fI.desc||!fI.monto)return; setTxs(p=>[{id:uid(),tipo:"ingreso",categoria:fI.cat,desc:fI.desc,monto:Number(fI.monto),fecha:fmtDate(fI.fecha)||today()},...p]); setFI({cat:"Clases extras",desc:"",monto:"",fecha:todayISO()}); setModal(null); };
+  const addGas = ()=>{ if(!fG.desc||!fG.monto)return; setTxs(p=>[{id:uid(),tipo:"gasto",categoria:fG.cat,desc:fG.desc,monto:Number(fG.monto),fecha:fmtDate(fG.fecha)||today()},...p]); setFG({cat:"Nómina",desc:"",monto:"",fecha:todayISO()}); setModal(null); };
   const addM   = ()=>{
     if(!fM.nombre||!fM.monto)return;
     const newId=uid();
@@ -289,6 +350,8 @@ export default function App() {
   };
 
   const saveMiembro = updated => { setMiembros(p=>p.map(m=>m.id===updated.id?updated:m)); setSelM(updated); };
+  const saveEditTx  = updated => { setTxs(p=>p.map(t=>t.id===updated.id?updated:t)); setEditTx(null); setModal(null); };
+  const deleteEditTx= id      => { setTxs(p=>p.filter(t=>t.id!==id)); setEditTx(null); setModal(null); };
   const toggleEstado = () => {
     const updated={...selM,estado:selM.estado==="Activo"?"Vencido":"Activo"};
     setMiembros(p=>p.map(m=>m.id===selM.id?updated:m)); setSelM(updated);
@@ -371,7 +434,7 @@ export default function App() {
                   <button onClick={()=>setTab(3)} style={{background:"none",border:"none",color:"#6c63ff",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Ver todos</button>
                 </div>
                 {txs.slice(0,4).map(t=>(
-                  <div key={t.id} className="rh" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.05)"}}>
+                  <div key={t.id} className="rh" onClick={()=>{setEditTx(t);setModal("editTx");}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,.05)",cursor:"pointer"}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{width:34,height:34,borderRadius:11,fontSize:14,background:t.tipo==="ingreso"?"rgba(34,211,238,.12)":"rgba(244,63,94,.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>{CAT_ICON[t.categoria]||"📝"}</div>
                       <div>
@@ -393,18 +456,18 @@ export default function App() {
               </div>
               <Btn full onClick={()=>setModal("ingreso")} color="#22d3ee">+ Agregar ingreso</Btn>
               <div style={{height:12}}/>
-              {bycat("ingreso").map((item,i)=>(
-                <div key={i} className="card rh" style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,.04)",borderRadius:16,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,.06)"}}>
+              {txs.filter(t=>t.tipo==="ingreso").map((t,i)=>(
+                <div key={t.id} className="card rh" onClick={()=>{setEditTx(t);setModal("editTx");}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,.04)",borderRadius:16,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,.06)",cursor:"pointer"}}>
                   <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:40,height:40,borderRadius:14,fontSize:18,background:"rgba(34,211,238,.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>{item.icono}</div>
+                    <div style={{width:42,height:42,borderRadius:14,fontSize:18,background:"rgba(34,211,238,.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{CAT_ICON[t.categoria]||"📝"}</div>
                     <div>
-                      <p style={{color:"#fff",fontSize:13,fontWeight:600}}>{item.categoria}</p>
-                      <div style={{marginTop:5,background:"rgba(255,255,255,.08)",borderRadius:6,height:4,width:100}}><div style={{width:`${totalIng>0?(item.monto/totalIng*100):0}%`,height:"100%",borderRadius:6,background:"#22d3ee"}}/></div>
+                      <p style={{color:"#fff",fontSize:13,fontWeight:600,maxWidth:170,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{t.desc}</p>
+                      <p style={{color:"#4b4b6a",fontSize:11,marginTop:3}}>{t.categoria} · 📅 {t.fecha}</p>
                     </div>
                   </div>
-                  <div style={{textAlign:"right"}}>
-                    <p style={{color:"#22d3ee",fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(item.monto)}</p>
-                    <p style={{color:"#4b4b6a",fontSize:11}}>{totalIng>0?(item.monto/totalIng*100).toFixed(0):0}%</p>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    <p style={{color:"#22d3ee",fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>+{fmt(t.monto)}</p>
+                    <span style={{color:"#4b4b6a",fontSize:13}}>✏️</span>
                   </div>
                 </div>
               ))}
@@ -418,40 +481,72 @@ export default function App() {
               </div>
               <Btn full onClick={()=>setModal("gasto")} color="#f43f5e">+ Agregar gasto</Btn>
               <div style={{height:12}}/>
-              {bycat("gasto").map((item,i)=>(
-                <div key={i} className="card rh" style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,.04)",borderRadius:16,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,.06)"}}>
+              {txs.filter(t=>t.tipo==="gasto").map((t,i)=>(
+                <div key={t.id} className="card rh" onClick={()=>{setEditTx(t);setModal("editTx");}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,.04)",borderRadius:16,padding:"14px 16px",marginBottom:10,border:"1px solid rgba(255,255,255,.06)",cursor:"pointer"}}>
                   <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:40,height:40,borderRadius:14,fontSize:18,background:"rgba(244,63,94,.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>{item.icono}</div>
+                    <div style={{width:42,height:42,borderRadius:14,fontSize:18,background:"rgba(244,63,94,.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{CAT_ICON[t.categoria]||"📝"}</div>
                     <div>
-                      <p style={{color:"#fff",fontSize:13,fontWeight:600}}>{item.categoria}</p>
-                      <div style={{marginTop:5,background:"rgba(255,255,255,.08)",borderRadius:6,height:4,width:100}}><div style={{width:`${totalGas>0?(item.monto/totalGas*100):0}%`,height:"100%",borderRadius:6,background:"#f43f5e"}}/></div>
+                      <p style={{color:"#fff",fontSize:13,fontWeight:600,maxWidth:170,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{t.desc}</p>
+                      <p style={{color:"#4b4b6a",fontSize:11,marginTop:3}}>{t.categoria} · 📅 {t.fecha}</p>
                     </div>
                   </div>
-                  <div style={{textAlign:"right"}}>
-                    <p style={{color:"#f43f5e",fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(item.monto)}</p>
-                    <p style={{color:"#4b4b6a",fontSize:11}}>{totalGas>0?(item.monto/totalGas*100).toFixed(0):0}%</p>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    <p style={{color:"#f43f5e",fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>-{fmt(t.monto)}</p>
+                    <span style={{color:"#4b4b6a",fontSize:13}}>✏️</span>
                   </div>
                 </div>
               ))}
             </>}
 
             {tab===3 && <>
-              <div style={{display:"flex",gap:8,marginBottom:14}}>
-                <Btn onClick={()=>setModal("ingreso")} color="#22d3ee">+ Ingreso</Btn>
-                <Btn onClick={()=>setModal("gasto")}   color="#f43f5e">+ Gasto</Btn>
+              {/* Filtro de fechas */}
+              <div style={{background:"rgba(255,255,255,.04)",borderRadius:16,padding:"12px 14px",marginBottom:14,border:"1px solid rgba(255,255,255,.07)"}}>
+                <p style={{color:"#6b7280",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:.5,marginBottom:10}}>Filtrar por fecha</p>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  <div>
+                    <p style={{color:"#6b7280",fontSize:11,fontWeight:600,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Desde</p>
+                    <input type="date" value={filtroDesde} onChange={e=>setFiltroDesde(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,padding:"9px 10px",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+                  </div>
+                  <div>
+                    <p style={{color:"#6b7280",fontSize:11,fontWeight:600,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>Hasta</p>
+                    <input type="date" value={filtroHasta} onChange={e=>setFiltroHasta(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.1)",borderRadius:10,padding:"9px 10px",color:"#fff",fontSize:12,fontFamily:"inherit",outline:"none"}}/>
+                  </div>
+                </div>
               </div>
-              {txs.map(t=>(
-                <div key={t.id} className="card rh" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",borderRadius:16,marginBottom:10,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.06)"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:38,height:38,borderRadius:12,fontSize:15,background:t.tipo==="ingreso"?"rgba(34,211,238,.12)":"rgba(244,63,94,.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>{CAT_ICON[t.categoria]||"📝"}</div>
-                    <div>
-                      <p style={{color:"#fff",fontSize:12,fontWeight:500,maxWidth:185,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{t.desc}</p>
-                      <p style={{color:"#4b4b6a",fontSize:10,marginTop:2}}>{t.categoria} · {t.fecha}</p>
+              {(()=>{
+                const desde = filtroDesde ? new Date(filtroDesde) : null;
+                const hasta = filtroHasta ? new Date(filtroHasta + "T23:59:59") : null;
+                const filtered = txs.filter(t=>{
+                  const meses={"Ene":0,"Feb":1,"Mar":2,"Abr":3,"May":4,"Jun":5,"Jul":6,"Ago":7,"Sep":8,"Oct":9,"Nov":10,"Dic":11};
+                  const parts = t.fecha.split(" ");
+                  if(parts.length<3) return true;
+                  const td = new Date(Number(parts[2]), meses[parts[1]]||0, Number(parts[0]));
+                  if(desde && td < desde) return false;
+                  if(hasta && td > hasta) return false;
+                  return true;
+                });
+                if(filtered.length===0) return (
+                  <div style={{textAlign:"center",padding:"36px 0"}}>
+                    <p style={{fontSize:28,marginBottom:8}}>📭</p>
+                    <p style={{color:"#4b4b6a",fontSize:13}}>Sin movimientos en este período</p>
+                  </div>
+                );
+                return filtered.map(t=>(
+                  <div key={t.id} className="card rh" onClick={()=>{setEditTx(t);setModal("editTx");}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 14px",borderRadius:16,marginBottom:10,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.06)",cursor:"pointer"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{width:38,height:38,borderRadius:12,fontSize:15,background:t.tipo==="ingreso"?"rgba(34,211,238,.12)":"rgba(244,63,94,.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>{CAT_ICON[t.categoria]||"📝"}</div>
+                      <div>
+                        <p style={{color:"#fff",fontSize:12,fontWeight:500,maxWidth:175,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{t.desc}</p>
+                        <p style={{color:"#4b4b6a",fontSize:10,marginTop:2}}>{t.categoria} · {t.fecha}</p>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <p style={{color:t.tipo==="ingreso"?"#22d3ee":"#f43f5e",fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700}}>{t.tipo==="ingreso"?"+":"-"}{fmt(t.monto)}</p>
+                      <span style={{color:"#4b4b6a",fontSize:14}}>✏️</span>
                     </div>
                   </div>
-                  <p style={{color:t.tipo==="ingreso"?"#22d3ee":"#f43f5e",fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700}}>{t.tipo==="ingreso"?"+":"-"}{fmt(t.monto)}</p>
-                </div>
-              ))}
+                ));
+              })()}
             </>}
           </div>
         </>}
@@ -525,9 +620,9 @@ export default function App() {
         {/* ═══ MODALS ═══ */}
         {modal==="quickAdd"&&<Modal title="¿Qué deseas agregar?" onClose={()=>setModal(null)}><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>{[{label:"Ingreso",icon:"💰",color:"#22d3ee",action:()=>setModal("ingreso")},{label:"Gasto",icon:"💸",color:"#f43f5e",action:()=>setModal("gasto")},{label:"Miembro",icon:"👤",color:"#a78bfa",action:()=>setModal("miembro")}].map((opt,i)=><button key={i} onClick={opt.action} style={{background:`${opt.color}15`,border:`1px solid ${opt.color}30`,borderRadius:18,padding:"20px 0",cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"center",gap:8}}><span style={{fontSize:28}}>{opt.icon}</span><span style={{color:opt.color,fontSize:13,fontWeight:700}}>{opt.label}</span></button>)}</div></Modal>}
 
-        {modal==="ingreso"&&<Modal title="💰 Nuevo Ingreso" onClose={()=>setModal(null)}><Inp label="Categoría" value={fI.cat} onChange={v=>setFI(p=>({...p,cat:v}))} options={CAT_ING}/><Inp label="Descripción" value={fI.desc} onChange={v=>setFI(p=>({...p,desc:v}))} placeholder="Ej: Membresía mensual"/><Inp label="Monto ($)" type="number" value={fI.monto} onChange={v=>setFI(p=>({...p,monto:v}))} placeholder="0.00"/><Inp label="Fecha (opcional)" type="date" value={fI.fecha} onChange={v=>setFI(p=>({...p,fecha:v}))}/><Btn full onClick={addIng} color="#22d3ee">Guardar ingreso ✓</Btn></Modal>}
+        {modal==="ingreso"&&<Modal title="💰 Nuevo Ingreso" onClose={()=>setModal(null)}><Inp label="Categoría" value={fI.cat} onChange={v=>setFI(p=>({...p,cat:v}))} options={CAT_ING}/><Inp label="Descripción" value={fI.desc} onChange={v=>setFI(p=>({...p,desc:v}))} placeholder="Ej: Membresía mensual"/><Inp label="Monto ($)" type="number" value={fI.monto} onChange={v=>setFI(p=>({...p,monto:v}))} placeholder="0.00"/><Inp label="Fecha" type="date" value={fI.fecha} onChange={v=>setFI(p=>({...p,fecha:v}))}/><Btn full onClick={addIng} color="#22d3ee">Guardar ingreso ✓</Btn></Modal>}
 
-        {modal==="gasto"&&<Modal title="💸 Nuevo Gasto" onClose={()=>setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v=>setFG(p=>({...p,cat:v}))} options={CAT_GAS}/><Inp label="Descripción" value={fG.desc} onChange={v=>setFG(p=>({...p,desc:v}))} placeholder="Ej: Pago de nómina"/><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v=>setFG(p=>({...p,monto:v}))} placeholder="0.00"/><Inp label="Fecha (opcional)" type="date" value={fG.fecha} onChange={v=>setFG(p=>({...p,fecha:v}))}/><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
+        {modal==="gasto"&&<Modal title="💸 Nuevo Gasto" onClose={()=>setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v=>setFG(p=>({...p,cat:v}))} options={CAT_GAS}/><Inp label="Descripción" value={fG.desc} onChange={v=>setFG(p=>({...p,desc:v}))} placeholder="Ej: Pago de nómina"/><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v=>setFG(p=>({...p,monto:v}))} placeholder="0.00"/><Inp label="Fecha" type="date" value={fG.fecha} onChange={v=>setFG(p=>({...p,fecha:v}))}/><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
 
         {modal==="miembro"&&<Modal title="👤 Nuevo Miembro" onClose={()=>setModal(null)}><Inp label="Nombre completo" value={fM.nombre} onChange={v=>setFM(p=>({...p,nombre:v}))} placeholder="Ej: Juan Pérez"/><Inp label="Teléfono" type="tel" value={fM.tel} onChange={v=>setFM(p=>({...p,tel:v}))} placeholder="999 000 0000"/><Inp label="Plan" value={fM.plan} onChange={v=>setFM(p=>({...p,plan:v,monto:PLAN_PRECIO[v]?.toString()||p.monto,vence:calcVence(p.inicio,v)}))} options={PLANES}/><Inp label="Monto ($)" type="number" value={fM.monto} onChange={v=>setFM(p=>({...p,monto:v}))} placeholder="0.00"/><Inp label="Fecha de inicio" type="date" value={fM.inicio} onChange={v=>setFM(p=>({...p,inicio:v,vence:calcVence(v,p.plan)}))}/><Inp label="Fecha de vencimiento" type="date" value={fM.vence} onChange={v=>setFM(p=>({...p,vence:v}))}/><Btn full onClick={addM}>Registrar miembro ✓</Btn></Modal>}
 
@@ -540,6 +635,8 @@ export default function App() {
             onAddPago={addPago}
           />
         )}
+
+        {modal==="editTx"&&editTx&&<EditTxModal tx={editTx} onClose={()=>{setModal(null);setEditTx(null);}} onSave={saveEditTx} onDelete={deleteEditTx}/>}
 
       </div>
     </div>
