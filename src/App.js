@@ -2129,6 +2129,13 @@ export default function App() {
     </div>
   );
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [screen, setScreen] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
@@ -2429,7 +2436,16 @@ export default function App() {
   const TABS = ["Dashboard", "Ingresos", "Gastos", "Historial"];
 
   return (
-    <div style={{ fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }} className="gymfit-root">
+    <div style={{
+        fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
+        background: isMobile ? "#13131f" : "#090912",
+        minHeight: isMobile ? "100dvh" : "100vh",
+        display: "flex",
+        justifyContent: isMobile ? "flex-start" : "center",
+        alignItems: isMobile ? "stretch" : "flex-start",
+        padding: isMobile ? "0" : "24px 0",
+        width: "100%",
+      }} className="gymfit-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
@@ -2461,7 +2477,18 @@ export default function App() {
           .gymfit-frame { width: 100% !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
         }
       `}</style>
-      <div className="gymfit-frame" style={{ background: "#13131f", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
+      <div className="gymfit-frame" style={{
+          background: "#13131f",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          position: "relative",
+          width: isMobile ? "100vw" : "390px",
+          height: isMobile ? "100dvh" : "844px",
+          borderRadius: isMobile ? "0" : "44px",
+          boxShadow: isMobile ? "none" : "0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07)",
+          flexShrink: 0,
+        }}>
 
 
         {/* ═══ RECORDATORIOS SCREEN ═══ */}
