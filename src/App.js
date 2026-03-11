@@ -481,14 +481,33 @@ function PhotoModal({ onClose, onCapture }) {
     }
   };
 
-  const takePhoto = () => {
+  // Redimensiona y comprime cualquier imagen a máx 300x300, calidad 0.75
+  const resizeImage = (dataUrl, maxSize = 300, quality = 0.75) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
+        else { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = dataUrl;
+    });
+  };
+
+  const takePhoto = async () => {
     const vid = document.getElementById("gymfit-video");
     if (!vid) return;
     const canvas = document.createElement("canvas");
     canvas.width = vid.videoWidth || 320;
     canvas.height = vid.videoHeight || 320;
     canvas.getContext("2d").drawImage(vid, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    const raw = canvas.toDataURL("image/jpeg", 1.0);
+    const dataUrl = await resizeImage(raw, 300, 0.75);
     stopCamera();
     setPreview(dataUrl);
     setMode("preview");
@@ -498,7 +517,11 @@ function PhotoModal({ onClose, onCapture }) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => { setPreview(ev.target.result); setMode("preview"); };
+    reader.onload = async (ev) => {
+      const resized = await resizeImage(ev.target.result, 300, 0.75);
+      setPreview(resized);
+      setMode("preview");
+    };
     reader.readAsDataURL(file);
   };
 

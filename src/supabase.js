@@ -24,10 +24,16 @@ export const supabase = {
     };
 
     return {
-      // SELECT
+      // SELECT (all columns)
       select: async (gymId, extra = "") => {
         const url = `${base}?gym_id=eq.${gymId}${extra}&order=created_at.asc`;
         const r = await fetch(url, { headers });
+        return r.ok ? r.json() : [];
+      },
+      // SELECT with specific columns (for large tables with photos)
+      selectColumns: async (gymId, columns, extra = "") => {
+        const url = `${base}?gym_id=eq.${gymId}${extra}&order=created_at.asc&select=${columns}`;
+        const r = await fetch(url, { headers: { ...headers, "Accept": "application/json" } });
         return r.ok ? r.json() : [];
       },
       // SELECT single by id
