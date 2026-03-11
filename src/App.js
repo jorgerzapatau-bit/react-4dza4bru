@@ -2429,7 +2429,7 @@ export default function App() {
   const TABS = ["Dashboard", "Ingresos", "Gastos", "Historial"];
 
   return (
-    <div style={{ background: "#090912", minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "24px 0", fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }} className="gymfit-root">
+    <div style={{ background: "#090912", minHeight: "100dvh", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "24px 0", fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }} className="gymfit-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
@@ -2444,15 +2444,9 @@ export default function App() {
         select option{background:#191928;}
         button:active{opacity:.75;}
         .wa-pulse{animation:pulse 2s infinite;}
-        @media (max-width: 430px) {
-          .gymfit-root { padding: 0 !important; background: #13131f !important; align-items: stretch !important; }
-          .gymfit-frame { width: 100vw !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
-        }
-      `}</style>
-
-      <style>{`
-        @media (max-width: 430px) {
-          .gymfit-frame { width: 100vw !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
+        @media (max-width: 768px) {
+          .gymfit-root { padding: 0 !important; background: #13131f !important; align-items: stretch !important; min-height: 100dvh !important; }
+          .gymfit-frame { width: 100vw !important; height: 100vh !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
         }
       `}</style>
       <div className="gymfit-frame" style={{ width: 390, height: 844, background: "#13131f", borderRadius: 44, overflow: "hidden", position: "relative", boxShadow: "0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07)", display: "flex", flexDirection: "column" }}>
