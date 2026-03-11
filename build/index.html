@@ -2,66 +2,79 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-
-    <!-- ✅ VIEWPORT: evita zoom y hace la app full screen -->
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-
-    <!-- ✅ PWA MANIFEST -->
     <link rel="manifest" href="/manifest.json" />
-
-    <!-- ✅ TEMA Y COLORES -->
     <meta name="theme-color" content="#6c63ff" />
-    <meta name="background-color" content="#13131f" />
-
-    <!-- ✅ iOS: comportamiento de app nativa -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="GymFit" />
-
-    <!-- ✅ iOS ICONS (para "Agregar a inicio" en iPhone) -->
-    <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="72x72"   href="/icons/icon-72x72.png" />
-    <link rel="apple-touch-icon" sizes="96x96"   href="/icons/icon-96x96.png" />
-    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
-    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
-
-    <!-- ✅ ANDROID ICONS -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png" />
-
-    <!-- ✅ SEO / Share -->
-    <meta name="description" content="Manejo de finanzas y miembros para tu gimnasio" />
-    <meta name="mobile-web-app-capable" content="yes" />
-
     <title>GymFit Pro</title>
 
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      html, body {
-        width: 100%;
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html {
         height: 100%;
-        background: #13131f;
+        height: -webkit-fill-available;
         overflow: hidden;
+      }
+      body {
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        height: -webkit-fill-available;
+        overflow: hidden;
+        background: #13131f;
+        -webkit-text-size-adjust: 100%;
       }
       #root {
         width: 100%;
         height: 100%;
+        display: flex;
+        align-items: stretch;
+      }
+
+      /* Fuerza pantalla completa en móvil con máxima especificidad */
+      @media screen and (max-width: 1023px) {
+        .gymfit-root {
+          width: 100vw !important;
+          min-width: 100vw !important;
+          max-width: 100vw !important;
+          min-height: 100vh !important;
+          min-height: 100dvh !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          background: #13131f !important;
+          align-items: stretch !important;
+          justify-content: flex-start !important;
+        }
+        .gymfit-frame {
+          width: 100vw !important;
+          min-width: 100vw !important;
+          max-width: 100vw !important;
+          height: 100vh !important;
+          height: 100dvh !important;
+          min-height: 100vh !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          flex-shrink: 0 !important;
+        }
       }
     </style>
   </head>
   <body>
     <div id="root"></div>
 
-    <!-- ✅ SERVICE WORKER: registra la PWA -->
     <script>
+      // Fuerza limpieza de Service Workers viejos
       if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(reg => reg.update());
+        });
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/sw.js')
-            .then(function(reg) { console.log('SW registrado:', reg.scope); })
-            .catch(function(err) { console.warn('SW error:', err); });
+          navigator.serviceWorker.register('/sw.js');
         });
       }
     </script>

@@ -1,30 +1,27 @@
-const CACHE_NAME = 'gymfit-pro-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/main.js',
-  '/manifest.json'
-];
+// Service Worker v3 - fuerza recarga limpia
+const CACHE_NAME = 'gymfit-pro-v3';
 
+// Al instalar: limpia caches viejos inmediatamente
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// Network-first: siempre intenta red primero, caché solo si falla
 self.addEventListener('fetch', event => {
+  // No cachear el HTML principal — siempre fresco
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   event.respondWith(
-    fetch(event.request).catch(() =>
-      caches.match(event.request)
-    )
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });

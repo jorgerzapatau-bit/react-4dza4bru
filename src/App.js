@@ -2129,13 +2129,19 @@ export default function App() {
     </div>
   );
 
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  // Use screen.width (physical) AND window.innerWidth for maximum compatibility
+  const checkMobile = () => {
+    const w = window.innerWidth || document.documentElement.clientWidth || screen.width;
+    return w < 1024;
+  };
+  const [isMobile, setIsMobile] = useState(checkMobile);
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => setIsMobile(checkMobile());
+    // Also re-check after a short delay (catches viewport initialization)
+    const timer = setTimeout(() => setIsMobile(checkMobile()), 100);
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => { window.removeEventListener('resize', handleResize); clearTimeout(timer); };
   }, []);
-
   const [screen, setScreen] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
