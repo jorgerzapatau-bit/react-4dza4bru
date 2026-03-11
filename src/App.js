@@ -2433,6 +2433,7 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
+        html,body,#root{width:100%;height:100%;overflow:hidden;}
         ::-webkit-scrollbar{width:0;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -2444,12 +2445,20 @@ export default function App() {
         select option{background:#191928;}
         button:active{opacity:.75;}
         .wa-pulse{animation:pulse 2s infinite;}
+        @media (min-width: 769px) {
+          .gymfit-root { padding: 24px 0; align-items: flex-start; background: #090912; }
+          .gymfit-frame { width: 390px !important; height: 844px !important; border-radius: 44px !important; box-shadow: 0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07) !important; }
+        }
         @media (max-width: 768px) {
-          .gymfit-root { padding: 0 !important; background: #13131f !important; align-items: stretch !important; min-height: 100dvh !important; }
-          .gymfit-frame { width: 100vw !important; height: 100vh !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
+          .gymfit-root { padding: 0 !important; background: #13131f !important; align-items: stretch !important; min-height: 100dvh !important; min-height: -webkit-fill-available !important; }
+          .gymfit-frame { width: 100vw !important; width: 100% !important; height: 100vh !important; height: 100dvh !important; height: -webkit-fill-available !important; border-radius: 0 !important; box-shadow: none !important; max-width: 100% !important; }
+        }
+        @media (display-mode: standalone) {
+          .gymfit-root { padding: 0 !important; background: #13131f !important; }
+          .gymfit-frame { width: 100vw !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
         }
       `}</style>
-      <div className="gymfit-frame" style={{ width: 390, height: 844, background: "#13131f", borderRadius: 44, overflow: "hidden", position: "relative", boxShadow: "0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07)", display: "flex", flexDirection: "column" }}>
+      <div className="gymfit-frame" style={{ background: "#13131f", display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
 
 
         {/* ═══ RECORDATORIOS SCREEN ═══ */}
