@@ -2129,19 +2129,6 @@ export default function App() {
     </div>
   );
 
-  // Use screen.width (physical) AND window.innerWidth for maximum compatibility
-  const checkMobile = () => {
-    const w = window.innerWidth || document.documentElement.clientWidth || screen.width;
-    return w < 1024;
-  };
-  const [isMobile, setIsMobile] = useState(checkMobile);
-  useEffect(() => {
-    const handleResize = () => setIsMobile(checkMobile());
-    // Also re-check after a short delay (catches viewport initialization)
-    const timer = setTimeout(() => setIsMobile(checkMobile()), 100);
-    window.addEventListener('resize', handleResize);
-    return () => { window.removeEventListener('resize', handleResize); clearTimeout(timer); };
-  }, []);
   const [screen, setScreen] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
@@ -2442,20 +2429,12 @@ export default function App() {
   const TABS = ["Dashboard", "Ingresos", "Gastos", "Historial"];
 
   return (
-    <div style={{
-        fontFamily: "'DM Sans','Helvetica Neue',sans-serif",
-        background: isMobile ? "#13131f" : "#090912",
-        minHeight: isMobile ? "100dvh" : "100vh",
-        display: "flex",
-        justifyContent: isMobile ? "flex-start" : "center",
-        alignItems: isMobile ? "stretch" : "flex-start",
-        padding: isMobile ? "0" : "24px 0",
-        width: "100%",
-      }} className="gymfit-root">
+    <div style={{ width: "100%", height: "100%", fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
-        html,body,#root{width:100%;height:100%;overflow:hidden;}
+        html,body{width:100%;height:100%;background:#13131f;overflow:hidden;}
+        #root{width:100%;height:100%;display:flex;align-items:stretch;}
         ::-webkit-scrollbar{width:0;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -2467,33 +2446,16 @@ export default function App() {
         select option{background:#191928;}
         button:active{opacity:.75;}
         .wa-pulse{animation:pulse 2s infinite;}
-        /* Desktop: muestra marco de iPhone */
-        @media (min-width: 769px) {
-          .gymfit-root { padding: 24px 0 !important; align-items: flex-start !important; justify-content: center !important; background: #090912 !important; }
-          .gymfit-frame { width: 390px !important; height: 844px !important; border-radius: 44px !important; box-shadow: 0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07) !important; flex-shrink: 0 !important; }
-        }
-        /* Móvil: pantalla completa sin marco */
-        @media (max-width: 768px) {
-          .gymfit-root { padding: 0 !important; margin: 0 !important; background: #13131f !important; align-items: flex-start !important; justify-content: flex-start !important; min-height: 100% !important; width: 100% !important; }
-          .gymfit-frame { width: 100% !important; min-width: 100% !important; max-width: 100% !important; height: 100vh !important; height: 100dvh !important; min-height: 100vh !important; border-radius: 0 !important; box-shadow: none !important; }
-        }
-        /* PWA instalada */
-        @media (display-mode: standalone) {
-          .gymfit-root { padding: 0 !important; background: #13131f !important; width: 100% !important; }
-          .gymfit-frame { width: 100% !important; height: 100dvh !important; border-radius: 0 !important; box-shadow: none !important; }
-        }
       `}</style>
-      <div className="gymfit-frame" style={{
+      <div style={{
           background: "#13131f",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
           position: "relative",
-          width: isMobile ? "100vw" : "390px",
-          height: isMobile ? "100dvh" : "844px",
-          borderRadius: isMobile ? "0" : "44px",
-          boxShadow: isMobile ? "none" : "0 40px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07)",
-          flexShrink: 0,
+          width: "100%",
+          height: "100%",
+          flex: 1,
         }}>
 
 
