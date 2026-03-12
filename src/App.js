@@ -2383,55 +2383,34 @@ export default function App() {
   };
 
   const saveEditTx = async (updated) => {
-    // Propagar vence_manual al estado local (ya está en updated.desc embebido)
     setTxs(p => p.map(t => t.id === updated.id ? { ...t, ...updated } : t));
     setEditTx(null); setModal(null);
     const db = await supabase.from("transacciones");
     const descFinal = updated.desc || updated.descripcion || "-";
-    await db.update(updated.id, { categoria: updated.categoria, descripcion: descFinal, monto: updated.monto, fecha: updated.fecha });
+    // Bug fix: include vence_manual so membership expiration date is preserved
+    await db.update(updated.id, {
+      categoria: updated.categoria,
+      descripcion: descFinal,
+      monto: updated.monto,
+      fecha: updated.fecha,
+      ...(updated.vence_manual ? { vence_manual: updated.vence_manual } : {}),
+    });
   };
   const deleteEditTx = async (id) => {
-    // Find the tx before deleting to check if it's a membership
+    // Find the tx before deleting
     const deletedTx = txs.find(t => t.id === id);
-
     const newTxs = txs.filter(t => t.id !== id);
     setTxs(newTxs);
     setEditTx(null); setModal(null);
-
     // Delete from Supabase
     const db = await supabase.from("transacciones");
     await db.delete(id);
-
-    // If it was a membership payment, check if the member still has any
-    const mId = deletedTx?.miembroId || deletedTx?.miembro_id;
-    if (deletedTx?.categoria === "Membresías" && mId) {
-      const remainingMemberships = newTxs.filter(
-        t => t.categoria === "Membresías" && (String(t.miembroId) === String(mId) || String(t.miembro_id) === String(mId))
-      );
-      if (remainingMemberships.length === 0) {
-        // No memberships left — mark as Vencido with today as vence date
-        const miembro = miembros.find(m => m.id === deletedTx.miembroId);
-        if (miembro) {
-          const updated = { ...miembro, estado: "Vencido", vence: today() };
-          setMiembros(p => p.map(m => m.id === updated.id ? updated : m));
-          const mDb = await supabase.from("miembros");
-          await mDb.update(updated.id, { estado: "Vencido", vence: today() });
-        }
-      } else {
-        // Has other memberships — just mark as Vencido
-        const miembro = miembros.find(m => m.id === mId);
-        if (miembro && miembro.estado === "Activo") {
-          const updated = { ...miembro, estado: "Vencido" };
-          setMiembros(p => p.map(m => m.id === updated.id ? updated : m));
-          const mDb = await supabase.from("miembros");
-          await mDb.update(updated.id, { estado: "Vencido" });
-        }
-      }
-    }
+    // NOTE: estado/vence are calculated dynamically from transactions (getMembershipInfo)
+    // No need to update miembros table — UI will recalculate automatically
   };
   const toggleEstado = () => {
-    const updated = { ...selM, estado: selM.estado === "Activo" ? "Vencido" : "Activo" };
-    setMiembros(p => p.map(m => m.id === selM.id ? updated : m)); setSelM(updated);
+    // Estado is calculated dynamically from transactions via getMembershipInfo.
+    // No local override needed — the UI reflects real data automatically.
   };
   const addPago = async (pagoData) => {
     const db = await supabase.from("transacciones");
@@ -3369,7 +3348,10 @@ export default function App() {
                   <input type="file" accept="image/*" capture="user" style={{ display: "none" }} onChange={e => {
                     const file = e.target.files[0]; if (!file) return;
                     const reader = new FileReader();
-                    reader.onload = ev => setFM(p => ({ ...p, foto: ev.target.result }));
+                    reader.onload = async ev => {
+                      const resized = await resizeImage(ev.target.result, 300, 0.75);
+                      setFM(p => ({ ...p, foto: resized }));
+                    };
                     reader.readAsDataURL(file);
                   }} />
                 </label>

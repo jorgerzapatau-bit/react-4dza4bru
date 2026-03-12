@@ -113,8 +113,19 @@ export const supabase = {
   },
 };
 
-// ── GYM ID: lee desde la URL ?gym=xxx o usa default ──
+// ── GYM ID: lee desde URL ?gym=xxx, si no hay lo recupera de localStorage ──
 export function getGymId() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("gym") || null;
+  const fromUrl = params.get("gym");
+  if (fromUrl) {
+    // Guardar en localStorage para cuando abra como PWA sin parámetro
+    try { localStorage.setItem("gymfit_gym_id", fromUrl); } catch(e) {}
+    return fromUrl;
+  }
+  // Fallback: usar el gym guardado (útil cuando se abre desde ícono PWA)
+  try {
+    const saved = localStorage.getItem("gymfit_gym_id");
+    if (saved) return saved;
+  } catch(e) {}
+  return null;
 }

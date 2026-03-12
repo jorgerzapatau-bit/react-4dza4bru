@@ -2,7 +2,7 @@
   "name": "GymFit Pro",
   "short_name": "GymFit",
   "description": "Manejo de finanzas y miembros para tu gimnasio",
-  "start_url": "/?utm_source=pwa",
+  "start_url": "/?gym=gymfit-demo",
   "display": "standalone",
   "background_color": "#13131f",
   "theme_color": "#6c63ff",
