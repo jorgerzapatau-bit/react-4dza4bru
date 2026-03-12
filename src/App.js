@@ -450,6 +450,24 @@ function RecordatoriosScreen({ miembros, txs, gymConfig, onBack }) {
   );
 }
 
+// ── Redimensiona y comprime imagen a máx 300x300 ──
+function resizeImage(dataUrl, maxSize = 300, quality = 0.75) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
+      else { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 /* ─── PHOTO CAPTURE MODAL ─── */
 function PhotoModal({ onClose, onCapture }) {
   const [mode, setMode] = useState(null); // null | "camera" | "preview"
@@ -463,7 +481,7 @@ function PhotoModal({ onClose, onCapture }) {
       try {
         const vid = document.getElementById("gymfit-video");
         if (!vid) return;
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
         streamRef.current = stream;
         vid.srcObject = stream;
         vid.play();
@@ -479,24 +497,6 @@ function PhotoModal({ onClose, onCapture }) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
-  };
-
-  // Redimensiona y comprime cualquier imagen a máx 300x300, calidad 0.75
-  const resizeImage = (dataUrl, maxSize = 300, quality = 0.75) => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let w = img.width, h = img.height;
-        if (w > h) { if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; } }
-        else { if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; } }
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.src = dataUrl;
-    });
   };
 
   const takePhoto = async () => {
@@ -2287,15 +2287,27 @@ export default function App() {
       .sort((a, b) => a.diasCumple - b.diasCumple);
   }, [miembros]);
 
+  // Membresías por vencer en los próximos 5 días
+  const membresiasPorVencer = useMemo(() => {
+    return miembros
+      .map(m => {
+        const info = getMembershipInfo(m.id, txs, m);
+        if (info.estado !== "Activo") return null;
+        const dias = diasParaVencer(info.vence);
+        if (dias === null || dias > 5 || dias < 0) return null;
+        return { ...m, diasVence: dias, vence: info.vence, plan: info.plan };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.diasVence - b.diasVence);
+  }, [miembros, txs]);
+
+  // Miembros sin sexo con sus datos completos
+  const miembrosSinSexo = useMemo(() => miembros.filter(m => !m.sexo), [miembros]);
+
   // Count total WA reminders pending
   const totalRecordatorios = useMemo(() => {
-    let count = 0;
-    miembros.filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo").forEach(m => {
-      const dias = diasParaVencer(m.vence);
-      if (dias !== null && dias <= 5 && dias >= 0) count++;
-    });
-    return count;
-  }, [miembros]);
+    return membresiasPorVencer.length;
+  }, [membresiasPorVencer]);
 
   const addIng = async () => {
     if (!fI.desc || !fI.monto) return;
@@ -2651,36 +2663,69 @@ export default function App() {
                 <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,#6c63ff,#e040fb)", border: "none", borderRadius: 14, padding: "10px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
               </div>
 
-              {/* ── Distribución por sexo ── */}
-              <div className="card" style={{ background: "rgba(255,255,255,.04)", borderRadius: 20, padding: 16, border: "1px solid rgba(255,255,255,.07)", marginBottom: 14 }}>
-                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 12 }}>👥 Composición del gimnasio</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: mSinSexo > 0 ? 10 : 0 }}>
-                  <div style={{ background: "rgba(96,165,250,.1)", border: "1px solid rgba(96,165,250,.25)", borderRadius: 16, padding: "14px 12px", textAlign: "center" }}>
-                    <p style={{ fontSize: 22, marginBottom: 4 }}>♂️</p>
-                    <p style={{ color: "#60a5fa", fontSize: 24, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{mHombres}</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, marginTop: 2 }}>Hombres</p>
-                    <p style={{ color: "#60a5fa", fontSize: 10, marginTop: 3 }}>{miembros.length > 0 ? Math.round(mHombres / miembros.length * 100) : 0}%</p>
-                  </div>
-                  <div style={{ background: "rgba(244,114,182,.1)", border: "1px solid rgba(244,114,182,.25)", borderRadius: 16, padding: "14px 12px", textAlign: "center" }}>
-                    <p style={{ fontSize: 22, marginBottom: 4 }}>♀️</p>
-                    <p style={{ color: "#f472b6", fontSize: 24, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{mMujeres}</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, marginTop: 2 }}>Mujeres</p>
-                    <p style={{ color: "#f472b6", fontSize: 10, marginTop: 3 }}>{miembros.length > 0 ? Math.round(mMujeres / miembros.length * 100) : 0}%</p>
+              {/* ── Distribución por sexo — compacta ── */}
+              <div className="card" style={{ background: "rgba(255,255,255,.04)", borderRadius: 20, padding: "12px 16px", border: "1px solid rgba(255,255,255,.07)", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>👥 Composición</p>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <span style={{ color: "#60a5fa", fontSize: 12, fontWeight: 700 }}>♂️ {mHombres} <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mHombres/miembros.length*100) : 0}%</span></span>
+                    <span style={{ color: "#f472b6", fontSize: 12, fontWeight: 700 }}>♀️ {mMujeres} <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mMujeres/miembros.length*100) : 0}%</span></span>
+                    {mSinSexo > 0 && <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 700 }}>— {mSinSexo}</span>}
                   </div>
                 </div>
-                {/* Barra de proporción */}
                 {miembros.length > 0 && (
-                  <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,.06)", overflow: "hidden", marginBottom: mSinSexo > 0 ? 10 : 0 }}>
-                    <div style={{ height: "100%", width: `${Math.round(mHombres / miembros.length * 100)}%`, background: "linear-gradient(90deg,#60a5fa,#3b82f6)", borderRadius: 3 }} />
+                  <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,.06)", overflow: "hidden", display: "flex" }}>
+                    <div style={{ height: "100%", width: `${Math.round(mHombres/miembros.length*100)}%`, background: "linear-gradient(90deg,#60a5fa,#3b82f6)" }} />
+                    <div style={{ height: "100%", width: `${Math.round(mMujeres/miembros.length*100)}%`, background: "linear-gradient(90deg,#e040fb,#f472b6)" }} />
                   </div>
                 )}
-                {mSinSexo > 0 && (
-                  <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 12, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 14 }}>⚠️</span>
-                    <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: 600 }}>{mSinSexo} miembro{mSinSexo > 1 ? "s" : ""} sin sexo registrado</p>
+                {/* Alertas: miembros sin sexo — clickeables al perfil */}
+                {miembrosSinSexo.length > 0 && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                    {miembrosSinSexo.map(m => (
+                      <div key={m.id} onClick={() => { setSelM(m); setModal("detalle"); }}
+                        style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 12, padding: "8px 10px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(245,158,11,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
+                          {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 600 }}>{m.nombre}</p>
+                          <p style={{ color: "#92662a", fontSize: 10 }}>⚠️ Sin sexo registrado · Toca para completar</p>
+                        </div>
+                        <span style={{ color: "#f59e0b", fontSize: 16 }}>›</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
+
+              {/* ── Alertas: membresías por vencer ── */}
+              {membresiasPorVencer.length > 0 && (
+                <div className="card" style={{ background: "rgba(239,68,68,.05)", borderRadius: 20, padding: 16, border: "1px solid rgba(239,68,68,.2)", marginBottom: 14 }}>
+                  <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>⏰ Membresías por vencer</p>
+                  {membresiasPorVencer.map(m => (
+                    <div key={m.id} onClick={() => { setScreen("recordatorios"); }}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(239,68,68,.1)", cursor: "pointer" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: `2px solid ${m.diasVence === 0 ? "rgba(239,68,68,.6)" : m.diasVence <= 1 ? "rgba(239,68,68,.3)" : "rgba(245,158,11,.3)"}` }}>
+                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 1 }}>
+                          {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
+                          Vence: {m.vence}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                        <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.15)", color: m.diasVence === 0 ? "#f87171" : m.diasVence <= 1 ? "#fca5a5" : "#fbbf24", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
+                          {m.diasVence === 0 ? "HOY 🚨" : m.diasVence === 1 ? "MAÑANA" : `${m.diasVence}d`}
+                        </span>
+                        <span style={{ color: "#25d366", fontSize: 10, fontWeight: 600 }}>💬 WhatsApp</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* ── Cumpleaños próximos ── */}
               {cumplesPróximos.length > 0 && (
@@ -3345,7 +3390,7 @@ export default function App() {
                 }
                 <label style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: "50%", background: "rgba(30,30,46,.95)", border: "2px solid rgba(167,139,250,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: "pointer" }}>
                   📷
-                  <input type="file" accept="image/*" capture="user" style={{ display: "none" }} onChange={e => {
+                  <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => {
                     const file = e.target.files[0]; if (!file) return;
                     const reader = new FileReader();
                     reader.onload = async ev => {
