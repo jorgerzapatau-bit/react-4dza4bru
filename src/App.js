@@ -2484,7 +2484,7 @@ export default function App() {
 
         {/* ═══ MENSAJES SCREEN ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
-          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} onUpdatePlantillas={onUpdatePlantillas} />
+          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} onUpdatePlantillas={updatePlantillas} />
         )}
 
         {/* ═══ LOADING ═══ */}
