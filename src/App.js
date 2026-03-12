@@ -327,7 +327,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas }
   ];
 
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
       {/* ── Header fijo ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -589,7 +589,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas }
           </>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -2482,10 +2482,10 @@ export default function App() {
         }}>
 
 
-        {/* ═══ RECORDATORIOS SCREEN ═══ */}
-        {!loading && !configScreen && screen === "mensajes" && (
+        {/* ═══ MENSAJES SCREEN ═══ */}
+        {!loading && !configScreen && screen === "mensajes" && <>
           <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} onUpdatePlantillas={onUpdatePlantillas} />
-        )}
+        </>}
 
         {/* ═══ LOADING ═══ */}
         {loading && (
