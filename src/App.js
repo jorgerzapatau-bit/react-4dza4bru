@@ -327,7 +327,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas }
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", overflow: "hidden" }}>
       {/* ── Header fijo ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -2483,9 +2483,9 @@ export default function App() {
 
 
         {/* ═══ MENSAJES SCREEN ═══ */}
-        {!loading && !configScreen && screen === "mensajes" && <>
+        {!loading && !configScreen && screen === "mensajes" && (
           <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} onUpdatePlantillas={onUpdatePlantillas} />
-        </>}
+        )}
 
         {/* ═══ LOADING ═══ */}
         {loading && (
@@ -2603,22 +2603,7 @@ export default function App() {
             </div>
 
             {/* WA Reminder alert banner */}
-            {totalRecordatorios > 0 && (
-              <button onClick={() => setScreen("mensajes")} style={{
-                width: "100%", marginTop: 12, padding: "10px 14px", border: "1px solid rgba(37,211,102,.3)",
-                borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-                background: "rgba(37,211,102,.08)", display: "flex", alignItems: "center", gap: 10
-              }}>
-                <span style={{ fontSize: 20 }}>💬</span>
-                <div style={{ textAlign: "left", flex: 1 }}>
-                  <p style={{ color: "#25d366", fontSize: 12, fontWeight: 700 }}>
-                    {totalRecordatorios} membresía{totalRecordatorios > 1 ? "s" : ""} por vencer
-                  </p>
-                  <p style={{ color: "#4b4b6a", fontSize: 10 }}>Toca para enviar recordatorios por WhatsApp</p>
-                </div>
-                <span style={{ color: "#25d366", fontSize: 14 }}>→</span>
-              </button>
-            )}
+
 
             <div style={{ display: "flex", gap: 3, marginTop: 14, background: "rgba(255,255,255,.05)", borderRadius: 14, padding: 4 }}>
               {TABS.map((t, i) => (
