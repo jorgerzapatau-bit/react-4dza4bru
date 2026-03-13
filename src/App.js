@@ -1903,7 +1903,7 @@ function EditTxModal({ tx, onClose, onSave, onDelete }) {
 
 /* ═══════════════════════════════════════════════════════ */
 /* ─── REPORTE PDF ─── */
-function CalendarioEventos({ miembros, txs, getMembershipInfo }) {
+function CalendarioEventos({ miembros, txs, getMembershipInfo, onGoToMember }) {
   const hoy = new Date();
   const [mesVer, setMesVer] = useState(hoy.getMonth());
   const [anioVer, setAnioVer] = useState(hoy.getFullYear());
@@ -1923,7 +1923,7 @@ function CalendarioEventos({ miembros, txs, getMembershipInfo }) {
       if (m.fecha_nacimiento) {
         const fn = new Date(m.fecha_nacimiento + "T00:00:00");
         if (fn.getMonth() === mesVer) {
-          agregarEvento(fn.getDate(), { tipo: "cumple", nombre: m.nombre.split(" ")[0], color: "#f59e0b" });
+          agregarEvento(fn.getDate(), { tipo: "cumple", nombre: m.nombre, foto: m.foto, miembro: m, color: "#f59e0b" });
         }
       }
       // Vencimientos
@@ -1937,7 +1937,7 @@ function CalendarioEventos({ miembros, txs, getMembershipInfo }) {
           return null;
         })();
         if (vp && vp.getMonth() === mesVer && vp.getFullYear() === anioVer) {
-          agregarEvento(vp.getDate(), { tipo: "vence", nombre: m.nombre.split(" ")[0], color: mem.estado === "Vencido" ? "#f43f5e" : "#22d3ee" });
+          agregarEvento(vp.getDate(), { tipo: "vence", nombre: m.nombre, foto: m.foto, miembro: m, color: mem.estado === "Vencido" ? "#f43f5e" : "#22d3ee" });
         }
       }
     });
@@ -2033,13 +2033,16 @@ function CalendarioEventos({ miembros, txs, getMembershipInfo }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {listaEventos.map((ev, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 12px", borderLeft: `3px solid ${ev.color}` }}>
-              <span style={{ fontSize: 14 }}>{ev.tipo === "cumple" ? "🎂" : "⏰"}</span>
-              <div style={{ flex: 1 }}>
-                <p style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>{ev.nombre}</p>
-                <p style={{ color: "#4b4b6a", fontSize: 10 }}>{ev.tipo === "cumple" ? "Cumpleaños" : "Vence membresía"}</p>
+            <div key={i} onClick={() => onGoToMember && ev.miembro && onGoToMember(ev.miembro)}
+              style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 12px", borderLeft: `3px solid ${ev.color}`, cursor: onGoToMember ? "pointer" : "default", transition: "background .15s" }}>
+              <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff44,#e040fb44)", display: "flex", alignItems: "center", justifyContent: "center", color: "#c4b5fd", fontWeight: 700, fontSize: 15, overflow: "hidden", flexShrink: 0, boxShadow: `0 0 0 2px ${ev.color}50` }}>
+                {ev.foto ? <img src={ev.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : ev.nombre.charAt(0)}
               </div>
-              <span style={{ color: ev.color, fontSize: 12, fontWeight: 700 }}>{String(ev.dia).padStart(2,"0")} {["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesVer]}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.nombre}</p>
+                <p style={{ color: "#4b4b6a", fontSize: 10 }}>{ev.tipo === "cumple" ? "🎂 Cumpleaños" : "⏰ Vence membresía"}</p>
+              </div>
+              <span style={{ color: ev.color, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{String(ev.dia).padStart(2,"0")} {["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesVer]}</span>
             </div>
           ))}
         </div>
@@ -2261,7 +2264,8 @@ export default function App() {
   const [viewMode, setViewMode] = useState("lista"); // "lista" | "grid"
   const [busqueda, setBusqueda] = useState("");
   // Broadcast moved to MensajesScreen
-  const [statsTab, setStatsTab] = useState(0);
+  const [statsTab, setStatsTab] = useState(0); // 0=all, 1=ing, 2=gas, 3=util
+  const [statsChartType, setStatsChartType] = useState("bar"); // "bar" | "line"
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(t); }, []); // 0=utilidad, 1=ingresos, 2=gastos
   const [filtroDesde, setFiltroDesde] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`; });
@@ -3240,38 +3244,106 @@ export default function App() {
                   </div>
                   <p style={{ color: "#4ade80", fontSize: 16, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt(mejorMes.util)}</p>
                 </div>
-                {/* Tab selector */}
-                <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,.05)", borderRadius: 14, padding: 4, marginBottom: 16 }}>
-                  {["Utilidad", "Ingresos", "Gastos"].map((label, i) => (
-                    <button key={i} onClick={() => setStatsTab(i)} style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 11, cursor: "pointer", fontFamily: "inherit",
-                      background: statsTab === i ? (i === 0 ? "linear-gradient(135deg,#6c63ff,#e040fb)" : i === 1 ? "linear-gradient(135deg,#22d3ee,#06b6d4)" : "linear-gradient(135deg,#f43f5e,#fb923c)") : "transparent",
-                      color: statsTab === i ? "#fff" : "#4b4b6a", fontSize: 12, fontWeight: statsTab === i ? 700 : 500,
-                      boxShadow: statsTab === i ? "0 2px 12px rgba(108,99,255,.3)" : "none", transition: "all .2s" }}>{label}</button>
-                  ))}
-                </div>
-                {/* Bar chart */}
-                <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "20px 16px 12px" }}>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: BAR_H + 24, justifyContent: "space-between" }}>
-                    {mesesData.map((d, i) => {
-                      const val = statsTab === 0 ? d.util : statsTab === 1 ? d.ing : d.gas;
-                      const color = statsTab === 0 ? (val >= 0 ? "#4ade80" : "#f87171") : statsTab === 1 ? "#22d3ee" : "#f43f5e";
-                      const barH = maxVal > 0 ? Math.abs(val) / maxVal * BAR_H : 0;
-                      const isActive = d.year === selMes.year && d.month === selMes.month;
-                      return (
-                        <div key={i} onClick={() => { setSelMes({ year: d.year, month: d.month }); setScreen("dashboard"); }}
-                          style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", gap: 4 }}>
-                          <div style={{ width: "100%", height: BAR_H, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                            <div style={{ width: "80%", height: Math.max(barH, 3), borderRadius: "4px 4px 0 0",
-                              background: isActive ? "#fff" : (d.isCurrent ? color : `${color}99`),
-                              boxShadow: isActive ? "0 0 12px rgba(255,255,255,.4)" : "none",
-                              transition: "height .3s ease" }} />
-                          </div>
-                          <p style={{ color: isActive ? "#fff" : "#4b4b6a", fontSize: 9, fontWeight: isActive ? 700 : 500 }}>{d.label}</p>
-                        </div>
-                      );
-                    })}
+                {/* Controls row: filter tabs + chart type toggle */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
+                  <div style={{ flex: 1, display: "flex", gap: 3, background: "rgba(255,255,255,.05)", borderRadius: 12, padding: 3 }}>
+                    {[["Todo","#a78bfa"], ["Ingresos","#22d3ee"], ["Gastos","#f43f5e"], ["Utilidad","#4ade80"]].map(([label, clr], i) => (
+                      <button key={i} onClick={() => setStatsTab(i)}
+                        style={{ flex: 1, padding: "7px 0", border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit",
+                          background: statsTab === i ? `${clr}25` : "transparent",
+                          color: statsTab === i ? clr : "#4b4b6a",
+                          fontSize: 10, fontWeight: statsTab === i ? 700 : 500,
+                          borderBottom: statsTab === i ? `2px solid ${clr}` : "2px solid transparent",
+                          transition: "all .2s" }}>{label}</button>
+                    ))}
                   </div>
+                  <button onClick={() => setStatsChartType(t => t === "bar" ? "line" : "bar")}
+                    style={{ flexShrink: 0, padding: "7px 12px", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", background: "rgba(255,255,255,.05)", color: "#9ca3af", fontSize: 11, fontWeight: 600 }}>
+                    {statsChartType === "bar" ? "〜 Curva" : "▌Barras"}
+                  </button>
                 </div>
+                {/* Chart */}
+                {(() => {
+                  const CHART_H = 140;
+                  const SERIES = [
+                    { key: "ing", color: "#22d3ee", label: "Ing" },
+                    { key: "gas", color: "#f43f5e", label: "Gas" },
+                    { key: "util", color: "#4ade80", negColor: "#f87171", label: "Util" },
+                  ];
+                  const activeSeries = statsTab === 0 ? SERIES : statsTab === 1 ? [SERIES[0]] : statsTab === 2 ? [SERIES[1]] : [SERIES[2]];
+                  const allVals = mesesData.flatMap(d => activeSeries.map(s => Math.abs(d[s.key])));
+                  const maxV = Math.max(...allVals, 1);
+
+                  if (statsChartType === "bar") {
+                    return (
+                      <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: CHART_H + 20, justifyContent: "space-between" }}>
+                          {mesesData.map((d, i) => {
+                            const isActive = d.year === selMes.year && d.month === selMes.month;
+                            return (
+                              <div key={i} onClick={() => { setSelMes({ year: d.year, month: d.month }); setScreen("dashboard"); }}
+                                style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", gap: 2 }}>
+                                <div style={{ width: "100%", height: CHART_H, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 1 }}>
+                                  {activeSeries.map(s => {
+                                    const val = d[s.key];
+                                    const barH = Math.max(Math.abs(val) / maxV * CHART_H, 2);
+                                    const clr = s.negColor && val < 0 ? s.negColor : s.color;
+                                    return <div key={s.key} style={{ flex: 1, height: barH, borderRadius: "3px 3px 0 0", background: isActive ? "#fff" : (d.isCurrent ? clr : `${clr}70`), transition: "height .3s ease" }} />;
+                                  })}
+                                </div>
+                                <p style={{ color: isActive ? "#fff" : "#4b4b6a", fontSize: 8, fontWeight: isActive ? 700 : 400 }}>{d.label}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Legend */}
+                        {statsTab === 0 && <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 10 }}>
+                          {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} /><span style={{ color: "#6b7280", fontSize: 9 }}>{s.label}</span></div>)}
+                        </div>}
+                      </div>
+                    );
+                  }
+                  // ── LINE CHART (SVG) ──
+                  const W = 340; const H = CHART_H;
+                  const pts = (serie) => mesesData.map((d, i) => {
+                    const x = (i / (mesesData.length - 1)) * W;
+                    const y = H - (Math.abs(d[serie.key]) / maxV) * H * 0.9 - 8;
+                    return [x, y];
+                  });
+                  const pathD = (points) => points.map((p, i) => {
+                    if (i === 0) return `M${p[0]},${p[1]}`;
+                    const cp1x = (points[i-1][0] + p[0]) / 2; const cp1y = points[i-1][1];
+                    const cp2x = (points[i-1][0] + p[0]) / 2; const cp2y = p[1];
+                    return `C${cp1x},${cp1y} ${cp2x},${cp2y} ${p[0]},${p[1]}`;
+                  }).join(" ");
+                  return (
+                    <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
+                      <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width: "100%", height: H + 20, overflow: "visible" }}>
+                        {/* Grid lines */}
+                        {[0.25, 0.5, 0.75, 1].map(f => <line key={f} x1={0} y1={H - f * H * 0.9 - 8} x2={W} y2={H - f * H * 0.9 - 8} stroke="rgba(255,255,255,.06)" strokeWidth="1" />)}
+                        {activeSeries.map(s => {
+                          const points = pts(s);
+                          const d = pathD(points);
+                          const areaD = d + ` L${points[points.length-1][0]},${H} L${points[0][0]},${H} Z`;
+                          const clr = s.color;
+                          return (
+                            <g key={s.key}>
+                              <defs><linearGradient id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={clr} stopOpacity="0.25"/><stop offset="100%" stopColor={clr} stopOpacity="0"/></linearGradient></defs>
+                              <path d={areaD} fill={`url(#grad-${s.key})`} />
+                              <path d={d} fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              {points.map(([x,y], i) => <circle key={i} cx={x} cy={y} r={mesesData[i].isCurrent ? 4 : 2.5} fill={clr} stroke="#13131f" strokeWidth="1.5" />)}
+                            </g>
+                          );
+                        })}
+                        {/* X labels */}
+                        {mesesData.map((d, i) => <text key={i} x={(i / (mesesData.length-1)) * W} y={H + 16} textAnchor="middle" fill={d.isCurrent ? "#fff" : "#4b4b6a"} fontSize="8" fontWeight={d.isCurrent ? "700" : "400"}>{d.label}</text>)}
+                      </svg>
+                      {statsTab === 0 && <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 4 }}>
+                        {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 16, height: 2, background: s.color, borderRadius: 2 }} /><span style={{ color: "#6b7280", fontSize: 9 }}>{s.label}</span></div>)}
+                      </div>}
+                    </div>
+                  );
+                })()}
                 {/* Month detail list */}
                 <div style={{ marginTop: 16 }}>
                   <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Detalle por mes</p>
@@ -3344,7 +3416,7 @@ export default function App() {
               <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>📅 Calendario</h1>
             </div>
             <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 40px", minHeight: 0 }}>
-              <CalendarioEventos miembros={miembros} txs={txs} getMembershipInfo={getMembershipInfo} />
+              <CalendarioEventos miembros={miembros} txs={txs} getMembershipInfo={getMembershipInfo} onGoToMember={m => { setSelM(m); setModal("detalle"); }} />
             </div>
           </div>
         )}
