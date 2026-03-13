@@ -3375,27 +3375,21 @@ export default function App() {
 
         {modal === "gasto" && <Modal title="💸 Nuevo Gasto" onClose={() => setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v => setFG(p => ({ ...p, cat: v }))} options={CAT_GAS} /><Inp label="Descripción" value={fG.desc} onChange={v => setFG(p => ({ ...p, desc: v }))} placeholder="Ej: Pago de nómina" /><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v => setFG(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fG.fecha} onChange={v => setFG(p => ({ ...p, fecha: v }))} /><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
 
-        {modal === "miembro" && (
+        {modal === "miembro" && (() => {
+          const [showFotoModal, setShowFotoModal] = React.useState(false);
+          return (
           <Modal title="👤 Nuevo Miembro" onClose={() => setModal(null)}>
+            {showFotoModal && <PhotoModal onClose={() => setShowFotoModal(false)} onCapture={dataUrl => setFM(p => ({ ...p, foto: dataUrl }))} />}
             {/* Avatar + foto */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 16 }}>
-              <div style={{ position: "relative", width: 72, height: 72, marginBottom: 8 }}>
+              <div onClick={() => setShowFotoModal(true)} style={{ position: "relative", width: 72, height: 72, marginBottom: 8, cursor: "pointer" }}>
                 {fM.foto
                   ? <img src={fM.foto} alt="" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(167,139,250,.4)" }} />
                   : <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "#fff", fontWeight: 700 }}>👤</div>
                 }
-                <label style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: "50%", background: "rgba(30,30,46,.95)", border: "2px solid rgba(167,139,250,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: "pointer" }}>
+                <div style={{ position: "absolute", bottom: 0, right: 0, width: 26, height: 26, borderRadius: "50%", background: "rgba(30,30,46,.95)", border: "2px solid rgba(167,139,250,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
                   📷
-                  <input type="file" accept="image/*" capture="environment" style={{ display: "none" }} onChange={e => {
-                    const file = e.target.files[0]; if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = async ev => {
-                      const resized = await resizeImage(ev.target.result, 300, 0.75);
-                      setFM(p => ({ ...p, foto: resized }));
-                    };
-                    reader.readAsDataURL(file);
-                  }} />
-                </label>
+                </div>
               </div>
               <p style={{ color: "#4b4b6a", fontSize: 11 }}>Toca 📷 para agregar foto</p>
             </div>
