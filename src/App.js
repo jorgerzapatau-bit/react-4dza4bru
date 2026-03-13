@@ -1120,20 +1120,18 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                 <button onClick={() => setCobrarModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18 }}>✕</button>
               </div>
 
-              {/* Tipo de cobro */}
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Tipo de cobro</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              {/* Tipo de cobro — selector compacto */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
                 {TIPOS_COBRO.map(t => (
                   <button key={t.val} onClick={() => setCobro(p => ({ ...p, tipo: t.val, desc: "" }))}
-                    style={{ padding: "12px 10px", border: cobro.tipo === t.val ? "2px solid #4ade80" : "1.5px solid rgba(255,255,255,.08)", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", background: cobro.tipo === t.val ? "rgba(74,222,128,.1)" : "rgba(255,255,255,.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, transition: "all .2s" }}>
-                    <span style={{ fontSize: 22 }}>{t.icon}</span>
-                    <span style={{ color: cobro.tipo === t.val ? "#4ade80" : "#9ca3af", fontSize: 11, fontWeight: 700, textAlign: "center" }}>{t.label}</span>
+                    style={{ flexShrink: 0, padding: "7px 12px", border: cobro.tipo === t.val ? "1.5px solid #4ade80" : "1.5px solid rgba(255,255,255,.08)", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", background: cobro.tipo === t.val ? "rgba(74,222,128,.12)" : "rgba(255,255,255,.04)", display: "flex", alignItems: "center", gap: 6, transition: "all .2s", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: 15 }}>{t.icon}</span>
+                    <span style={{ color: cobro.tipo === t.val ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: cobro.tipo === t.val ? 700 : 500 }}>{t.label}</span>
                   </button>
                 ))}
               </div>
 
-              {cobro.tipo && (<>
-                {/* Descripción */}
+              {/* Descripción */}
                 <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Descripción <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10 }}>(opcional)</span></p>
                 <input value={cobro.desc} onChange={e => setCobro(p => ({ ...p, desc: e.target.value }))}
                   placeholder={tipoInfo?.placeholder}
@@ -1166,7 +1164,6 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                   style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: cobro.monto ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: cobro.monto ? "linear-gradient(135deg,#4ade80,#22c55e)" : "rgba(255,255,255,.06)", color: cobro.monto ? "#000" : "#4b4b6a", boxShadow: cobro.monto ? "0 4px 18px rgba(74,222,128,.35)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s" }}>
                   <span style={{ fontSize: 18 }}>💰</span> Registrar cobro
                 </button>
-              </>)}
             </div>
           </div>
         );
@@ -1596,7 +1593,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                   setRenovarModal(true);
                 }} color="#22d3ee">🔄 Renovar</Btn>
               </div>
-              <Btn full outline color="#4ade80" onClick={() => { setCobro({ tipo: "", desc: "", monto: "", fecha: todayISO(), formaPago: "Efectivo" }); setCobrarModal(true); }}>💰 + Cobrar</Btn>
+              <Btn full outline color="#4ade80" onClick={() => { setCobro({ tipo: "libre", desc: "", monto: "", fecha: todayISO(), formaPago: "Efectivo" }); setCobrarModal(true); }}>💰 + Cobrar</Btn>
               {/* Congelar: solo si hay membresía activa */}
               {memInfo.estado === "Activo" && !memInfo.congelado && (
                 <Btn full outline color="#60a5fa" onClick={() => setCongelarModal(true)} style={{ marginTop: 8 }}>🧊 Congelar membresía</Btn>
