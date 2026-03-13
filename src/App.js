@@ -3288,10 +3288,10 @@ export default function App() {
                                     const val = d[s.key];
                                     const barH = Math.max(Math.abs(val) / maxV * CHART_H, 2);
                                     const clr = s.negColor && val < 0 ? s.negColor : s.color;
-                                    return <div key={s.key} style={{ flex: 1, height: barH, borderRadius: "3px 3px 0 0", background: isActive ? "#fff" : (d.isCurrent ? clr : `${clr}70`), transition: "height .3s ease" }} />;
+                                    return <div key={s.key} style={{ flex: 1, height: barH, borderRadius: "3px 3px 0 0", background: d.isCurrent ? clr : `${clr}${isActive ? "ff" : "70"}`, boxShadow: isActive ? `0 0 8px ${clr}80` : "none", transition: "height .3s ease" }} />;
                                   })}
                                 </div>
-                                <p style={{ color: isActive ? "#fff" : "#4b4b6a", fontSize: 8, fontWeight: isActive ? 700 : 400 }}>{d.label}</p>
+                                <p style={{ color: isActive ? "#e2e8f0" : "#4b4b6a", fontSize: 8, fontWeight: isActive ? 700 : 400 }}>{d.label}</p>
                               </div>
                             );
                           })}
