@@ -413,55 +413,75 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
         {/* ════ MODO: INDIVIDUAL ════ */}
         {modo === "individual" && (
           <>
-            {/* Buscador */}
-            <div style={{ position: "relative", marginBottom: 10 }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4b4b6a", pointerEvents: "none" }}>🔍</span>
-              <input
-                value={busqueda}
-                onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar miembro..."
-                style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }}
-              />
-              {busqueda && (
-                <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#4b4b6a", fontSize: 16, cursor: "pointer", padding: 2 }}>✕</button>
-              )}
-            </div>
-            {/* Lista filtrada */}
-            {(() => {
-              const conTel = miembros.filter(m => m.tel);
-              const filtrados = busqueda.trim()
-                ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
-                : conTel;
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-                  {filtrados.length === 0 && (
-                    <p style={{ color: "#4b4b6a", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>
-                  )}
-                  {filtrados.map(m => (
-                    <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
-                      style={{ background: selMiembro?.id === m.id ? "rgba(108,99,255,.15)" : "rgba(255,255,255,.04)", border: `1px solid ${selMiembro?.id === m.id ? "rgba(108,99,255,.5)" : "rgba(255,255,255,.08)"}`, borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
-                      <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
-                      </div>
-                      <div style={{ flex: 1, textAlign: "left" }}>
-                        <p style={{ color: selMiembro?.id === m.id ? "#a78bfa" : "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {m.tel}</p>
-                      </div>
-                      {selMiembro?.id === m.id && <span style={{ color: "#a78bfa", fontSize: 16 }}>✓</span>}
-                    </button>
-                  ))}
-                  {miembros.filter(m => !m.tel).length > 0 && !busqueda && (
-                    <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
-                      {miembros.filter(m => !m.tel).length} miembro{miembros.filter(m=>!m.tel).length>1?"s":""} sin número no aparecen
-                    </p>
+            {/* Vista: selección de miembro (cuando no hay nadie seleccionado) */}
+            {!selMiembro && (
+              <>
+                {/* Buscador */}
+                <div style={{ position: "relative", marginBottom: 10 }}>
+                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4b4b6a", pointerEvents: "none" }}>🔍</span>
+                  <input
+                    value={busqueda}
+                    onChange={e => setBusqueda(e.target.value)}
+                    placeholder="Buscar miembro..."
+                    style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                  />
+                  {busqueda && (
+                    <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#4b4b6a", fontSize: 16, cursor: "pointer", padding: 2 }}>✕</button>
                   )}
                 </div>
-              );
-            })()}
+                {/* Lista filtrada */}
+                {(() => {
+                  const conTel = miembros.filter(m => m.tel);
+                  const filtrados = busqueda.trim()
+                    ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
+                    : conTel;
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                      {filtrados.length === 0 && (
+                        <p style={{ color: "#4b4b6a", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>
+                      )}
+                      {filtrados.map(m => (
+                        <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
+                          style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
+                          <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                            {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
+                          </div>
+                          <div style={{ flex: 1, textAlign: "left" }}>
+                            <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                            <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {m.tel}</p>
+                          </div>
+                          <span style={{ color: "#4b4b6a", fontSize: 14 }}>›</span>
+                        </button>
+                      ))}
+                      {miembros.filter(m => !m.tel).length > 0 && !busqueda && (
+                        <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
+                          {miembros.filter(m => !m.tel).length} miembro{miembros.filter(m=>!m.tel).length>1?"s":""} sin número no aparecen
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
 
+            {/* Vista: composición de mensaje (cuando hay miembro seleccionado) */}
             {selMiembro && (
               <>
-                <div style={{ height: 1, background: "rgba(255,255,255,.07)", marginBottom: 14 }} />
+                {/* Header compacto del destinatario */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 16 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff" }}>
+                    {selMiembro.foto ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selMiembro.nombre.charAt(0)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
+                    <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {selMiembro.tel}</p>
+                  </div>
+                  <button onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
+                    style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "#9ca3af", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    Cambiar ✕
+                  </button>
+                </div>
+
                 {/* Área de mensaje */}
                 <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
                   Mensaje para {selNombre1}
@@ -471,6 +491,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
                   onChange={e => setMsgTexto(e.target.value)}
                   placeholder={`Hola ${selNombre1}, te escribimos desde ${gymNom}...`}
                   rows={5}
+                  autoFocus
                   style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: "14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 6 }}
                 />
                 <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
