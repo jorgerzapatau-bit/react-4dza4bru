@@ -2479,11 +2479,11 @@ export default function App() {
   const updatePlantillas = async (nuevasPlantillas) => {
     const newCfg = { ...(gymConfig || {}), plantillas_wa: nuevasPlantillas };
     setGymConfig(newCfg);
-    const url = `${supabase.url}/rest/v1/gimnasios`;
+    const url = `${supabase.url}/rest/v1/gimnasios?id=eq.${GYM_ID}`;
     await fetch(url, {
-      method: "POST",
-      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
-      body: JSON.stringify({ ...newCfg, id: GYM_ID })
+      method: "PATCH",
+      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(newCfg)
     });
   };
 
@@ -2495,11 +2495,11 @@ export default function App() {
     waEnviados[hoyKey] = { ...(waEnviados[hoyKey] || {}), [miembroId]: true };
     const newCfg = { ...(gymConfig || {}), wa_enviados: waEnviados };
     setGymConfig(newCfg);
-    const url = `${supabase.url}/rest/v1/gimnasios`;
+    const url = `${supabase.url}/rest/v1/gimnasios?id=eq.${GYM_ID}`;
     await fetch(url, {
-      method: "POST",
-      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
-      body: JSON.stringify({ ...newCfg, id: GYM_ID })
+      method: "PATCH",
+      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(newCfg)
     });
   };
 
