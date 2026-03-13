@@ -2314,7 +2314,11 @@ export default function App() {
         // Load gym config
         const gym = await supabase.getGym(GYM_ID);
         if (gym) {
-          setGymConfig(gym);
+          // Enrich gymConfig with localStorage data (columns not in Supabase table)
+          const lsKey = `gymfit_cfg_${GYM_ID}`;
+          let lsData = {};
+          try { lsData = JSON.parse(localStorage.getItem(lsKey) || "{}"); } catch(e) {}
+          setGymConfig({ ...gym, ...lsData });
           setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES });
         } else {
           // First time — show config screen
@@ -2476,31 +2480,30 @@ export default function App() {
       dias_congelados: updated.dias_congelados || 0,
     });
   };
+  // Save extra config fields to localStorage (not columns in Supabase)
+  const saveExtraCfg = (patch) => {
+    const lsKey = `gymfit_cfg_${GYM_ID}`;
+    let lsData = {};
+    try { lsData = JSON.parse(localStorage.getItem(lsKey) || "{}"); } catch(e) {}
+    const updated = { ...lsData, ...patch };
+    try { localStorage.setItem(lsKey, JSON.stringify(updated)); } catch(e) {}
+  };
+
   const updatePlantillas = async (nuevasPlantillas) => {
     const newCfg = { ...(gymConfig || {}), plantillas_wa: nuevasPlantillas };
     setGymConfig(newCfg);
-    const url = `${supabase.url}/rest/v1/gimnasios?id=eq.${GYM_ID}`;
-    await fetch(url, {
-      method: "PATCH",
-      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json" },
-      body: JSON.stringify(newCfg)
-    });
+    saveExtraCfg({ plantillas_wa: nuevasPlantillas });
   };
 
   // Recordatorios WA enviados — persiste en Supabase dentro de gymConfig
   const hoyKey = new Date().toISOString().slice(0, 10);
   const recordatoriosEnviados = (gymConfig?.wa_enviados || {})[hoyKey] || {};
-  const marcarRecordatorio = async (miembroId) => {
+  const marcarRecordatorio = (miembroId) => {
     const waEnviados = { ...(gymConfig?.wa_enviados || {}) };
     waEnviados[hoyKey] = { ...(waEnviados[hoyKey] || {}), [miembroId]: true };
     const newCfg = { ...(gymConfig || {}), wa_enviados: waEnviados };
     setGymConfig(newCfg);
-    const url = `${supabase.url}/rest/v1/gimnasios?id=eq.${GYM_ID}`;
-    await fetch(url, {
-      method: "PATCH",
-      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json" },
-      body: JSON.stringify(newCfg)
-    });
+    saveExtraCfg({ wa_enviados: waEnviados });
   };
 
   const saveEditTx = async (updated) => {
