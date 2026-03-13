@@ -1305,7 +1305,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, marginTop: 8 }}>
           <span style={{ background: memInfo.estado === "Activo" ? "rgba(74,222,128,.15)" : memInfo.estado === "Congelado" ? "rgba(96,165,250,.15)" : memInfo.estado === "Sin membresía" ? "rgba(107,114,128,.15)" : "rgba(248,113,113,.15)", color: memInfo.estado === "Activo" ? "#4ade80" : memInfo.estado === "Congelado" ? "#60a5fa" : memInfo.estado === "Sin membresía" ? "#6b7280" : "#f87171", borderRadius: 10, padding: "4px 14px", fontSize: 12, fontWeight: 700 }}>{memInfo.estado === "Congelado" ? "🧊 Congelado" : memInfo.estado}</span>
           <span style={{ color: "#6b7280", fontSize: 11, fontWeight: 500 }}>
-            {memInfo.estado === "Congelado" ? `🧊 Congelado — vence ${memInfo.vence}` : memInfo.estado === "Activo" ? `Activo hasta ${memInfo.vence}` : memInfo.estado === "Sin membresía" ? "Sin membresía registrada" : `Vencido desde ${memInfo.vence}`}
+            {memInfo.estado === "Congelado" ? `🧊 Congelado — vence ${fmtDate(memInfo.vence)}` : memInfo.estado === "Activo" ? `Activo hasta ${fmtDate(memInfo.vence)}` : memInfo.estado === "Sin membresía" ? "Sin membresía registrada" : `Vencido desde ${fmtDate(memInfo.vence)}`}
           </span>
         </div>
 
@@ -1527,7 +1527,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                   [
                     { label: "📋 Plan", val: memInfo.plan || "—" },
                     { label: "📅 Inicio", val: memInfo.inicio || "—" },
-                    { label: "⏰ Vence", val: memInfo.congelado ? `${memInfo.vence} (+congelado)` : memInfo.vence || "—" },
+                    { label: "⏰ Vence", val: memInfo.congelado ? `${fmtDate(memInfo.vence)} (+congelado)` : fmtDate(memInfo.vence) || "—" },
                     { label: "💰 Último pago", val: memInfo.esGratis ? "Cortesía 🎁" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—") },
                     ...(memInfo.formaPago ? [{ label: "💳 Forma de pago", val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transferencia" : "💳 Tarjeta" }] : []),
                   ].map((row, i, arr) => (
@@ -1651,7 +1651,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                               <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{desc}</p>
                               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                                 <span style={{ background: bgColor, color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{t.categoria}</span>
-                                <span style={{ color: "#4b4b6a", fontSize: 10 }}>· {t.fecha}</span>
+                                <span style={{ color: "#4b4b6a", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
                               </div>
                             </div>
                             <p style={{ color, fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
@@ -1813,7 +1813,7 @@ function EditTxModal({ tx, onClose, onSave, onDelete }) {
           </div>
           <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 16, padding: "0 14px" }}>
             <Row label="Categoría" value={tx.categoria} />
-            <Row label="Inicio" value={tx.fecha} />
+            <Row label="Inicio" value={fmtDate(tx.fecha)} />
             {venceManualDelDesc && <Row label="Vencimiento" value={fmtDate(venceManualDelDesc)} accent="#22d3ee" />}
             {duracionDias && <Row label="Duración" value={`${duracionDias} días`} />}
           </div>
@@ -2743,14 +2743,46 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <div className="card" style={{ background: "rgba(255,255,255,.04)", borderRadius: 20, padding: 16, border: "1px solid rgba(255,255,255,.07)", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase" }}>Miembros activos</p>
-                  <p style={{ color: "#fff", fontSize: 28, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0" }}>{mActivos}</p>
-                  <p style={{ color: "#4b4b6a", fontSize: 11 }}>{miembros.filter(m => m.estado === "Vencido").length} vencidos</p>
-                </div>
-                <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,#6c63ff,#e040fb)", border: "none", borderRadius: 14, padding: "10px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
-              </div>
+              {(() => {
+                const mesHoy = new Date().toISOString().slice(0,7);
+                const nuevosEsteMes = miembros.filter(m => (m.fecha_incorporacion || "").startsWith(mesHoy));
+                return (
+                  <div className="card" style={{ background: "rgba(255,255,255,.04)", borderRadius: 20, padding: 16, border: "1px solid rgba(255,255,255,.07)", marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: nuevosEsteMes.length > 0 ? 12 : 0 }}>
+                      <div>
+                        <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase" }}>Miembros activos</p>
+                        <p style={{ color: "#fff", fontSize: 28, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0" }}>{mActivos}</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>{miembros.filter(m => m.estado === "Vencido").length} vencidos</p>
+                      </div>
+                      <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,#6c63ff,#e040fb)", border: "none", borderRadius: 14, padding: "10px 16px", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
+                    </div>
+                    {nuevosEsteMes.length > 0 && (
+                      <>
+                        <div style={{ height: 1, background: "rgba(255,255,255,.07)", marginBottom: 10 }} />
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <p style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>🆕 Nuevos este mes</p>
+                          <span style={{ background: "rgba(56,189,248,.15)", color: "#38bdf8", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{nuevosEsteMes.length}</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {nuevosEsteMes.map(m => (
+                            <div key={m.id} onClick={() => { setSelM(m); setModal("detalle"); }}
+                              style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "4px 0" }}>
+                              <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#38bdf8,#6c63ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                                {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                                <p style={{ color: "#4b4b6a", fontSize: 10 }}>Se unió {fmtDate(m.fecha_incorporacion)}</p>
+                              </div>
+                              <span style={{ color: "#38bdf8", fontSize: 12 }}>›</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* ── Distribución por sexo — compacta ── */}
               <div className="card" style={{ background: "rgba(255,255,255,.04)", borderRadius: 20, padding: "12px 16px", border: "1px solid rgba(255,255,255,.07)", marginBottom: 14 }}>
@@ -2806,7 +2838,7 @@ export default function App() {
                             <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                             <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 1 }}>
                               {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
-                              Vence: {m.vence}
+                              Vence: {fmtDate(m.vence)}
                             </p>
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
@@ -2871,7 +2903,7 @@ export default function App() {
                       })()}
                       <div>
                         <p style={{ color: "#fff", fontSize: 12, fontWeight: 500, maxWidth: 170, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                        <p style={{ color: "#4b4b6a", fontSize: 10 }}>{t.fecha}</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 10 }}>{fmtDate(t.fecha)}</p>
                       </div>
                     </div>
                     <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 12, fontWeight: 700 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
@@ -2901,7 +2933,7 @@ export default function App() {
                     })()}
                     <div>
                       <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, maxWidth: 170, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                      <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {t.fecha}</p>
+                      <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -2926,7 +2958,7 @@ export default function App() {
                     <div style={{ width: 42, height: 42, borderRadius: 14, fontSize: 18, background: "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{CAT_ICON[t.categoria] || "📝"}</div>
                     <div>
                       <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, maxWidth: 170, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                      <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {t.fecha}</p>
+                      <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -3020,7 +3052,7 @@ export default function App() {
                       })()}
                           <div>
                             <p style={{ color: "#fff", fontSize: 12, fontWeight: 500, maxWidth: 175, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                            <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 2 }}>{t.categoria} · {t.fecha}</p>
+                            <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 2 }}>{t.categoria} · {fmtDate(t.fecha)}</p>
                           </div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3050,7 +3082,11 @@ export default function App() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              {[{ label: "Activos", val: "Activo", count: miembros.filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo").length, c: "#4ade80", bg: "rgba(74,222,128," }, { label: "Vencidos", val: "Vencido", count: miembros.filter(m => { const s = getMembershipInfo(m.id, txs, m).estado; return s === "Vencido" || s === "Sin membresía"; }).length, c: "#f87171", bg: "rgba(248,113,113," }, { label: "Todos", val: "Todos", count: miembros.length, c: "#a78bfa", bg: "rgba(167,139,250," }].map((s, i) => {
+              {(() => {
+                const hoyD = new Date(); const mesActual = `${hoyD.getFullYear()}-${String(hoyD.getMonth()+1).padStart(2,"0")}`;
+                const nuevosCount = miembros.filter(m => (m.fecha_incorporacion || "").startsWith(mesActual)).length;
+                return [{ label: "Activos", val: "Activo", count: miembros.filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo").length, c: "#4ade80", bg: "rgba(74,222,128," }, { label: "Vencidos", val: "Vencido", count: miembros.filter(m => { const s = getMembershipInfo(m.id, txs, m).estado; return s === "Vencido" || s === "Sin membresía"; }).length, c: "#f87171", bg: "rgba(248,113,113," }, { label: "Nuevos", val: "Nuevo", count: nuevosCount, c: "#38bdf8", bg: "rgba(56,189,248," }, { label: "Todos", val: "Todos", count: miembros.length, c: "#a78bfa", bg: "rgba(167,139,250," }];
+              })().map((s, i) => {
                 const active = filtroEstado === s.val;
                 return <button key={i} onClick={() => setFiltroEstado(s.val)} style={{ flex: 1, background: active ? `${s.bg}.18)` : "rgba(255,255,255,.05)", border: active ? `1.5px solid ${s.bg}.35)` : "1.5px solid transparent", borderRadius: 14, padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", transition: "all .2s" }}>
                   <p style={{ color: active ? s.c : "#6b7280", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{s.count}</p>
@@ -3074,7 +3110,8 @@ export default function App() {
           <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px 90px" }}>
             {(() => {
               const q = busqueda.toLowerCase();
-              const lista = miembros.filter(m => { const est = getMembershipInfo(m.id, txs, m).estado; const matchEstado = filtroEstado === "Todos" || (filtroEstado === "Activo" && est === "Activo") || (filtroEstado === "Vencido" && (est === "Vencido" || est === "Sin membresía")); return matchEstado; }).filter(m => !q || m.nombre.toLowerCase().includes(q) || (m.tel || "").includes(q));
+              const hoyD2 = new Date(); const mesActual2 = `${hoyD2.getFullYear()}-${String(hoyD2.getMonth()+1).padStart(2,"0")}`;
+              const lista = miembros.filter(m => { const est = getMembershipInfo(m.id, txs, m).estado; const matchEstado = filtroEstado === "Todos" || (filtroEstado === "Activo" && est === "Activo") || (filtroEstado === "Vencido" && (est === "Vencido" || est === "Sin membresía")) || (filtroEstado === "Nuevo" && (m.fecha_incorporacion || "").startsWith(mesActual2)); return matchEstado; }).filter(m => !q || m.nombre.toLowerCase().includes(q) || (m.tel || "").includes(q));
               if (lista.length === 0) return <div style={{ textAlign: "center", padding: "40px 0" }}><p style={{ fontSize: 32, marginBottom: 12 }}>🔎</p><p style={{ color: "#4b4b6a", fontSize: 14 }}>Sin resultados</p></div>;
               if (viewMode === "grid") {
                 return (
@@ -3095,7 +3132,7 @@ export default function App() {
                           {/* Estado */}
                           <span style={{ background: estadoBg, color: estadoColor, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{mi.estado}</span>
                           {/* Vence */}
-                          {mi.vence && <p style={{ color: "#4b4b6a", fontSize: 10 }}>Vence {mi.vence}</p>}
+                          {mi.vence && <p style={{ color: "#4b4b6a", fontSize: 10 }}>Vence {fmtDate(mi.vence)}</p>}
                           {/* Pago rápido */}
                           <button onClick={e => { e.stopPropagation(); setSelM(m); setModal("detalle"); setTimeout(() => document.dispatchEvent(new CustomEvent("openPagoModal", { detail: m.id })), 100); }}
                             style={{ width: "100%", border: "1px solid rgba(34,211,238,.25)", background: "rgba(34,211,238,.07)", color: "#22d3ee", borderRadius: 10, padding: "6px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: "auto" }}>+ Pago</button>
@@ -3128,7 +3165,7 @@ export default function App() {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.06)", alignItems: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>Vence: {mi.vence || "Por definir"}</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>Vence: {fmtDate(mi.vence) || "Por definir"}</p>
                         {showWA && <span style={{ background: "rgba(37,211,102,.15)", color: "#25d366", borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>💬 {dias === 0 ? "hoy" : dias === 1 ? "mañana" : `${dias}d`}</span>}
                       </div>
                       <button onClick={e => { e.stopPropagation(); setSelM(m); setModal("detalle"); setTimeout(() => document.dispatchEvent(new CustomEvent("openPagoModal", { detail: m.id })), 100); }} style={{ border: "1px solid rgba(34,211,238,.3)", background: "rgba(34,211,238,.08)", color: "#22d3ee", borderRadius: 10, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Pago</button>
