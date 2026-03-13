@@ -1530,7 +1530,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                 {memInfo.estado !== "Sin membresía" ? (
                   [
                     { label: "📋 Plan", val: memInfo.plan || "—" },
-                    { label: "📅 Inicio", val: memInfo.inicio || "—" },
+                    { label: "📅 Inicio", val: fmtDate(memInfo.inicio) || "—" },
                     { label: "⏰ Vence", val: memInfo.congelado ? `${fmtDate(memInfo.vence)} (+congelado)` : fmtDate(memInfo.vence) || "—" },
                     { label: "💰 Último pago", val: memInfo.esGratis ? "Cortesía 🎁" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—") },
                     ...(memInfo.formaPago ? [{ label: "💳 Forma de pago", val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transferencia" : "💳 Tarjeta" }] : []),
@@ -1675,10 +1675,10 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: "flex-end" }}>
               <div style={{ width: "100%", background: "#1e1e30", borderRadius: "28px 28px 0 0", padding: "24px 24px 44px", animation: "slideUp .3s ease" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                  <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>💳 Registrar pago</h2>
+                  <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
                   <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                 </div>
-                <Inp label="Descripción" value={pago.desc} onChange={v => setPago(p => ({ ...p, desc: v }))} placeholder="Ej: Membresía mensual" />
+                <Inp label="Descripción" value={pago.desc} onChange={v => setPago(p => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." />
                 <Inp label="Monto ($)" type="number" value={pago.monto} onChange={v => setPago(p => ({ ...p, monto: v }))} placeholder="0.00" />
                 <Inp label="Fecha" type="date" value={pago.fecha} onChange={v => setPago(p => ({ ...p, fecha: v }))} />
                 <Btn full onClick={handleAddPago} color="#22d3ee">Guardar pago ✓</Btn>
@@ -3144,9 +3144,7 @@ export default function App() {
                           <span style={{ background: estadoBg, color: estadoColor, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>{mi.estado}</span>
                           {/* Vence */}
                           {mi.vence && <p style={{ color: "#4b4b6a", fontSize: 10 }}>Vence {fmtDate(mi.vence)}</p>}
-                          {/* Pago rápido */}
-                          <button onClick={e => { e.stopPropagation(); setSelM(m); setModal("detalle"); setTimeout(() => document.dispatchEvent(new CustomEvent("openPagoModal", { detail: m.id })), 100); }}
-                            style={{ width: "100%", border: "1px solid rgba(34,211,238,.25)", background: "rgba(34,211,238,.07)", color: "#22d3ee", borderRadius: 10, padding: "6px 0", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: "auto" }}>+ Pago</button>
+
                         </div>
                       );
                     })}
@@ -3179,7 +3177,6 @@ export default function App() {
                         <p style={{ color: "#4b4b6a", fontSize: 11 }}>Vence: {fmtDate(mi.vence) || "Por definir"}</p>
                         {showWA && <span style={{ background: "rgba(37,211,102,.15)", color: "#25d366", borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>💬 {dias === 0 ? "hoy" : dias === 1 ? "mañana" : `${dias}d`}</span>}
                       </div>
-                      <button onClick={e => { e.stopPropagation(); setSelM(m); setModal("detalle"); setTimeout(() => document.dispatchEvent(new CustomEvent("openPagoModal", { detail: m.id })), 100); }} style={{ border: "1px solid rgba(34,211,238,.3)", background: "rgba(34,211,238,.08)", color: "#22d3ee", borderRadius: 10, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>+ Pago</button>
                     </div>
                   </div>
                 );
@@ -3374,7 +3371,7 @@ export default function App() {
         {/* ═══ MODALS ═══ */}
         {modal === "quickAdd" && <Modal title="¿Qué deseas agregar?" onClose={() => setModal(null)}><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>{[{ label: "Ingreso", icon: "💰", color: "#22d3ee", action: () => setModal("ingreso") }, { label: "Gasto", icon: "💸", color: "#f43f5e", action: () => setModal("gasto") }, { label: "Miembro", icon: "👤", color: "#a78bfa", action: () => { const ini = todayISO(); const firstPlan = activePlanes[0] || DEFAULT_PLANES[0]; setFM({ nombre: "", tel: "", plan: firstPlan.nombre, monto: String(firstPlan.precio), foto: null }); setModal("miembro"); } }].map((opt, i) => <button key={i} onClick={opt.action} style={{ background: `${opt.color}15`, border: `1px solid ${opt.color}30`, borderRadius: 18, padding: "20px 0", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}><span style={{ fontSize: 28 }}>{opt.icon}</span><span style={{ color: opt.color, fontSize: 13, fontWeight: 700 }}>{opt.label}</span></button>)}</div></Modal>}
 
-        {modal === "ingreso" && <Modal title="💰 Nuevo Ingreso" onClose={() => setModal(null)}><Inp label="Categoría" value={fI.cat} onChange={v => setFI(p => ({ ...p, cat: v }))} options={CAT_ING} /><Inp label="Descripción" value={fI.desc} onChange={v => setFI(p => ({ ...p, desc: v }))} placeholder="Ej: Membresía mensual" /><Inp label="Monto ($)" type="number" value={fI.monto} onChange={v => setFI(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fI.fecha} onChange={v => setFI(p => ({ ...p, fecha: v }))} /><Btn full onClick={addIng} color="#22d3ee">Guardar ingreso ✓</Btn></Modal>}
+        {modal === "ingreso" && <Modal title="💰 Nuevo Ingreso" onClose={() => setModal(null)}><Inp label="Categoría" value={fI.cat} onChange={v => setFI(p => ({ ...p, cat: v }))} options={CAT_ING} /><Inp label="Descripción" value={fI.desc} onChange={v => setFI(p => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." /><Inp label="Monto ($)" type="number" value={fI.monto} onChange={v => setFI(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fI.fecha} onChange={v => setFI(p => ({ ...p, fecha: v }))} /><Btn full onClick={addIng} color="#22d3ee">Guardar ingreso ✓</Btn></Modal>}
 
         {modal === "gasto" && <Modal title="💸 Nuevo Gasto" onClose={() => setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v => setFG(p => ({ ...p, cat: v }))} options={CAT_GAS} /><Inp label="Descripción" value={fG.desc} onChange={v => setFG(p => ({ ...p, desc: v }))} placeholder="Ej: Pago de nómina" /><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v => setFG(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fG.fecha} onChange={v => setFG(p => ({ ...p, fecha: v }))} /><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
 
