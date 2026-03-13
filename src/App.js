@@ -468,7 +468,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
             {selMiembro && (
               <>
                 {/* Header compacto del destinatario */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 12 }}>
                   <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff" }}>
                     {selMiembro.foto ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selMiembro.nombre.charAt(0)}
                   </div>
@@ -483,64 +483,72 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
                 </div>
 
                 {/* Área de mensaje */}
-                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
-                  Mensaje para {selNombre1}
-                </p>
                 <textarea
                   value={msgTexto}
                   onChange={e => setMsgTexto(e.target.value)}
-                  placeholder={`Hola ${selNombre1}, te escribimos desde ${gymNom}...`}
-                  rows={5}
+                  placeholder={`Hola ${selNombre1}, escribe o elige una plantilla abajo...`}
+                  rows={4}
                   autoFocus
-                  style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: "14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 6 }}
+                  style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 14, padding: "14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 4 }}
                 />
-                <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
+                <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
 
-                {/* Plantillas rápidas */}
-                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Plantillas rápidas</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
-                  {tplsFijas.map((tpl, i) => {
-                    const msgPersonal = `Hola ${selNombre1}! ` + tpl.msg;
-                    return (
-                      <button key={i} onClick={() => setMsgTexto(msgPersonal)}
-                        style={{ background: msgTexto === msgPersonal ? "rgba(37,211,102,.1)" : "rgba(255,255,255,.04)", border: `1px solid ${msgTexto === msgPersonal ? "rgba(37,211,102,.3)" : "rgba(255,255,255,.08)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
-                        <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                        <span style={{ color: msgTexto === msgPersonal ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.label}</span>
-                        {msgTexto === msgPersonal && <span style={{ color: "#4ade80" }}>✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Mis plantillas guardadas */}
-                {tplsCustom.some(t => t.label) && (
-                  <>
-                    <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Mis plantillas</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
-                      {tplsCustom.filter(t => t.label).map((tpl, i) => {
-                        const msgPersonal = tpl.msg.replace(/hola [^ ,!]+/i, `Hola ${selNombre1}`);
-                        return (
-                          <button key={i} onClick={() => setMsgTexto(msgPersonal)}
-                            style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
-                            <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                            <span style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600 }}>{tpl.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-
+                {/* Botón enviar — visible sin scroll */}
                 <button onClick={() => enviarWA(selMiembro.tel, msgTexto.trim())}
                   disabled={!msgTexto.trim()}
                   style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
                     background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "rgba(255,255,255,.06)",
                     color: msgTexto.trim() ? "#fff" : "#4b4b6a",
                     boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20 }}>
                   <span style={{ fontSize: 18 }}>💬</span>
-                  {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe un mensaje"}
+                  {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
                 </button>
+
+                {/* ── Mis mensajes guardados (4 slots) ── */}
+                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💾 Mis mensajes guardados</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                  {[0,1,2,3].map(i => {
+                    const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
+                    return (
+                      <PlantillaCustom
+                        key={i}
+                        index={i}
+                        tpl={slot}
+                        nombreMiembro={selNombre1}
+                        gymNom={gymNom}
+                        onUsar={(msg) => setMsgTexto(msg)}
+                        onGuardar={async (nueva) => {
+                          const nuevas = [...tplsCustom];
+                          while (nuevas.length <= i) nuevas.push({ icon: "⭐", label: "", msg: "" });
+                          nuevas[i] = nueva;
+                          await onUpdatePlantillas(nuevas);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* ── Plantillas rápidas (colapsable) ── */}
+                <details style={{ marginBottom: 14 }}>
+                  <summary style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
+                    <span>⚡ Plantillas rápidas</span>
+                    <span style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                  </summary>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                    {tplsFijas.map((tpl, i) => {
+                      const msgPersonal = `Hola ${selNombre1}! ` + tpl.msg;
+                      return (
+                        <button key={i} onClick={() => setMsgTexto(msgPersonal)}
+                          style={{ background: msgTexto === msgPersonal ? "rgba(37,211,102,.1)" : "rgba(255,255,255,.04)", border: `1px solid ${msgTexto === msgPersonal ? "rgba(37,211,102,.3)" : "rgba(255,255,255,.08)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                          <span style={{ fontSize: 18 }}>{tpl.icon}</span>
+                          <span style={{ color: msgTexto === msgPersonal ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.label}</span>
+                          {msgTexto === msgPersonal && <span style={{ color: "#4ade80" }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </details>
               </>
             )}
           </>
