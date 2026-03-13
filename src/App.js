@@ -266,7 +266,7 @@ function Btn({ children, onClick, color = "#6c63ff", full, outline, small, style
 }
 
 /* ─── WHATSAPP REMINDERS SCREEN ─── */
-function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, miembroInicial }) {
+function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, miembroInicial, recordatoriosEnviados = {}, onMarcarRecordatorio }) {
   // modo: "vencimientos" | "individual" | "masivo"
   const [modo, setModo] = useState(miembroInicial ? "individual" : "vencimientos");
   const [enviados, setEnviados] = useState({});
@@ -312,7 +312,15 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
 
   const enviarWA = (tel, msg, miembroId) => {
     window.open(buildWAUrl(tel, msg), "_blank");
-    if (miembroId) setEnviados(p => ({ ...p, [miembroId]: true }));
+    if (miembroId) {
+      setEnviados(p => ({ ...p, [miembroId]: true }));
+      if (onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
+    }
+  };
+  // When sending from individual mode, also mark as recordatorio
+  const enviarWAIndividual = (tel, msg, miembroId) => {
+    window.open(buildWAUrl(tel, msg), "_blank");
+    if (miembroId && onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
   };
 
   const selNombre1 = selMiembro?.nombre?.split(" ")[0] || "";
@@ -494,7 +502,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
                 <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
 
                 {/* Botón enviar — visible sin scroll */}
-                <button onClick={() => enviarWA(selMiembro.tel, msgTexto.trim())}
+                <button onClick={() => enviarWAIndividual(selMiembro.tel, msgTexto.trim(), selMiembro.id)}
                   disabled={!msgTexto.trim()}
                   style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
                     background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "rgba(255,255,255,.06)",
@@ -2234,6 +2242,24 @@ export default function App() {
 
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null); // miembro preseleccionado al abrir mensajes
+  // Recordatorios WA enviados — persiste en Supabase dentro de gymConfig
+  // Estructura: gymConfig.wa_enviados["2026-03-12"] = { "miembroId": true, ... }
+  const hoyKey = new Date().toISOString().slice(0,10);
+  const recordatoriosEnviados = useMemo(() => {
+    return (gymConfig?.wa_enviados || {})[hoyKey] || {};
+  }, [gymConfig, hoyKey]);
+  const marcarRecordatorio = async (miembroId) => {
+    const waEnviados = { ...(gymConfig?.wa_enviados || {}) };
+    waEnviados[hoyKey] = { ...(waEnviados[hoyKey] || {}), [miembroId]: true };
+    const newCfg = { ...(gymConfig || {}), wa_enviados: waEnviados };
+    setGymConfig(newCfg);
+    const url = `${supabase.url}/rest/v1/gimnasios`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify({ ...newCfg, id: GYM_ID })
+    });
+  };
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
@@ -2383,8 +2409,8 @@ export default function App() {
 
   // Count total WA reminders pending
   const totalRecordatorios = useMemo(() => {
-    return membresiasPorVencer.length;
-  }, [membresiasPorVencer]);
+    return membresiasPorVencer.filter(m => !recordatoriosEnviados[m.id]).length;
+  }, [membresiasPorVencer, recordatoriosEnviados]);
 
   const addIng = async () => {
     if (!fI.desc || !fI.monto) return;
@@ -2552,7 +2578,7 @@ export default function App() {
 
         {/* ═══ MENSAJES SCREEN ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
-          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => { setMensajesMiembro(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} />
+          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => { setMensajesMiembro(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
         )}
 
         {/* ═══ LOADING ═══ */}
@@ -2765,27 +2791,40 @@ export default function App() {
               {membresiasPorVencer.length > 0 && (
                 <div className="card" style={{ background: "rgba(239,68,68,.05)", borderRadius: 20, padding: 16, border: "1px solid rgba(239,68,68,.2)", marginBottom: 14 }}>
                   <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>⏰ Membresías por vencer</p>
-                  {membresiasPorVencer.map(m => (
-                    <div key={m.id} onClick={() => { setScreen("mensajes"); }}
-                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(239,68,68,.1)", cursor: "pointer" }}>
-                      <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: `2px solid ${m.diasVence === 0 ? "rgba(239,68,68,.6)" : m.diasVence <= 1 ? "rgba(239,68,68,.3)" : "rgba(245,158,11,.3)"}` }}>
-                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                  {membresiasPorVencer.map(m => {
+                    const yaEnviado = !!recordatoriosEnviados[m.id];
+                    return (
+                      <div key={m.id}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(239,68,68,.1)", opacity: yaEnviado ? 0.5 : 1, transition: "opacity .3s" }}>
+                        <div onClick={() => { setMensajesMiembro(m); setScreen("mensajes"); }}
+                          style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, cursor: "pointer" }}>
+                          <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: `2px solid ${m.diasVence === 0 ? "rgba(239,68,68,.6)" : m.diasVence <= 1 ? "rgba(239,68,68,.3)" : "rgba(245,158,11,.3)"}` }}>
+                            {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                            <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 1 }}>
+                              {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
+                              Vence: {m.vence}
+                            </p>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                            <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.15)", color: m.diasVence === 0 ? "#f87171" : m.diasVence <= 1 ? "#fca5a5" : "#fbbf24", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
+                              {m.diasVence === 0 ? "HOY 🚨" : m.diasVence === 1 ? "MAÑANA" : `${m.diasVence}d`}
+                            </span>
+                            <span style={{ color: "#25d366", fontSize: 10, fontWeight: 600 }}>💬 WhatsApp</span>
+                          </div>
+                        </div>
+                        {/* Botón marcar enviado */}
+                        <button
+                          onClick={() => marcarRecordatorio(m.id)}
+                          title={yaEnviado ? "Ya enviado hoy" : "Marcar como enviado"}
+                          style={{ width: 34, height: 34, border: `1px solid ${yaEnviado ? "rgba(74,222,128,.4)" : "rgba(255,255,255,.12)"}`, borderRadius: 10, background: yaEnviado ? "rgba(74,222,128,.12)" : "transparent", cursor: "pointer", color: yaEnviado ? "#4ade80" : "#4b4b6a", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .2s" }}>
+                          {yaEnviado ? "✓" : "💬"}
+                        </button>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                        <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 1 }}>
-                          {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
-                          Vence: {m.vence}
-                        </p>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                        <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.15)", color: m.diasVence === 0 ? "#f87171" : m.diasVence <= 1 ? "#fca5a5" : "#fbbf24", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
-                          {m.diasVence === 0 ? "HOY 🚨" : m.diasVence === 1 ? "MAÑANA" : `${m.diasVence}d`}
-                        </span>
-                        <span style={{ color: "#25d366", fontSize: 10, fontWeight: 600 }}>💬 WhatsApp</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
