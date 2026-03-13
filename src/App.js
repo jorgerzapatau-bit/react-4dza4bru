@@ -195,10 +195,14 @@ function displayToISO(str) {
 }
 
 function fmtDate(iso) {
-  if (!iso) return "—";
+  if (!iso || iso === "—") return "—";
+  // Already formatted (e.g. "12 Abr 2026") — return as-is
+  if (!/^\d{4}-\d{2}/.test(iso)) return iso;
   const [y, m, day] = iso.split("-");
   const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-  return `${parseInt(day)} ${meses[parseInt(m) - 1]} ${y}`;
+  const mesNom = meses[parseInt(m) - 1];
+  if (!mesNom) return iso;
+  return `${parseInt(day)} ${mesNom} ${y}`;
 }
 
 const CAT_ING = ["Membresías", "Clases extras", "Tienda", "Personal trainer", "Otro"];
@@ -2761,22 +2765,29 @@ export default function App() {
                         <div style={{ height: 1, background: "rgba(255,255,255,.07)", marginBottom: 10 }} />
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                           <p style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>🆕 Nuevos este mes</p>
-                          <span style={{ background: "rgba(56,189,248,.15)", color: "#38bdf8", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{nuevosEsteMes.length}</span>
+                          <button onClick={() => { setFiltroEstado("Nuevo"); setScreen("miembros"); }}
+                            style={{ background: "rgba(56,189,248,.15)", border: "none", borderRadius: 8, padding: "2px 10px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
+                            <span style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700 }}>{nuevosEsteMes.length}</span>
+                            {nuevosEsteMes.length > 3 && <span style={{ color: "#38bdf8", fontSize: 10 }}>Ver todos →</span>}
+                          </button>
                         </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {nuevosEsteMes.map(m => (
+                          {nuevosEsteMes.slice(0, 3).map(m => (
                             <div key={m.id} onClick={() => { setSelM(m); setModal("detalle"); }}
                               style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "4px 0" }}>
-                              <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#38bdf8,#6c63ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                              <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#38bdf8,#6c63ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>
                                 {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
                               </div>
-                              <div style={{ flex: 1 }}>
-                                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                                <p style={{ color: "#4b4b6a", fontSize: 10 }}>Se unió {fmtDate(m.fecha_incorporacion)}</p>
-                              </div>
-                              <span style={{ color: "#38bdf8", fontSize: 12 }}>›</span>
+                              <p style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600, flex: 1 }}>{m.nombre}</p>
+                              <p style={{ color: "#4b4b6a", fontSize: 10 }}>{fmtDate(m.fecha_incorporacion)}</p>
                             </div>
                           ))}
+                          {nuevosEsteMes.length > 3 && (
+                            <button onClick={() => { setFiltroEstado("Nuevo"); setScreen("miembros"); }}
+                              style={{ width: "100%", marginTop: 2, padding: "6px", border: "1px dashed rgba(56,189,248,.25)", borderRadius: 10, background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "#38bdf8", fontSize: 11, fontWeight: 600 }}>
+                              +{nuevosEsteMes.length - 3} más — ver todos
+                            </button>
+                          )}
                         </div>
                       </>
                     )}
