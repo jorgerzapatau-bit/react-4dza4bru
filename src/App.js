@@ -266,12 +266,13 @@ function Btn({ children, onClick, color = "#6c63ff", full, outline, small, style
 }
 
 /* ─── WHATSAPP REMINDERS SCREEN ─── */
-function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas }) {
+function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, miembroInicial }) {
   // modo: "vencimientos" | "individual" | "masivo"
-  const [modo, setModo] = useState("vencimientos");
+  const [modo, setModo] = useState(miembroInicial ? "individual" : "vencimientos");
   const [enviados, setEnviados] = useState({});
   // Para modo individual
-  const [selMiembro, setSelMiembro] = useState(null);
+  const [selMiembro, setSelMiembro] = useState(miembroInicial || null);
+  const [busqueda, setBusqueda] = useState("");
   // Mensaje compartido editable para todos los modos
   const [msgTexto, setMsgTexto] = useState("");
   const [msgOrigen, setMsgOrigen] = useState(null);
@@ -412,28 +413,51 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas }
         {/* ════ MODO: INDIVIDUAL ════ */}
         {modo === "individual" && (
           <>
-            {/* Selector de miembro */}
-            <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Selecciona un miembro</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-              {miembros.filter(m => m.tel).map(m => (
-                <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); }}
-                  style={{ background: selMiembro?.id === m.id ? "rgba(108,99,255,.15)" : "rgba(255,255,255,.04)", border: `1px solid ${selMiembro?.id === m.id ? "rgba(108,99,255,.5)" : "rgba(255,255,255,.08)"}`, borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                    {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
-                  </div>
-                  <div style={{ flex: 1, textAlign: "left" }}>
-                    <p style={{ color: selMiembro?.id === m.id ? "#a78bfa" : "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {m.tel}</p>
-                  </div>
-                  {selMiembro?.id === m.id && <span style={{ color: "#a78bfa", fontSize: 16 }}>✓</span>}
-                </button>
-              ))}
-              {miembros.filter(m => !m.tel).length > 0 && (
-                <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
-                  {miembros.filter(m => !m.tel).length} miembro{miembros.filter(m=>!m.tel).length>1?"s":""} sin número registrado no aparecen aquí
-                </p>
+            {/* Buscador */}
+            <div style={{ position: "relative", marginBottom: 10 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4b4b6a", pointerEvents: "none" }}>🔍</span>
+              <input
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar miembro..."
+                style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+              />
+              {busqueda && (
+                <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#4b4b6a", fontSize: 16, cursor: "pointer", padding: 2 }}>✕</button>
               )}
             </div>
+            {/* Lista filtrada */}
+            {(() => {
+              const conTel = miembros.filter(m => m.tel);
+              const filtrados = busqueda.trim()
+                ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
+                : conTel;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                  {filtrados.length === 0 && (
+                    <p style={{ color: "#4b4b6a", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>
+                  )}
+                  {filtrados.map(m => (
+                    <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
+                      style={{ background: selMiembro?.id === m.id ? "rgba(108,99,255,.15)" : "rgba(255,255,255,.04)", border: `1px solid ${selMiembro?.id === m.id ? "rgba(108,99,255,.5)" : "rgba(255,255,255,.08)"}`, borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
+                      </div>
+                      <div style={{ flex: 1, textAlign: "left" }}>
+                        <p style={{ color: selMiembro?.id === m.id ? "#a78bfa" : "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {m.tel}</p>
+                      </div>
+                      {selMiembro?.id === m.id && <span style={{ color: "#a78bfa", fontSize: 16 }}>✓</span>}
+                    </button>
+                  ))}
+                  {miembros.filter(m => !m.tel).length > 0 && !busqueda && (
+                    <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
+                      {miembros.filter(m => !m.tel).length} miembro{miembros.filter(m=>!m.tel).length>1?"s":""} sin número no aparecen
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
             {selMiembro && (
               <>
@@ -1248,6 +1272,20 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
           </span>
         </div>
 
+        {/* Botón WhatsApp siempre visible si tiene tel */}
+        {m.tel && onGoToMensajes && (
+          <button
+            onClick={() => onGoToMensajes(m)}
+            style={{
+              marginTop: 10, padding: "8px 16px", border: "none", borderRadius: 20, cursor: "pointer",
+              fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+              background: "linear-gradient(135deg,#25d366,#128c7e)",
+              color: "#fff", display: "inline-flex", alignItems: "center", gap: 6,
+              boxShadow: "0 3px 12px rgba(37,211,102,.35)"
+            }}>
+            <span>💬</span> Enviar mensaje WA
+          </button>
+        )}
         {/* WA quick reminder badge — abre pantalla mensajes */}
         {waUmbral !== null && m.tel && onGoToMensajes && (
           <button
@@ -2166,6 +2204,7 @@ export default function App() {
   );
 
   const [screen, setScreen] = useState("dashboard");
+  const [mensajesMiembro, setMensajesMiembro] = useState(null); // miembro preseleccionado al abrir mensajes
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
@@ -2484,7 +2523,7 @@ export default function App() {
 
         {/* ═══ MENSAJES SCREEN ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
-          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} onUpdatePlantillas={updatePlantillas} />
+          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => { setMensajesMiembro(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} />
         )}
 
         {/* ═══ LOADING ═══ */}
@@ -3315,7 +3354,7 @@ export default function App() {
             gymConfig={gymConfig}
             onUpdatePlantillas={updatePlantillas}
             onDelete={deleteMiembro}
-            onGoToMensajes={(miembro) => { setModal(null); setScreen("mensajes"); }}
+            onGoToMensajes={(miembro) => { setMensajesMiembro(miembro); setModal(null); setScreen("mensajes"); }}
           />
         )}
 
