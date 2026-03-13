@@ -266,9 +266,9 @@ function Btn({ children, onClick, color = "#6c63ff", full, outline, small, style
 }
 
 /* ─── WHATSAPP REMINDERS SCREEN ─── */
-function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, miembroInicial, recordatoriosEnviados = {}, onMarcarRecordatorio }) {
+function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, miembroInicial, modoInicial, recordatoriosEnviados = {}, onMarcarRecordatorio }) {
   // modo: "vencimientos" | "individual" | "masivo"
-  const [modo, setModo] = useState(miembroInicial ? "individual" : "vencimientos");
+  const [modo, setModo] = useState(modoInicial || (miembroInicial ? "individual" : "vencimientos"));
   const [enviados, setEnviados] = useState({});
   // Para modo individual
   const [selMiembro, setSelMiembro] = useState(miembroInicial || null);
@@ -2242,6 +2242,7 @@ export default function App() {
 
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null); // miembro preseleccionado al abrir mensajes
+  const [modoMensajes, setModoMensajes] = useState(null); // tab inicial al abrir mensajes
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
@@ -2578,7 +2579,7 @@ export default function App() {
 
         {/* ═══ MENSAJES SCREEN ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
-          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => { setMensajesMiembro(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
+          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
         )}
 
         {/* ═══ LOADING ═══ */}
@@ -2796,7 +2797,7 @@ export default function App() {
                     return (
                       <div key={m.id}
                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(239,68,68,.1)", opacity: yaEnviado ? 0.5 : 1, transition: "opacity .3s" }}>
-                        <div onClick={() => { setMensajesMiembro(m); setScreen("mensajes"); }}
+                        <div onClick={() => { setMensajesMiembro(null); setModoMensajes("vencimientos"); setScreen("mensajes"); }}
                           style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, cursor: "pointer" }}>
                           <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: `2px solid ${m.diasVence === 0 ? "rgba(239,68,68,.6)" : m.diasVence <= 1 ? "rgba(239,68,68,.3)" : "rgba(245,158,11,.3)"}` }}>
                             {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
