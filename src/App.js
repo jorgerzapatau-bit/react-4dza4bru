@@ -2353,6 +2353,7 @@ export default function App() {
   const [fI, setFI] = useState({ cat: "Clases extras", desc: "", monto: "", fecha: todayISO() });
   const [fG, setFG] = useState({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() });
   const [fM, setFM] = useState(() => { const ini = todayISO(); return { nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: "", clasePrueba: false, fechaPrueba: todayISO() }; });
+  const [showFotoModal, setShowFotoModal] = useState(false);
 
   const totalIng = useMemo(() => txsMes.filter(t => t.tipo === "ingreso").reduce((s, t) => s + Number(t.monto), 0), [txsMes]);
   const totalGas = useMemo(() => txsMes.filter(t => t.tipo === "gasto").reduce((s, t) => s + Number(t.monto), 0), [txsMes]);
@@ -3375,9 +3376,7 @@ export default function App() {
 
         {modal === "gasto" && <Modal title="💸 Nuevo Gasto" onClose={() => setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v => setFG(p => ({ ...p, cat: v }))} options={CAT_GAS} /><Inp label="Descripción" value={fG.desc} onChange={v => setFG(p => ({ ...p, desc: v }))} placeholder="Ej: Pago de nómina" /><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v => setFG(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fG.fecha} onChange={v => setFG(p => ({ ...p, fecha: v }))} /><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
 
-        {modal === "miembro" && (() => {
-          const [showFotoModal, setShowFotoModal] = React.useState(false);
-          return (
+        {modal === "miembro" && (
           <Modal title="👤 Nuevo Miembro" onClose={() => setModal(null)}>
             {showFotoModal && <PhotoModal onClose={() => setShowFotoModal(false)} onCapture={dataUrl => setFM(p => ({ ...p, foto: dataUrl }))} />}
             {/* Avatar + foto */}
