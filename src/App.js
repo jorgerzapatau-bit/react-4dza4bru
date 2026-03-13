@@ -2242,24 +2242,6 @@ export default function App() {
 
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null); // miembro preseleccionado al abrir mensajes
-  // Recordatorios WA enviados — persiste en Supabase dentro de gymConfig
-  // Estructura: gymConfig.wa_enviados["2026-03-12"] = { "miembroId": true, ... }
-  const hoyKey = new Date().toISOString().slice(0,10);
-  const recordatoriosEnviados = useMemo(() => {
-    return (gymConfig?.wa_enviados || {})[hoyKey] || {};
-  }, [gymConfig, hoyKey]);
-  const marcarRecordatorio = async (miembroId) => {
-    const waEnviados = { ...(gymConfig?.wa_enviados || {}) };
-    waEnviados[hoyKey] = { ...(waEnviados[hoyKey] || {}), [miembroId]: true };
-    const newCfg = { ...(gymConfig || {}), wa_enviados: waEnviados };
-    setGymConfig(newCfg);
-    const url = `${supabase.url}/rest/v1/gimnasios`;
-    await fetch(url, {
-      method: "POST",
-      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
-      body: JSON.stringify({ ...newCfg, id: GYM_ID })
-    });
-  };
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
@@ -2409,8 +2391,10 @@ export default function App() {
 
   // Count total WA reminders pending
   const totalRecordatorios = useMemo(() => {
-    return membresiasPorVencer.filter(m => !recordatoriosEnviados[m.id]).length;
-  }, [membresiasPorVencer, recordatoriosEnviados]);
+    const hoyKeyLocal = new Date().toISOString().slice(0, 10);
+    const enviados = (gymConfig?.wa_enviados || {})[hoyKeyLocal] || {};
+    return membresiasPorVencer.filter(m => !enviados[m.id]).length;
+  }, [membresiasPorVencer, gymConfig]);
 
   const addIng = async () => {
     if (!fI.desc || !fI.monto) return;
@@ -2488,6 +2472,22 @@ export default function App() {
   };
   const updatePlantillas = async (nuevasPlantillas) => {
     const newCfg = { ...(gymConfig || {}), plantillas_wa: nuevasPlantillas };
+    setGymConfig(newCfg);
+    const url = `${supabase.url}/rest/v1/gimnasios`;
+    await fetch(url, {
+      method: "POST",
+      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify({ ...newCfg, id: GYM_ID })
+    });
+  };
+
+  // Recordatorios WA enviados — persiste en Supabase dentro de gymConfig
+  const hoyKey = new Date().toISOString().slice(0, 10);
+  const recordatoriosEnviados = (gymConfig?.wa_enviados || {})[hoyKey] || {};
+  const marcarRecordatorio = async (miembroId) => {
+    const waEnviados = { ...(gymConfig?.wa_enviados || {}) };
+    waEnviados[hoyKey] = { ...(waEnviados[hoyKey] || {}), [miembroId]: true };
+    const newCfg = { ...(gymConfig || {}), wa_enviados: waEnviados };
     setGymConfig(newCfg);
     const url = `${supabase.url}/rest/v1/gimnasios`;
     await fetch(url, {
