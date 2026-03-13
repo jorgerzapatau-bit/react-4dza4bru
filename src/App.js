@@ -1381,7 +1381,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                 <p style={{ color: "#f59e0b", fontSize: 11, marginBottom: 12 }}>⚠️ Sin fecha de nacimiento — agrégala para ver cumpleaños</p>
               )}
               {/* Notas internas */}
-              <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>📝 Notas internas <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span></p>
+              <p style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>📝 Notas internas <span style={{ color: "#6b7280", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span></p>
               <textarea value={form.notas} onChange={e => setForm(p => ({ ...p, notas: e.target.value }))} rows={3}
                 placeholder="Ej: Tiene lesión de rodilla. Paga los viernes. Familiar del dueño."
                 style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(167,139,250,.2)", borderRadius: 12, padding: "10px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 14 }} />
@@ -1554,10 +1554,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
 
               {/* ── Notas internas ── static display, edit via ✏️ Editar ── */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>📝 Notas internas</p>
-                  <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+ Editar</button>
-                </div>
+                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>📝 Notas internas</p>
                 {m.notas ? (
                   <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 12, padding: "10px 14px" }}>
                     <p style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.notas}</p>
@@ -3485,14 +3482,14 @@ export default function App() {
                   📷
                 </div>
               </div>
-              <p style={{ color: "#4b4b6a", fontSize: 11 }}>Toca 📷 para agregar foto</p>
+              <p style={{ color: "#6b7280", fontSize: 11 }}>Toca 📷 para agregar foto</p>
             </div>
             <Inp label="Nombre completo" value={fM.nombre} onChange={v => setFM(p => ({ ...p, nombre: v }))} placeholder="Ej: Juan Pérez" />
             <Inp label="Teléfono" type="tel" value={fM.tel || ""} onChange={v => setFM(p => ({ ...p, tel: v }))} placeholder="999 000 0000" />
 
             {/* Fecha de incorporación */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de incorporación <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10 }}>(opcional)</span></p>
+              <p style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de incorporación <span style={{ color: "#6b7280", fontWeight: 400, fontSize: 10 }}>(opcional)</span></p>
               <button onClick={() => setFM(p => ({ ...p, fecha_incorporacion: todayISO() }))}
                 style={{ padding: "3px 10px", border: `1px solid ${fM.fecha_incorporacion === todayISO() ? "rgba(167,139,250,.5)" : "rgba(167,139,250,.25)"}`, borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: fM.fecha_incorporacion === todayISO() ? "rgba(167,139,250,.2)" : "transparent", color: fM.fecha_incorporacion === todayISO() ? "#a78bfa" : "#6b7280", transition: "all .2s" }}>
                 Hoy
@@ -3502,11 +3499,11 @@ export default function App() {
               style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: fM.fecha_incorporacion ? "#fff" : "#3d3d5c", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 14 }} />
 
             {/* Sexo */}
-            <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>Sexo</p>
+            <p style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: .5 }}>Sexo</p>
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
               {[{ val: "Masculino", icon: "♂️", color: "#60a5fa" }, { val: "Femenino", icon: "♀️", color: "#f472b6" }, { val: "", icon: "—", color: "#6b7280" }].map(op => (
                 <button key={op.val} onClick={() => setFM(p => ({ ...p, sexo: op.val }))}
-                  style={{ flex: 1, padding: "10px 0", border: (fM.sexo || "") === op.val ? `2px solid ${op.color}` : "1.5px solid rgba(255,255,255,.08)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", background: (fM.sexo || "") === op.val ? `${op.color}20` : "rgba(255,255,255,.04)", color: (fM.sexo || "") === op.val ? op.color : "#4b4b6a", fontSize: 12, fontWeight: 700, transition: "all .2s" }}>
+                  style={{ flex: 1, padding: "10px 0", border: (fM.sexo || "") === op.val ? `2px solid ${op.color}` : "1.5px solid rgba(255,255,255,.08)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", background: (fM.sexo || "") === op.val ? `${op.color}20` : "rgba(255,255,255,.04)", color: (fM.sexo || "") === op.val ? op.color : "#9ca3af", fontSize: 12, fontWeight: 700, transition: "all .2s" }}>
                   <div style={{ fontSize: 16, marginBottom: 2 }}>{op.icon}</div>
                   {op.val || "N/E"}
                 </button>
@@ -3514,7 +3511,7 @@ export default function App() {
             </div>
 
             {/* Fecha de nacimiento */}
-            <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de nacimiento <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10 }}>(opcional)</span></p>
+            <p style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de nacimiento <span style={{ color: "#6b7280", fontWeight: 400, fontSize: 10 }}>(opcional)</span></p>
             <input type="date" value={fM.fecha_nacimiento || ""} onChange={e => setFM(p => ({ ...p, fecha_nacimiento: e.target.value }))}
               style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: fM.fecha_nacimiento ? "#fff" : "#3d3d5c", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 16 }} />
 
@@ -3525,14 +3522,14 @@ export default function App() {
                 {fM.clasePrueba && <span style={{ color: "#000", fontSize: 13, fontWeight: 900 }}>✓</span>}
               </div>
               <div style={{ textAlign: "left" }}>
-                <p style={{ color: fM.clasePrueba ? "#f59e0b" : "#9ca3af", fontSize: 13, fontWeight: 700 }}>🏋️ Clase prueba</p>
-                <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 1 }}>Sin membresía — registra la visita inicial</p>
+                <p style={{ color: fM.clasePrueba ? "#f59e0b" : "#e2e8f0", fontSize: 13, fontWeight: 700 }}>🏋️ Clase prueba</p>
+                <p style={{ color: "#6b7280", fontSize: 11, marginTop: 1 }}>Sin membresía — registra la visita inicial</p>
               </div>
             </button>
 
             {fM.clasePrueba && (
               <div style={{ background: "rgba(245,158,11,.07)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
-                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de la clase prueba</p>
+                <p style={{ color: "#9ca3af", fontSize: 11, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de la clase prueba</p>
                 <input type="date" value={fM.fechaPrueba || todayISO()} onChange={e => setFM(p => ({ ...p, fechaPrueba: e.target.value }))}
                   style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(245,158,11,.25)", borderRadius: 10, padding: "10px 12px", color: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none" }} />
               </div>
