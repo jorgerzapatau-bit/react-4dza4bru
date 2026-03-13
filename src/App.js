@@ -1015,7 +1015,7 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
   const [detTab, setDetTab] = useState("perfil");
   const [editing, setEditing] = useState(false);
   const memInfo = getMembershipInfo(m.id, txs, m);
-  const [form, setForm] = useState({ nombre: m.nombre, tel: m.tel || "", fecha_incorporacion: m.fecha_incorporacion || "", sexo: m.sexo || "", fecha_nacimiento: m.fecha_nacimiento || "" });
+  const [form, setForm] = useState({ nombre: m.nombre, tel: m.tel || "", fecha_incorporacion: m.fecha_incorporacion || "", sexo: m.sexo || "", fecha_nacimiento: m.fecha_nacimiento || "", notas: m.notas || "" });
   const [pagoModal, setPagoModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false); // paso 1: pedir confirmación
   const [confirmDelete2, setConfirmDelete2] = useState(false); // paso 2: confirmación final
@@ -1040,10 +1040,10 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
   const diasCumple = diasParaCumple(m.fecha_nacimiento);
   const edad = calcEdad(m.fecha_nacimiento);
 
-  const hasChanges = form.nombre !== m.nombre || form.tel !== (m.tel || "") || form.fecha_incorporacion !== (m.fecha_incorporacion || "") || form.sexo !== (m.sexo || "") || form.fecha_nacimiento !== (m.fecha_nacimiento || "");
+  const hasChanges = form.nombre !== m.nombre || form.tel !== (m.tel || "") || form.fecha_incorporacion !== (m.fecha_incorporacion || "") || form.sexo !== (m.sexo || "") || form.fecha_nacimiento !== (m.fecha_nacimiento || "") || form.notas !== (m.notas || "");
   const handleSave = () => {
     if (!hasChanges) return;
-    onSave({ ...m, nombre: form.nombre, tel: form.tel, fecha_incorporacion: form.fecha_incorporacion, sexo: form.sexo, fecha_nacimiento: form.fecha_nacimiento });
+    onSave({ ...m, nombre: form.nombre, tel: form.tel, fecha_incorporacion: form.fecha_incorporacion, sexo: form.sexo, fecha_nacimiento: form.fecha_nacimiento, notas: form.notas });
     setEditing(false);
   };
 
@@ -1380,7 +1380,13 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
               {!form.fecha_nacimiento && (
                 <p style={{ color: "#f59e0b", fontSize: 11, marginBottom: 12 }}>⚠️ Sin fecha de nacimiento — agrégala para ver cumpleaños</p>
               )}
-              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              {/* Notas internas */}
+              <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>📝 Notas internas <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span></p>
+              <textarea value={form.notas} onChange={e => setForm(p => ({ ...p, notas: e.target.value }))} rows={3}
+                placeholder="Ej: Tiene lesión de rodilla. Paga los viernes. Familiar del dueño."
+                style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(167,139,250,.2)", borderRadius: 12, padding: "10px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 14 }} />
+
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                 <Btn full outline color="#6b7280" onClick={() => setEditing(false)}>Cancelar</Btn>
                 <button
                   onClick={handleSave}
@@ -1546,8 +1552,22 @@ function MemberDetailModal({ m, txs, onClose, onSave, onToggleEstado, onAddPago,
                 )}
               </div>
 
-              {/* ── Notas internas ── */}
-              <NotasSection m={m} onSave={onSave} />
+              {/* ── Notas internas ── static display, edit via ✏️ Editar ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>📝 Notas internas</p>
+                  <button onClick={() => setEditing(true)} style={{ background: "none", border: "none", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>+ Editar</button>
+                </div>
+                {m.notas ? (
+                  <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 12, padding: "10px 14px" }}>
+                    <p style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.notas}</p>
+                  </div>
+                ) : (
+                  <div onClick={() => setEditing(true)} style={{ background: "rgba(255,255,255,.03)", border: "1px dashed rgba(255,255,255,.08)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}>
+                    <p style={{ color: "#4b4b6a", fontSize: 12 }}>Sin notas — toca para agregar</p>
+                  </div>
+                )}
+              </div>
 
               {/* ── Resumen financiero del mes activo ── */}
               {(() => {
@@ -2360,7 +2380,7 @@ export default function App() {
 
   const [fI, setFI] = useState({ cat: "Clases extras", desc: "", monto: "", fecha: todayISO() });
   const [fG, setFG] = useState({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() });
-  const [fM, setFM] = useState(() => { const ini = todayISO(); return { nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: "", clasePrueba: false, fechaPrueba: todayISO() }; });
+  const [fM, setFM] = useState(() => { const ini = todayISO(); return { nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: "", notas: "", clasePrueba: false, fechaPrueba: todayISO() }; });
   const [showFotoModal, setShowFotoModal] = useState(false);
 
   const totalIng = useMemo(() => txsMes.filter(t => t.tipo === "ingreso").reduce((s, t) => s + Number(t.monto), 0), [txsMes]);
@@ -2427,7 +2447,7 @@ export default function App() {
   const addM = async () => {
     if (!fM.nombre) return;
     const mDb = await supabase.from("miembros");
-    const savedM = await mDb.insert({ gym_id: GYM_ID, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null });
+    const savedM = await mDb.insert({ gym_id: GYM_ID, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null, notas: fM.notas || null });
     if (savedM) {
       setMiembros(p => [{ id: savedM.id, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null }, ...p]);
       // Clase prueba: registrar como nota en transacciones (sin costo, categoría especial)
