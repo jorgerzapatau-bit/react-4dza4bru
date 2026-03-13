@@ -1699,18 +1699,21 @@ function EditTxModal({ tx, onClose, onSave, onDelete }) {
   const color = isGasto ? "#f43f5e" : "#22d3ee";
   const desc = tx.desc || tx.descripcion || "";
 
-  // Extraer vencimiento manual guardado en la descripción
+  // Extraer vencimiento — SOLO si es una membresía real (tiene plan o vence explícito)
+  const tienePlanEnDesc = /(Mensual|Trimestral|Semestral|Anual)/i.test(desc);
+  const esMembresíaReal = isMembresía && (tienePlanEnDesc || !!tx.vence_manual);
+
   const venceManualDelDesc = (() => {
     // 1. Buscar patrón embebido en descripción
     const m = desc.match(/\(vence:(\d{4}-\d{2}-\d{2})\)/);
     if (m) return m[1];
-    // 2. Campo vence_manual en la tx
+    // 2. Campo vence_manual explícito en la tx
     if (tx.vence_manual) return tx.vence_manual;
-    // 3. Calcular desde fecha + plan si es membresía
-    if (tx.categoria === "Membresías" && tx.fecha) {
+    // 3. Calcular desde fecha + plan SOLO si tiene plan en descripción
+    if (isMembresía && tienePlanEnDesc && tx.fecha) {
       const fechaD = parseDate(tx.fecha);
       if (fechaD) {
-        const planMatch = desc.match(/(Mensual|Trimestral|Semestral|Anual)/);
+        const planMatch = desc.match(/(Mensual|Trimestral|Semestral|Anual)/i);
         const plan = planMatch ? planMatch[1] : "Mensual";
         const MESES_PLAN = { Mensual: 1, Trimestral: 3, Semestral: 6, Anual: 12 };
         const v = new Date(fechaD);
@@ -1769,8 +1772,8 @@ function EditTxModal({ tx, onClose, onSave, onDelete }) {
     </div>
   );
 
-  const titleEditing = isMembresía ? "✏️ Editar Membresía" : (isGasto ? "✏️ Editar Gasto" : "✏️ Editar Ingreso");
-  const titleView = isMembresía ? "🏋️ Detalle Membresía" : (isGasto ? "💸 Detalle Gasto" : "💰 Detalle Ingreso");
+  const titleEditing = esMembresíaReal ? "✏️ Editar Membresía" : (isGasto ? "✏️ Editar Gasto" : "✏️ Editar Ingreso");
+  const titleView = esMembresíaReal ? "🏋️ Detalle Membresía" : (isGasto ? "💸 Detalle Gasto" : "💰 Detalle Cobro");
 
   return (
     <Modal title={editing ? titleEditing : titleView} onClose={onClose}>
@@ -1807,23 +1810,23 @@ function EditTxModal({ tx, onClose, onSave, onDelete }) {
             </div>
           )}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-            <span style={{ background: isMembresía ? "rgba(167,139,250,.12)" : isGasto ? "rgba(244,63,94,.12)" : "rgba(34,211,238,.12)", color: isMembresía ? "#a78bfa" : color, borderRadius: 20, padding: "6px 20px", fontSize: 13, fontWeight: 700, border: `1px solid ${isMembresía ? "rgba(167,139,250,.25)" : isGasto ? "rgba(244,63,94,.25)" : "rgba(34,211,238,.25)"}` }}>
-              {isMembresía ? "🏋️ Membresía" : isGasto ? "💸 Gasto" : "💰 Ingreso"}
+            <span style={{ background: esMembresíaReal ? "rgba(167,139,250,.12)" : isGasto ? "rgba(244,63,94,.12)" : "rgba(34,211,238,.12)", color: esMembresíaReal ? "#a78bfa" : color, borderRadius: 20, padding: "6px 20px", fontSize: 13, fontWeight: 700, border: `1px solid ${esMembresíaReal ? "rgba(167,139,250,.25)" : isGasto ? "rgba(244,63,94,.25)" : "rgba(34,211,238,.25)"}` }}>
+              {esMembresíaReal ? "🏋️ Membresía" : isGasto ? "💸 Gasto" : "💰 Cobro extra"}
             </span>
           </div>
-          <div style={{ textAlign: "center", marginBottom: 20, background: isMembresía ? "rgba(167,139,250,.07)" : isGasto ? "rgba(244,63,94,.07)" : "rgba(34,211,238,.07)", borderRadius: 18, padding: "16px 0", border: `1px solid ${isMembresía ? "rgba(167,139,250,.15)" : isGasto ? "rgba(244,63,94,.15)" : "rgba(34,211,238,.15)"}` }}>
+          <div style={{ textAlign: "center", marginBottom: 20, background: esMembresíaReal ? "rgba(167,139,250,.07)" : isGasto ? "rgba(244,63,94,.07)" : "rgba(34,211,238,.07)", borderRadius: 18, padding: "16px 0", border: `1px solid ${esMembresíaReal ? "rgba(167,139,250,.15)" : isGasto ? "rgba(244,63,94,.15)" : "rgba(34,211,238,.15)"}` }}>
             <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Monto</p>
-            <p style={{ color: isMembresía ? "#a78bfa" : color, fontSize: 32, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>${Number(tx.monto).toLocaleString("es-MX")}</p>
+            <p style={{ color: esMembresíaReal ? "#a78bfa" : color, fontSize: 32, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>${Number(tx.monto).toLocaleString("es-MX")}</p>
           </div>
           <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 16, padding: "0 14px" }}>
             <Row label="Categoría" value={tx.categoria} />
-            <Row label="Inicio" value={fmtDate(tx.fecha)} />
+            <Row label={esMembresíaReal ? "Inicio" : "Fecha"} value={fmtDate(tx.fecha)} />
             {venceManualDelDesc && <Row label="Vencimiento" value={fmtDate(venceManualDelDesc)} accent="#22d3ee" />}
             {duracionDias && <Row label="Duración" value={`${duracionDias} días`} />}
           </div>
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
             <Btn full outline color="#6b7280" onClick={onClose}>Cerrar</Btn>
-            <Btn full color={isMembresía ? "#a78bfa" : color} onClick={handleEditClick}>✏️ Editar</Btn>
+            <Btn full color={esMembresíaReal ? "#a78bfa" : color} onClick={handleEditClick}>✏️ Editar</Btn>
           </div>
         </>
       ) : (
@@ -1880,7 +1883,7 @@ function EditTxModal({ tx, onClose, onSave, onDelete }) {
 
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
             <Btn full outline color="#6b7280" onClick={() => { setEditing(false); setConfirmDel(false); }}>← Volver</Btn>
-            <Btn full color={isMembresía ? "#a78bfa" : color} onClick={handleSave}>Guardar ✓</Btn>
+            <Btn full color={esMembresíaReal ? "#a78bfa" : color} onClick={handleSave}>Guardar ✓</Btn>
           </div>
           <div style={{ marginTop: 12 }}>
             {!confirmDel ? (
