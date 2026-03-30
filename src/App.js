@@ -2460,6 +2460,10 @@ export default function App() {
 
   // ── App principal ──
   const GYM_ID = gymIdForLogin || GYM_ID_URL;
+  return <GymApp gymId={GYM_ID} currentUser={currentUser} onLogout={handleLogout} />;
+}
+
+function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null); // miembro preseleccionado al abrir mensajes
@@ -2919,7 +2923,7 @@ export default function App() {
                   )}
                 </button>
                 <button onClick={() => setConfigScreen(true)} style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 18 }}>⚙️</button>
-                <button onClick={handleLogout} title="Cerrar sesión" style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "rgba(244,63,94,.1)", fontSize: 16 }}>🚪</button>
+                <button onClick={onLogout} title="Cerrar sesión" style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "rgba(244,63,94,.1)", fontSize: 16 }}>🚪</button>
                 <button onClick={() => setModal("quickAdd")} style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#6c63ff,#e040fb)", fontSize: 22, boxShadow: "0 4px 16px rgba(108,99,255,.5)" }}>⊕</button>
               </div>
             </div>
