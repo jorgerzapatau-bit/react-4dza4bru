@@ -2408,8 +2408,7 @@ export default function App() {
       setAuthState("login");
     }
     checkSession();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line
 
   const handleLogin = (user) => {
     setCurrentUser(user);
