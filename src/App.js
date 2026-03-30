@@ -2380,6 +2380,157 @@ function CajaScreen({ txs, miembros, gymConfig, onBack }) {
   const [tipoFiltro, setTipoFiltro] = useState("todos"); // "todos" | "ingreso" | "gasto"
   const [corte, setCorte] = useState(null); // snapshot del corte
   const [copiadoCorte, setCopiadoCorte] = useState(false);
+  const [generandoPDF, setGenerandoPDF] = useState(false);
+
+  const cargarScriptCaja = (src) => new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+
+  const descargarPDFCorte = async () => {
+    if (!corte) return;
+    setGenerandoPDF(true);
+    try {
+      await cargarScriptCaja("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      await cargarScriptCaja("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const W = 210; const margin = 14;
+      const gymNombre = gymConfig?.nombre || "GymFit Pro";
+      const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
+
+      // ── HEADER ──
+      doc.setFillColor(108, 99, 255);
+      doc.rect(0, 0, W, 24, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16); doc.setFont("helvetica", "bold");
+      doc.text(gymNombre, margin, 11);
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      doc.text("Corte de Caja", margin, 18);
+      doc.setFontSize(11); doc.setFont("helvetica", "bold");
+      doc.text(`⏰ ${corte.horaCorte}`, W - margin, 11, { align: "right" });
+      doc.setFontSize(8); doc.setFont("helvetica", "normal");
+      doc.text(corte.fechaCorte, W - margin, 18, { align: "right" });
+
+      let y = 32;
+
+      // ── PERÍODO ──
+      doc.setFontSize(8); doc.setFont("helvetica", "bold");
+      doc.setTextColor(107, 114, 128);
+      const periodoStr = corte.desde === corte.hasta
+        ? `Período: ${fmtDate(corte.desde)}`
+        : `Período: ${fmtDate(corte.desde)} → ${fmtDate(corte.hasta)}`;
+      doc.text(periodoStr.toUpperCase(), margin, y); y += 8;
+
+      // ── TARJETAS RESUMEN ──
+      const cards = [
+        { label: "INGRESOS", value: fmt$(corte.totalIng), r: 74, g: 222, b: 128 },
+        { label: "GASTOS", value: fmt$(corte.totalGas), r: 248, g: 113, b: 113 },
+        { label: "UTILIDAD NETA", value: (corte.utilidad >= 0 ? "+" : "") + fmt$(corte.utilidad),
+          r: corte.utilidad >= 0 ? 74 : 248, g: corte.utilidad >= 0 ? 222 : 113, b: corte.utilidad >= 0 ? 128 : 113 },
+      ];
+      const cardW = (W - margin * 2 - 8) / 3;
+      cards.forEach((c, i) => {
+        const x = margin + i * (cardW + 4);
+        doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3);
+        doc.setFillColor(248, 248, 255);
+        doc.roundedRect(x, y, cardW, 20, 3, 3, "FD");
+        doc.setFontSize(7); doc.setFont("helvetica", "bold");
+        doc.setTextColor(107, 114, 128);
+        doc.text(c.label, x + cardW / 2, y + 6, { align: "center" });
+        doc.setFontSize(13); doc.setFont("helvetica", "bold");
+        doc.setTextColor(c.r, c.g, c.b);
+        doc.text(c.value, x + cardW / 2, y + 15, { align: "center" });
+      });
+      y += 27;
+
+      // ── INGRESOS POR CONCEPTO ──
+      if (corte.desgloseCat.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.setTextColor(108, 99, 255);
+        doc.text("INGRESOS POR CONCEPTO", margin, y); y += 5;
+        doc.autoTable({
+          startY: y,
+          head: [["Concepto", "Monto", "% del total"]],
+          body: corte.desgloseCat.map(([cat, val]) => [
+            cat,
+            fmt$(val),
+            corte.totalIng > 0 ? (val / corte.totalIng * 100).toFixed(1) + "%" : "—",
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [108, 99, 255], fontSize: 8, fontStyle: "bold" },
+          bodyStyles: { fontSize: 9 },
+          columnStyles: { 1: { halign: "right", fontStyle: "bold", textColor: [22, 163, 74] }, 2: { halign: "center" } },
+          margin: { left: margin, right: margin },
+          styles: { cellPadding: 3 },
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ── FORMA DE PAGO ──
+      if (corte.desglosePago.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.setTextColor(108, 99, 255);
+        doc.text("FORMA DE PAGO", margin, y); y += 5;
+        doc.autoTable({
+          startY: y,
+          head: [["Forma de pago", "Monto", "% del total"]],
+          body: corte.desglosePago.map(([fp, val]) => [
+            fp,
+            fmt$(val),
+            corte.totalIng > 0 ? (val / corte.totalIng * 100).toFixed(1) + "%" : "—",
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [167, 139, 250], fontSize: 8, fontStyle: "bold" },
+          bodyStyles: { fontSize: 9 },
+          columnStyles: { 1: { halign: "right", fontStyle: "bold", textColor: [109, 40, 217] }, 2: { halign: "center" } },
+          margin: { left: margin, right: margin },
+          styles: { cellPadding: 3 },
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ── GASTOS POR CATEGORÍA ──
+      if (corte.desgloseGasto.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.setTextColor(225, 29, 72);
+        doc.text("GASTOS POR CATEGORÍA", margin, y); y += 5;
+        doc.autoTable({
+          startY: y,
+          head: [["Categoría", "Monto"]],
+          body: corte.desgloseGasto.map(([cat, val]) => [cat, fmt$(val)]),
+          theme: "striped",
+          headStyles: { fillColor: [244, 63, 94], fontSize: 8, fontStyle: "bold" },
+          bodyStyles: { fontSize: 9 },
+          columnStyles: { 1: { halign: "right", fontStyle: "bold", textColor: [225, 29, 72] } },
+          margin: { left: margin, right: margin },
+          styles: { cellPadding: 3 },
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ── MOVIMIENTOS TOTALES ──
+      doc.setFontSize(8); doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.text(`Total de movimientos en el período: ${corte.movimientos}`, margin, y); y += 5;
+
+      // ── FOOTER ──
+      const pageH = doc.internal.pageSize.height;
+      doc.setFontSize(7); doc.setFont("helvetica", "normal");
+      doc.setTextColor(156, 163, 175);
+      doc.text(`${gymNombre} · Corte de caja generado el ${corte.fechaCorte} a las ${corte.horaCorte}`, W / 2, pageH - 8, { align: "center" });
+
+      const periodoFileName = corte.desde === corte.hasta ? corte.desde : `${corte.desde}_${corte.hasta}`;
+      doc.save(`corte-caja-${gymNombre.replace(/\s+/g, "-").toLowerCase()}-${periodoFileName}.pdf`);
+    } catch (err) {
+      console.error("Error generando PDF corte:", err);
+      alert("No se pudo generar el PDF. Verifica tu conexión.");
+    } finally {
+      setGenerandoPDF(false);
+    }
+  };
 
   // Aplicar período rápido
   const aplicarPeriodo = (idx) => {
@@ -2684,15 +2835,21 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               )}
               {/* Botones compartir */}
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { navigator.clipboard.writeText(textoCorte); setCopiadoCorte(true); setTimeout(() => setCopiadoCorte(false), 2500); }}
-                  style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                    background: copiadoCorte ? "rgba(74,222,128,.2)" : "rgba(108,99,255,.3)", color: copiadoCorte ? "#4ade80" : "#a78bfa" }}>
-                  {copiadoCorte ? "✓ Copiado" : "📋 Copiar"}
+                <button onClick={descargarPDFCorte} disabled={generandoPDF}
+                  style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: generandoPDF ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    background: generandoPDF ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#f43f5e,#e11d48)",
+                    color: generandoPDF ? "#4b4b6a" : "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: generandoPDF ? "none" : "0 3px 12px rgba(244,63,94,.35)" }}>
+                  <span style={{ fontSize: 14 }}>{generandoPDF ? "⏳" : "📄"}</span>
+                  {generandoPDF ? "Generando..." : "Descargar PDF"}
                 </button>
                 <button onClick={() => { const url = `https://wa.me/?text=${encodeURIComponent(textoCorte)}`; window.open(url, "_blank"); }}
                   style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                    background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff" }}>
-                  💬 WhatsApp
+                    background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    boxShadow: "0 3px 12px rgba(37,211,102,.3)" }}>
+                  <span style={{ fontSize: 14 }}>💬</span> WhatsApp
                 </button>
               </div>
             </div>
