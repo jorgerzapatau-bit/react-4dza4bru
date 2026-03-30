@@ -2389,6 +2389,85 @@ function CajaScreen({ txs, miembros, gymConfig, onBack }) {
     document.head.appendChild(s);
   });
 
+  // Aplicar período rápido
+  const aplicarPeriodo = (idx) => {
+    setPeriodoActivo(idx);
+    const [d, h] = PERIODOS[idx].get();
+    setDesde(d); setHasta(h);
+  };
+
+  // Todo el cálculo del período en un solo useMemo para evitar dependencias inestables
+  const cajaData = useMemo(() => {
+    const dDesde = desde ? new Date(desde + "T00:00:00") : null;
+    const dHasta = hasta ? new Date(hasta + "T23:59:59") : null;
+    const filtradas = txs.filter(t => {
+      const td = parseDate(t.fecha);
+      if (!td) return false;
+      if (dDesde && td < dDesde) return false;
+      if (dHasta && td > dHasta) return false;
+      return true;
+    });
+
+    const ing = filtradas.filter(t => t.tipo === "ingreso");
+    const gas = filtradas.filter(t => t.tipo === "gasto");
+    const totIng = ing.reduce((s, t) => s + Number(t.monto), 0);
+    const totGas = gas.reduce((s, t) => s + Number(t.monto), 0);
+
+    // Desglose categoría ingreso
+    const mapaCat = {};
+    ing.forEach(t => { const c = t.categoria || "Otro"; mapaCat[c] = (mapaCat[c] || 0) + Number(t.monto); });
+    const catArr = Object.entries(mapaCat).sort((a, b) => b[1] - a[1]);
+
+    // Desglose forma de pago
+    const mapaPago = {};
+    ing.forEach(t => {
+      const desc = t.desc || t.descripcion || "";
+      const match = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+      const fp = match ? match[1] : "Sin especificar";
+      mapaPago[fp] = (mapaPago[fp] || 0) + Number(t.monto);
+    });
+    const pagoArr = Object.entries(mapaPago).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+
+    // Desglose categoría gasto
+    const mapaGas = {};
+    gas.forEach(t => { const c = t.categoria || "Otro"; mapaGas[c] = (mapaGas[c] || 0) + Number(t.monto); });
+    const gasArr = Object.entries(mapaGas).sort((a, b) => b[1] - a[1]);
+
+    // Lista ordenada según filtro (calculada aquí para evitar re-render)
+    const lista = [...filtradas].sort((a, b) => {
+      const da = parseDate(a.fecha); const db2 = parseDate(b.fecha);
+      if (da && db2) return db2 - da;
+      return (b.fecha || "").localeCompare(a.fecha || "");
+    });
+
+    return {
+      txsFiltradas: filtradas,
+      ingresos: ing,
+      gastos: gas,
+      totalIng: totIng,
+      totalGas: totGas,
+      utilidad: totIng - totGas,
+      desgloseCat: catArr,
+      desglosePago: pagoArr,
+      desgloseGasto: gasArr,
+      listaOrdenada: lista,
+    };
+  }, [txs, desde, hasta]);
+
+  const txsFiltradas = cajaData.txsFiltradas;
+  const ingresos = cajaData.ingresos;
+  const gastos = cajaData.gastos;
+  const totalIng = cajaData.totalIng;
+  const totalGas = cajaData.totalGas;
+  const utilidad = cajaData.utilidad;
+  const desgloseCat = cajaData.desgloseCat;
+  const desglosePago = cajaData.desglosePago;
+  const desgloseGasto = cajaData.desgloseGasto;
+  const listaOrdenada = tipoFiltro === "todos"
+    ? cajaData.listaOrdenada
+    : cajaData.listaOrdenada.filter(t => t.tipo === tipoFiltro);
+
+
   // Helper: extraer forma de pago de descripción
   const extraerFP = (t) => {
     const desc = t.desc || t.descripcion || "";
