@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { supabase, getGymId } from "./supabase";
+import { supabase, getGymId, auth, getUserGymId } from "./supabase";
 
 function fmt(n) { return "$" + Number(n).toLocaleString("es-MX"); }
 function today() {
@@ -2248,21 +2248,219 @@ function ReportePDF({ txs, miembros, gymConfig, getMembershipInfo, MESES_LABEL }
 }
 
 /* ═══════════════════════════════════════════════════════ */
-export default function App() {
-  const GYM_ID = getGymId();
+// ══════════════════════════════════════════════════════
+// LOGIN SCREEN
+// ══════════════════════════════════════════════════════
+function LoginScreen({ gymConfig, gymId, onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
-  // No gym param — show error screen
-  if (!GYM_ID) return (
+  const handleLogin = async (e) => {
+    e?.preventDefault();
+    if (!email || !password) { setError("Completá email y contraseña"); return; }
+    setError(""); setLoading(true);
+    const { user, error: authErr } = await auth.signIn(email.trim(), password);
+    if (authErr || !user) { setError(authErr || "Error al iniciar sesión"); setLoading(false); return; }
+    // Verificar que el usuario tenga acceso a este gym
+    const userGymId = await getUserGymId(user.id);
+    if (!userGymId || userGymId !== gymId) {
+      await auth.signOut();
+      setError("No tenés acceso a este gimnasio");
+      setLoading(false);
+      return;
+    }
+    setLoading(false);
+    onLogin(user);
+  };
+
+  const handleReset = async (e) => {
+    e?.preventDefault();
+    if (!email) { setError("Ingresá tu email"); return; }
+    setError(""); setLoading(true);
+    const ok = await auth.resetPassword(email.trim());
+    setLoading(false);
+    if (ok) { setResetSent(true); }
+    else { setError("No se pudo enviar el email. Verificá la dirección."); }
+  };
+
+  const logo = gymConfig?.logo;
+  const nombre = gymConfig?.nombre || gymId;
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "system-ui,sans-serif" }}>
+      {/* Card */}
+      <div style={{ width: "100%", maxWidth: 360, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 24, padding: "32px 28px 28px", backdropFilter: "blur(20px)" }}>
+        {/* Logo + nombre */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 28 }}>
+          {logo
+            ? <img src={logo} alt="logo" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(167,139,250,.4)", marginBottom: 12 }} />
+            : <div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, marginBottom: 12, boxShadow: "0 4px 20px rgba(108,99,255,.4)" }}>💪</div>
+          }
+          <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, textAlign: "center", margin: 0 }}>{nombre}</h1>
+          <p style={{ color: "#4b4b6a", fontSize: 12, marginTop: 4 }}>Panel de administración</p>
+        </div>
+
+        {resetMode ? (
+          <>
+            <p style={{ color: "#a78bfa", fontSize: 13, textAlign: "center", marginBottom: 18, lineHeight: 1.5 }}>
+              {resetSent ? "✅ Email enviado. Revisá tu bandeja." : "Ingresá tu email para recuperar la contraseña."}
+            </p>
+            {!resetSent && <>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="tu@email.com" onKeyDown={e => e.key === "Enter" && handleReset()}
+                style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 }}
+              />
+              {error && <p style={{ color: "#f43f5e", fontSize: 12, marginBottom: 10, textAlign: "center" }}>{error}</p>}
+              <button onClick={handleReset} disabled={loading}
+                style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", cursor: loading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff", fontSize: 15, fontWeight: 700, opacity: loading ? .6 : 1 }}>
+                {loading ? "Enviando..." : "Enviar email"}
+              </button>
+            </>}
+            <button onClick={() => { setResetMode(false); setResetSent(false); setError(""); }}
+              style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "#4b4b6a", fontSize: 13 }}>
+              ← Volver al login
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Email */}
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="Email" onKeyDown={e => e.key === "Enter" && handleLogin()}
+                style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            {/* Password */}
+            <div style={{ marginBottom: 16, position: "relative" }}>
+              <input
+                type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="Contraseña" onKeyDown={e => e.key === "Enter" && handleLogin()}
+                style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 44px 12px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+              <button onClick={() => setShowPass(p => !p)}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#4b4b6a", fontSize: 16, padding: 0 }}>
+                {showPass ? "🙈" : "👁️"}
+              </button>
+            </div>
+            {error && <p style={{ color: "#f43f5e", fontSize: 12, marginBottom: 12, textAlign: "center" }}>{error}</p>}
+            <button onClick={handleLogin} disabled={loading}
+              style={{ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", cursor: loading ? "not-allowed" : "pointer", background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff", fontSize: 15, fontWeight: 700, fontFamily: "inherit", boxShadow: "0 4px 18px rgba(108,99,255,.35)", opacity: loading ? .7 : 1, transition: "opacity .2s" }}>
+              {loading ? "Ingresando..." : "Ingresar"}
+            </button>
+            <button onClick={() => { setResetMode(true); setError(""); }}
+              style={{ width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "#4b4b6a", fontSize: 12, fontFamily: "inherit" }}>
+              Olvidé mi contraseña
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  // ── Auth state ──
+  const [authState, setAuthState] = useState("checking"); // "checking" | "login" | "app"
+  const [currentUser, setCurrentUser] = useState(null);
+  const [gymIdForLogin, setGymIdForLogin] = useState(null);
+  const [gymConfigForLogin, setGymConfigForLogin] = useState(null);
+  const [gymIdNoExiste, setGymIdNoExiste] = useState(false);
+  const GYM_ID_URL = getGymId();
+
+  // ── Al montar: verificar sesión guardada ──
+  useEffect(() => {
+    async function checkSession() {
+      // Sin gym en URL ni localStorage → error
+      if (!GYM_ID_URL) {
+        setAuthState("login");
+        return;
+      }
+      // Cargar gym para mostrar logo en login (siempre, sin importar sesión)
+      const gymData = await supabase.getGym(GYM_ID_URL);
+      if (!gymData) {
+        setGymIdNoExiste(true);
+        setAuthState("login");
+        return;
+      }
+      setGymConfigForLogin(gymData);
+      setGymIdForLogin(GYM_ID_URL);
+
+      // Verificar si hay sesión guardada
+      const session = await auth.getSession();
+      if (session?.user) {
+        // Validar que el usuario siga teniendo acceso a este gym
+        const userGymId = await getUserGymId(session.user.id);
+        if (userGymId === GYM_ID_URL) {
+          setCurrentUser(session.user);
+          setAuthState("app");
+          return;
+        }
+        // Sesión existe pero no corresponde a este gym
+        await auth.signOut();
+      }
+      setAuthState("login");
+    }
+    checkSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setAuthState("app");
+  };
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    setCurrentUser(null);
+    setAuthState("login");
+  };
+
+  // ── Pantalla de verificación inicial ──
+  if (authState === "checking") return (
+    <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid rgba(108,99,255,.3)", borderTopColor: "#6c63ff", margin: "0 auto 16px", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ color: "#4b4b6a", fontSize: 13 }}>Verificando sesión...</p>
+      </div>
+    </div>
+  );
+
+  // ── Sin gym param ──
+  if (authState === "login" && !GYM_ID_URL) return (
     <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "system-ui,sans-serif" }}>
       <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(244,63,94,.15)", border: "1px solid rgba(244,63,94,.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20 }}>🔒</div>
       <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Acceso no válido</h1>
       <p style={{ color: "#4b4b6a", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280 }}>Esta aplicación requiere un enlace específico de tu gimnasio.</p>
-      <p style={{ color: "#4b4b6a", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280, marginTop: 8 }}>Contacta a tu administrador para obtener el link correcto.</p>
       <div style={{ marginTop: 24, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "10px 18px" }}>
         <p style={{ color: "#6b7280", fontSize: 11, fontFamily: "monospace" }}>tudominio.com/?gym=nombre-del-gym</p>
       </div>
     </div>
   );
+
+  // ── Gym no existe en Supabase ──
+  if (authState === "login" && gymIdNoExiste) return (
+    <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "system-ui,sans-serif" }}>
+      <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(244,63,94,.15)", border: "1px solid rgba(244,63,94,.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20 }}>❌</div>
+      <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Gimnasio no encontrado</h1>
+      <p style={{ color: "#4b4b6a", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280 }}>El enlace <span style={{ color: "#a78bfa", fontFamily: "monospace" }}>?gym={GYM_ID_URL}</span> no corresponde a ningún gimnasio registrado.</p>
+    </div>
+  );
+
+  // ── Pantalla de Login ──
+  if (authState === "login") return (
+    <LoginScreen gymConfig={gymConfigForLogin} gymId={gymIdForLogin} onLogin={handleLogin} />
+  );
+
+  // ── App principal ──
+  const GYM_ID = gymIdForLogin || GYM_ID_URL;
 
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null); // miembro preseleccionado al abrir mensajes
@@ -2722,6 +2920,7 @@ export default function App() {
                   )}
                 </button>
                 <button onClick={() => setConfigScreen(true)} style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 18 }}>⚙️</button>
+                <button onClick={handleLogout} title="Cerrar sesión" style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "rgba(244,63,94,.1)", fontSize: 16 }}>🚪</button>
                 <button onClick={() => setModal("quickAdd")} style={{ width: 40, height: 40, borderRadius: 14, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#6c63ff,#e040fb)", fontSize: 22, boxShadow: "0 4px 16px rgba(108,99,255,.5)" }}>⊕</button>
               </div>
             </div>
