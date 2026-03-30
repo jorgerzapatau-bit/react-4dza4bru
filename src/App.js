@@ -2389,223 +2389,42 @@ function CajaScreen({ txs, miembros, gymConfig, onBack }) {
     document.head.appendChild(s);
   });
 
-  const descargarPDFCorte = async () => {
-    if (!corte) return;
-    setGenerandoPDF(true);
-    try {
-      await cargarScriptCaja("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
-      await cargarScriptCaja("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const W = 210; const margin = 14;
-      const gymNombre = gymConfig?.nombre || "GymFit Pro";
-      const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
-
-      // ── HEADER ──
-      doc.setFillColor(108, 99, 255);
-      doc.rect(0, 0, W, 24, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16); doc.setFont("helvetica", "bold");
-      doc.text(gymNombre, margin, 11);
-      doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      doc.text("Corte de Caja", margin, 18);
-      doc.setFontSize(11); doc.setFont("helvetica", "bold");
-      doc.text(`⏰ ${corte.horaCorte}`, W - margin, 11, { align: "right" });
-      doc.setFontSize(8); doc.setFont("helvetica", "normal");
-      doc.text(corte.fechaCorte, W - margin, 18, { align: "right" });
-
-      let y = 32;
-
-      // ── PERÍODO ──
-      doc.setFontSize(8); doc.setFont("helvetica", "bold");
-      doc.setTextColor(107, 114, 128);
-      const periodoStr = corte.desde === corte.hasta
-        ? `Período: ${fmtDate(corte.desde)}`
-        : `Período: ${fmtDate(corte.desde)} → ${fmtDate(corte.hasta)}`;
-      doc.text(periodoStr.toUpperCase(), margin, y); y += 8;
-
-      // ── TARJETAS RESUMEN ──
-      const cards = [
-        { label: "INGRESOS", value: fmt$(corte.totalIng), r: 74, g: 222, b: 128 },
-        { label: "GASTOS", value: fmt$(corte.totalGas), r: 248, g: 113, b: 113 },
-        { label: "UTILIDAD NETA", value: (corte.utilidad >= 0 ? "+" : "") + fmt$(corte.utilidad),
-          r: corte.utilidad >= 0 ? 74 : 248, g: corte.utilidad >= 0 ? 222 : 113, b: corte.utilidad >= 0 ? 128 : 113 },
-      ];
-      const cardW = (W - margin * 2 - 8) / 3;
-      cards.forEach((c, i) => {
-        const x = margin + i * (cardW + 4);
-        doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3);
-        doc.setFillColor(248, 248, 255);
-        doc.roundedRect(x, y, cardW, 20, 3, 3, "FD");
-        doc.setFontSize(7); doc.setFont("helvetica", "bold");
-        doc.setTextColor(107, 114, 128);
-        doc.text(c.label, x + cardW / 2, y + 6, { align: "center" });
-        doc.setFontSize(13); doc.setFont("helvetica", "bold");
-        doc.setTextColor(c.r, c.g, c.b);
-        doc.text(c.value, x + cardW / 2, y + 15, { align: "center" });
-      });
-      y += 27;
-
-      // ── INGRESOS POR CONCEPTO ──
-      if (corte.desgloseCat.length > 0) {
-        doc.setFontSize(9); doc.setFont("helvetica", "bold");
-        doc.setTextColor(108, 99, 255);
-        doc.text("INGRESOS POR CONCEPTO", margin, y); y += 5;
-        doc.autoTable({
-          startY: y,
-          head: [["Concepto", "Monto", "% del total"]],
-          body: corte.desgloseCat.map(([cat, val]) => [
-            cat,
-            fmt$(val),
-            corte.totalIng > 0 ? (val / corte.totalIng * 100).toFixed(1) + "%" : "—",
-          ]),
-          theme: "striped",
-          headStyles: { fillColor: [108, 99, 255], fontSize: 8, fontStyle: "bold" },
-          bodyStyles: { fontSize: 9 },
-          columnStyles: { 1: { halign: "right", fontStyle: "bold", textColor: [22, 163, 74] }, 2: { halign: "center" } },
-          margin: { left: margin, right: margin },
-          styles: { cellPadding: 3 },
-        });
-        y = doc.lastAutoTable.finalY + 8;
-      }
-
-      // ── FORMA DE PAGO ──
-      if (corte.desglosePago.length > 0) {
-        doc.setFontSize(9); doc.setFont("helvetica", "bold");
-        doc.setTextColor(108, 99, 255);
-        doc.text("FORMA DE PAGO", margin, y); y += 5;
-        doc.autoTable({
-          startY: y,
-          head: [["Forma de pago", "Monto", "% del total"]],
-          body: corte.desglosePago.map(([fp, val]) => [
-            fp,
-            fmt$(val),
-            corte.totalIng > 0 ? (val / corte.totalIng * 100).toFixed(1) + "%" : "—",
-          ]),
-          theme: "striped",
-          headStyles: { fillColor: [167, 139, 250], fontSize: 8, fontStyle: "bold" },
-          bodyStyles: { fontSize: 9 },
-          columnStyles: { 1: { halign: "right", fontStyle: "bold", textColor: [109, 40, 217] }, 2: { halign: "center" } },
-          margin: { left: margin, right: margin },
-          styles: { cellPadding: 3 },
-        });
-        y = doc.lastAutoTable.finalY + 8;
-      }
-
-      // ── GASTOS POR CATEGORÍA ──
-      if (corte.desgloseGasto.length > 0) {
-        doc.setFontSize(9); doc.setFont("helvetica", "bold");
-        doc.setTextColor(225, 29, 72);
-        doc.text("GASTOS POR CATEGORÍA", margin, y); y += 5;
-        doc.autoTable({
-          startY: y,
-          head: [["Categoría", "Monto"]],
-          body: corte.desgloseGasto.map(([cat, val]) => [cat, fmt$(val)]),
-          theme: "striped",
-          headStyles: { fillColor: [244, 63, 94], fontSize: 8, fontStyle: "bold" },
-          bodyStyles: { fontSize: 9 },
-          columnStyles: { 1: { halign: "right", fontStyle: "bold", textColor: [225, 29, 72] } },
-          margin: { left: margin, right: margin },
-          styles: { cellPadding: 3 },
-        });
-        y = doc.lastAutoTable.finalY + 8;
-      }
-
-      // ── MOVIMIENTOS TOTALES ──
-      doc.setFontSize(8); doc.setFont("helvetica", "normal");
-      doc.setTextColor(107, 114, 128);
-      doc.text(`Total de movimientos en el período: ${corte.movimientos}`, margin, y); y += 5;
-
-      // ── FOOTER ──
-      const pageH = doc.internal.pageSize.height;
-      doc.setFontSize(7); doc.setFont("helvetica", "normal");
-      doc.setTextColor(156, 163, 175);
-      doc.text(`${gymNombre} · Corte de caja generado el ${corte.fechaCorte} a las ${corte.horaCorte}`, W / 2, pageH - 8, { align: "center" });
-
-      const periodoFileName = corte.desde === corte.hasta ? corte.desde : `${corte.desde}_${corte.hasta}`;
-      doc.save(`corte-caja-${gymNombre.replace(/\s+/g, "-").toLowerCase()}-${periodoFileName}.pdf`);
-    } catch (err) {
-      console.error("Error generando PDF corte:", err);
-      alert("No se pudo generar el PDF. Verifica tu conexión.");
-    } finally {
-      setGenerandoPDF(false);
-    }
+  // Helper: extraer forma de pago de descripción
+  const extraerFP = (t) => {
+    const desc = t.desc || t.descripcion || "";
+    const m = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+    return m ? m[1] : null;
   };
 
-  // Aplicar período rápido
-  const aplicarPeriodo = (idx) => {
-    setPeriodoActivo(idx);
-    const [d, h] = PERIODOS[idx].get();
-    setDesde(d); setHasta(h);
-  };
-
-  // Filtrar txs por rango de fechas
-  const txsFiltradas = useMemo(() => {
-    const d = desde ? new Date(desde + "T00:00:00") : null;
-    const h = hasta ? new Date(hasta + "T23:59:59") : null;
-    return txs.filter(t => {
-      const td = parseDate(t.fecha);
-      if (!td) return false;
-      if (d && td < d) return false;
-      if (h && td > h) return false;
-      return true;
-    });
-  }, [txs, desde, hasta]);
-
-  const ingresos = txsFiltradas.filter(t => t.tipo === "ingreso");
-  const gastos = txsFiltradas.filter(t => t.tipo === "gasto");
-  const totalIng = ingresos.reduce((s, t) => s + Number(t.monto), 0);
-  const totalGas = gastos.reduce((s, t) => s + Number(t.monto), 0);
-  const utilidad = totalIng - totalGas;
-
-  // Desglose por categoría de ingreso
-  const desgloseCat = useMemo(() => {
-    const mapa = {};
-    ingresos.forEach(t => {
-      const cat = t.categoria || "Otro";
-      if (!mapa[cat]) mapa[cat] = 0;
-      mapa[cat] += Number(t.monto);
-    });
-    return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
-  }, [ingresos]);
-
-  // Desglose por forma de pago (extrae [Efectivo], [Transferencia], [Tarjeta] de desc)
-  const desglosePago = useMemo(() => {
-    const mapa = { "Efectivo": 0, "Transferencia": 0, "Tarjeta": 0, "Sin especificar": 0 };
-    ingresos.forEach(t => {
-      const desc = t.desc || t.descripcion || "";
-      const m = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
-      const fp = m ? m[1] : "Sin especificar";
-      mapa[fp] = (mapa[fp] || 0) + Number(t.monto);
-    });
-    return Object.entries(mapa).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-  }, [ingresos]);
-
-  // Desglose por categoría de gasto
-  const desgloseGasto = useMemo(() => {
-    const mapa = {};
-    gastos.forEach(t => {
-      const cat = t.categoria || "Otro";
-      if (!mapa[cat]) mapa[cat] = 0;
-      mapa[cat] += Number(t.monto);
-    });
-    return Object.entries(mapa).sort((a, b) => b[1] - a[1]);
-  }, [gastos]);
-
-  // Lista visible según filtro
-  const listaVisible = tipoFiltro === "todos" ? txsFiltradas
-    : tipoFiltro === "ingreso" ? ingresos : gastos;
-  const listaOrdenada = [...listaVisible].sort((a, b) => {
-    const da = parseDate(a.fecha); const db2 = parseDate(b.fecha);
-    if (da && db2) return db2 - da;
-    return (b.fecha || "").localeCompare(a.fecha || "");
-  });
+  // Helper: limpiar descripción para display en PDF
+  const limpiarDesc = (desc) => (desc || "")
+    .replace(/\s*\[(?:Efectivo|Transferencia|Tarjeta)\]/g, "")
+    .replace(/\s*\(vence:\d{4}-\d{2}-\d{2}\)/, "")
+    .trim();
 
   // Generar corte
   const generarCorte = () => {
     const now = new Date();
     const horaCorte = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz });
     const fechaCorte = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: tz });
+
+    const txsDetalle = [...txsFiltradas]
+      .sort((a, b) => {
+        const da = parseDate(a.fecha); const db2 = parseDate(b.fecha);
+        if (da && db2) return db2 - da;
+        return (b.fecha || "").localeCompare(a.fecha || "");
+      })
+      .map(t => {
+        const mid = t.miembroId || t.miembro_id;
+        const miembro = mid ? miembros.find(mb => String(mb.id) === String(mid)) : null;
+        return {
+          ...t,
+          nombreMiembro: miembro?.nombre || null,
+          formaPagoExtraida: extraerFP(t),
+          descLimpia: limpiarDesc(t.desc || t.descripcion || ""),
+        };
+      });
+
     setCorte({
       horaCorte,
       fechaCorte,
@@ -2618,8 +2437,189 @@ function CajaScreen({ txs, miembros, gymConfig, onBack }) {
       desglosePago: [...desglosePago],
       desgloseGasto: [...desgloseGasto],
       movimientos: txsFiltradas.length,
+      txsDetalle,
     });
     setCopiadoCorte(false);
+  };
+
+  const descargarPDFCorte = async () => {
+    if (!corte) return;
+    setGenerandoPDF(true);
+    try {
+      await cargarScriptCaja("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+      await cargarScriptCaja("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const W = 210; const margin = 14;
+      const gymNombre = gymConfig?.nombre || "GymFit Pro";
+      const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
+      const fpIcon = (fp) => fp === "Efectivo" ? "Efectivo" : fp === "Transferencia" ? "Transf." : fp === "Tarjeta" ? "Tarjeta" : "";
+
+      // ── HEADER ──
+      doc.setFillColor(108, 99, 255);
+      doc.rect(0, 0, W, 26, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(17); doc.setFont("helvetica", "bold");
+      doc.text(gymNombre, margin, 12);
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      doc.text("Corte de Caja", margin, 20);
+      // Hora sin emoji — solo texto limpio
+      doc.setFontSize(14); doc.setFont("helvetica", "bold");
+      doc.text(corte.horaCorte, W - margin, 13, { align: "right" });
+      doc.setFontSize(8); doc.setFont("helvetica", "normal");
+      doc.text(corte.fechaCorte, W - margin, 21, { align: "right" });
+
+      let y = 34;
+
+      // ── PERÍODO ──
+      doc.setFontSize(8); doc.setFont("helvetica", "bold");
+      doc.setTextColor(107, 114, 128);
+      const periodoStr = corte.desde === corte.hasta
+        ? "Periodo: " + fmtDate(corte.desde)
+        : "Periodo: " + fmtDate(corte.desde) + "  ->  " + fmtDate(corte.hasta);
+      doc.text(periodoStr.toUpperCase(), margin, y); y += 9;
+
+      // ── TARJETAS RESUMEN ──
+      const cards = [
+        { label: "INGRESOS", value: fmt$(corte.totalIng), r: 22, g: 163, b: 74 },
+        { label: "GASTOS", value: fmt$(corte.totalGas), r: 220, g: 38, b: 38 },
+        { label: "UTILIDAD NETA", value: (corte.utilidad >= 0 ? "+" : "") + fmt$(corte.utilidad),
+          r: corte.utilidad >= 0 ? 22 : 220, g: corte.utilidad >= 0 ? 163 : 38, b: corte.utilidad >= 0 ? 74 : 38 },
+      ];
+      const cardW = (W - margin * 2 - 8) / 3;
+      cards.forEach((c, i) => {
+        const x = margin + i * (cardW + 4);
+        doc.setDrawColor(230, 230, 240); doc.setLineWidth(0.4);
+        doc.setFillColor(250, 250, 255);
+        doc.roundedRect(x, y, cardW, 22, 3, 3, "FD");
+        doc.setFontSize(7); doc.setFont("helvetica", "bold");
+        doc.setTextColor(120, 120, 140);
+        doc.text(c.label, x + cardW / 2, y + 7, { align: "center" });
+        doc.setFontSize(14); doc.setFont("helvetica", "bold");
+        doc.setTextColor(c.r, c.g, c.b);
+        doc.text(c.value, x + cardW / 2, y + 17, { align: "center" });
+      });
+      y += 29;
+
+      // ── RESUMEN POR FORMA DE PAGO (caja fisica) ──
+      if (corte.desglosePago.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.setTextColor(80, 60, 180);
+        doc.text("RESUMEN DE CAJA POR FORMA DE PAGO", margin, y); y += 5;
+        doc.autoTable({
+          startY: y,
+          head: [["Forma de pago", "Total recibido"]],
+          body: corte.desglosePago.map(([fp, val]) => [fp, fmt$(val)]),
+          theme: "grid",
+          headStyles: { fillColor: [108, 99, 255], fontSize: 9, fontStyle: "bold", halign: "left", textColor: [255,255,255] },
+          bodyStyles: { fontSize: 11, fontStyle: "bold" },
+          columnStyles: { 1: { halign: "right", textColor: [80, 60, 180], fontStyle: "bold" } },
+          margin: { left: margin, right: margin },
+          styles: { cellPadding: 4 },
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ── INGRESOS — detalle por movimiento ──
+      const ingDetalle = (corte.txsDetalle || []).filter(t => t.tipo === "ingreso");
+      if (ingDetalle.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.setTextColor(22, 163, 74);
+        doc.text("INGRESOS — DETALLE DE MOVIMIENTOS", margin, y); y += 5;
+        doc.autoTable({
+          startY: y,
+          head: [["Fecha", "Concepto / Miembro", "Forma de pago", "Monto"]],
+          body: ingDetalle.map(t => {
+            const concepto = t.categoria || "Ingreso";
+            const quien = t.nombreMiembro || t.descLimpia || "—";
+            const fp = t.formaPagoExtraida || "—";
+            return [fmtDate(t.fecha), `${concepto}
+${quien}`, fp, fmt$(t.monto)];
+          }),
+          theme: "striped",
+          headStyles: { fillColor: [22, 163, 74], fontSize: 8, fontStyle: "bold", textColor: [255,255,255] },
+          bodyStyles: { fontSize: 8, valign: "middle" },
+          columnStyles: {
+            0: { cellWidth: 24 },
+            1: { cellWidth: "auto" },
+            2: { cellWidth: 26, halign: "center" },
+            3: { cellWidth: 28, halign: "right", fontStyle: "bold", textColor: [22, 163, 74] },
+          },
+          didDrawCell: (data) => {
+            // Subtotal row styling handled via foot
+          },
+          foot: [[
+            { content: "SUBTOTAL INGRESOS", colSpan: 3, styles: { halign: "right", fontStyle: "bold", fontSize: 9, fillColor: [240, 253, 244], textColor: [22, 163, 74] } },
+            { content: fmt$(corte.totalIng), styles: { halign: "right", fontStyle: "bold", fontSize: 9, fillColor: [240, 253, 244], textColor: [22, 163, 74] } },
+          ]],
+          footStyles: { fillColor: [240, 253, 244] },
+          margin: { left: margin, right: margin },
+          styles: { cellPadding: 3, lineColor: [230, 230, 230], lineWidth: 0.2 },
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ── GASTOS — detalle por movimiento ──
+      const gasDetalle = (corte.txsDetalle || []).filter(t => t.tipo === "gasto");
+      if (gasDetalle.length > 0) {
+        doc.setFontSize(9); doc.setFont("helvetica", "bold");
+        doc.setTextColor(220, 38, 38);
+        doc.text("GASTOS — DETALLE DE MOVIMIENTOS", margin, y); y += 5;
+        doc.autoTable({
+          startY: y,
+          head: [["Fecha", "Concepto / Descripcion", "Categoria", "Monto"]],
+          body: gasDetalle.map(t => [
+            fmtDate(t.fecha),
+            t.descLimpia || "—",
+            t.categoria || "—",
+            fmt$(t.monto),
+          ]),
+          theme: "striped",
+          headStyles: { fillColor: [220, 38, 38], fontSize: 8, fontStyle: "bold", textColor: [255,255,255] },
+          bodyStyles: { fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 24 },
+            1: { cellWidth: "auto" },
+            2: { cellWidth: 28 },
+            3: { cellWidth: 28, halign: "right", fontStyle: "bold", textColor: [220, 38, 38] },
+          },
+          foot: [[
+            { content: "SUBTOTAL GASTOS", colSpan: 3, styles: { halign: "right", fontStyle: "bold", fontSize: 9, fillColor: [255, 241, 242], textColor: [220, 38, 38] } },
+            { content: fmt$(corte.totalGas), styles: { halign: "right", fontStyle: "bold", fontSize: 9, fillColor: [255, 241, 242], textColor: [220, 38, 38] } },
+          ]],
+          footStyles: { fillColor: [255, 241, 242] },
+          margin: { left: margin, right: margin },
+          styles: { cellPadding: 3, lineColor: [230, 230, 230], lineWidth: 0.2 },
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ── UTILIDAD FINAL ──
+      doc.setFillColor(corte.utilidad >= 0 ? 240 : 255, corte.utilidad >= 0 ? 253 : 241, corte.utilidad >= 0 ? 244 : 242);
+      doc.setDrawColor(corte.utilidad >= 0 ? 22 : 220, corte.utilidad >= 0 ? 163 : 38, corte.utilidad >= 0 ? 74 : 38);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, y, W - margin * 2, 16, 3, 3, "FD");
+      doc.setFontSize(10); doc.setFont("helvetica", "bold");
+      doc.setTextColor(corte.utilidad >= 0 ? 22 : 220, corte.utilidad >= 0 ? 163 : 38, corte.utilidad >= 0 ? 74 : 38);
+      doc.text("UTILIDAD NETA DEL PERIODO", margin + 6, y + 7);
+      doc.setFontSize(13);
+      doc.text((corte.utilidad >= 0 ? "+" : "") + fmt$(corte.utilidad), W - margin - 4, y + 10, { align: "right" });
+      y += 22;
+
+      // ── FOOTER ──
+      const pageH = doc.internal.pageSize.height;
+      doc.setFontSize(7); doc.setFont("helvetica", "normal");
+      doc.setTextColor(156, 163, 175);
+      doc.text(gymNombre + "  |  Corte generado el " + corte.fechaCorte + " a las " + corte.horaCorte, W / 2, pageH - 8, { align: "center" });
+
+      const periodoFileName = corte.desde === corte.hasta ? corte.desde : corte.desde + "_" + corte.hasta;
+      doc.save("corte-caja-" + gymNombre.replace(/\s+/g, "-").toLowerCase() + "-" + periodoFileName + ".pdf");
+    } catch (err) {
+      console.error("Error generando PDF corte:", err);
+      alert("No se pudo generar el PDF. Verifica tu conexion.");
+    } finally {
+      setGenerandoPDF(false);
+    }
   };
 
   const textoCorte = corte ? `🏋️ ${gymConfig?.nombre || "GymFit Pro"} — CORTE DE CAJA
