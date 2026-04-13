@@ -3403,7 +3403,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
     return result === "granted";
   };
 
-  const dispararNotificacionVencimientos = React.useCallback(async () => {
+  const dispararNotificacionVencimientos = useCallback(async () => {
     if (!("serviceWorker" in navigator) || !gymConfig) return;
     const hoy = new Date().toISOString().slice(0, 10);
     const lastCheck = localStorage.getItem(notifCheckDoneKey);
@@ -3425,7 +3425,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   }, [membresiasPorVencer, gymConfig, notifCheckDoneKey]);
 
   // Escuchar mensaje del SW para abrir pantalla de mensajes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     const handler = (event) => {
       if (event.data?.type === "OPEN_MENSAJES") {
@@ -3438,7 +3438,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   }, []);
 
   // Disparar chequeo cuando la app carga y ya hay datos
-  React.useEffect(() => {
+  useEffect(() => {
     if (!loading && miembros.length > 0 && gymConfig) {
       dispararNotificacionVencimientos();
     }
