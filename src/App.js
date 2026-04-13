@@ -127,15 +127,44 @@ function getMembershipInfo(miembroId, txs, miembro) {
   return { estado, vence, inicio: ultima.fecha, plan, monto: ultima.monto, esGratis, congelado: sigueCongelado, fechaDescongelar, formaPago };
 }
 
-// Build WhatsApp message
-function buildWAMsg(miembro, diasReales, memInfo, gymNombre) {
+// Default renewal reminder template
+const DEFAULT_RECORDATORIO_TPL = `Estimado/a {nombre}:
+Espero que estés bien. Te informamos que tu membresía, con vencimiento: {fecha}, ya se encuentra disponible para su pago.
+Podrás pagarla directamente en Recepción o mediante transferencia ({clabe}, {titular}, {banco}).
+Asimismo, queremos recordarte que contamos con un plazo de tolerancia de 2 días para completar el pago. A partir del día 3, se aplicará un 20% adicional. Realizando el pago en tiempo y forma, podrás conservar tu tarifa actual.
+Si tienes alguna consulta o requieres más información, por favor responde a este mensaje y con gusto te ayudaremos.
+Quedo atento/a. {propietario_titulo} {propietario}`;
+
+// Build WhatsApp message using gym config template or defaults
+function buildWAMsg(miembro, diasReales, memInfo, gymNombre, gymConfig) {
   const nombre = miembro.nombre.split(" ")[0];
   const plan = memInfo?.plan || "";
   const vence = memInfo?.vence || "";
   const gym = gymNombre || "el gimnasio";
+
+  // If gym has a custom recordatorio template and member vence in 1 day, use it
+  const tplRecordatorio = gymConfig?.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL;
+  const clabe = gymConfig?.transferencia_clabe || "CLABE Interbancaria";
+  const titular = gymConfig?.transferencia_titular || "Nombre del titular";
+  const banco = gymConfig?.transferencia_banco || "Nombre del banco";
+  const propietario = gymConfig?.propietario_nombre || gym;
+  const propietarioTitulo = gymConfig?.propietario_titulo || "";
+
+  if (diasReales === 1) {
+    return tplRecordatorio
+      .replace(/\{nombre\}/gi, nombre)
+      .replace(/\{fecha\}/gi, vence)
+      .replace(/\{clabe\}/gi, clabe)
+      .replace(/\{titular\}/gi, titular)
+      .replace(/\{banco\}/gi, banco)
+      .replace(/\{propietario\}/gi, propietario)
+      .replace(/\{propietario_titulo\}/gi, propietarioTitulo)
+      .replace(/\{gym\}/gi, gym)
+      .replace(/\{plan\}/gi, plan);
+  }
+
   const planStr = plan ? ` *${plan}*` : "";
   if (diasReales === 0) return `¡Hola ${nombre}! 🚨 Tu membresía${planStr} en *${gym}* vence *HOY*. Renueva ahora para no perder tu acceso 💪`;
-  if (diasReales === 1) return `¡Hola ${nombre}! 🚨 Tu membresía${planStr} vence *mañana* (${vence}). Renueva hoy para no perder ni un día 💪`;
   if (diasReales <= 3) return `¡Hola ${nombre}! ⏰ Tu membresía${planStr} vence en *${diasReales} días* (${vence}). No pierdas tu acceso al gym 🔥`;
   return `¡Hola ${nombre}! 👋 Te recordamos que tu membresía${planStr} en *${gym}* vence en *${diasReales} días* (${vence}). ¿Deseas renovarla? 💪`;
 }
@@ -383,7 +412,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
             ) : alertas.map(({ miembro, diasReales, memInfo }) => {
               const col = urgColor(diasReales);
               const enviado = !!enviados[miembro.id];
-              const msg = buildWAMsg(miembro, diasReales, memInfo, gymNom);
+              const msg = buildWAMsg(miembro, diasReales, memInfo, gymNom, gymConfig);
               return (
                 <div key={miembro.id} style={{ background: enviado ? "rgba(255,255,255,.03)" : `${col}10`, border: `1px solid ${enviado ? "rgba(255,255,255,.06)" : col + "35"}`, borderRadius: 18, padding: 14, marginBottom: 12, opacity: enviado ? 0.65 : 1, transition: "all .3s" }}>
                   {/* Miembro + badge */}
@@ -3206,7 +3235,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
-  const [formCfg, setFormCfg] = useState({ nombre: "", slogan: "", telefono: "", direccion: "", planes: DEFAULT_PLANES });
+  const [formCfg, setFormCfg] = useState({ nombre: "", slogan: "", telefono: "", direccion: "", planes: DEFAULT_PLANES, propietario_nombre: "", propietario_titulo: "", transferencia_clabe: "", transferencia_titular: "", transferencia_banco: "", recordatorio_tpl: DEFAULT_RECORDATORIO_TPL });
   const [tab, setTab] = useState(0);
   const [miembros, setMiembros] = useState([]);
   const [txs, setTxs] = useState([]);
@@ -3276,7 +3305,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           let lsData = {};
           try { lsData = JSON.parse(localStorage.getItem(lsKey) || "{}"); } catch(e) {}
           setGymConfig({ ...gym, ...lsData });
-          setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES });
+          setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES, propietario_nombre: gym.propietario_nombre || "", propietario_titulo: gym.propietario_titulo || "", transferencia_clabe: gym.transferencia_clabe || "", transferencia_titular: gym.transferencia_titular || "", transferencia_banco: gym.transferencia_banco || "", recordatorio_tpl: gym.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL });
         } else {
           // First time — show config screen
           setLoading(false);
@@ -3362,6 +3391,58 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
     const enviados = (gymConfig?.wa_enviados || {})[hoyKeyLocal] || {};
     return membresiasPorVencer.filter(m => !enviados[m.id]).length;
   }, [membresiasPorVencer, gymConfig]);
+
+  // ── Push Notifications: solicitar permiso y disparar diariamente ──
+  const notifCheckDoneKey = `gymfit_notif_check_${GYM_ID}`;
+
+  const solicitarPermisosNotif = async () => {
+    if (!("Notification" in window) || !navigator.serviceWorker) return false;
+    if (Notification.permission === "granted") return true;
+    if (Notification.permission === "denied") return false;
+    const result = await Notification.requestPermission();
+    return result === "granted";
+  };
+
+  const dispararNotificacionVencimientos = React.useCallback(async () => {
+    if (!("serviceWorker" in navigator) || !gymConfig) return;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const lastCheck = localStorage.getItem(notifCheckDoneKey);
+    if (lastCheck === hoy) return; // ya revisamos hoy
+    localStorage.setItem(notifCheckDoneKey, hoy);
+
+    const miembrosVencenManana = membresiasPorVencer.filter(m => m.diasVence === 1);
+    if (miembrosVencenManana.length === 0) return;
+
+    const permiso = await solicitarPermisosNotif();
+    if (!permiso) return;
+
+    const reg = await navigator.serviceWorker.ready;
+    reg.active?.postMessage({
+      type: "CHECK_VENCIMIENTOS",
+      miembrosVencenManana: miembrosVencenManana.map(m => ({ id: m.id, nombre: m.nombre })),
+      gymNombre: gymConfig?.nombre || "Gym",
+    });
+  }, [membresiasPorVencer, gymConfig, notifCheckDoneKey]);
+
+  // Escuchar mensaje del SW para abrir pantalla de mensajes
+  React.useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const handler = (event) => {
+      if (event.data?.type === "OPEN_MENSAJES") {
+        setScreen("mensajes");
+        setModoMensajes("vencimientos");
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+
+  // Disparar chequeo cuando la app carga y ya hay datos
+  React.useEffect(() => {
+    if (!loading && miembros.length > 0 && gymConfig) {
+      dispararNotificacionVencimientos();
+    }
+  }, [loading, miembros.length, gymConfig?.nombre]);
 
   const addIng = async () => {
     if (!fI.desc || !fI.monto) return;
@@ -3594,6 +3675,36 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
               <Inp label="Teléfono" value={formCfg.telefono || ""} onChange={v => setFormCfg(p => ({ ...p, telefono: v }))} placeholder="999 000 0000" type="tel" />
               <Inp label="Dirección" value={formCfg.direccion || ""} onChange={v => setFormCfg(p => ({ ...p, direccion: v }))} placeholder="Ej: Calle 60 #123, Mérida" />
               <Inp label="Zona horaria" value={formCfg.zona_horaria || "America/Merida"} onChange={v => setFormCfg(p => ({ ...p, zona_horaria: v }))} options={["America/Merida","America/Mexico_City","America/Cancun","America/Monterrey","America/Tijuana","America/New_York","America/Chicago","America/Los_Angeles","Europe/Madrid","America/Bogota","America/Lima","America/Santiago","America/Buenos_Aires","America/Caracas"]} />
+
+              {/* ── Propietario ── */}
+              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Propietario / Firmante</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <Inp label="Título (Ej: Lic., Dr.)" value={formCfg.propietario_titulo || ""} onChange={v => setFormCfg(p => ({ ...p, propietario_titulo: v }))} placeholder="Ej: Lic." />
+                <Inp label="Nombre completo" value={formCfg.propietario_nombre || ""} onChange={v => setFormCfg(p => ({ ...p, propietario_nombre: v }))} placeholder="Ej: Ana García" />
+              </div>
+
+              {/* ── Datos de transferencia ── */}
+              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Datos para Transferencia</p>
+              <Inp label="CLABE Interbancaria" value={formCfg.transferencia_clabe || ""} onChange={v => setFormCfg(p => ({ ...p, transferencia_clabe: v }))} placeholder="18 dígitos" type="tel" />
+              <Inp label="Nombre completo del titular" value={formCfg.transferencia_titular || ""} onChange={v => setFormCfg(p => ({ ...p, transferencia_titular: v }))} placeholder="Ej: Ana García López" />
+              <Inp label="Nombre del banco" value={formCfg.transferencia_banco || ""} onChange={v => setFormCfg(p => ({ ...p, transferencia_banco: v }))} placeholder="Ej: BBVA, Banamex, HSBC" />
+
+              {/* ── Mensaje de recordatorio 1 día antes ── */}
+              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 6px" }}>Mensaje de Recordatorio (1 día antes)</p>
+              <p style={{ color: "#4b4b6a", fontSize: 11, marginBottom: 8, lineHeight: 1.5 }}>
+                Variables disponibles: <span style={{ color: "#a78bfa" }}>{"{nombre}"}</span> · <span style={{ color: "#a78bfa" }}>{"{fecha}"}</span> · <span style={{ color: "#a78bfa" }}>{"{clabe}"}</span> · <span style={{ color: "#a78bfa" }}>{"{titular}"}</span> · <span style={{ color: "#a78bfa" }}>{"{banco}"}</span> · <span style={{ color: "#a78bfa" }}>{"{propietario}"}</span> · <span style={{ color: "#a78bfa" }}>{"{propietario_titulo}"}</span>
+              </p>
+              <textarea
+                value={formCfg.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL}
+                onChange={e => setFormCfg(p => ({ ...p, recordatorio_tpl: e.target.value }))}
+                rows={10}
+                style={{ width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 14, padding: "12px 14px", color: "#d1d5db", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 8, boxSizing: "border-box" }}
+              />
+              <button
+                onClick={() => setFormCfg(p => ({ ...p, recordatorio_tpl: DEFAULT_RECORDATORIO_TPL }))}
+                style={{ background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "6px 14px", color: "#6b7280", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginBottom: 4 }}>
+                ↺ Restaurar mensaje predeterminado
+              </button>
               <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Planes y precios</p>
               {(formCfg.planes || DEFAULT_PLANES).map((plan, i) => {
                 const isActive = plan.activo !== false;
@@ -3618,6 +3729,25 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
                 );
               })}
               <div style={{ height: 16 }} />
+              {/* ── Notificaciones push ── */}
+              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "0 0 10px" }}>Recordatorios automáticos</p>
+              <div style={{ background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
+                <p style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>
+                  🔔 Activa las notificaciones para recibir un aviso automático <strong style={{ color: "#a78bfa" }}>1 día antes</strong> del vencimiento de cada membresía.
+                </p>
+                <button onClick={async () => {
+                    if (!("Notification" in window)) { alert("Tu navegador no soporta notificaciones."); return; }
+                    const result = await Notification.requestPermission();
+                    if (result === "granted") {
+                      alert("✅ ¡Notificaciones activadas! Recibirás un aviso 1 día antes de cada vencimiento.");
+                    } else {
+                      alert("❌ Permiso denegado. Actívalas manualmente en Configuración → Privacidad → Notificaciones de tu navegador.");
+                    }
+                  }}
+                  style={{ width: "100%", padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg,#7c3aed,#a78bfa)", color: "#fff" }}>
+                  🔔 Activar notificaciones
+                </button>
+              </div>
               <Btn full onClick={handleSaveCfg}>{gymConfig ? "Guardar cambios ✓" : "Guardar y comenzar ✓"}</Btn>
             </div>
           );
