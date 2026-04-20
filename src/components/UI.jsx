@@ -5,6 +5,22 @@
 //  Estos componentes NO tienen lógica de negocio.
 // ─────────────────────────────────────────────
 
+import { useState, useEffect } from "react";
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = (e) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    setIsDesktop(mq.matches);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDesktop;
+}
+
 // ── Badge de porcentaje ──────────────────────
 export function Badge({ val }) {
   const up = parseFloat(val) >= 0;
@@ -81,7 +97,7 @@ export function Inp({ label, value, onChange, type = "text", placeholder, option
 
 // ── Modal sheet (bottom en móvil, centrado en desktop) ──
 export function Modal({ title, onClose, children }) {
-  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
+  const isDesktop = useIsDesktop();
 
   return (
     <div style={{

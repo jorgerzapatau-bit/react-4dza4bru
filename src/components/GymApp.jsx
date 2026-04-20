@@ -495,14 +495,16 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
       {/* ═══ NAV ═══ */}
       {!configScreen && !loading && (
         <nav className="gym-nav">
+          <div className="gym-nav-gym-name">{gymConfig?.nombre || "GymFit Pro"}</div>
+          <div className="gym-nav-divider" />
           {[
             { label: "Inicio", icon: "⌂", s: "dashboard", t: null },
             { label: "Miembros", icon: "◎", s: "miembros", t: null },
-            { label: "", icon: "⊕", accent: true },
+            { label: "Agregar", icon: "⊕", accent: true },
             { label: "Mensajes", icon: "💬", s: "mensajes", t: null, badge: totalRecordatorios },
             { label: "Caja", icon: "💵", s: "caja", t: null },
           ].map((n, i) => (
-            <button key={i} className="gym-nav-btn" onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }}>
+            <button key={i} className={"gym-nav-btn" + (n.accent ? " gym-nav-btn-accent" : "")} onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }}>
               {n.accent ? (
                 <div className="gym-nav-accent">{n.icon}</div>
               ) : (
@@ -519,3 +521,5 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
     </div>
   );
 }
+
+

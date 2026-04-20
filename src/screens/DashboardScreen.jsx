@@ -41,6 +41,7 @@ export default function DashboardScreen({
     <>
       {/* ── Header ── */}
       <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             {(() => {
@@ -84,10 +85,12 @@ export default function DashboardScreen({
             <button key={i} onClick={() => setTab(i)} style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 11, cursor: "pointer", background: tab === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "transparent", color: tab === i ? "#fff" : "#4b4b6a", fontSize: 11, fontWeight: tab === i ? 700 : 500, fontFamily: "inherit", boxShadow: tab === i ? "0 2px 12px rgba(108,99,255,.4)" : "none", transition: "all .2s" }}>{t}</button>
           ))}
         </div>
+        </div>
       </div>
 
       {/* ── Content ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "14px 24px 90px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 24px 90px" }} className="gym-scroll-pad">
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
 
         {/* ════ TAB 0: DASHBOARD ════ */}
         {tab === 0 && <>
@@ -452,6 +455,7 @@ export default function DashboardScreen({
           })()}
         </>}
 
+        </div>
       </div>
     </>
   );

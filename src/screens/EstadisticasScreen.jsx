@@ -39,12 +39,16 @@ export default function EstadisticasScreen({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>📊 Estadísticas</h1>
         </div>
+        </div>
+        </div>
       </div>
       <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 24px 0", minHeight: 0, height: 0 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
         {/* Annual summary cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
           {[
@@ -225,6 +229,7 @@ export default function EstadisticasScreen({
           <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📄 Descargar reporte mensual</p>
           <p style={{ color: "#4b4b6a", fontSize: 12, marginBottom: 14 }}>Genera un PDF con el resumen financiero y lista de miembros del mes seleccionado.</p>
           <ReportePDF txs={txs} miembros={miembros} gymConfig={gymConfig} getMembershipInfo={getMembershipInfo} MESES_LABEL={MESES_LABEL} />
+        </div>
         </div>
       </div>
     </div>

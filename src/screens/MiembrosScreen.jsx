@@ -20,6 +20,7 @@ export default function MiembrosScreen({
   return (
     <>
       <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>Miembros</h1>
@@ -53,8 +54,11 @@ export default function MiembrosScreen({
             {viewMode === "lista" ? "⊞" : "☰"}
           </button>
         </div>
+        </div>
+        </div>
       </div>
       <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "12px 24px 0" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {(() => {
           const q = busqueda.toLowerCase();
           const hoyD2 = new Date(); const mesActual2 = `${hoyD2.getFullYear()}-${String(hoyD2.getMonth()+1).padStart(2,"0")}`;
@@ -113,6 +117,7 @@ export default function MiembrosScreen({
             );
           });
         })()}
+        </div>
       </div>
     </>
   );

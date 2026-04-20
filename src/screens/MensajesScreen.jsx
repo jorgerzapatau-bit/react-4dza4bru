@@ -396,6 +396,7 @@ export default function MensajesScreen({
 
       {/* ── Header fijo ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <button
             onClick={onBack}
@@ -428,10 +429,12 @@ export default function MensajesScreen({
             </button>
           ))}
         </div>
+        </div>
       </div>
 
       {/* ── Contenido scrollable ── */}
       <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 20px 0" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
 
         {/* ════ MODO: VENCIMIENTOS ════ */}
         {modo === "vencimientos" && (
@@ -925,6 +928,7 @@ export default function MensajesScreen({
           </>
         )}
 
+        </div>
       </div>
     </div>
   );
