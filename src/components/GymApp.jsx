@@ -15,6 +15,7 @@ import CalendarioEventos from "../modals/CalendarioEventos";
 import MensajesScreen from "../screens/MensajesScreen";
 
 // Screens
+import DashboardScreen from "../screens/DashboardScreen";
 import MiembrosScreen from "../screens/MiembrosScreen";
 import EstadisticasScreen from "../screens/EstadisticasScreen";
 import CajaScreen from "../screens/CajaScreen";
@@ -349,8 +350,6 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         {!loading && !configScreen && screen === "dashboard" && <DashboardScreen
           gymConfig={gymConfig}
           ahora={ahora}
-          fmt={fmt}
-          fmtDate={fmtDate}
           utilidad={utilidad}
           totalIng={totalIng}
           totalGas={totalGas}
@@ -363,8 +362,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           navMes={navMes}
           tab={tab}
           setTab={setTab}
-          TABS={TABS}
           txsMes={txsMes}
+          txs={txs}
           miembros={miembros}
           mActivos={mActivos}
           mHombres={mHombres}
@@ -374,16 +373,19 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           cumplesPróximos={cumplesPróximos}
           membresiasPorVencer={membresiasPorVencer}
           totalRecordatorios={totalRecordatorios}
-          getMembershipInfo={getMembershipInfo}
+          recordatoriosEnviados={recordatoriosEnviados}
+          marcarRecordatorio={marcarRecordatorio}
           setScreen={setScreen}
           setModal={setModal}
           setSelM={setSelM}
           setFiltroEstado={setFiltroEstado}
-          setFM={setFM}
-          onLogout={onLogout}
           setConfigScreen={setConfigScreen}
-          Badge={Badge}
-          activePlanes={activePlanes}
+          onLogout={onLogout}
+          filtroDesde={filtroDesde}
+          setFiltroDesde={setFiltroDesde}
+          filtroHasta={filtroHasta}
+          setFiltroHasta={setFiltroHasta}
+          setEditTx={setEditTx}
         />}
 
         {/* ═══ MIEMBROS ═══ */}
@@ -514,23 +516,6 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           ))}
         </nav>
       )}
-    </div>
-  );
-}
-
-// ── DashboardScreen (inline - tightly coupled to GymApp state, extract later if needed) ──
-function DashboardScreen({ gymConfig, ahora, fmt, fmtDate, utilidad, totalIng, totalGas, crecUtil, crecIng, crecGas, mesLabel, mesAnteriorLabel, isCurrentMonth, navMes, tab, setTab, TABS, txsMes, miembros, mActivos, mHombres, mMujeres, mSinSexo, miembrosSinSexo, cumplesPróximos, membresiasPorVencer, totalRecordatorios, getMembershipInfo, setScreen, setModal, setSelM, setFiltroEstado, setFM, onLogout, setConfigScreen, Badge, activePlanes }) {
-  // NOTE: The full dashboard JSX (tabs: Dashboard, Ingresos, Gastos, Historial)
-  // remains in your original App.js lines 3746–4166.
-  // Copy it here replacing the outer condition:
-  //   {!loading && !configScreen && screen === "dashboard" && <> ... </>}
-  // with just the inner JSX fragment, since this component is only rendered when those conditions are true.
-  //
-  // ⚠️ This placeholder exists to keep the file self-contained and compilable.
-  // Replace the return below with the actual dashboard JSX from App.js lines 3747–4166.
-  return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <p style={{ color: "#4b4b6a" }}>Dashboard — pegar JSX de líneas 3747–4166 del App.js original aquí.</p>
     </div>
   );
 }
