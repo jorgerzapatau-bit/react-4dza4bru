@@ -18,16 +18,6 @@ import {
   diasParaVencer,
 } from "../utils/dateUtils";
 import { uid } from "../utils/helpers";
-import {
-  parseDate,
-  fmtDate,
-  todayISO,
-  today,
-  diasParaCumple,
-  calcEdad,
-  fmt,
-} from "../utils/dateUtils";
-import { uid } from "../utils/helpers";
 
 /* ─── CONGELAR MODAL (sub-componente interno) ─── */
 function CongelarModal({ m, onClose, onConfirm }) {
