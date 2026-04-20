@@ -9,7 +9,7 @@ import {
 
 // Components
 import UI from "./UI";
-import PhotoModal from "./components/PhotoModal";
+import PhotoModal from "./PhotoModal";
 import MemberDetailModal from "./modals/MemberDetailModal";
 import EditTxModal from "./modals/EditTxModal";
 import CalendarioEventos from "./modals/CalendarioEventos";
