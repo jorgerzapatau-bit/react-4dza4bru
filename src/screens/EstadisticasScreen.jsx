@@ -45,7 +45,6 @@ export default function EstadisticasScreen({
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>📊 Estadísticas</h1>
         </div>
         </div>
-        </div>
       </div>
       <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 24px 0", minHeight: 0, height: 0 }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>

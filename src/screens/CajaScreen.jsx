@@ -424,7 +424,6 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
           </div>
         </div>
         </div>
-        </div>
       </div>
 
       {/* ── Contenido scrollable ── */}
