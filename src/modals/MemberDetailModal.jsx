@@ -5,9 +5,18 @@ import PhotoModal from "../components/PhotoModal";
 import { CAT_ICON } from "../utils/constants";
 import {
   getMembershipInfo,
-  diasParaVencer,
   calcVence,
 } from "../utils/membershipUtils";
+import {
+  parseDate,
+  fmtDate,
+  todayISO,
+  today,
+  diasParaCumple,
+  calcEdad,
+  fmt,
+  diasParaVencer,
+} from "../utils/dateUtils";
 import {
   parseDate,
   fmtDate,
