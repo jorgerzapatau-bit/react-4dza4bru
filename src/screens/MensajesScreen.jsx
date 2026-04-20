@@ -1,0 +1,931 @@
+// ─────────────────────────────────────────────
+//  screens/MensajesScreen.jsx
+//  Pantalla de mensajes WhatsApp.
+//  Tres modos: Vencimientos · Individual · Masivo
+//
+//  Sub-componentes internos (privados):
+//    GuardarEnSlot   — dropdown para guardar mensaje en un slot
+//    PlantillaCustom — slot de plantilla editable/usable
+//
+//  Props:
+//    miembros               array
+//    txs                    array
+//    gymConfig              object
+//    onBack                 () => void
+//    onUpdatePlantillas     (plantillas) => void
+//    miembroInicial         object | null  — abre en modo individual con este miembro
+//    modoInicial            string | null  — "vencimientos" | "individual" | "masivo"
+//    recordatoriosEnviados  object         — { [miembroId]: true }
+//    onMarcarRecordatorio   (miembroId) => void
+//
+//  Uso:
+//    import MensajesScreen from "./screens/MensajesScreen";
+//    <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig}
+//      onBack={() => setScreen("dashboard")} onUpdatePlantillas={updatePlantillas}
+//      miembroInicial={mensajesMiembro} modoInicial={modoMensajes}
+//      recordatoriosEnviados={recordatoriosEnviados}
+//      onMarcarRecordatorio={marcarRecordatorio} />
+// ─────────────────────────────────────────────
+
+import { useState, useMemo } from "react";
+import {
+  getMembershipInfo,
+  diasParaVencer,
+  buildWAMsg,
+  buildWAUrl,
+} from "../utils/constants";
+
+// ─────────────────────────────────────────────
+//  Sub-componente: GuardarEnSlot
+//  Dropdown que permite guardar el mensaje actual en uno de los 4 slots.
+// ─────────────────────────────────────────────
+function GuardarEnSlot({ tplsCustom, onGuardar }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(p => !p)}
+        title="Guardar en mis mensajes"
+        style={{
+          width: 36, height: 36,
+          border: "1px solid rgba(108,99,255,.3)",
+          borderRadius: 10,
+          background: open ? "rgba(108,99,255,.2)" : "transparent",
+          cursor: "pointer",
+          color: "#a78bfa",
+          fontSize: 15,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        💾
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", right: 0, top: 42, zIndex: 50,
+          background: "#1e1e30",
+          border: "1px solid rgba(108,99,255,.3)",
+          borderRadius: 14,
+          padding: 10,
+          width: 220,
+          boxShadow: "0 8px 32px rgba(0,0,0,.5)",
+        }}>
+          <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 8 }}>
+            Guardar en...
+          </p>
+
+          {tplsCustom.map((slot, i) => {
+            const ocupado = slot.label.trim() || slot.msg.trim();
+            return (
+              <button
+                key={i}
+                onClick={() => { onGuardar(i); setOpen(false); }}
+                style={{
+                  width: "100%", padding: "9px 12px",
+                  border: "none", borderRadius: 10,
+                  cursor: "pointer", fontFamily: "inherit",
+                  textAlign: "left", background: "transparent",
+                  display: "flex", alignItems: "center", gap: 8,
+                  marginBottom: 4,
+                }}
+              >
+                <span style={{ fontSize: 14 }}>{ocupado ? "⭐" : "○"}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    color: ocupado ? "#fff" : "#4b4b6a",
+                    fontSize: 12, fontWeight: ocupado ? 600 : 400,
+                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                  }}>
+                    {ocupado ? slot.label || `Mensaje ${i + 1}` : `Slot ${i + 1} — vacío`}
+                  </p>
+                  {ocupado && <p style={{ color: "#f59e0b", fontSize: 10, marginTop: 1 }}>⚠️ se sobreescribirá</p>}
+                </div>
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              width: "100%", padding: "7px",
+              border: "none", borderRadius: 8,
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 11, background: "rgba(255,255,255,.05)", color: "#6b7280",
+              marginTop: 4,
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+//  Sub-componente: PlantillaCustom
+//  Un slot de plantilla: puede estar vacío, con contenido, o en modo edición.
+// ─────────────────────────────────────────────
+function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar }) {
+  const [editando,  setEditando]  = useState(false);
+  const [form,      setForm]      = useState({ label: tpl.label, msg: tpl.msg });
+  const [guardando, setGuardando] = useState(false);
+
+  const tieneContenido = tpl.label.trim() || tpl.msg.trim();
+  const msgFinal = (form.msg || "").replace(/\{nombre\}/g, nombreMiembro);
+
+  const handleGuardar = async () => {
+    setGuardando(true);
+    await onGuardar({ icon: "⭐", label: form.label, msg: form.msg });
+    setGuardando(false);
+    setEditando(false);
+  };
+
+  // ── Modo edición ──
+  if (editando) {
+    return (
+      <div style={{
+        background: "rgba(108,99,255,.08)",
+        border: "1px solid rgba(108,99,255,.3)",
+        borderRadius: 14, padding: 14,
+      }}>
+        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
+          Mensaje {index + 1}
+        </p>
+        <input
+          value={form.label}
+          onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
+          placeholder="Nombre del mensaje (ej: Promoción diciembre)"
+          style={{
+            width: "100%", background: "rgba(255,255,255,.07)",
+            border: "1px solid rgba(255,255,255,.15)", borderRadius: 10,
+            padding: "10px 12px", color: "#fff", fontSize: 13,
+            fontFamily: "inherit", outline: "none", marginBottom: 8,
+          }}
+        />
+        <textarea
+          value={form.msg}
+          onChange={e => setForm(p => ({ ...p, msg: e.target.value }))}
+          placeholder={`Escribe el mensaje. Usa {nombre} para incluir el nombre del miembro. Ej: Hola {nombre}, tenemos una promoción especial para ti 🎁 — ${gymNom}`}
+          rows={4}
+          style={{
+            width: "100%", background: "rgba(255,255,255,.07)",
+            border: "1px solid rgba(255,255,255,.15)", borderRadius: 10,
+            padding: "10px 12px", color: "#fff", fontSize: 12,
+            fontFamily: "inherit", outline: "none", resize: "none",
+            lineHeight: 1.6, marginBottom: 8,
+          }}
+        />
+        {form.msg.trim() && (
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+            <p style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
+            <p style={{ color: "#9ca3af", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
+            style={{
+              flex: 1, padding: "10px",
+              border: "1px solid rgba(255,255,255,.1)", borderRadius: 10,
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 12, fontWeight: 600,
+              background: "transparent", color: "#6b7280",
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleGuardar}
+            disabled={!form.label.trim() || !form.msg.trim() || guardando}
+            style={{
+              flex: 2, padding: "10px",
+              border: "none", borderRadius: 10,
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 12, fontWeight: 700,
+              background: form.label.trim() && form.msg.trim()
+                ? "linear-gradient(135deg,#6c63ff,#e040fb)"
+                : "rgba(255,255,255,.06)",
+              color: form.label.trim() && form.msg.trim() ? "#fff" : "#4b4b6a",
+            }}
+          >
+            {guardando ? "Guardando…" : "💾 Guardar"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Slot con contenido ──
+  if (tieneContenido) {
+    return (
+      <div style={{
+        background: "rgba(255,255,255,.04)",
+        border: "1px solid rgba(108,99,255,.2)",
+        borderRadius: 12, padding: "10px 14px",
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <span style={{ fontSize: 18 }}>⭐</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
+          <p style={{ color: "#4b4b6a", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
+        </div>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro), tpl.label)}
+            style={{
+              padding: "6px 12px", border: "none", borderRadius: 8,
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 11, fontWeight: 700,
+              background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff",
+            }}
+          >
+            Usar
+          </button>
+          <button
+            onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
+            style={{
+              padding: "6px 10px",
+              border: "1px solid rgba(255,255,255,.1)", borderRadius: 8,
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 11, background: "transparent", color: "#6b7280",
+            }}
+          >
+            ✏️
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Slot vacío ──
+  return (
+    <button
+      onClick={() => { setForm({ label: "", msg: "" }); setEditando(true); }}
+      style={{
+        width: "100%", padding: "12px 14px",
+        border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12,
+        cursor: "pointer", fontFamily: "inherit",
+        background: "transparent",
+        display: "flex", alignItems: "center", gap: 10,
+      }}
+    >
+      <span style={{ fontSize: 16, color: "#6c63ff" }}>＋</span>
+      <span style={{ color: "#4b4b6a", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────
+//  MensajesScreen (export principal)
+// ─────────────────────────────────────────────
+export default function MensajesScreen({
+  miembros,
+  txs,
+  gymConfig,
+  onBack,
+  onUpdatePlantillas,
+  miembroInicial,
+  modoInicial,
+  recordatoriosEnviados = {},
+  onMarcarRecordatorio,
+}) {
+  const [modo,       setModo]      = useState(modoInicial || (miembroInicial ? "individual" : "vencimientos"));
+  const [enviados,   setEnviados]  = useState({});
+  const [selMiembro, setSelMiembro] = useState(miembroInicial || null);
+  const [busqueda,   setBusqueda]  = useState("");
+  const [msgTexto,   setMsgTexto]  = useState("");
+  const [msgOrigen,  setMsgOrigen] = useState(null); // eslint-disable-line no-unused-vars
+  const [copiadoMsg, setCopiadoMsg] = useState(false);
+  const [copiadoNums, setCopiadoNums] = useState(false);
+
+  const gymNom    = gymConfig?.nombre || "GymFit Pro";
+  const tplsCustom = gymConfig?.plantillas_wa || [
+    { icon: "⭐", label: "", msg: "" },
+    { icon: "⭐", label: "", msg: "" },
+    { icon: "⭐", label: "", msg: "" },
+  ];
+
+  const tplsFijas = [
+    { icon: "🚫", label: "Clase cancelada",  msg: `La clase de hoy ha sido cancelada. Disculpa los inconvenientes 🙏 — ${gymNom}` },
+    { icon: "⏰", label: "Cambio de horario", msg: `Aviso: hubo un cambio de horario. El nuevo horario es a las 7:00pm — ${gymNom}` },
+    { icon: "🏋️", label: "Evento especial",  msg: `🔥 Te invitamos a nuestro evento especial este sábado. ¡Esperamos verte! — ${gymNom}` },
+    { icon: "🛑", label: "Cierre temporal",  msg: `El gym estará cerrado mañana por mantenimiento — ${gymNom}` },
+  ];
+
+  // ── Alertas: miembros activos que vencen en ≤5 días ──
+  const alertas = useMemo(() => {
+    const result = [];
+    miembros
+      .filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo")
+      .forEach(m => {
+        const info      = getMembershipInfo(m.id, txs, m);
+        const diasReales = diasParaVencer(info.vence);
+        if (diasReales === null || diasReales < 0 || diasReales > 5) return;
+        result.push({ miembro: m, diasReales, memInfo: info });
+      });
+    result.sort((a, b) => a.diasReales - b.diasReales);
+    return result;
+  }, [miembros, txs]);
+
+  const pendientes = alertas.filter(({ miembro }) => !enviados[miembro.id]).length;
+
+  // ── Helpers de urgencia ──
+  const urgColor = (d) => d <= 1 ? "#f43f5e" : d <= 3 ? "#f59e0b" : "#22d3ee";
+  const urgLabel = (d) => d === 0 ? "HOY 🚨" : d === 1 ? "MAÑANA" : `${d}d`;
+
+  // ── Envío WA ──
+  const enviarWA = (tel, msg, miembroId) => {
+    window.open(buildWAUrl(tel, msg), "_blank");
+    if (miembroId) {
+      setEnviados(p => ({ ...p, [miembroId]: true }));
+      if (onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
+    }
+  };
+  const enviarWAIndividual = (tel, msg, miembroId) => {
+    window.open(buildWAUrl(tel, msg), "_blank");
+    if (miembroId && onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
+  };
+
+  // ── Derivados modo individual ──
+  const selNombre1 = selMiembro?.nombre?.split(" ")[0] || "";
+  const destMasivo = miembros.filter(mb => getMembershipInfo(mb.id, txs, mb).estado === "Activo" && mb.tel);
+
+  // ── Resetear estado al cambiar modo ──
+  const cambiarModo = (nuevoModo) => {
+    setModo(nuevoModo);
+    setMsgTexto("");
+    setMsgOrigen(null);
+    setCopiadoMsg(false);
+    setCopiadoNums(false);
+  };
+
+  const modos = [
+    { k: "vencimientos", icon: "⏰", label: "Vencimientos" },
+    { k: "individual",   icon: "👤", label: "Individual"   },
+    { k: "masivo",       icon: "📢", label: "Masivo"       },
+  ];
+
+  // ── Estilos reutilizados ──
+  const btnModoBase = (activo) => ({
+    flex: 1, padding: "9px 4px",
+    border: "none", borderRadius: 11,
+    cursor: "pointer", fontFamily: "inherit",
+    background: activo ? "linear-gradient(135deg,#25d366,#128c7e)" : "transparent",
+    color: activo ? "#fff" : "#4b4b6a",
+    fontSize: 11, fontWeight: activo ? 700 : 500,
+    boxShadow: activo ? "0 2px 12px rgba(37,211,102,.3)" : "none",
+    transition: "all .2s",
+  });
+
+  const textareaStyle = {
+    width: "100%",
+    background: "rgba(255,255,255,.07)",
+    border: "1px solid rgba(255,255,255,.12)",
+    borderRadius: 14, padding: "14px",
+    color: "#fff", fontSize: 13,
+    fontFamily: "inherit", outline: "none",
+    resize: "none", lineHeight: 1.6, marginBottom: 6,
+  };
+
+  // ─────────────────────────────────────────────
+  return (
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", overflow: "hidden" }}>
+
+      {/* ── Header fijo ── */}
+      <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: "rgba(255,255,255,.08)", border: "none",
+              borderRadius: 10, width: 36, height: 36,
+              cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0,
+            }}
+          >←</button>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ color: "#fff", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
+            <p style={{ color: "#4b4b6a", fontSize: 11 }}>WhatsApp · vencimientos, individual o masivo</p>
+          </div>
+          {pendientes > 0 && (
+            <span style={{
+              background: "#f43f5e", color: "#fff",
+              borderRadius: 10, padding: "3px 9px",
+              fontSize: 11, fontWeight: 700,
+            }}>
+              {pendientes}
+            </span>
+          )}
+        </div>
+
+        {/* Selector de modo */}
+        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,.05)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
+          {modos.map(m => (
+            <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Contenido scrollable ── */}
+      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 20px 0" }}>
+
+        {/* ════ MODO: VENCIMIENTOS ════ */}
+        {modo === "vencimientos" && (
+          <>
+            {alertas.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "50px 0" }}>
+                <p style={{ fontSize: 40, marginBottom: 12 }}>🎉</p>
+                <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>¡Sin vencimientos próximos!</p>
+                <p style={{ color: "#4b4b6a", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
+              </div>
+            ) : (
+              alertas.map(({ miembro, diasReales, memInfo }) => {
+                const col     = urgColor(diasReales);
+                const enviado = !!enviados[miembro.id];
+                const msg     = buildWAMsg(miembro, diasReales, memInfo, gymNom, gymConfig);
+                return (
+                  <div
+                    key={miembro.id}
+                    style={{
+                      background: enviado ? "rgba(255,255,255,.03)" : `${col}10`,
+                      border: `1px solid ${enviado ? "rgba(255,255,255,.06)" : col + "35"}`,
+                      borderRadius: 18, padding: 14, marginBottom: 12,
+                      opacity: enviado ? 0.65 : 1, transition: "all .3s",
+                    }}
+                  >
+                    {/* Miembro + badge urgencia */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <div style={{
+                        width: 42, height: 42, borderRadius: "50%", overflow: "hidden",
+                        flexShrink: 0, background: `${col}25`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 17, fontWeight: 700, color: col,
+                        border: `2px solid ${col}50`,
+                      }}>
+                        {miembro.foto
+                          ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          : miembro.nombre.charAt(0)
+                        }
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
+                      </div>
+                      <span style={{
+                        background: enviado ? "rgba(74,222,128,.15)" : `${col}25`,
+                        color: enviado ? "#4ade80" : col,
+                        borderRadius: 8, padding: "4px 9px", fontSize: 11, fontWeight: 700,
+                      }}>
+                        {enviado ? "✓" : urgLabel(diasReales)}
+                      </span>
+                    </div>
+
+                    {/* Mensaje editable por miembro */}
+                    <textarea
+                      value={enviado ? msg : (enviados["msg_" + miembro.id] ?? msg)}
+                      onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
+                      rows={3}
+                      style={{
+                        width: "100%", background: "rgba(255,255,255,.06)",
+                        border: "1px solid rgba(255,255,255,.1)", borderRadius: 12,
+                        padding: "10px 12px", color: "#d1d5db", fontSize: 12,
+                        fontFamily: "inherit", outline: "none", resize: "none",
+                        lineHeight: 1.5, marginBottom: 8,
+                      }}
+                    />
+
+                    <button
+                      onClick={() => enviarWA(miembro.tel, enviados["msg_" + miembro.id] ?? msg, miembro.id)}
+                      disabled={!miembro.tel}
+                      style={{
+                        width: "100%", padding: "11px",
+                        border: "none", borderRadius: 12,
+                        cursor: miembro.tel ? "pointer" : "not-allowed",
+                        fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                        background: enviado
+                          ? "rgba(74,222,128,.12)"
+                          : miembro.tel
+                            ? "linear-gradient(135deg,#25d366,#128c7e)"
+                            : "rgba(255,255,255,.06)",
+                        color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#4b4b6a",
+                        boxShadow: !enviado && miembro.tel ? "0 4px 14px rgba(37,211,102,.3)" : "none",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                      }}
+                    >
+                      {enviado ? "✓ Enviado" : miembro.tel ? "💬 Enviar por WhatsApp" : "Sin número registrado"}
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {/* ════ MODO: INDIVIDUAL ════ */}
+        {modo === "individual" && (
+          <>
+            {/* Vista A: Selección de miembro */}
+            {!selMiembro && (
+              <>
+                {/* Buscador */}
+                <div style={{ position: "relative", marginBottom: 10 }}>
+                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4b4b6a", pointerEvents: "none" }}>🔍</span>
+                  <input
+                    value={busqueda}
+                    onChange={e => setBusqueda(e.target.value)}
+                    placeholder="Buscar miembro..."
+                    style={{
+                      width: "100%", background: "rgba(255,255,255,.07)",
+                      border: "1px solid rgba(255,255,255,.1)", borderRadius: 12,
+                      padding: "10px 12px 10px 36px", color: "#fff",
+                      fontSize: 13, fontFamily: "inherit", outline: "none",
+                    }}
+                  />
+                  {busqueda && (
+                    <button
+                      onClick={() => setBusqueda("")}
+                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#4b4b6a", fontSize: 16, cursor: "pointer", padding: 2 }}
+                    >✕</button>
+                  )}
+                </div>
+
+                {/* Lista filtrada */}
+                {(() => {
+                  const conTel    = miembros.filter(m => m.tel);
+                  const filtrados = busqueda.trim()
+                    ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
+                    : conTel;
+                  const sinTel    = miembros.filter(m => !m.tel).length;
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                      {filtrados.length === 0 && (
+                        <p style={{ color: "#4b4b6a", fontSize: 12, textAlign: "center", padding: "20px 0" }}>
+                          No se encontró "{busqueda}"
+                        </p>
+                      )}
+                      {filtrados.map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
+                          style={{
+                            background: "rgba(255,255,255,.04)",
+                            border: "1px solid rgba(255,255,255,.08)",
+                            borderRadius: 14, padding: "10px 14px",
+                            cursor: "pointer", fontFamily: "inherit",
+                            display: "flex", alignItems: "center", gap: 10,
+                            transition: "all .2s",
+                          }}
+                        >
+                          <div style={{
+                            width: 36, height: 36, borderRadius: "50%", overflow: "hidden",
+                            flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 14, fontWeight: 700, color: "#fff",
+                          }}>
+                            {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
+                          </div>
+                          <div style={{ flex: 1, textAlign: "left" }}>
+                            <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                            <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {m.tel}</p>
+                          </div>
+                          <span style={{ color: "#4b4b6a", fontSize: 14 }}>›</span>
+                        </button>
+                      ))}
+                      {sinTel > 0 && !busqueda && (
+                        <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
+                          {sinTel} miembro{sinTel > 1 ? "s" : ""} sin número no aparecen
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+
+            {/* Vista B: Composición de mensaje para el miembro seleccionado */}
+            {selMiembro && (
+              <>
+                {/* Header compacto del destinatario */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  background: "rgba(108,99,255,.1)",
+                  border: "1px solid rgba(108,99,255,.3)",
+                  borderRadius: 14, padding: "10px 14px", marginBottom: 12,
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: "50%", overflow: "hidden",
+                    flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 15, fontWeight: 700, color: "#fff",
+                  }}>
+                    {selMiembro.foto
+                      ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : selMiembro.nombre.charAt(0)
+                    }
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
+                    <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {selMiembro.tel}</p>
+                  </div>
+                  <button
+                    onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
+                    style={{
+                      background: "rgba(255,255,255,.08)", border: "none",
+                      borderRadius: 10, padding: "6px 12px",
+                      cursor: "pointer", fontFamily: "inherit",
+                      color: "#9ca3af", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                    }}
+                  >
+                    Cambiar ✕
+                  </button>
+                </div>
+
+                {/* Área de texto del mensaje */}
+                <textarea
+                  value={msgTexto}
+                  onChange={e => setMsgTexto(e.target.value)}
+                  placeholder={`Hola ${selNombre1}, escribe o elige una plantilla abajo...`}
+                  rows={4}
+                  autoFocus
+                  style={textareaStyle}
+                />
+                <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 10 }}>
+                  {msgTexto.length} caracteres
+                </p>
+
+                {/* Botón enviar */}
+                <button
+                  onClick={() => enviarWAIndividual(selMiembro.tel, msgTexto.trim(), selMiembro.id)}
+                  disabled={!msgTexto.trim()}
+                  style={{
+                    width: "100%", padding: "14px",
+                    border: "none", borderRadius: 14,
+                    cursor: msgTexto.trim() ? "pointer" : "not-allowed",
+                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                    background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "rgba(255,255,255,.06)",
+                    color: msgTexto.trim() ? "#fff" : "#4b4b6a",
+                    boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    marginBottom: 20,
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>💬</span>
+                  {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
+                </button>
+
+                {/* Mis mensajes guardados (4 slots) */}
+                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
+                  💾 Mis mensajes guardados
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                  {[0, 1, 2, 3].map(i => {
+                    const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
+                    return (
+                      <PlantillaCustom
+                        key={i}
+                        index={i}
+                        tpl={slot}
+                        nombreMiembro={selNombre1}
+                        gymNom={gymNom}
+                        onUsar={(msg) => setMsgTexto(msg)}
+                        onGuardar={async (nueva) => {
+                          const nuevas = [...tplsCustom];
+                          while (nuevas.length <= i) nuevas.push({ icon: "⭐", label: "", msg: "" });
+                          nuevas[i] = nueva;
+                          await onUpdatePlantillas(nuevas);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Plantillas rápidas colapsables */}
+                <details style={{ marginBottom: 14 }}>
+                  <summary style={{
+                    color: "#6b7280", fontSize: 11, fontWeight: 700,
+                    textTransform: "uppercase", letterSpacing: .5,
+                    cursor: "pointer", listStyle: "none",
+                    display: "flex", alignItems: "center", gap: 6, padding: "8px 0",
+                  }}>
+                    <span>⚡ Plantillas rápidas</span>
+                    <span style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                  </summary>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                    {tplsFijas.map((tpl, i) => {
+                      const msgPersonal = `Hola ${selNombre1}! ` + tpl.msg;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => setMsgTexto(msgPersonal)}
+                          style={{
+                            background: msgTexto === msgPersonal ? "rgba(37,211,102,.1)" : "rgba(255,255,255,.04)",
+                            border: `1px solid ${msgTexto === msgPersonal ? "rgba(37,211,102,.3)" : "rgba(255,255,255,.08)"}`,
+                            borderRadius: 12, padding: "10px 14px",
+                            cursor: "pointer", fontFamily: "inherit",
+                            display: "flex", alignItems: "center", gap: 10,
+                            textAlign: "left", transition: "all .2s",
+                          }}
+                        >
+                          <span style={{ fontSize: 18 }}>{tpl.icon}</span>
+                          <span style={{ color: msgTexto === msgPersonal ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: 600, flex: 1 }}>
+                            {tpl.label}
+                          </span>
+                          {msgTexto === msgPersonal && <span style={{ color: "#4ade80" }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </details>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ════ MODO: MASIVO ════ */}
+        {modo === "masivo" && (
+          <>
+            <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
+              Mensaje para todos
+            </p>
+            <textarea
+              value={msgTexto}
+              onChange={e => setMsgTexto(e.target.value)}
+              placeholder={`Ej: Hola, la clase de hoy fue cancelada. Disculpen 🙏 — ${gymNom}`}
+              rows={5}
+              style={textareaStyle}
+            />
+            <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 12 }}>
+              {msgTexto.length} caracteres
+            </p>
+
+            {/* Plantillas rápidas masivo */}
+            <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
+              Plantillas rápidas
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+              {tplsFijas.map((tpl, i) => (
+                <button
+                  key={i}
+                  onClick={() => setMsgTexto(tpl.msg)}
+                  style={{
+                    background: msgTexto === tpl.msg ? "rgba(37,211,102,.1)" : "rgba(255,255,255,.04)",
+                    border: `1px solid ${msgTexto === tpl.msg ? "rgba(37,211,102,.3)" : "rgba(255,255,255,.08)"}`,
+                    borderRadius: 12, padding: "10px 14px",
+                    cursor: "pointer", fontFamily: "inherit",
+                    display: "flex", alignItems: "center", gap: 10,
+                    textAlign: "left", transition: "all .2s",
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{tpl.icon}</span>
+                  <span style={{ color: msgTexto === tpl.msg ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: 600, flex: 1 }}>
+                    {tpl.label}
+                  </span>
+                  {msgTexto === tpl.msg && <span style={{ color: "#4ade80" }}>✓</span>}
+                </button>
+              ))}
+            </div>
+
+            {msgTexto.trim() && (
+              <>
+                {/* Destinatarios */}
+                <div style={{
+                  background: "rgba(37,211,102,.06)",
+                  border: "1px solid rgba(37,211,102,.2)",
+                  borderRadius: 14, padding: "12px 14px", marginBottom: 10,
+                }}>
+                  <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>
+                    Destinatarios ({destMasivo.length})
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {destMasivo.map(mb => (
+                      <div
+                        key={mb.id}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 5,
+                          background: "rgba(255,255,255,.06)",
+                          borderRadius: 20, padding: "4px 10px 4px 4px",
+                        }}
+                      >
+                        <div style={{
+                          width: 22, height: 22, borderRadius: "50%", overflow: "hidden",
+                          background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0,
+                        }}>
+                          {mb.foto ? <img src={mb.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mb.nombre.charAt(0)}
+                        </div>
+                        <span style={{ color: "#9ca3af", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Paso 1: Copiar mensaje */}
+                <div style={{
+                  background: "rgba(255,255,255,.04)",
+                  border: copiadoMsg ? "1px solid rgba(37,211,102,.4)" : "1px solid rgba(255,255,255,.08)",
+                  borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{
+                        background: copiadoMsg ? "rgba(37,211,102,.2)" : "rgba(255,255,255,.1)",
+                        color: copiadoMsg ? "#4ade80" : "#fff",
+                        borderRadius: "50%", width: 22, height: 22,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, fontWeight: 700,
+                      }}>
+                        {copiadoMsg ? "✓" : "1"}
+                      </span>
+                      <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Copia el mensaje</p>
+                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(msgTexto); setCopiadoMsg(true); }}
+                      style={{
+                        padding: "6px 14px", border: "none", borderRadius: 10,
+                        cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                        background: copiadoMsg ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
+                        color: copiadoMsg ? "#4ade80" : "#fff",
+                      }}
+                    >
+                      {copiadoMsg ? "✓ Copiado" : "📋 Copiar"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Paso 2: Copiar números */}
+                <div style={{
+                  background: "rgba(255,255,255,.04)",
+                  border: copiadoNums ? "1px solid rgba(37,211,102,.4)" : "1px solid rgba(255,255,255,.08)",
+                  borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{
+                        background: copiadoNums ? "rgba(37,211,102,.2)" : "rgba(255,255,255,.1)",
+                        color: copiadoNums ? "#4ade80" : "#fff",
+                        borderRadius: "50%", width: 22, height: 22,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, fontWeight: 700,
+                      }}>
+                        {copiadoNums ? "✓" : "2"}
+                      </span>
+                      <div>
+                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Copia los números</p>
+                        <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 2 }}>{destMasivo.length} contactos</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(destMasivo.map(mb => mb.tel.replace(/\D/g, "")).join("\n")); setCopiadoNums(true); }}
+                      style={{
+                        padding: "6px 14px", border: "none", borderRadius: 10,
+                        cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                        background: copiadoNums ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
+                        color: copiadoNums ? "#4ade80" : "#fff",
+                      }}
+                    >
+                      {copiadoNums ? "✓ Copiados" : "📋 Copiar"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Paso 3: Instrucción */}
+                <div style={{
+                  background: "rgba(255,255,255,.03)",
+                  border: "1px solid rgba(255,255,255,.07)",
+                  borderRadius: 14, padding: "12px 14px", marginBottom: 12,
+                }}>
+                  <p style={{ color: "#fff", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
+                  <p style={{ color: "#4b4b6a", fontSize: 11, lineHeight: 1.5 }}>
+                    Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => window.open("https://wa.me", "_blank")}
+                  style={{
+                    width: "100%", padding: "14px",
+                    border: "none", borderRadius: 14,
+                    cursor: "pointer", fontFamily: "inherit",
+                    fontSize: 14, fontWeight: 700,
+                    background: "linear-gradient(135deg,#25d366,#128c7e)",
+                    color: "#fff",
+                    boxShadow: "0 4px 18px rgba(37,211,102,.35)",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>💬</span> Abrir WhatsApp
+                </button>
+              </>
+            )}
+          </>
+        )}
+
+      </div>
+    </div>
+  );
+}
