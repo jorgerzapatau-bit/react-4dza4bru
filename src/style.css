@@ -279,3 +279,13 @@ button:active { opacity: .75; }
 .card:nth-child(4) { animation-delay: .18s; }
 .rh:hover { background: rgba(255,255,255,.06) !important; transition: background .2s; }
 .wa-pulse { animation: pulse 2s infinite; }
+
+/* Spacer — empuja config/logout al fondo en desktop */
+.gym-nav-spacer { display: none; }
+@media (min-width: 1024px) {
+  .gym-nav-spacer { display: block; flex: 1; min-height: 16px; }
+}
+
+/* desktop-only — visible solo ≥1024px */
+.desktop-only { display: none; }
+@media (min-width: 1024px) { .desktop-only { display: flex; } }

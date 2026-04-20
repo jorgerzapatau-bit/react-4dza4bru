@@ -39,11 +39,12 @@ export default function DashboardScreen({
     <div style={{ display: "flex", flexDirection: "column" }}>
 
       {/* ── Header sticky ── */}
-      <div style={{ flexShrink: 0, padding: "18px 28px 0", borderBottom: "1px solid rgba(255,255,255,.05)", position: "sticky", top: 0, background: "#0f0f1a", zIndex: 50 }}>
+      <div style={{ flexShrink: 0, padding: "16px 28px 0", borderBottom: "1px solid rgba(255,255,255,.05)", position: "sticky", top: 0, background: "#0f0f1a", zIndex: 50 }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
 
-          {/* Fecha + acciones */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+          {/* Fecha + hora + acciones mobile */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            {/* Fecha y hora */}
             <div>
               {(() => {
                 const tz = gymConfig?.zona_horaria || "America/Merida";
@@ -51,32 +52,30 @@ export default function DashboardScreen({
                 const horaStr = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz });
                 const fechaFmt = fechaStr.replace(/\b(\w)/g, c => c.toUpperCase());
                 return (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, letterSpacing: .5, textTransform: "uppercase" }}>{fechaFmt}</p>
                     <span style={{ color: "rgba(167,139,250,.4)", fontSize: 10 }}>·</span>
                     <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{horaStr}</p>
                   </div>
                 );
               })()}
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              {/* Nombre del gym — solo en mobile (en desktop lo muestra la sidebar) */}
+              <div className="mobile-only" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 {gymConfig?.logo
-                  ? <img src={gymConfig.logo} alt="logo" style={{ maxWidth: 44, maxHeight: 34, width: "auto", height: "auto", objectFit: "contain", borderRadius: 8, flexShrink: 0 }} />
-                  : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💪</div>
+                  ? <img src={gymConfig.logo} alt="logo" style={{ maxWidth: 36, maxHeight: 28, width: "auto", height: "auto", objectFit: "contain", borderRadius: 6, flexShrink: 0 }} />
+                  : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>💪</div>
                 }
-                <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>{gymConfig?.nombre || "GymFit Pro"}</h1>
+                <h1 style={{ color: "#fff", fontSize: 16, fontWeight: 700 }}>{gymConfig?.nombre || "GymFit Pro"}</h1>
               </div>
             </div>
 
-            {/* Botones acción */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-              <button onClick={() => setScreen("mensajes")} title="Mensajes" style={{ position: "relative", width: 40, height: 40, borderRadius: 12, border: "none", cursor: "pointer", background: totalRecordatorios > 0 ? "rgba(37,211,102,.15)" : "rgba(255,255,255,.07)", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {/* Botones acción — solo mobile (en desktop están en la sidebar) */}
+            <div className="mobile-only" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+              <button onClick={() => setScreen("mensajes")} style={{ position: "relative", width: 38, height: 38, borderRadius: 11, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 💬
-                {totalRecordatorios > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 5, right: 5, width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #0f0f1a" }} />}
+                {totalRecordatorios > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 5, right: 5, width: 7, height: 7, background: "#f43f5e", borderRadius: "50%", border: "2px solid #0f0f1a" }} />}
               </button>
-              <button onClick={() => setScreen("estadisticas")} title="Estadísticas" style={{ width: 40, height: 40, borderRadius: 12, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>📊</button>
-              <button onClick={() => setConfigScreen(true)} title="Configuración" style={{ width: 40, height: 40, borderRadius: 12, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
-              <button onClick={onLogout} title="Cerrar sesión" style={{ width: 40, height: 40, borderRadius: 12, border: "none", cursor: "pointer", background: "rgba(244,63,94,.08)", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>🚪</button>
-              <button onClick={() => setModal("quickAdd")} title="Agregar" style={{ width: 40, height: 40, borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#6c63ff,#e040fb)", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(108,99,255,.45)" }}>⊕</button>
+              <button onClick={() => setConfigScreen(true)} style={{ width: 38, height: 38, borderRadius: 11, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
             </div>
           </div>
 

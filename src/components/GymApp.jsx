@@ -314,6 +314,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           setModal={setModal}
           totalRecordatorios={totalRecordatorios}
           gymConfig={gymConfig}
+          setConfigScreen={setConfigScreen}
+          onLogout={onLogout}
         />
       )}
 
