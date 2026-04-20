@@ -271,9 +271,10 @@ function Inp({ label, value, onChange, type = "text", placeholder, options, read
 }
 
 function Modal({ title, onClose, children }) {
+  const isDesktop = typeof window !== "undefined" && window.innerWidth >= 768;
   return (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.72)", backdropFilter: "blur(8px)", zIndex: 100, display: "flex", alignItems: "flex-end" }}>
-      <div style={{ width: "100%", background: "#191928", borderRadius: "28px 28px 0 0", padding: "24px 24px 44px", maxHeight: "92%", overflowY: "auto", animation: "slideUp .3s ease" }}>
+    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.72)", backdropFilter: "blur(8px)", zIndex: 100, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: isDesktop ? "center" : "flex-start", padding: isDesktop ? "20px" : 0 }}>
+      <div style={{ width: "100%", maxWidth: isDesktop ? 500 : "100%", background: "#191928", borderRadius: isDesktop ? "20px" : "28px 28px 0 0", padding: "24px 24px 44px", maxHeight: isDesktop ? "85vh" : "92%", overflowY: "auto", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{title}</h2>
           <button onClick={onClose} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
@@ -398,7 +399,7 @@ function MensajesScreen({ miembros, txs, gymConfig, onBack, onUpdatePlantillas, 
       </div>
 
       {/* ── Contenido scrollable ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 90px" }}>
+      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 20px 0" }}>
 
         {/* ════ MODO: VENCIMIENTOS ════ */}
         {modo === "vencimientos" && (
@@ -2788,7 +2789,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
       </div>
 
       {/* ── Contenido scrollable ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "10px 20px 100px" }}>
+      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "10px 20px 0" }}>
 
         {/* ── Resumen financiero ── */}
         <div style={{ background: "linear-gradient(135deg,#1e1e3a,#251e3a)", borderRadius: 22, padding: "18px 18px 14px", marginBottom: 14, border: "1px solid rgba(108,99,255,.25)", boxShadow: "0 6px 28px rgba(0,0,0,.3)" }}>
@@ -3593,16 +3594,14 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   const TABS = ["Dashboard", "Ingresos", "Gastos", "Historial"];
 
   return (
-    <div style={{ width: "100%", height: "100%", fontFamily: "'DM Sans','Helvetica Neue',sans-serif" }}>
+    <div className="gym-root">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0;}
-        html,body{width:100%;height:100%;background:#13131f;overflow:hidden;}
-        #root{width:100%;height:100%;display:flex;align-items:stretch;}
         ::-webkit-scrollbar{width:0;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+        @keyframes slideRight{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
         .card{animation:fadeUp .35s ease both;}
         .card:nth-child(2){animation-delay:.07s}.card:nth-child(3){animation-delay:.14s}.card:nth-child(4){animation-delay:.21s}
         .rh:hover{background:rgba(255,255,255,.06)!important;transition:background .2s;}
@@ -3611,16 +3610,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         button:active{opacity:.75;}
         .wa-pulse{animation:pulse 2s infinite;}
       `}</style>
-      <div style={{
-          background: "#13131f",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          flex: 1,
-        }}>
+      <div className="gym-content">
 
 
         {/* ═══ MENSAJES SCREEN ═══ */}
@@ -3804,7 +3794,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
             </div>
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "14px 24px 90px" }}>
+          <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "14px 24px 0" }}>
             {tab === 0 && <>
               <div className="card" style={{ background: "linear-gradient(135deg,#6c63ff 0%,#e040fb 100%)", borderRadius: 24, padding: 22, marginBottom: 14, boxShadow: "0 8px 32px rgba(108,99,255,.4)", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: -30, right: -30, width: 120, height: 120, background: "rgba(255,255,255,.1)", borderRadius: "50%", pointerEvents: "none" }} />
@@ -3829,7 +3819,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
                   : <span style={{ color: "rgba(255,255,255,.45)", fontSize: 11 }}>Sin datos del mes anterior</span>
                 }
               </div>
-              <div className="card" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              <div className="card gym-metrics-grid" style={{ marginBottom: 14 }}>
                 {[{ label: "Ingresos", val: totalIng, crec: crecIng, c: "#22d3ee", bg: "rgba(34,211,238,.08)", bc: "rgba(34,211,238,.2)" }, { label: "Gastos", val: totalGas, crec: crecGas, c: "#f43f5e", bg: "rgba(244,63,94,.08)", bc: "rgba(244,63,94,.2)" }].map((k, i) => (
                   <div key={i} style={{ background: k.bg, borderRadius: 20, padding: 16, border: `1px solid ${k.bc}` }}>
                     <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase", marginBottom: 6 }}>{k.label}</p>
@@ -4178,7 +4168,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         {!loading && !configScreen && screen === "miembros" && <>
           <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <button onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
+              <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
               <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>Miembros</h1>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                 <button onClick={() => setScreen("mensajes")} style={{ background: "rgba(37,211,102,.15)", border: "1px solid rgba(37,211,102,.3)", borderRadius: 12, padding: "8px 12px", color: "#25d366", fontSize: 18, cursor: "pointer" }}>📢</button>
@@ -4211,7 +4201,7 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
               </button>
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px 24px 90px" }}>
+          <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "12px 24px 0" }}>
             {(() => {
               const q = busqueda.toLowerCase();
               const hoyD2 = new Date(); const mesActual2 = `${hoyD2.getFullYear()}-${String(hoyD2.getMonth()+1).padStart(2,"0")}`;
@@ -4303,11 +4293,11 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
               <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                  <button onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
+                  <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
                   <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>📊 Estadísticas</h1>
                 </div>
               </div>
-              <div style={{ flex: 1, overflowY: "auto", padding: "0 24px 100px", minHeight: 0, height: 0 }}>
+              <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 24px 0", minHeight: 0, height: 0 }}>
                 {/* Annual summary cards */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
                   {[
@@ -4517,29 +4507,6 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           </div>
         )}
 
-        {/* ═══ BOTTOM NAV ═══ */}
-        {!configScreen && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,10,18,.96)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,.07)", padding: "10px 8px 26px", display: "flex", justifyContent: "space-around", alignItems: "center" }}>
-          {[
-            { label: "Inicio", icon: "⌂", s: "dashboard", t: null },
-            { label: "Miembros", icon: "◎", s: "miembros", t: null },
-            { label: "", icon: "⊕", accent: true },
-            { label: "Mensajes", icon: "💬", s: "mensajes", t: null, badge: totalRecordatorios },
-            { label: "Caja", icon: "💵", s: "caja", t: null }
-          ].map((n, i) => (
-            <button key={i} onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }} style={{ border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: 1, position: "relative" }}>
-              {n.accent ? (
-                <div style={{ width: 50, height: 50, borderRadius: 17, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, boxShadow: "0 4px 20px rgba(108,99,255,.55)", marginTop: -22 }}>{n.icon}</div>
-              ) : (
-                <>
-                  <span style={{ fontSize: 20, color: screen === n.s ? "#a78bfa" : "#4b4b6a", transition: "color .2s" }}>{n.icon}</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, fontFamily: "inherit", color: screen === n.s ? "#a78bfa" : "#4b4b6a", transition: "color .2s" }}>{n.label}</span>
-                  {n.badge > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 0, right: "18%", width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #13131f" }} />}
-                </>
-              )}
-            </button>
-          ))}
-        </div>}
-
         {/* ═══ MODALS ═══ */}
         {modal === "quickAdd" && <Modal title="¿Qué deseas agregar?" onClose={() => setModal(null)}><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>{[{ label: "Ingreso", icon: "💰", color: "#22d3ee", action: () => setModal("ingreso") }, { label: "Gasto", icon: "💸", color: "#f43f5e", action: () => setModal("gasto") }, { label: "Miembro", icon: "👤", color: "#a78bfa", action: () => { const ini = todayISO(); const firstPlan = activePlanes[0] || DEFAULT_PLANES[0]; setFM({ nombre: "", tel: "", plan: firstPlan.nombre, monto: String(firstPlan.precio), foto: null }); setModal("miembro"); } }].map((opt, i) => <button key={i} onClick={opt.action} style={{ background: `${opt.color}15`, border: `1px solid ${opt.color}30`, borderRadius: 18, padding: "20px 0", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}><span style={{ fontSize: 28 }}>{opt.icon}</span><span style={{ color: opt.color, fontSize: 13, fontWeight: 700 }}>{opt.label}</span></button>)}</div></Modal>}
 
@@ -4638,7 +4605,31 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
         {modal === "editTx" && editTx && <EditTxModal tx={editTx} onClose={() => { setModal(null); setEditTx(null); }} onSave={saveEditTx} onDelete={deleteEditTx} />}
 
-      </div>
+      </div>{/* fin gym-content */}
+
+      {/* NAV: bottom en movil, sidebar en desktop */}
+      {!configScreen && !loading && <nav className="gym-nav">
+        {[
+          { label: "Inicio", icon: "⌂", s: "dashboard", t: null },
+          { label: "Miembros", icon: "◎", s: "miembros", t: null },
+          { label: "", icon: "⊕", accent: true },
+          { label: "Mensajes", icon: "💬", s: "mensajes", t: null, badge: totalRecordatorios },
+          { label: "Caja", icon: "💵", s: "caja", t: null }
+        ].map((n, i) => (
+          <button key={i} className="gym-nav-btn" onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }}>
+            {n.accent ? (
+              <div className="gym-nav-accent">{n.icon}</div>
+            ) : (
+              <>
+                <span className={"gym-nav-icon" + (screen === n.s ? " active" : "")}>{n.icon}</span>
+                <span className={"gym-nav-label" + (screen === n.s ? " active" : "")}>{n.label}</span>
+                {n.badge > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 0, right: "18%", width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #13131f" }} />}
+              </>
+            )}
+          </button>
+        ))}
+      </nav>}
+
     </div>
   );
 }
