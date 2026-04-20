@@ -392,7 +392,7 @@ export default function MensajesScreen({
 
   // ─────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
 
       {/* ── Header fijo ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
@@ -433,7 +433,7 @@ export default function MensajesScreen({
       </div>
 
       {/* ── Contenido scrollable ── */}
-      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "0 20px 0" }}>
+      <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 20px 0" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
 
         {/* ════ MODO: VENCIMIENTOS ════ */}

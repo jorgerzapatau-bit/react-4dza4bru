@@ -385,7 +385,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
   const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {/* ── Header ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
@@ -427,7 +427,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
       </div>
 
       {/* ── Contenido scrollable ── */}
-      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "10px 20px 0" }}>
+      <div className="gym-scroll-pad" style={{ flex: 1, padding: "10px 20px 0" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
 
         {/* ── Resumen financiero ── */}

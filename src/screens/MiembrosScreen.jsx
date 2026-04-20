@@ -56,7 +56,7 @@ export default function MiembrosScreen({
         </div>
         </div>
       </div>
-      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "12px 24px 0" }}>
+      <div className="gym-scroll-pad" style={{ flex: 1, padding: "12px 24px 0" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {(() => {
           const q = busqueda.toLowerCase();

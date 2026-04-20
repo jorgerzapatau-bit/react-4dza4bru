@@ -36,10 +36,10 @@ export default function DashboardScreen({
   const TABS = ["Dashboard", "Ingresos", "Gastos", "Historial"];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
 
-      {/* ── Header fijo ── */}
-      <div style={{ flexShrink: 0, padding: "18px 28px 0", borderBottom: "1px solid rgba(255,255,255,.05)" }}>
+      {/* ── Header sticky ── */}
+      <div style={{ flexShrink: 0, padding: "18px 28px 0", borderBottom: "1px solid rgba(255,255,255,.05)", position: "sticky", top: 0, background: "#0f0f1a", zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
           {/* Fecha + acciones */}
@@ -91,7 +91,7 @@ export default function DashboardScreen({
       </div>
 
       {/* ── Scroll area ── */}
-      <div className="gym-scroll-pad" style={{ flex: 1, overflowY: "auto", padding: "20px 28px 0" }}>
+      <div className="gym-scroll-pad" style={{ flex: 1, padding: "20px 28px 0" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
           {/* ════ TAB 0: DASHBOARD ════ */}

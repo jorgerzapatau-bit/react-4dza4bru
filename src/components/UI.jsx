@@ -101,11 +101,11 @@ export function Modal({ title, onClose, children }) {
 
   return (
     <div style={{
-      position: "absolute",
+      position: "fixed",
       inset: 0,
       background: "rgba(0,0,0,.72)",
       backdropFilter: "blur(8px)",
-      zIndex: 100,
+      zIndex: 300,
       display: "flex",
       alignItems: isDesktop ? "center" : "flex-end",
       justifyContent: isDesktop ? "center" : "flex-start",

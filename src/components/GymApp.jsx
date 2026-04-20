@@ -302,6 +302,35 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   // ── Render ──
   return (
     <div className="gym-root">
+
+      {/* ═══ SIDEBAR NAV (primero en DOM = izquierda en desktop) ═══ */}
+      {!configScreen && !loading && (
+        <nav className="gym-nav">
+          <div className="gym-nav-gym-name">{gymConfig?.nombre || "GymFit Pro"}</div>
+          <div className="gym-nav-divider" />
+          {[
+            { label: "Inicio", icon: "⌂", s: "dashboard", t: null },
+            { label: "Miembros", icon: "◎", s: "miembros", t: null },
+            { label: "Agregar", icon: "⊕", accent: true },
+            { label: "Mensajes", icon: "💬", s: "mensajes", t: null, badge: totalRecordatorios },
+            { label: "Caja", icon: "💵", s: "caja", t: null },
+          ].map((n, i) => (
+            <button key={i} className={"gym-nav-btn" + (n.accent ? " gym-nav-btn-accent" : "")} onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }}>
+              {n.accent ? (
+                <div className="gym-nav-accent">{n.icon}</div>
+              ) : (
+                <>
+                  <span className={"gym-nav-icon" + (screen === n.s ? " active" : "")}>{n.icon}</span>
+                  <span className={"gym-nav-label" + (screen === n.s ? " active" : "")}>{n.label}</span>
+                  {n.badge > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 0, right: "18%", width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #13131f" }} />}
+                </>
+              )}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {/* ═══ CONTENIDO PRINCIPAL ═══ */}
       <div className="gym-content">
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
@@ -432,7 +461,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
         {/* ═══ MODAL CALENDARIO ═══ */}
         {modal === "calendario" && (
-          <div style={{ position: "absolute", inset: 0, background: "#13131f", zIndex: 150, display: "flex", flexDirection: "column", borderRadius: "inherit" }}>
+          <div style={{ position: "fixed", inset: 0, background: "#13131f", zIndex: 300, display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "16px 20px 0", flexShrink: 0, display: "flex", alignItems: "center", gap: 12 }}>
               <button onClick={() => setModal(null)} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
               <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>📅 Calendario</h1>
@@ -492,32 +521,6 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         )}
       </div>
 
-      {/* ═══ NAV ═══ */}
-      {!configScreen && !loading && (
-        <nav className="gym-nav">
-          <div className="gym-nav-gym-name">{gymConfig?.nombre || "GymFit Pro"}</div>
-          <div className="gym-nav-divider" />
-          {[
-            { label: "Inicio", icon: "⌂", s: "dashboard", t: null },
-            { label: "Miembros", icon: "◎", s: "miembros", t: null },
-            { label: "Agregar", icon: "⊕", accent: true },
-            { label: "Mensajes", icon: "💬", s: "mensajes", t: null, badge: totalRecordatorios },
-            { label: "Caja", icon: "💵", s: "caja", t: null },
-          ].map((n, i) => (
-            <button key={i} className={"gym-nav-btn" + (n.accent ? " gym-nav-btn-accent" : "")} onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }}>
-              {n.accent ? (
-                <div className="gym-nav-accent">{n.icon}</div>
-              ) : (
-                <>
-                  <span className={"gym-nav-icon" + (screen === n.s ? " active" : "")}>{n.icon}</span>
-                  <span className={"gym-nav-label" + (screen === n.s ? " active" : "")}>{n.label}</span>
-                  {n.badge > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 0, right: "18%", width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #13131f" }} />}
-                </>
-              )}
-            </button>
-          ))}
-        </nav>
-      )}
     </div>
   );
 }

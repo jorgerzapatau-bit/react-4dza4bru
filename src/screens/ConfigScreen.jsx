@@ -28,7 +28,7 @@ export default function ConfigScreen({
   };
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "24px 24px 60px" }}>
+    <div style={{ flex: 1, padding: "24px 24px 60px" }}>
       {gymConfig && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <button onClick={() => setConfigScreen(false)} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
