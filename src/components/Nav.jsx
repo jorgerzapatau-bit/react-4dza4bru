@@ -14,7 +14,9 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
   return (
     <nav className="gym-nav">
 
-      {/* ── Cabecera gym (solo desktop ≥1024px) ── */}
+      {/* ══ DESKTOP ONLY content ══ */}
+
+      {/* Cabecera gym */}
       <div className="gym-nav-gym">
         <div className="gym-nav-gym-logo">
           {gymLogo
@@ -30,7 +32,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
 
       <span className="gym-nav-section">Menú</span>
 
-      {/* ── Items de navegación ── */}
+      {/* ══ NAV ITEMS — visibles en desktop sidebar y mobile bottom bar ══ */}
       {NAV_ITEMS.map((item, i) => (
         <button
           key={i}
@@ -45,42 +47,52 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         </button>
       ))}
 
-      {/* ── Botón Agregar — destacado, solo desktop ── */}
-      <button
-        className="gym-nav-btn gym-nav-btn-accent"
-        onClick={() => setModal("quickAdd")}
-      >
-        <div className="gym-nav-accent">⊕</div>
-        <span className="gym-nav-label" style={{ color: "#a78bfa", fontWeight: 700 }}>Agregar</span>
+      {/* ⊕ Botón central mobile */}
+      <button className="gym-nav-btn mobile-only" onClick={() => setModal("quickAdd")}>
+        <div style={{
+          width: 46, height: 46, borderRadius: 15, marginTop: -16,
+          background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 24, boxShadow: "0 4px 18px rgba(108,99,255,.4)",
+        }}>⊕</div>
       </button>
 
-      {/* ── Acciones secundarias (solo desktop) ── */}
+      {/* ══ DESKTOP ONLY: resto del sidebar ══ */}
+
+      {/* Botón Agregar desktop */}
+      <button
+        className="gym-nav-btn desktop-only"
+        onClick={() => setModal("quickAdd")}
+        style={{ marginTop: 8, marginBottom: 8, padding: "6px 14px" }}
+      >
+        <div style={{
+          width: "100%", height: 46, borderRadius: 14,
+          background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 20, boxShadow: "0 4px 18px rgba(108,99,255,.4)",
+        }}>⊕</div>
+      </button>
+
       <div className="gym-nav-divider" />
       <span className="gym-nav-section">Herramientas</span>
 
-      <button className={"gym-nav-btn" + (screen === "estadisticas" ? " gym-nav-btn-active" : "")} onClick={() => setScreen("estadisticas")}>
+      <button className={"gym-nav-btn desktop-only" + (screen === "estadisticas" ? " gym-nav-btn-active" : "")} onClick={() => setScreen("estadisticas")}>
         <span className={"gym-nav-icon" + (screen === "estadisticas" ? " active" : "")}>📊</span>
         <span className={"gym-nav-label" + (screen === "estadisticas" ? " active" : "")}>Estadísticas</span>
       </button>
 
-      {/* ── Spacer para empujar config/logout al fondo ── */}
-      <div style={{ flex: 1 }} className="gym-nav-spacer" />
+      <div className="gym-nav-spacer" />
 
       <div className="gym-nav-divider" />
 
-      <button className="gym-nav-btn" onClick={() => setConfigScreen(true)}>
+      <button className="gym-nav-btn desktop-only" onClick={() => setConfigScreen(true)}>
         <span className="gym-nav-icon">⚙️</span>
         <span className="gym-nav-label">Configuración</span>
       </button>
 
-      <button className="gym-nav-btn" onClick={onLogout}>
+      <button className="gym-nav-btn desktop-only" onClick={onLogout}>
         <span className="gym-nav-icon" style={{ color: "#f43f5e" }}>🚪</span>
         <span className="gym-nav-label" style={{ color: "#f43f5e" }}>Cerrar sesión</span>
-      </button>
-
-      {/* ── Bottom nav mobile: botón ⊕ central ── */}
-      <button className="gym-nav-btn gym-nav-btn-accent mobile-only" onClick={() => setModal("quickAdd")}>
-        <div className="gym-nav-accent">⊕</div>
       </button>
 
     </nav>
