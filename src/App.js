@@ -3595,9 +3595,9 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
   return (
     <div className="gym-root">
+      <div className="gym-content">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
-        ::-webkit-scrollbar{width:0;}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
@@ -3610,7 +3610,6 @@ function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         button:active{opacity:.75;}
         .wa-pulse{animation:pulse 2s infinite;}
       `}</style>
-      <div className="gym-content">
 
 
         {/* ═══ MENSAJES SCREEN ═══ */}

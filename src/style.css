@@ -3,7 +3,8 @@
 html, body {
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
+  background: #13131f;
+  overflow: hidden;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -16,153 +17,64 @@ html, body {
   background: #13131f;
 }
 
-html, body {
-  background: #13131f;
-  overflow: hidden;
-}
-
 h1, p {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ══════════════════════════════════════
-   LAYOUT PRINCIPAL
+   LAYOUT RAÍZ
 ══════════════════════════════════════ */
 
+/* gym-root: envuelve sidebar + contenido */
 .gym-root {
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;   /* sidebar izq, contenido der */
   background: #13131f;
+  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
   position: relative;
   overflow: hidden;
-  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
-}
-
-@media (min-width: 768px) {
-  .gym-root {
-    flex-direction: row;
-  }
 }
 
 /* ══════════════════════════════════════
-   NAV: BOTTOM (móvil) / SIDEBAR (desktop)
+   SIDEBAR (desktop) — se convierte en
+   bottom nav en móvil con media query
 ══════════════════════════════════════ */
 
 .gym-nav {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(10, 10, 18, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255,255,255,.07);
-  padding: 10px 8px 26px;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 100;
-}
-
-@media (min-width: 768px) {
-  .gym-nav {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    right: auto;
-    width: 72px;
-    height: 100%;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    border-top: none;
-    border-right: 1px solid rgba(255,255,255,.07);
-    padding: 20px 0;
-    gap: 2px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-}
-
-.gym-nav-btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
+  /* DESKTOP por defecto */
+  width: 72px;
+  height: 100%;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  flex: 1;
-  position: relative;
-  padding: 4px 0;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 16px 0;
+  background: rgba(10, 10, 18, 0.97);
+  border-right: 1px solid rgba(255,255,255,.07);
+  z-index: 100;
+  overflow: hidden;
 }
 
-@media (min-width: 768px) {
-  .gym-nav-btn {
-    flex: 0 0 auto;
+/* MÓVIL: se convierte en bottom nav */
+@media (max-width: 767px) {
+  .gym-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    padding: 10px 0;
-    gap: 4px;
-  }
-  .gym-nav-btn:hover {
-    background: rgba(255,255,255,.05);
-  }
-}
-
-.gym-nav-icon {
-  font-size: 20px;
-  color: #4b4b6a;
-  transition: color .2s;
-  line-height: 1;
-}
-.gym-nav-icon.active { color: #a78bfa; }
-
-.gym-nav-label {
-  font-size: 10px;
-  font-weight: 600;
-  font-family: inherit;
-  color: #4b4b6a;
-  transition: color .2s;
-}
-.gym-nav-label.active { color: #a78bfa; }
-
-.gym-nav-accent {
-  width: 50px;
-  height: 50px;
-  border-radius: 17px;
-  background: linear-gradient(135deg, #6c63ff, #e040fb);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  box-shadow: 0 4px 20px rgba(108,99,255,.55);
-  margin-top: -22px;
-}
-
-@media (min-width: 768px) {
-  .gym-nav-accent {
-    margin-top: 4px;
-    margin-bottom: 4px;
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    font-size: 22px;
-  }
-}
-
-.gym-nav-divider {
-  display: none;
-}
-@media (min-width: 768px) {
-  .gym-nav-divider {
-    display: block;
-    width: 36px;
-    height: 1px;
-    background: rgba(255,255,255,.07);
-    margin: 6px auto;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 10px 8px 26px;
+    border-right: none;
+    border-top: 1px solid rgba(255,255,255,.07);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 }
 
@@ -179,87 +91,138 @@ h1, p {
   min-width: 0;
 }
 
-/* Padding inferior para dejar espacio al bottom nav en móvil */
-.gym-scroll-pad { padding-bottom: 90px; }
-@media (min-width: 768px) {
-  .gym-scroll-pad { padding-bottom: 24px; }
+/* ══════════════════════════════════════
+   BOTONES DEL NAV
+══════════════════════════════════════ */
+
+.gym-nav-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 10px 0;
+  position: relative;
+  transition: background .15s;
 }
 
-/* Padding horizontal de pantallas */
-.gym-px { padding-left: 24px; padding-right: 24px; }
+.gym-nav-btn:hover {
+  background: rgba(255,255,255,.05);
+}
+
+@media (max-width: 767px) {
+  .gym-nav-btn {
+    flex: 1;
+    padding: 4px 0;
+  }
+}
+
+.gym-nav-icon {
+  font-size: 20px;
+  color: #4b4b6a;
+  transition: color .2s;
+  line-height: 1;
+  display: block;
+}
+
+.gym-nav-icon.active { color: #a78bfa; }
+
+.gym-nav-label {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #4b4b6a;
+  transition: color .2s;
+  white-space: nowrap;
+}
+
+.gym-nav-label.active { color: #a78bfa; }
+
+/* Botón ⊕ central */
+.gym-nav-accent {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6c63ff, #e040fb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 20px rgba(108,99,255,.55);
+}
+
+@media (max-width: 767px) {
+  .gym-nav-accent {
+    width: 50px;
+    height: 50px;
+    border-radius: 17px;
+    font-size: 26px;
+    margin-top: -22px;
+  }
+}
+
+/* ══════════════════════════════════════
+   SCROLL — padding inferior
+══════════════════════════════════════ */
+
+/* En móvil dejamos espacio para el bottom nav fijo */
+.gym-scroll-pad {
+  padding-bottom: 90px !important;
+}
+
 @media (min-width: 768px) {
-  .gym-px { padding-left: 32px; padding-right: 32px; }
+  .gym-scroll-pad {
+    padding-bottom: 24px !important;
+  }
 }
 
 /* ══════════════════════════════════════
    GRIDS RESPONSIVOS
 ══════════════════════════════════════ */
 
-/* Métricas: 2 col en móvil, 4 en ≥1024 */
+/* Ingresos + Gastos: 2 col siempre, 4 col en desktop grande */
 .gym-metrics-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
   gap: 10px;
   margin-bottom: 14px;
 }
+
 @media (min-width: 1024px) {
   .gym-metrics-grid {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
   }
 }
 
-/* Miembros grid: 2 col en móvil, 3 en ≥1024 */
+/* Miembros grid: 2 col en móvil, 3 en desktop */
 .gym-members-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
 @media (min-width: 1024px) {
   .gym-members-grid {
     grid-template-columns: 1fr 1fr 1fr;
   }
 }
 
-/* Alertas del dashboard en 2 columnas en desktop */
+/* ══════════════════════════════════════
+   OCULTAR BOTONES "←" EN DESKTOP
+══════════════════════════════════════ */
+
 @media (min-width: 768px) {
-  .gym-alerts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  .mobile-only {
+    display: none !important;
   }
 }
 
 /* ══════════════════════════════════════
-   MODAL MÁS COMPACTO EN DESKTOP
+   ANIMACIONES
 ══════════════════════════════════════ */
 
-@media (min-width: 768px) {
-  /* Los modales en desktop se centran y tienen ancho máximo */
-  .modal-overlay-desktop {
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 20px !important;
-  }
-  .modal-sheet-desktop {
-    border-radius: 20px !important;
-    max-width: 500px !important;
-    margin: 0 auto;
-    max-height: 85vh !important;
-  }
-}
-
-/* ══════════════════════════════════════
-   UTILIDADES
-══════════════════════════════════════ */
-
-.desktop-only { display: none; }
-@media (min-width: 768px) { .desktop-only { display: block; } }
-
-@media (min-width: 768px) { .mobile-only { display: none !important; } }
-
-/* Sidebar va a la IZQUIERDA en desktop */
-@media (min-width: 768px) {
-  .gym-nav {
-    order: -1;
-  }
-}
+::-webkit-scrollbar { width: 0; }
