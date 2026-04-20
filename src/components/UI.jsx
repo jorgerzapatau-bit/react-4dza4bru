@@ -69,8 +69,7 @@ function DateInput({ value, onChange, style, readOnly }) {
     if (inputRef.current && value) {
       inputRef.current.value = value;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line
 
   const handleChange = (e) => {
     const v = e.target.value; // siempre YYYY-MM-DD o ""
