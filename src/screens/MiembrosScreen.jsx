@@ -1,5 +1,5 @@
 import { fmt, fmtDate, diasParaVencer, todayISO } from "../utils/dateUtils";
-import { getMembershipInfo } from "../utils/membershipUtils";
+import { getMembershipInfo } from "../utils/dateUtils";
 import { DEFAULT_PLANES } from "../utils/constants";
 
 export default function MiembrosScreen({
