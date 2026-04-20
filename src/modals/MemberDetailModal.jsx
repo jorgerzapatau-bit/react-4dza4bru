@@ -48,7 +48,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
     >
       <div
         style={{
-          background: "#1a1a2e",
+          background: "#161b22",
           borderRadius: 24,
           padding: 24,
           width: "100%",
@@ -61,14 +61,14 @@ function CongelarModal({ m, onClose, onConfirm }) {
           <h3 style={{ color: "#60a5fa", fontSize: 16, fontWeight: 700 }}>
             Congelar membresía
           </h3>
-          <p style={{ color: "#4b4b6a", fontSize: 12, marginTop: 6, lineHeight: 1.6 }}>
+          <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6, lineHeight: 1.6 }}>
             Los días congelados se suman automáticamente al vencimiento cuando
             se descongele.
           </p>
         </div>
         <p
           style={{
-            color: "#6b7280",
+            color: "#8b949e",
             fontSize: 11,
             fontWeight: 600,
             textTransform: "uppercase",
@@ -93,14 +93,14 @@ function CongelarModal({ m, onClose, onConfirm }) {
                 borderRadius: 12,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                background: modo === op.val ? "rgba(96,165,250,.1)" : "rgba(255,255,255,.04)",
+                background: modo === op.val ? "rgba(96,165,250,.1)" : "#161b22",
                 textAlign: "center",
               }}
             >
-              <p style={{ color: modo === op.val ? "#60a5fa" : "#6b7280", fontSize: 11, fontWeight: 700 }}>
+              <p style={{ color: modo === op.val ? "#60a5fa" : "#8b949e", fontSize: 11, fontWeight: 700 }}>
                 {op.label}
               </p>
-              <p style={{ color: "#4b4b6a", fontSize: 9, marginTop: 3, lineHeight: 1.4 }}>
+              <p style={{ color: "#8b949e", fontSize: 9, marginTop: 3, lineHeight: 1.4 }}>
                 {op.desc}
               </p>
             </button>
@@ -108,7 +108,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
         </div>
         {modo === "fecha" && (
           <div style={{ marginBottom: 16 }}>
-            <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
+            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
               Fecha de regreso
             </p>
             <input
@@ -118,11 +118,11 @@ function CongelarModal({ m, onClose, onConfirm }) {
               onChange={(e) => setFechaDesc(e.target.value)}
               style={{
                 width: "100%",
-                background: "rgba(255,255,255,.07)",
+                background: "#21262d",
                 border: "1px solid rgba(96,165,250,.3)",
                 borderRadius: 12,
                 padding: "12px 14px",
-                color: fechaDesc ? "#fff" : "#3d3d5c",
+                color: fechaDesc ? "#fff" : "#484f58",
                 fontSize: 14,
                 fontFamily: "inherit",
                 outline: "none",
@@ -131,7 +131,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
           </div>
         )}
         <div style={{ display: "flex", gap: 10 }}>
-          <Btn full outline color="#6b7280" onClick={onClose}>
+          <Btn full outline color="#8b949e" onClick={onClose}>
             Cancelar
           </Btn>
           <Btn full color="#60a5fa" onClick={() => onConfirm(modo === "fecha" ? fechaDesc : null)}>
@@ -155,7 +155,7 @@ function ConfirmDeleteInput({ nombre, onConfirm, onCancel }) {
         placeholder="Escribe ELIMINAR"
         style={{
           width: "100%",
-          background: "rgba(255,255,255,.07)",
+          background: "#21262d",
           border: `1px solid ${ok ? "rgba(244,63,94,.6)" : "rgba(255,255,255,.1)"}`,
           borderRadius: 10,
           padding: "10px 12px",
@@ -172,14 +172,14 @@ function ConfirmDeleteInput({ nombre, onConfirm, onCancel }) {
           style={{
             flex: 1,
             padding: "10px",
-            border: "1px solid rgba(255,255,255,.1)",
+            border: "1px solid #30363d",
             borderRadius: 10,
             cursor: "pointer",
             fontFamily: "inherit",
             fontSize: 12,
             fontWeight: 600,
             background: "transparent",
-            color: "#6b7280",
+            color: "#8b949e",
           }}
         >
           Cancelar
@@ -440,7 +440,7 @@ export default function MemberDetailModal({
               style={{
                 width: "100%",
                 maxWidth: isDesktop ? 520 : "100%",
-                background: "#1a1a2e",
+                background: "#161b22",
                 borderRadius: isDesktop ? 20 : "28px 28px 0 0",
                 padding: "24px 24px 44px",
                 animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease",
@@ -454,7 +454,7 @@ export default function MemberDetailModal({
                 </h2>
                 <button
                   onClick={() => setCobrarModal(false)}
-                  style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18 }}
+                  style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#8b949e", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18 }}
                 >
                   ✕
                 </button>
@@ -473,7 +473,7 @@ export default function MemberDetailModal({
                       borderRadius: 20,
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      background: cobro.tipo === t.val ? "rgba(74,222,128,.12)" : "rgba(255,255,255,.04)",
+                      background: cobro.tipo === t.val ? "rgba(74,222,128,.12)" : "#161b22",
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
@@ -482,24 +482,24 @@ export default function MemberDetailModal({
                     }}
                   >
                     <span style={{ fontSize: 15 }}>{t.icon}</span>
-                    <span style={{ color: cobro.tipo === t.val ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: cobro.tipo === t.val ? 700 : 500 }}>
+                    <span style={{ color: cobro.tipo === t.val ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: cobro.tipo === t.val ? 700 : 500 }}>
                       {t.label}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
-                Descripción <span style={{ color: "#4b4b6a", fontWeight: 400, fontSize: 10 }}>(opcional)</span>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                Descripción <span style={{ color: "#8b949e", fontWeight: 400, fontSize: 10 }}>(opcional)</span>
               </p>
               <input
                 value={cobro.desc}
                 onChange={(e) => setCobro((p) => ({ ...p, desc: e.target.value }))}
                 placeholder={tipoInfo?.placeholder}
-                style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
+                style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                 Monto ($)
               </p>
               <input
@@ -507,20 +507,20 @@ export default function MemberDetailModal({
                 value={cobro.monto}
                 onChange={(e) => setCobro((p) => ({ ...p, monto: e.target.value }))}
                 placeholder="0.00"
-                style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 16, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
+                style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 16, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                 Fecha
               </p>
               <input
                 type="date"
                 value={cobro.fecha}
                 onChange={(e) => setCobro((p) => ({ ...p, fecha: e.target.value }))}
-                style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
+                style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
                 Forma de pago
               </p>
               <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -532,12 +532,12 @@ export default function MemberDetailModal({
                       flex: 1, padding: "10px 4px",
                       border: cobro.formaPago === op.val ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                      background: cobro.formaPago === op.val ? "rgba(167,139,250,.15)" : "rgba(255,255,255,.04)",
+                      background: cobro.formaPago === op.val ? "rgba(167,139,250,.15)" : "#161b22",
                       transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}
                   >
                     <span style={{ fontSize: 18 }}>{op.icon}</span>
-                    <span style={{ color: cobro.formaPago === op.val ? "#a78bfa" : "#6b7280", fontSize: 10, fontWeight: 700 }}>
+                    <span style={{ color: cobro.formaPago === op.val ? "#a78bfa" : "#8b949e", fontSize: 10, fontWeight: 700 }}>
                       {op.val}
                     </span>
                   </button>
@@ -551,8 +551,8 @@ export default function MemberDetailModal({
                   width: "100%", padding: "14px", border: "none", borderRadius: 14,
                   cursor: cobro.monto ? "pointer" : "not-allowed", fontFamily: "inherit",
                   fontSize: 14, fontWeight: 700,
-                  background: cobro.monto ? "linear-gradient(135deg,#4ade80,#22c55e)" : "rgba(255,255,255,.06)",
-                  color: cobro.monto ? "#000" : "#4b4b6a",
+                  background: cobro.monto ? "linear-gradient(135deg,#4ade80,#22c55e)" : "#21262d",
+                  color: cobro.monto ? "#000" : "#8b949e",
                   boxShadow: cobro.monto ? "0 4px 18px rgba(74,222,128,.35)" : "none",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s",
                 }}
@@ -583,7 +583,7 @@ export default function MemberDetailModal({
           >
             <div
               style={{
-                width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#1a1a2e",
+                width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#161b22",
                 borderRadius: isDesktop ? 20 : "28px 28px 0 0",
                 padding: "24px 24px 44px",
                 animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease",
@@ -596,13 +596,13 @@ export default function MemberDetailModal({
                 </h2>
                 <button
                   onClick={() => setRenovarModal(false)}
-                  style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#8b949e", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   ✕
                 </button>
               </div>
 
-              <p style={{ color: "#4b4b6a", fontSize: 12, marginBottom: 12 }}>
+              <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 12 }}>
                 {esPrimeraMembresía
                   ? "Primera membresía — puedes registrar una fecha de inicio pasada para reflejar el historial real del miembro."
                   : (() => {
@@ -655,7 +655,7 @@ export default function MemberDetailModal({
                 placeholder="0.00"
               />
 
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Forma de pago
               </p>
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -671,12 +671,12 @@ export default function MemberDetailModal({
                       flex: 1, padding: "10px 4px",
                       border: renovar.formaPago === op.val ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                      background: renovar.formaPago === op.val ? "rgba(167,139,250,.15)" : "rgba(255,255,255,.04)",
+                      background: renovar.formaPago === op.val ? "rgba(167,139,250,.15)" : "#161b22",
                       transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}
                   >
                     <span style={{ fontSize: 18 }}>{op.icon}</span>
-                    <span style={{ color: renovar.formaPago === op.val ? "#a78bfa" : "#6b7280", fontSize: 10, fontWeight: 700 }}>
+                    <span style={{ color: renovar.formaPago === op.val ? "#a78bfa" : "#8b949e", fontSize: 10, fontWeight: 700 }}>
                       {op.val}
                     </span>
                   </button>
@@ -685,7 +685,7 @@ export default function MemberDetailModal({
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>
                     Inicio
                   </p>
                   <input
@@ -701,7 +701,7 @@ export default function MemberDetailModal({
                       }));
                     }}
                     style={{
-                      width: "100%", background: "rgba(255,255,255,.07)",
+                      width: "100%", background: "#21262d",
                       border: `1px solid ${esMesPasado ? "rgba(245,158,11,.4)" : "rgba(255,255,255,.15)"}`,
                       borderRadius: 12, padding: "12px 10px", color: "#fff", fontSize: 13,
                       fontFamily: "inherit", outline: "none", marginBottom: 12,
@@ -709,7 +709,7 @@ export default function MemberDetailModal({
                   />
                 </div>
                 <div>
-                  <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>
                     Vencimiento
                   </p>
                   <input
@@ -722,7 +722,7 @@ export default function MemberDetailModal({
                       setRenovar((p) => ({ ...p, vence: v, venceManual: true }));
                     }}
                     style={{
-                      width: "100%", background: "rgba(255,255,255,.07)",
+                      width: "100%", background: "#21262d",
                       border: "1px solid rgba(255,255,255,.15)",
                       borderRadius: 12, padding: "12px 10px", color: "#fff", fontSize: 13,
                       fontFamily: "inherit", outline: "none", marginBottom: 12,
@@ -732,7 +732,7 @@ export default function MemberDetailModal({
               </div>
 
               <div style={{ background: "rgba(34,211,238,.08)", border: "1px solid rgba(34,211,238,.2)", borderRadius: 14, padding: "10px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#4b4b6a", fontSize: 12 }}>Duración</span>
+                <span style={{ color: "#8b949e", fontSize: 12 }}>Duración</span>
                 <span style={{ color: "#22d3ee", fontSize: 13, fontWeight: 700 }}>
                   {(() => {
                     if (!renovar.inicio || !renovar.vence) return "—";
@@ -810,14 +810,14 @@ export default function MemberDetailModal({
               color:
                 memInfo.estado === "Activo" ? "#4ade80"
                 : memInfo.estado === "Congelado" ? "#60a5fa"
-                : memInfo.estado === "Sin membresía" ? "#6b7280"
+                : memInfo.estado === "Sin membresía" ? "#8b949e"
                 : "#f87171",
               borderRadius: 10, padding: "4px 14px", fontSize: 12, fontWeight: 700,
             }}
           >
             {memInfo.estado === "Congelado" ? "🧊 Congelado" : memInfo.estado}
           </span>
-          <span style={{ color: "#6b7280", fontSize: 11, fontWeight: 500 }}>
+          <span style={{ color: "#8b949e", fontSize: 11, fontWeight: 500 }}>
             {memInfo.estado === "Congelado"
               ? `🧊 Congelado — vence ${fmtDate(memInfo.vence)}`
               : memInfo.estado === "Activo"
@@ -863,7 +863,7 @@ export default function MemberDetailModal({
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,.05)", borderRadius: 14, padding: 4, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 4, background: "#1c2128", borderRadius: 14, padding: 4, marginBottom: 18 }}>
         {[{ k: "perfil", label: "📋 Perfil" }, { k: "historial", label: "💳 Historial" }].map((t) => (
           <button
             key={t.k}
@@ -872,7 +872,7 @@ export default function MemberDetailModal({
               flex: 1, padding: "9px 0", border: "none", borderRadius: 11, cursor: "pointer",
               fontFamily: "inherit",
               background: detTab === t.k ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "transparent",
-              color: detTab === t.k ? "#fff" : "#4b4b6a",
+              color: detTab === t.k ? "#fff" : "#8b949e",
               fontSize: 12, fontWeight: detTab === t.k ? 700 : 500,
               boxShadow: detTab === t.k ? "0 2px 12px rgba(108,99,255,.4)" : "none",
               transition: "all .2s",
@@ -888,13 +888,13 @@ export default function MemberDetailModal({
         <>
           {editing ? (
             <>
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
                 Datos personales
               </p>
               <Inp label="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Nombre completo" />
               <Inp label="Teléfono" value={form.tel} onChange={(v) => setForm((p) => ({ ...p, tel: v }))} placeholder="999 000 0000" type="tel" />
 
-              <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Fecha de incorporación
               </p>
               <input
@@ -902,10 +902,10 @@ export default function MemberDetailModal({
                 value={form.fecha_incorporacion}
                 onChange={(e) => setForm((p) => ({ ...p, fecha_incorporacion: e.target.value }))}
                 style={{
-                  width: "100%", background: "rgba(255,255,255,.07)",
+                  width: "100%", background: "#21262d",
                   border: `1px solid ${form.fecha_incorporacion ? "rgba(255,255,255,.1)" : "rgba(245,158,11,.4)"}`,
                   borderRadius: 12, padding: "12px 14px",
-                  color: form.fecha_incorporacion ? "#fff" : "#3d3d5c",
+                  color: form.fecha_incorporacion ? "#fff" : "#484f58",
                   fontSize: 14, fontFamily: "inherit", outline: "none",
                   marginBottom: form.fecha_incorporacion ? 12 : 6,
                 }}
@@ -916,14 +916,14 @@ export default function MemberDetailModal({
                 </p>
               )}
 
-              <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Sexo
               </p>
               <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                 {[
                   { val: "Masculino", icon: "♂️", color: "#60a5fa" },
                   { val: "Femenino",  icon: "♀️", color: "#f472b6" },
-                  { val: "",          icon: "—",  color: "#6b7280" },
+                  { val: "",          icon: "—",  color: "#8b949e" },
                 ].map((op) => (
                   <button
                     key={op.val}
@@ -932,8 +932,8 @@ export default function MemberDetailModal({
                       flex: 1, padding: "10px 0",
                       border: form.sexo === op.val ? `2px solid ${op.color}` : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                      background: form.sexo === op.val ? `${op.color}20` : "rgba(255,255,255,.04)",
-                      color: form.sexo === op.val ? op.color : "#4b4b6a",
+                      background: form.sexo === op.val ? `${op.color}20` : "#161b22",
+                      color: form.sexo === op.val ? op.color : "#8b949e",
                       fontSize: 12, fontWeight: 700, transition: "all .2s",
                     }}
                   >
@@ -943,7 +943,7 @@ export default function MemberDetailModal({
                 ))}
               </div>
 
-              <p style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Fecha de nacimiento
               </p>
               <input
@@ -951,10 +951,10 @@ export default function MemberDetailModal({
                 value={form.fecha_nacimiento}
                 onChange={(e) => setForm((p) => ({ ...p, fecha_nacimiento: e.target.value }))}
                 style={{
-                  width: "100%", background: "rgba(255,255,255,.07)",
+                  width: "100%", background: "#21262d",
                   border: `1px solid ${form.fecha_nacimiento ? "rgba(255,255,255,.1)" : "rgba(245,158,11,.4)"}`,
                   borderRadius: 12, padding: "12px 14px",
-                  color: form.fecha_nacimiento ? "#fff" : "#3d3d5c",
+                  color: form.fecha_nacimiento ? "#fff" : "#484f58",
                   fontSize: 14, fontFamily: "inherit", outline: "none",
                   marginBottom: form.fecha_nacimiento ? 12 : 6,
                 }}
@@ -965,9 +965,9 @@ export default function MemberDetailModal({
                 </p>
               )}
 
-              <p style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 📝 Notas internas{" "}
-                <span style={{ color: "#6b7280", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span>
+                <span style={{ color: "#8b949e", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span>
               </p>
               <textarea
                 value={form.notas}
@@ -975,7 +975,7 @@ export default function MemberDetailModal({
                 rows={3}
                 placeholder="Ej: Tiene lesión de rodilla. Paga los viernes. Familiar del dueño."
                 style={{
-                  width: "100%", background: "rgba(255,255,255,.06)",
+                  width: "100%", background: "#21262d",
                   border: "1px solid rgba(167,139,250,.2)", borderRadius: 12,
                   padding: "10px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit",
                   outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 14,
@@ -983,7 +983,7 @@ export default function MemberDetailModal({
               />
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <Btn full outline color="#6b7280" onClick={() => setEditing(false)}>Cancelar</Btn>
+                <Btn full outline color="#8b949e" onClick={() => setEditing(false)}>Cancelar</Btn>
                 <button
                   onClick={handleSave}
                   disabled={!hasChanges}
@@ -991,8 +991,8 @@ export default function MemberDetailModal({
                     flex: 1, padding: "13px 20px", border: "none", borderRadius: 14,
                     cursor: hasChanges ? "pointer" : "not-allowed", fontFamily: "inherit",
                     fontSize: 14, fontWeight: 700,
-                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.06)",
-                    color: hasChanges ? "#fff" : "#4b4b6a",
+                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+                    color: hasChanges ? "#fff" : "#8b949e",
                     boxShadow: hasChanges ? "0 4px 18px rgba(108,99,255,.4)" : "none",
                     transition: "all .3s",
                   }}
@@ -1002,7 +1002,7 @@ export default function MemberDetailModal({
               </div>
 
               {/* ── Eliminar miembro ── */}
-              <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,.06)" }}>
+              <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #21262d" }}>
                 {!confirmDelete ? (
                   <button
                     onClick={() => setConfirmDelete(true)}
@@ -1020,7 +1020,7 @@ export default function MemberDetailModal({
                     <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
                       ⚠️ ¿Eliminar a {m.nombre}?
                     </p>
-                    <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>
+                    <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12 }}>
                       Se borrarán también todas sus transacciones (
                       {txs.filter((t) => String(t.miembroId) === String(m.id) || String(t.miembro_id) === String(m.id)).length}{" "}
                       movimiento
@@ -1030,7 +1030,7 @@ export default function MemberDetailModal({
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         onClick={() => setConfirmDelete(false)}
-                        style={{ flex: 1, padding: "10px", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#6b7280" }}
+                        style={{ flex: 1, padding: "10px", border: "1px solid #30363d", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#8b949e" }}
                       >
                         Cancelar
                       </button>
@@ -1045,7 +1045,7 @@ export default function MemberDetailModal({
                 ) : (
                   <div style={{ background: "rgba(244,63,94,.12)", border: "2px solid rgba(244,63,94,.5)", borderRadius: 14, padding: 14 }}>
                     <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>🚨 Confirmación final</p>
-                    <p style={{ color: "#9ca3af", fontSize: 11, marginBottom: 12 }}>
+                    <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12 }}>
                       Escribe <strong style={{ color: "#f43f5e" }}>ELIMINAR</strong> para confirmar
                     </p>
                     <ConfirmDeleteInput
@@ -1090,10 +1090,10 @@ export default function MemberDetailModal({
               )}
 
               {/* ── Datos personales ── */}
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Datos personales
               </p>
-              <div style={{ background: "rgba(255,255,255,.03)", borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
+              <div style={{ background: "#13181f", borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
                 {[
                   { label: "📱 Teléfono", val: m.tel || "—" },
                   {
@@ -1133,17 +1133,17 @@ export default function MemberDetailModal({
                     style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "12px 0",
-                      borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,.06)" : "none",
+                      borderBottom: i < arr.length - 1 ? "1px solid #21262d" : "none",
                     }}
                   >
-                    <span style={{ color: "#4b4b6a", fontSize: 13 }}>{row.label}</span>
+                    <span style={{ color: "#8b949e", fontSize: 13 }}>{row.label}</span>
                     {row.custom || <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{row.val || "—"}</span>}
                   </div>
                 ))}
               </div>
 
               {/* ── Membresía actual ── */}
-              <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Membresía actual
               </p>
 
@@ -1152,7 +1152,7 @@ export default function MemberDetailModal({
                   <span style={{ fontSize: 22 }}>🧊</span>
                   <div style={{ flex: 1 }}>
                     <p style={{ color: "#60a5fa", fontSize: 13, fontWeight: 700 }}>Membresía congelada</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 2 }}>
+                    <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>
                       {memInfo.fechaDescongelar
                         ? `Se descongela el ${fmtDate(memInfo.fechaDescongelar)}`
                         : "Se descongela manualmente"}
@@ -1214,35 +1214,35 @@ export default function MemberDetailModal({
                       ? [{ label: "💳 Forma de pago", val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transferencia" : "💳 Tarjeta" }]
                       : []),
                   ].map((row, i, arr) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,.06)" : "none" }}>
-                      <span style={{ color: "#4b4b6a", fontSize: 13 }}>{row.label}</span>
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid #21262d" : "none" }}>
+                      <span style={{ color: "#8b949e", fontSize: 13 }}>{row.label}</span>
                       <span style={{ color: "#22d3ee", fontSize: 13, fontWeight: 600 }}>{row.val}</span>
                     </div>
                   ))
                 ) : (
                   <div style={{ padding: "18px 0", textAlign: "center" }}>
                     <p style={{ fontSize: 24, marginBottom: 6 }}>📋</p>
-                    <p style={{ color: "#6b7280", fontSize: 13, fontWeight: 600 }}>Sin membresía registrada</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 4 }}>Usa Renovar para registrar un nuevo pago</p>
+                    <p style={{ color: "#8b949e", fontSize: 13, fontWeight: 600 }}>Sin membresía registrada</p>
+                    <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>Usa Renovar para registrar un nuevo pago</p>
                   </div>
                 )}
               </div>
 
               {/* ── Notas internas ── */}
               <div style={{ marginBottom: 16 }}>
-                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                   📝 Notas internas
                 </p>
                 {m.notas ? (
-                  <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 12, padding: "10px 14px" }}>
+                  <div style={{ background: "#161b22", border: "1px solid rgba(167,139,250,.15)", borderRadius: 12, padding: "10px 14px" }}>
                     <p style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.notas}</p>
                   </div>
                 ) : (
                   <div
                     onClick={() => setEditing(true)}
-                    style={{ background: "rgba(255,255,255,.03)", border: "1px dashed rgba(255,255,255,.08)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}
+                    style={{ background: "#13181f", border: "1px dashed rgba(255,255,255,.08)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}
                   >
-                    <p style={{ color: "#4b4b6a", fontSize: 12 }}>Sin notas — toca para agregar</p>
+                    <p style={{ color: "#8b949e", fontSize: 12 }}>Sin notas — toca para agregar</p>
                   </div>
                 )}
               </div>
@@ -1264,7 +1264,7 @@ export default function MemberDetailModal({
                 return (
                   <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
                     <div style={{ flex: 1, background: "rgba(34,211,238,.08)", border: "1px solid rgba(34,211,238,.15)", borderRadius: 14, padding: "12px 14px" }}>
-                      <p style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
                         Pagado {mesLabel}
                       </p>
                       <p style={{ color: "#22d3ee", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginTop: 4 }}>
@@ -1272,7 +1272,7 @@ export default function MemberDetailModal({
                       </p>
                     </div>
                     <div style={{ flex: 1, background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "12px 14px" }}>
-                      <p style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
                         Movimientos
                       </p>
                       <p style={{ color: "#a78bfa", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginTop: 4 }}>
@@ -1339,7 +1339,7 @@ export default function MemberDetailModal({
           {historial.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>💳</p>
-              <p style={{ color: "#4b4b6a", fontSize: 13 }}>Sin movimientos registrados</p>
+              <p style={{ color: "#8b949e", fontSize: 13 }}>Sin movimientos registrados</p>
             </div>
           ) : (
             <div>
@@ -1363,7 +1363,7 @@ export default function MemberDetailModal({
                     return (
                       <div key={key} style={{ marginBottom: 20 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                          <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                          <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
                             {g.label}
                           </p>
                           <p style={{ color: "#22d3ee", fontSize: 11, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
@@ -1383,8 +1383,8 @@ export default function MemberDetailModal({
                               style={{
                                 display: "flex", alignItems: "center", gap: 12,
                                 padding: "13px 14px", borderRadius: 16, marginBottom: 8,
-                                background: "rgba(255,255,255,.04)",
-                                border: "1px solid rgba(255,255,255,.06)", cursor: "pointer",
+                                background: "#161b22",
+                                border: "1px solid #21262d", cursor: "pointer",
                               }}
                             >
                               <div style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 18, background: bgColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: `2px solid ${color}30` }}>
@@ -1400,7 +1400,7 @@ export default function MemberDetailModal({
                                   <span style={{ background: bgColor, color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
                                     {t.categoria}
                                   </span>
-                                  <span style={{ color: "#4b4b6a", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
+                                  <span style={{ color: "#8b949e", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
                                 </div>
                               </div>
                               <p style={{ color, fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
@@ -1421,7 +1421,7 @@ export default function MemberDetailModal({
               <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#1e1e30", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                   <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
-                  <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                  <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#8b949e", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                 </div>
                 <Inp label="Descripción" value={pago.desc} onChange={(v) => setPago((p) => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." />
                 <Inp label="Monto ($)" type="number" value={pago.monto} onChange={(v) => setPago((p) => ({ ...p, monto: v }))} placeholder="0.00" />

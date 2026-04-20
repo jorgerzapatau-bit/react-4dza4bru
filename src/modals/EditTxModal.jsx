@@ -105,7 +105,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
     >
       <span
         style={{
-          color: "#4b4b6a",
+          color: "#8b949e",
           fontSize: 12,
           fontWeight: 600,
           textTransform: "uppercase",
@@ -178,7 +178,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
               >
                 Modificando mes pasado
               </h3>
-              <p style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.6 }}>
+              <p style={{ color: "#8b949e", fontSize: 13, lineHeight: 1.6 }}>
                 Estás por editar un movimiento de{" "}
                 <strong style={{ color: "#fff" }}>{mesNombre}</strong>. Esto
                 afectará los totales y estadísticas de ese mes.
@@ -202,7 +202,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
               <Btn
                 full
                 outline
-                color="#6b7280"
+                color="#8b949e"
                 onClick={() => setConfirmMesPasado(false)}
               >
                 Cancelar
@@ -293,7 +293,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
           >
             <p
               style={{
-                color: "#4b4b6a",
+                color: "#8b949e",
                 fontSize: 11,
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -317,7 +317,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
 
           <div
             style={{
-              background: "rgba(255,255,255,.03)",
+              background: "#13181f",
               borderRadius: 16,
               padding: "0 14px",
             }}
@@ -331,7 +331,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <Btn full outline color="#6b7280" onClick={onClose}>
+            <Btn full outline color="#8b949e" onClick={onClose}>
               Cerrar
             </Btn>
             <Btn
@@ -390,7 +390,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                 <div>
                   <p
                     style={{
-                      color: "#6b7280",
+                      color: "#8b949e",
                       fontSize: 11,
                       fontWeight: 600,
                       marginBottom: 5,
@@ -416,7 +416,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                     }}
                     style={{
                       width: "100%",
-                      background: "rgba(255,255,255,.07)",
+                      background: "#21262d",
                       border: `1px solid ${
                         esMesPasado
                           ? "rgba(245,158,11,.4)"
@@ -434,7 +434,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                 <div>
                   <p
                     style={{
-                      color: "#6b7280",
+                      color: "#8b949e",
                       fontSize: 11,
                       fontWeight: 600,
                       marginBottom: 5,
@@ -453,7 +453,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                     }
                     style={{
                       width: "100%",
-                      background: "rgba(255,255,255,.07)",
+                      background: "#21262d",
                       border: "1px solid rgba(34,211,238,.3)",
                       borderRadius: 12,
                       padding: "12px 10px",
@@ -501,7 +501,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
             <Btn
               full
               outline
-              color="#6b7280"
+              color="#8b949e"
               onClick={() => {
                 setEditing(false);
                 setConfirmDel(false);
@@ -545,7 +545,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                   <Btn
                     full
                     outline
-                    color="#6b7280"
+                    color="#8b949e"
                     onClick={() => setConfirmDel(false)}
                   >
                     Cancelar

@@ -19,8 +19,8 @@ import { auth, getUserGymId } from "../supabase";
 // ── Estilos base reutilizados ────────────────
 const inputStyle = {
   width: "100%",
-  background: "rgba(255,255,255,.06)",
-  border: "1px solid rgba(255,255,255,.1)",
+  background: "#21262d",
+  border: "1px solid #30363d",
   borderRadius: 12,
   padding: "12px 14px",
   color: "#fff",
@@ -53,7 +53,7 @@ const btnGhostStyle = {
   border: "none",
   cursor: "pointer",
   background: "transparent",
-  color: "#4b4b6a",
+  color: "#8b949e",
   fontSize: 12,
   fontFamily: "inherit",
 };
@@ -132,8 +132,8 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
       <div style={{
         width: "100%",
         maxWidth: 360,
-        background: "rgba(255,255,255,.04)",
-        border: "1px solid rgba(255,255,255,.08)",
+        background: "#161b22",
+        border: "1px solid #21262d",
         borderRadius: 24,
         padding: "32px 28px 28px",
         backdropFilter: "blur(20px)",
@@ -173,7 +173,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, textAlign: "center", margin: 0 }}>
             {nombre}
           </h1>
-          <p style={{ color: "#4b4b6a", fontSize: 12, marginTop: 4 }}>
+          <p style={{ color: "#8b949e", fontSize: 12, marginTop: 4 }}>
             Panel de administración
           </p>
         </div>
@@ -248,7 +248,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: "#4b4b6a",
+                  color: "#8b949e",
                   fontSize: 16,
                   padding: 0,
                 }}

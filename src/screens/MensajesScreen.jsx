@@ -94,7 +94,7 @@ function GuardarEnSlot({ tplsCustom, onGuardar }) {
                 <span style={{ fontSize: 14 }}>{ocupado ? "⭐" : "○"}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
-                    color: ocupado ? "#fff" : "#4b4b6a",
+                    color: ocupado ? "#fff" : "#8b949e",
                     fontSize: 12, fontWeight: ocupado ? 600 : 400,
                     whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                   }}>
@@ -112,7 +112,7 @@ function GuardarEnSlot({ tplsCustom, onGuardar }) {
               width: "100%", padding: "7px",
               border: "none", borderRadius: 8,
               cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, background: "rgba(255,255,255,.05)", color: "#6b7280",
+              fontSize: 11, background: "#1c2128", color: "#8b949e",
               marginTop: 4,
             }}
           >
@@ -159,7 +159,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
           onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
           placeholder="Nombre del mensaje (ej: Promoción diciembre)"
           style={{
-            width: "100%", background: "rgba(255,255,255,.07)",
+            width: "100%", background: "#21262d",
             border: "1px solid rgba(255,255,255,.15)", borderRadius: 10,
             padding: "10px 12px", color: "#fff", fontSize: 13,
             fontFamily: "inherit", outline: "none", marginBottom: 8,
@@ -171,7 +171,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
           placeholder={`Escribe el mensaje. Usa {nombre} para incluir el nombre del miembro. Ej: Hola {nombre}, tenemos una promoción especial para ti 🎁 — ${gymNom}`}
           rows={4}
           style={{
-            width: "100%", background: "rgba(255,255,255,.07)",
+            width: "100%", background: "#21262d",
             border: "1px solid rgba(255,255,255,.15)", borderRadius: 10,
             padding: "10px 12px", color: "#fff", fontSize: 12,
             fontFamily: "inherit", outline: "none", resize: "none",
@@ -179,9 +179,9 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
           }}
         />
         {form.msg.trim() && (
-          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-            <p style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
-            <p style={{ color: "#9ca3af", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
+          <div style={{ background: "#161b22", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
+            <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
           </div>
         )}
         <div style={{ display: "flex", gap: 8 }}>
@@ -189,10 +189,10 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
             onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
             style={{
               flex: 1, padding: "10px",
-              border: "1px solid rgba(255,255,255,.1)", borderRadius: 10,
+              border: "1px solid #30363d", borderRadius: 10,
               cursor: "pointer", fontFamily: "inherit",
               fontSize: 12, fontWeight: 600,
-              background: "transparent", color: "#6b7280",
+              background: "transparent", color: "#8b949e",
             }}
           >
             Cancelar
@@ -207,8 +207,8 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
               fontSize: 12, fontWeight: 700,
               background: form.label.trim() && form.msg.trim()
                 ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                : "rgba(255,255,255,.06)",
-              color: form.label.trim() && form.msg.trim() ? "#fff" : "#4b4b6a",
+                : "#21262d",
+              color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e",
             }}
           >
             {guardando ? "Guardando…" : "💾 Guardar"}
@@ -222,7 +222,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
   if (tieneContenido) {
     return (
       <div style={{
-        background: "rgba(255,255,255,.04)",
+        background: "#161b22",
         border: "1px solid rgba(108,99,255,.2)",
         borderRadius: 12, padding: "10px 14px",
         display: "flex", alignItems: "center", gap: 10,
@@ -230,7 +230,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
         <span style={{ fontSize: 18 }}>⭐</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
-          <p style={{ color: "#4b4b6a", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
+          <p style={{ color: "#8b949e", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
           <button
@@ -248,9 +248,9 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
             onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
             style={{
               padding: "6px 10px",
-              border: "1px solid rgba(255,255,255,.1)", borderRadius: 8,
+              border: "1px solid #30363d", borderRadius: 8,
               cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, background: "transparent", color: "#6b7280",
+              fontSize: 11, background: "transparent", color: "#8b949e",
             }}
           >
             ✏️
@@ -273,7 +273,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
       }}
     >
       <span style={{ fontSize: 16, color: "#6c63ff" }}>＋</span>
-      <span style={{ color: "#4b4b6a", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
+      <span style={{ color: "#8b949e", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
     </button>
   );
 }
@@ -374,7 +374,7 @@ export default function MensajesScreen({
     border: "none", borderRadius: 11,
     cursor: "pointer", fontFamily: "inherit",
     background: activo ? "linear-gradient(135deg,#25d366,#128c7e)" : "transparent",
-    color: activo ? "#fff" : "#4b4b6a",
+    color: activo ? "#fff" : "#8b949e",
     fontSize: 11, fontWeight: activo ? 700 : 500,
     boxShadow: activo ? "0 2px 12px rgba(37,211,102,.3)" : "none",
     transition: "all .2s",
@@ -382,8 +382,8 @@ export default function MensajesScreen({
 
   const textareaStyle = {
     width: "100%",
-    background: "rgba(255,255,255,.07)",
-    border: "1px solid rgba(255,255,255,.12)",
+    background: "#21262d",
+    border: "1px solid #30363d",
     borderRadius: 14, padding: "14px",
     color: "#fff", fontSize: 13,
     fontFamily: "inherit", outline: "none",
@@ -401,14 +401,14 @@ export default function MensajesScreen({
           <button
             onClick={onBack}
             style={{
-              background: "rgba(255,255,255,.08)", border: "none",
+              background: "#21262d", border: "none",
               borderRadius: 10, width: 36, height: 36,
               cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0,
             }}
           >←</button>
           <div style={{ flex: 1 }}>
             <h1 style={{ color: "#fff", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
-            <p style={{ color: "#4b4b6a", fontSize: 11 }}>WhatsApp · vencimientos, individual o masivo</p>
+            <p style={{ color: "#8b949e", fontSize: 11 }}>WhatsApp · vencimientos, individual o masivo</p>
           </div>
           {pendientes > 0 && (
             <span style={{
@@ -422,7 +422,7 @@ export default function MensajesScreen({
         </div>
 
         {/* Selector de modo */}
-        <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,.05)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 4, background: "#1c2128", borderRadius: 14, padding: 4, marginBottom: 14 }}>
           {modos.map(m => (
             <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
               {m.icon} {m.label}
@@ -443,7 +443,7 @@ export default function MensajesScreen({
               <div style={{ textAlign: "center", padding: "50px 0" }}>
                 <p style={{ fontSize: 40, marginBottom: 12 }}>🎉</p>
                 <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>¡Sin vencimientos próximos!</p>
-                <p style={{ color: "#4b4b6a", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
+                <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
               </div>
             ) : (
               alertas.map(({ miembro, diasReales, memInfo }) => {
@@ -454,8 +454,8 @@ export default function MensajesScreen({
                   <div
                     key={miembro.id}
                     style={{
-                      background: enviado ? "rgba(255,255,255,.03)" : `${col}10`,
-                      border: `1px solid ${enviado ? "rgba(255,255,255,.06)" : col + "35"}`,
+                      background: enviado ? "#13181f" : `${col}10`,
+                      border: `1px solid ${enviado ? "#21262d" : col + "35"}`,
                       borderRadius: 18, padding: 14, marginBottom: 12,
                       opacity: enviado ? 0.65 : 1, transition: "all .3s",
                     }}
@@ -476,7 +476,7 @@ export default function MensajesScreen({
                       </div>
                       <div style={{ flex: 1 }}>
                         <p style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
-                        <p style={{ color: "#4b4b6a", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
+                        <p style={{ color: "#8b949e", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
                       </div>
                       <span style={{
                         background: enviado ? "rgba(74,222,128,.15)" : `${col}25`,
@@ -493,8 +493,8 @@ export default function MensajesScreen({
                       onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
                       rows={3}
                       style={{
-                        width: "100%", background: "rgba(255,255,255,.06)",
-                        border: "1px solid rgba(255,255,255,.1)", borderRadius: 12,
+                        width: "100%", background: "#21262d",
+                        border: "1px solid #30363d", borderRadius: 12,
                         padding: "10px 12px", color: "#d1d5db", fontSize: 12,
                         fontFamily: "inherit", outline: "none", resize: "none",
                         lineHeight: 1.5, marginBottom: 8,
@@ -513,8 +513,8 @@ export default function MensajesScreen({
                           ? "rgba(74,222,128,.12)"
                           : miembro.tel
                             ? "linear-gradient(135deg,#25d366,#128c7e)"
-                            : "rgba(255,255,255,.06)",
-                        color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#4b4b6a",
+                            : "#21262d",
+                        color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#8b949e",
                         boxShadow: !enviado && miembro.tel ? "0 4px 14px rgba(37,211,102,.3)" : "none",
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                       }}
@@ -536,14 +536,14 @@ export default function MensajesScreen({
               <>
                 {/* Buscador */}
                 <div style={{ position: "relative", marginBottom: 10 }}>
-                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4b4b6a", pointerEvents: "none" }}>🔍</span>
+                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#8b949e", pointerEvents: "none" }}>🔍</span>
                   <input
                     value={busqueda}
                     onChange={e => setBusqueda(e.target.value)}
                     placeholder="Buscar miembro..."
                     style={{
-                      width: "100%", background: "rgba(255,255,255,.07)",
-                      border: "1px solid rgba(255,255,255,.1)", borderRadius: 12,
+                      width: "100%", background: "#21262d",
+                      border: "1px solid #30363d", borderRadius: 12,
                       padding: "10px 12px 10px 36px", color: "#fff",
                       fontSize: 13, fontFamily: "inherit", outline: "none",
                     }}
@@ -551,7 +551,7 @@ export default function MensajesScreen({
                   {busqueda && (
                     <button
                       onClick={() => setBusqueda("")}
-                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#4b4b6a", fontSize: 16, cursor: "pointer", padding: 2 }}
+                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer", padding: 2 }}
                     >✕</button>
                   )}
                 </div>
@@ -566,7 +566,7 @@ export default function MensajesScreen({
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
                       {filtrados.length === 0 && (
-                        <p style={{ color: "#4b4b6a", fontSize: 12, textAlign: "center", padding: "20px 0" }}>
+                        <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "20px 0" }}>
                           No se encontró "{busqueda}"
                         </p>
                       )}
@@ -575,8 +575,8 @@ export default function MensajesScreen({
                           key={m.id}
                           onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
                           style={{
-                            background: "rgba(255,255,255,.04)",
-                            border: "1px solid rgba(255,255,255,.08)",
+                            background: "#161b22",
+                            border: "1px solid #21262d",
                             borderRadius: 14, padding: "10px 14px",
                             cursor: "pointer", fontFamily: "inherit",
                             display: "flex", alignItems: "center", gap: 10,
@@ -593,13 +593,13 @@ export default function MensajesScreen({
                           </div>
                           <div style={{ flex: 1, textAlign: "left" }}>
                             <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                            <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {m.tel}</p>
+                            <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
                           </div>
-                          <span style={{ color: "#4b4b6a", fontSize: 14 }}>›</span>
+                          <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
                         </button>
                       ))}
                       {sinTel > 0 && !busqueda && (
-                        <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
+                        <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
                           {sinTel} miembro{sinTel > 1 ? "s" : ""} sin número no aparecen
                         </p>
                       )}
@@ -632,15 +632,15 @@ export default function MensajesScreen({
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 11 }}>📱 {selMiembro.tel}</p>
+                    <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {selMiembro.tel}</p>
                   </div>
                   <button
                     onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
                     style={{
-                      background: "rgba(255,255,255,.08)", border: "none",
+                      background: "#21262d", border: "none",
                       borderRadius: 10, padding: "6px 12px",
                       cursor: "pointer", fontFamily: "inherit",
-                      color: "#9ca3af", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                      color: "#8b949e", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
                     }}
                   >
                     Cambiar ✕
@@ -656,7 +656,7 @@ export default function MensajesScreen({
                   autoFocus
                   style={textareaStyle}
                 />
-                <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 10 }}>
+                <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 10 }}>
                   {msgTexto.length} caracteres
                 </p>
 
@@ -669,8 +669,8 @@ export default function MensajesScreen({
                     border: "none", borderRadius: 14,
                     cursor: msgTexto.trim() ? "pointer" : "not-allowed",
                     fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                    background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "rgba(255,255,255,.06)",
-                    color: msgTexto.trim() ? "#fff" : "#4b4b6a",
+                    background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
+                    color: msgTexto.trim() ? "#fff" : "#8b949e",
                     boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     marginBottom: 20,
@@ -681,7 +681,7 @@ export default function MensajesScreen({
                 </button>
 
                 {/* Mis mensajes guardados (4 slots) */}
-                <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
+                <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
                   💾 Mis mensajes guardados
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
@@ -709,13 +709,13 @@ export default function MensajesScreen({
                 {/* Plantillas rápidas colapsables */}
                 <details style={{ marginBottom: 14 }}>
                   <summary style={{
-                    color: "#6b7280", fontSize: 11, fontWeight: 700,
+                    color: "#8b949e", fontSize: 11, fontWeight: 700,
                     textTransform: "uppercase", letterSpacing: .5,
                     cursor: "pointer", listStyle: "none",
                     display: "flex", alignItems: "center", gap: 6, padding: "8px 0",
                   }}>
                     <span>⚡ Plantillas rápidas</span>
-                    <span style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                    <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
                   </summary>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                     {tplsFijas.map((tpl, i) => {
@@ -725,8 +725,8 @@ export default function MensajesScreen({
                           key={i}
                           onClick={() => setMsgTexto(msgPersonal)}
                           style={{
-                            background: msgTexto === msgPersonal ? "rgba(37,211,102,.1)" : "rgba(255,255,255,.04)",
-                            border: `1px solid ${msgTexto === msgPersonal ? "rgba(37,211,102,.3)" : "rgba(255,255,255,.08)"}`,
+                            background: msgTexto === msgPersonal ? "rgba(37,211,102,.1)" : "#161b22",
+                            border: `1px solid ${msgTexto === msgPersonal ? "rgba(37,211,102,.3)" : "#21262d"}`,
                             borderRadius: 12, padding: "10px 14px",
                             cursor: "pointer", fontFamily: "inherit",
                             display: "flex", alignItems: "center", gap: 10,
@@ -734,7 +734,7 @@ export default function MensajesScreen({
                           }}
                         >
                           <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                          <span style={{ color: msgTexto === msgPersonal ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: 600, flex: 1 }}>
+                          <span style={{ color: msgTexto === msgPersonal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>
                             {tpl.label}
                           </span>
                           {msgTexto === msgPersonal && <span style={{ color: "#4ade80" }}>✓</span>}
@@ -751,7 +751,7 @@ export default function MensajesScreen({
         {/* ════ MODO: MASIVO ════ */}
         {modo === "masivo" && (
           <>
-            <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
+            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
               Mensaje para todos
             </p>
             <textarea
@@ -761,12 +761,12 @@ export default function MensajesScreen({
               rows={5}
               style={textareaStyle}
             />
-            <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "right", marginBottom: 12 }}>
+            <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 12 }}>
               {msgTexto.length} caracteres
             </p>
 
             {/* Plantillas rápidas masivo */}
-            <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
+            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
               Plantillas rápidas
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
@@ -775,8 +775,8 @@ export default function MensajesScreen({
                   key={i}
                   onClick={() => setMsgTexto(tpl.msg)}
                   style={{
-                    background: msgTexto === tpl.msg ? "rgba(37,211,102,.1)" : "rgba(255,255,255,.04)",
-                    border: `1px solid ${msgTexto === tpl.msg ? "rgba(37,211,102,.3)" : "rgba(255,255,255,.08)"}`,
+                    background: msgTexto === tpl.msg ? "rgba(37,211,102,.1)" : "#161b22",
+                    border: `1px solid ${msgTexto === tpl.msg ? "rgba(37,211,102,.3)" : "#21262d"}`,
                     borderRadius: 12, padding: "10px 14px",
                     cursor: "pointer", fontFamily: "inherit",
                     display: "flex", alignItems: "center", gap: 10,
@@ -784,7 +784,7 @@ export default function MensajesScreen({
                   }}
                 >
                   <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                  <span style={{ color: msgTexto === tpl.msg ? "#4ade80" : "#9ca3af", fontSize: 12, fontWeight: 600, flex: 1 }}>
+                  <span style={{ color: msgTexto === tpl.msg ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>
                     {tpl.label}
                   </span>
                   {msgTexto === tpl.msg && <span style={{ color: "#4ade80" }}>✓</span>}
@@ -800,7 +800,7 @@ export default function MensajesScreen({
                   border: "1px solid rgba(37,211,102,.2)",
                   borderRadius: 14, padding: "12px 14px", marginBottom: 10,
                 }}>
-                  <p style={{ color: "#4b4b6a", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>
                     Destinatarios ({destMasivo.length})
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -809,7 +809,7 @@ export default function MensajesScreen({
                         key={mb.id}
                         style={{
                           display: "flex", alignItems: "center", gap: 5,
-                          background: "rgba(255,255,255,.06)",
+                          background: "#21262d",
                           borderRadius: 20, padding: "4px 10px 4px 4px",
                         }}
                       >
@@ -821,7 +821,7 @@ export default function MensajesScreen({
                         }}>
                           {mb.foto ? <img src={mb.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mb.nombre.charAt(0)}
                         </div>
-                        <span style={{ color: "#9ca3af", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
+                        <span style={{ color: "#8b949e", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
                       </div>
                     ))}
                   </div>
@@ -829,8 +829,8 @@ export default function MensajesScreen({
 
                 {/* Paso 1: Copiar mensaje */}
                 <div style={{
-                  background: "rgba(255,255,255,.04)",
-                  border: copiadoMsg ? "1px solid rgba(37,211,102,.4)" : "1px solid rgba(255,255,255,.08)",
+                  background: "#161b22",
+                  border: copiadoMsg ? "1px solid rgba(37,211,102,.4)" : "1px solid #21262d",
                   borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -862,8 +862,8 @@ export default function MensajesScreen({
 
                 {/* Paso 2: Copiar números */}
                 <div style={{
-                  background: "rgba(255,255,255,.04)",
-                  border: copiadoNums ? "1px solid rgba(37,211,102,.4)" : "1px solid rgba(255,255,255,.08)",
+                  background: "#161b22",
+                  border: copiadoNums ? "1px solid rgba(37,211,102,.4)" : "1px solid #21262d",
                   borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -879,7 +879,7 @@ export default function MensajesScreen({
                       </span>
                       <div>
                         <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Copia los números</p>
-                        <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 2 }}>{destMasivo.length} contactos</p>
+                        <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{destMasivo.length} contactos</p>
                       </div>
                     </div>
                     <button
@@ -898,12 +898,12 @@ export default function MensajesScreen({
 
                 {/* Paso 3: Instrucción */}
                 <div style={{
-                  background: "rgba(255,255,255,.03)",
-                  border: "1px solid rgba(255,255,255,.07)",
+                  background: "#13181f",
+                  border: "1px solid #21262d",
                   borderRadius: 14, padding: "12px 14px", marginBottom: 12,
                 }}>
                   <p style={{ color: "#fff", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
-                  <p style={{ color: "#4b4b6a", fontSize: 11, lineHeight: 1.5 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
                     Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.
                   </p>
                 </div>

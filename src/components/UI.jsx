@@ -42,11 +42,11 @@ export function Badge({ val }) {
 export function Inp({ label, value, onChange, type = "text", placeholder, options, readOnly }) {
   const s = {
     width: "100%",
-    background: readOnly ? "rgba(255,255,255,.03)" : "rgba(255,255,255,.07)",
-    border: "1px solid rgba(255,255,255,.1)",
+    background: readOnly ? "#13181f" : "#21262d",
+    border: "1px solid #30363d",
     borderRadius: 12,
     padding: "12px 14px",
-    color: readOnly ? "#6b7280" : "#fff",
+    color: readOnly ? "#8b949e" : "#fff",
     fontSize: 14,
     fontFamily: "inherit",
     outline: "none",
@@ -57,7 +57,7 @@ export function Inp({ label, value, onChange, type = "text", placeholder, option
     <div>
       {label && (
         <p style={{
-          color: "#6b7280",
+          color: "#8b949e",
           fontSize: 12,
           fontWeight: 600,
           marginBottom: 5,
@@ -76,7 +76,7 @@ export function Inp({ label, value, onChange, type = "text", placeholder, option
             disabled={readOnly}
           >
             {options.map(o => (
-              <option key={o} value={o} style={{ background: "#1a1a2e" }}>{o}</option>
+              <option key={o} value={o} style={{ background: "#161b22" }}>{o}</option>
             ))}
           </select>
         )
@@ -114,7 +114,7 @@ export function Modal({ title, onClose, children }) {
       <div style={{
         width: "100%",
         maxWidth: isDesktop ? 500 : "100%",
-        background: "#191928",
+        background: "#161b22",
         borderRadius: isDesktop ? "20px" : "28px 28px 0 0",
         padding: "24px 24px 44px",
         maxHeight: isDesktop ? "85vh" : "92%",
@@ -128,7 +128,7 @@ export function Modal({ title, onClose, children }) {
             style={{
               border: "none",
               background: "rgba(255,255,255,.1)",
-              color: "#9ca3af",
+              color: "#8b949e",
               width: 34,
               height: 34,
               borderRadius: 10,

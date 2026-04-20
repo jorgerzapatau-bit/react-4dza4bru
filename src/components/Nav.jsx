@@ -36,7 +36,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           key={i}
           className="gym-nav-btn"
           onClick={() => { setScreen(item.s); if (item.s === "dashboard") setTab(0); }}
-          style={screen === item.s ? { background: "rgba(167,139,250,.12)" } : {}}
+          className={screen === item.s ? "active-nav" : ""}
         >
           <span className={"gym-nav-icon" + (screen === item.s ? " active" : "")}>{item.icon}</span>
           <span className={"gym-nav-label" + (screen === item.s ? " active" : "")}>{item.label}</span>

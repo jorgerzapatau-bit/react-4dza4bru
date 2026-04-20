@@ -41,7 +41,7 @@ export default function EstadisticasScreen({
       <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-          <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
+          <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>📊 Estadísticas</h1>
         </div>
         </div>
@@ -56,7 +56,7 @@ export default function EstadisticasScreen({
             { label: "Utilidad anual", val: totalUtilYear, c: totalUtilYear >= 0 ? "#4ade80" : "#f87171", bg: totalUtilYear >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", bc: totalUtilYear >= 0 ? "rgba(74,222,128,.2)" : "rgba(248,113,113,.2)" },
           ].map((k, i) => (
             <div key={i} style={{ background: k.bg, border: `1px solid ${k.bc}`, borderRadius: 16, padding: "12px 10px" }}>
-              <p style={{ color: "#4b4b6a", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{k.label}</p>
+              <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{k.label}</p>
               <p style={{ color: k.c, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt(k.val)}</p>
             </div>
           ))}
@@ -73,19 +73,19 @@ export default function EstadisticasScreen({
 
         {/* Controls: filter tabs + chart type toggle */}
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-          <div style={{ flex: 1, display: "flex", gap: 3, background: "rgba(255,255,255,.05)", borderRadius: 12, padding: 3 }}>
+          <div style={{ flex: 1, display: "flex", gap: 3, background: "#1c2128", borderRadius: 12, padding: 3 }}>
             {[["Todo","#a78bfa"], ["Ingresos","#22d3ee"], ["Gastos","#f43f5e"], ["Utilidad","#4ade80"]].map(([label, clr], i) => (
               <button key={i} onClick={() => setStatsTab(i)}
                 style={{ flex: 1, padding: "7px 0", border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit",
                   background: statsTab === i ? `${clr}25` : "transparent",
-                  color: statsTab === i ? clr : "#4b4b6a",
+                  color: statsTab === i ? clr : "#8b949e",
                   fontSize: 10, fontWeight: statsTab === i ? 700 : 500,
                   borderBottom: statsTab === i ? `2px solid ${clr}` : "2px solid transparent",
                   transition: "all .2s" }}>{label}</button>
             ))}
           </div>
           <button onClick={() => setStatsChartType(t => t === "bar" ? "line" : "bar")}
-            style={{ flexShrink: 0, padding: "7px 12px", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", background: "rgba(255,255,255,.05)", color: "#9ca3af", fontSize: 11, fontWeight: 600 }}>
+            style={{ flexShrink: 0, padding: "7px 12px", border: "1px solid #30363d", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", background: "#1c2128", color: "#8b949e", fontSize: 11, fontWeight: 600 }}>
             {statsChartType === "bar" ? "〜 Curva" : "▌Barras"}
           </button>
         </div>
@@ -104,7 +104,7 @@ export default function EstadisticasScreen({
 
           if (statsChartType === "bar") {
             return (
-              <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
+              <div style={{ background: "#13181f", border: "1px solid #21262d", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: CHART_H + 20, justifyContent: "space-between" }}>
                   {mesesData.map((d, i) => {
                     const isActive = d.year === selMes.year && d.month === selMes.month;
@@ -119,13 +119,13 @@ export default function EstadisticasScreen({
                             return <div key={s.key} style={{ flex: 1, height: barH, borderRadius: "3px 3px 0 0", background: d.isCurrent ? clr : `${clr}${isActive ? "ff" : "70"}`, boxShadow: isActive ? `0 0 8px ${clr}80` : "none", transition: "height .3s ease" }} />;
                           })}
                         </div>
-                        <p style={{ color: isActive ? "#e2e8f0" : "#4b4b6a", fontSize: 8, fontWeight: isActive ? 700 : 400 }}>{d.label}</p>
+                        <p style={{ color: isActive ? "#e2e8f0" : "#8b949e", fontSize: 8, fontWeight: isActive ? 700 : 400 }}>{d.label}</p>
                       </div>
                     );
                   })}
                 </div>
                 {statsTab === 0 && <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 10 }}>
-                  {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} /><span style={{ color: "#6b7280", fontSize: 9 }}>{s.label}</span></div>)}
+                  {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} /><span style={{ color: "#8b949e", fontSize: 9 }}>{s.label}</span></div>)}
                 </div>}
               </div>
             );
@@ -145,9 +145,9 @@ export default function EstadisticasScreen({
             return `C${cp1x},${cp1y} ${cp2x},${cp2y} ${p[0]},${p[1]}`;
           }).join(" ");
           return (
-            <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
+            <div style={{ background: "#13181f", border: "1px solid #21262d", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
               <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width: "100%", height: H + 20, overflow: "visible" }}>
-                {[0.25, 0.5, 0.75, 1].map(f => <line key={f} x1={0} y1={H - f * H * 0.9 - 8} x2={W} y2={H - f * H * 0.9 - 8} stroke="rgba(255,255,255,.06)" strokeWidth="1" />)}
+                {[0.25, 0.5, 0.75, 1].map(f => <line key={f} x1={0} y1={H - f * H * 0.9 - 8} x2={W} y2={H - f * H * 0.9 - 8} stroke="#21262d" strokeWidth="1" />)}
                 {activeSeries.map(s => {
                   const points = pts(s);
                   const d = pathD(points);
@@ -162,10 +162,10 @@ export default function EstadisticasScreen({
                     </g>
                   );
                 })}
-                {mesesData.map((d, i) => <text key={i} x={(i / (mesesData.length-1)) * W} y={H + 16} textAnchor="middle" fill={d.isCurrent ? "#fff" : "#4b4b6a"} fontSize="8" fontWeight={d.isCurrent ? "700" : "400"}>{d.label}</text>)}
+                {mesesData.map((d, i) => <text key={i} x={(i / (mesesData.length-1)) * W} y={H + 16} textAnchor="middle" fill={d.isCurrent ? "#fff" : "#8b949e"} fontSize="8" fontWeight={d.isCurrent ? "700" : "400"}>{d.label}</text>)}
               </svg>
               {statsTab === 0 && <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 4 }}>
-                {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 16, height: 2, background: s.color, borderRadius: 2 }} /><span style={{ color: "#6b7280", fontSize: 9 }}>{s.label}</span></div>)}
+                {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 16, height: 2, background: s.color, borderRadius: 2 }} /><span style={{ color: "#8b949e", fontSize: 9 }}>{s.label}</span></div>)}
               </div>}
             </div>
           );
@@ -173,10 +173,10 @@ export default function EstadisticasScreen({
 
         {/* Month detail list */}
         <div style={{ marginTop: 16 }}>
-          <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Detalle por mes</p>
+          <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Detalle por mes</p>
           {[...mesesData].reverse().map((d, i) => (
             <div key={i} onClick={() => { setSelMes({ year: d.year, month: d.month }); setScreen("dashboard"); }}
-              style={{ background: d.isCurrent ? "rgba(108,99,255,.12)" : "rgba(255,255,255,.03)", border: d.isCurrent ? "1px solid rgba(108,99,255,.3)" : "1px solid rgba(255,255,255,.06)", borderRadius: 16, padding: "12px 16px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              style={{ background: d.isCurrent ? "rgba(108,99,255,.12)" : "#13181f", border: d.isCurrent ? "1px solid rgba(108,99,255,.3)" : "1px solid #21262d", borderRadius: 16, padding: "12px 16px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{d.label} {d.year} {d.isCurrent ? <span style={{ color: "#a78bfa", fontSize: 10, marginLeft: 6 }}>· Actual</span> : ""}</p>
                 <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
@@ -186,7 +186,7 @@ export default function EstadisticasScreen({
               </div>
               <div style={{ textAlign: "right" }}>
                 <p style={{ color: d.util >= 0 ? "#4ade80" : "#f87171", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{d.util >= 0 ? "+" : ""}{fmt(d.util)}</p>
-                <p style={{ color: "#4b4b6a", fontSize: 10, marginTop: 2 }}>utilidad</p>
+                <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>utilidad</p>
               </div>
             </div>
           ))}
@@ -207,26 +207,26 @@ export default function EstadisticasScreen({
           }, 0);
           return (
             <button onClick={() => setModal("calendario")}
-              style={{ width: "100%", marginTop: 4, marginBottom: 4, padding: "14px 16px", border: "1px solid rgba(255,255,255,.08)", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", background: "rgba(255,255,255,.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              style={{ width: "100%", marginTop: 4, marginBottom: 4, padding: "14px 16px", border: "1px solid #21262d", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", background: "#161b22", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,rgba(108,99,255,.3),rgba(224,64,251,.3))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📅</div>
                 <div style={{ textAlign: "left" }}>
                   <p style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>Calendario</p>
-                  <p style={{ color: "#4b4b6a", fontSize: 11 }}>Cumpleaños y vencimientos</p>
+                  <p style={{ color: "#8b949e", fontSize: 11 }}>Cumpleaños y vencimientos</p>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {evCount > 0 && <span style={{ background: "rgba(167,139,250,.2)", color: "#a78bfa", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{evCount} este mes</span>}
-                <span style={{ color: "#4b4b6a", fontSize: 16 }}>›</span>
+                <span style={{ color: "#8b949e", fontSize: 16 }}>›</span>
               </div>
             </button>
           );
         })()}
 
         {/* Reporte PDF */}
-        <div style={{ marginTop: 20, marginBottom: 20, background: "rgba(255,255,255,.04)", borderRadius: 20, padding: 16, border: "1px solid rgba(255,255,255,.07)" }}>
+        <div style={{ marginTop: 20, marginBottom: 20, background: "#161b22", borderRadius: 20, padding: 16, border: "1px solid #21262d" }}>
           <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📄 Descargar reporte mensual</p>
-          <p style={{ color: "#4b4b6a", fontSize: 12, marginBottom: 14 }}>Genera un PDF con el resumen financiero y lista de miembros del mes seleccionado.</p>
+          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 14 }}>Genera un PDF con el resumen financiero y lista de miembros del mes seleccionado.</p>
           <ReportePDF txs={txs} miembros={miembros} gymConfig={gymConfig} getMembershipInfo={getMembershipInfo} MESES_LABEL={MESES_LABEL} />
         </div>
         </div>

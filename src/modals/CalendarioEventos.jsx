@@ -147,19 +147,19 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <p style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>📅 Calendario</p>
-          <p style={{ color: "#4b4b6a", fontSize: 11, marginTop: 2 }}>Cumpleaños y vencimientos</p>
+          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>Cumpleaños y vencimientos</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => navMes(-1)}
-            style={{ border: "none", background: "rgba(255,255,255,.08)", color: "#9ca3af", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ border: "none", background: "#21262d", color: "#8b949e", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
           >‹</button>
           <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, minWidth: 90, textAlign: "center" }}>
             {MESES_FULL[mesVer]} {anioVer}
           </span>
           <button
             onClick={() => navMes(1)}
-            style={{ border: "none", background: "rgba(255,255,255,.08)", color: "#9ca3af", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ border: "none", background: "#21262d", color: "#8b949e", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
           >›</button>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
             </div>
             <div>
               <p style={{ color, fontSize: 20, fontWeight: 800, lineHeight: 1 }}>{count}</p>
-              <p style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>{label}</p>
+              <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{label}</p>
             </div>
           </div>
         ))}
@@ -187,7 +187,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       {/* Días semana */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 4 }}>
         {DIAS.map((d) => (
-          <p key={d} style={{ color: "#4b4b6a", fontSize: 9, fontWeight: 700, textAlign: "center", padding: "2px 0" }}>{d}</p>
+          <p key={d} style={{ color: "#8b949e", fontSize: 9, fontWeight: 700, textAlign: "center", padding: "2px 0" }}>{d}</p>
         ))}
       </div>
 
@@ -209,12 +209,12 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
                 position: "relative", minHeight: 38,
                 background: esHoy
                   ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                  : evs.length > 0 ? "rgba(255,255,255,.07)" : "transparent",
+                  : evs.length > 0 ? "#21262d" : "transparent",
                 border: evs.length > 0 && !esHoy
-                  ? "1px solid rgba(255,255,255,.08)" : "1px solid transparent",
+                  ? "1px solid #21262d" : "1px solid transparent",
               }}
             >
-              <p style={{ color: esHoy ? "#fff" : evs.length > 0 ? "#e2e8f0" : "#4b4b6a", fontSize: 11, fontWeight: esHoy || evs.length > 0 ? 700 : 400 }}>
+              <p style={{ color: esHoy ? "#fff" : evs.length > 0 ? "#e2e8f0" : "#8b949e", fontSize: 11, fontWeight: esHoy || evs.length > 0 ? 700 : 400 }}>
                 {dia}
               </p>
               <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2, marginTop: 2 }}>
@@ -238,7 +238,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
         ].map(({ color, label }) => (
           <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-            <span style={{ color: "#6b7280", fontSize: 10 }}>{label}</span>
+            <span style={{ color: "#8b949e", fontSize: 10 }}>{label}</span>
           </div>
         ))}
       </div>
@@ -253,8 +253,8 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
               border: "none", borderRadius: 20, padding: "5px 12px", cursor: "pointer",
               fontFamily: "inherit", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
               transition: "all .15s",
-              background: filtro === f.key ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.07)",
-              color: filtro === f.key ? "#fff" : "#9ca3af",
+              background: filtro === f.key ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+              color: filtro === f.key ? "#fff" : "#8b949e",
             }}
           >
             {f.label}
@@ -265,7 +265,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       {/* Lista de eventos */}
       {listaEventos.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <p style={{ color: "#4b4b6a", fontSize: 12 }}>Sin eventos este mes</p>
+          <p style={{ color: "#8b949e", fontSize: 12 }}>Sin eventos este mes</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -275,7 +275,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
               onClick={() => onGoToMember && ev.miembro && onGoToMember(ev.miembro)}
               style={{
                 display: "flex", alignItems: "center", gap: 10,
-                background: "rgba(255,255,255,.04)", borderRadius: 14, padding: "10px 12px",
+                background: "#161b22", borderRadius: 14, padding: "10px 12px",
                 borderLeft: `3px solid ${ev.color}`,
                 cursor: onGoToMember ? "pointer" : "default",
                 transition: "background .15s",
@@ -297,7 +297,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
                 <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {ev.nombre}
                 </p>
-                <p style={{ color: "#4b4b6a", fontSize: 10 }}>
+                <p style={{ color: "#8b949e", fontSize: 10 }}>
                   {ev.tipo === "cumple"
                     ? "🎂 Cumpleaños"
                     : ev.tipo === "nuevo"

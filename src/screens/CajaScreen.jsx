@@ -390,10 +390,10 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          <button onClick={onBack} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
+          <button onClick={onBack} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
           <div style={{ flex: 1 }}>
             <h1 style={{ color: "#fff", fontSize: 19, fontWeight: 700 }}>💵 Caja</h1>
-            <p style={{ color: "#4b4b6a", fontSize: 11 }}>Movimientos por fecha · Corte de caja</p>
+            <p style={{ color: "#8b949e", fontSize: 11 }}>Movimientos por fecha · Corte de caja</p>
           </div>
         </div>
 
@@ -402,8 +402,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
           {PERIODOS.map((p, i) => (
             <button key={i} onClick={() => aplicarPeriodo(i)}
               style={{ flexShrink: 0, padding: "6px 12px", border: "none", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, transition: "all .15s",
-                background: periodoActivo === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.07)",
-                color: periodoActivo === i ? "#fff" : "#9ca3af",
+                background: periodoActivo === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+                color: periodoActivo === i ? "#fff" : "#8b949e",
                 boxShadow: periodoActivo === i ? "0 2px 10px rgba(108,99,255,.3)" : "none" }}>
               {p.label}
             </button>
@@ -413,14 +413,14 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
         {/* Rango personalizado */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 4 }}>
           <div>
-            <p style={{ color: "#6b7280", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Desde</p>
+            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Desde</p>
             <input type="date" value={desde} onChange={e => { setDesde(e.target.value); setPeriodoActivo(-1); }}
-              style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+              style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
           </div>
           <div>
-            <p style={{ color: "#6b7280", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Hasta</p>
+            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Hasta</p>
             <input type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPeriodoActivo(-1); }}
-              style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+              style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
           </div>
         </div>
         </div>
@@ -442,12 +442,12 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               { label: "Utilidad", val: utilidad, color: utilidad >= 0 ? "#4ade80" : "#f87171", bg: utilidad >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: utilidad >= 0 ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)" },
             ].map(card => (
               <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
-                <p style={{ color: "#6b7280", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{card.label}</p>
+                <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{card.label}</p>
                 <p style={{ color: card.color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{card.val < 0 ? "-" : card.label === "Utilidad" && card.val > 0 ? "+" : ""}{fmt$(Math.abs(card.val))}</p>
               </div>
             ))}
           </div>
-          <p style={{ color: "#4b4b6a", fontSize: 11, textAlign: "center" }}>{txsFiltradas.length} movimiento{txsFiltradas.length !== 1 ? "s" : ""} en el período</p>
+          <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center" }}>{txsFiltradas.length} movimiento{txsFiltradas.length !== 1 ? "s" : ""} en el período</p>
         </div>
 
         {/* ── Desglose ingresos por categoría ── */}
@@ -465,10 +465,10 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <span style={{ color: "#4ade80", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmt$(val)}</span>
-                      <span style={{ color: "#4b4b6a", fontSize: 10, marginLeft: 6 }}>{pct.toFixed(0)}%</span>
+                      <span style={{ color: "#8b949e", fontSize: 10, marginLeft: 6 }}>{pct.toFixed(0)}%</span>
                     </div>
                   </div>
-                  <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,.06)" }}>
+                  <div style={{ height: 4, borderRadius: 2, background: "#21262d" }}>
                     <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#4ade80,#22d3ee)", borderRadius: 2, transition: "width .4s ease" }} />
                   </div>
                 </div>
@@ -489,8 +489,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                   <div key={fp} style={{ flex: 1, background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
                     <p style={{ fontSize: 20, marginBottom: 4 }}>{icon}</p>
                     <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt$(val)}</p>
-                    <p style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>{fp}</p>
-                    <p style={{ color: "#4b4b6a", fontSize: 9, marginTop: 1 }}>{pct.toFixed(0)}%</p>
+                    <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{fp}</p>
+                    <p style={{ color: "#8b949e", fontSize: 9, marginTop: 1 }}>{pct.toFixed(0)}%</p>
                   </div>
                 );
               })}
@@ -511,7 +511,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                     <span style={{ color: "#d1d5db", fontSize: 13 }}>{cat}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 50, height: 3, borderRadius: 2, background: "rgba(255,255,255,.06)" }}>
+                    <div style={{ width: 50, height: 3, borderRadius: 2, background: "#21262d" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: "#f87171", borderRadius: 2 }} />
                     </div>
                     <span style={{ color: "#f87171", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmt$(val)}</span>
@@ -523,9 +523,9 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
         )}
 
         {/* ── Botón Corte de Caja ── */}
-        <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 18, padding: "16px", marginBottom: 14 }}>
+        <div style={{ background: "#161b22", border: "1px solid #21262d", borderRadius: 18, padding: "16px", marginBottom: 14 }}>
           <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📸 Corte de caja</p>
-          <p style={{ color: "#4b4b6a", fontSize: 12, marginBottom: 14 }}>Genera un resumen sellado con la hora exacta del corte.</p>
+          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 14 }}>Genera un resumen sellado con la hora exacta del corte.</p>
           <button onClick={generarCorte}
             style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
               background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
@@ -539,7 +539,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div>
                   <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>⏰ {corte.horaCorte}</p>
-                  <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>{corte.fechaCorte}</p>
+                  <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>{corte.fechaCorte}</p>
                 </div>
                 <span style={{ background: "rgba(74,222,128,.15)", color: "#4ade80", borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>✓ Cerrado</span>
               </div>
@@ -550,17 +550,17 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                   { label: "Utilidad", val: corte.utilidad, color: corte.utilidad >= 0 ? "#4ade80" : "#f87171" },
                 ].map(c => (
                   <div key={c.label} style={{ flex: 1, textAlign: "center" }}>
-                    <p style={{ color: "#4b4b6a", fontSize: 9, fontWeight: 600, textTransform: "uppercase", marginBottom: 3 }}>{c.label}</p>
+                    <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 600, textTransform: "uppercase", marginBottom: 3 }}>{c.label}</p>
                     <p style={{ color: c.color, fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmt$(c.val)}</p>
                   </div>
                 ))}
               </div>
               {/* Desglose categorías en el corte */}
               {corte.desgloseCat.length > 0 && (
-                <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 10, marginBottom: 10 }}>
+                <div style={{ borderTop: "1px solid #21262d", paddingTop: 10, marginBottom: 10 }}>
                   {corte.desgloseCat.map(([cat, val]) => (
                     <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                      <span style={{ color: "#6b7280", fontSize: 11 }}>{CAT_ICON[cat] || "📌"} {cat}</span>
+                      <span style={{ color: "#8b949e", fontSize: 11 }}>{CAT_ICON[cat] || "📌"} {cat}</span>
                       <span style={{ color: "#4ade80", fontFamily: "'DM Mono',monospace", fontSize: 11, fontWeight: 600 }}>{fmt$(val)}</span>
                     </div>
                   ))}
@@ -568,13 +568,13 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               )}
               {/* Forma de pago en el corte */}
               {corte.desglosePago.length > 0 && (
-                <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", paddingTop: 10, marginBottom: 10 }}>
-                  <p style={{ color: "#4b4b6a", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>Forma de pago</p>
+                <div style={{ borderTop: "1px solid #21262d", paddingTop: 10, marginBottom: 10 }}>
+                  <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>Forma de pago</p>
                   {corte.desglosePago.map(([fp, val]) => {
                     const icon = fp === "Efectivo" ? "💵" : fp === "Transferencia" ? "📲" : fp === "Tarjeta" ? "💳" : "❓";
                     return (
                       <div key={fp} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                        <span style={{ color: "#6b7280", fontSize: 11 }}>{icon} {fp}</span>
+                        <span style={{ color: "#8b949e", fontSize: 11 }}>{icon} {fp}</span>
                         <span style={{ color: "#a78bfa", fontFamily: "'DM Mono',monospace", fontSize: 11, fontWeight: 600 }}>{fmt$(val)}</span>
                       </div>
                     );
@@ -585,8 +585,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={descargarPDFCorte} disabled={generandoPDF}
                   style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: generandoPDF ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                    background: generandoPDF ? "rgba(255,255,255,.06)" : "linear-gradient(135deg,#f43f5e,#e11d48)",
-                    color: generandoPDF ? "#4b4b6a" : "#fff",
+                    background: generandoPDF ? "#21262d" : "linear-gradient(135deg,#f43f5e,#e11d48)",
+                    color: generandoPDF ? "#8b949e" : "#fff",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     boxShadow: generandoPDF ? "none" : "0 3px 12px rgba(244,63,94,.35)" }}>
                   <span style={{ fontSize: 14 }}>{generandoPDF ? "⏳" : "📄"}</span>
@@ -610,8 +610,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
             {[{ val: "todos", label: "Todos" }, { val: "ingreso", label: "💰 Ingresos" }, { val: "gasto", label: "💸 Gastos" }].map(f => (
               <button key={f.val} onClick={() => setTipoFiltro(f.val)}
                 style={{ flex: 1, padding: "8px 4px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, transition: "all .15s",
-                  background: tipoFiltro === f.val ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.07)",
-                  color: tipoFiltro === f.val ? "#fff" : "#6b7280" }}>
+                  background: tipoFiltro === f.val ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+                  color: tipoFiltro === f.val ? "#fff" : "#8b949e" }}>
                 {f.label}
               </button>
             ))}
@@ -620,7 +620,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
           {listaOrdenada.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>📭</p>
-              <p style={{ color: "#4b4b6a", fontSize: 13 }}>Sin movimientos en este período</p>
+              <p style={{ color: "#8b949e", fontSize: 13 }}>Sin movimientos en este período</p>
             </div>
           ) : listaOrdenada.map(t => {
             const isIng = t.tipo === "ingreso";
@@ -629,7 +629,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null)
               : null;
             return (
-              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, marginBottom: 8, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.06)" }}>
+              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, marginBottom: 8, background: "#161b22", border: "1px solid #21262d" }}>
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: isIng ? "rgba(74,222,128,.12)" : "rgba(248,113,113,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden", border: `2px solid ${color}30` }}>
                   {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || (isIng ? "💰" : "💸")}
                 </div>
@@ -637,7 +637,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                   <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || "—"}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                     <span style={{ background: isIng ? "rgba(74,222,128,.12)" : "rgba(248,113,113,.12)", color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{t.categoria}</span>
-                    <span style={{ color: "#4b4b6a", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
+                    <span style={{ color: "#8b949e", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
                   </div>
                 </div>
                 <p style={{ color, fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>

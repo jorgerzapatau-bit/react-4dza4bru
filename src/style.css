@@ -3,7 +3,7 @@
 html, body, #root {
   width: 100%;
   height: 100%;
-  background: #0f0f1a;
+  background: #0d1117;
   font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -13,21 +13,14 @@ h1, p, span, button, input, select, textarea {
   font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* ══════════════════════════════════════════════════
-   LAYOUT PRINCIPAL — sin restricciones de altura
-══════════════════════════════════════════════════ */
-
 .gym-root {
   width: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: row;
-  background: #0f0f1a;
+  background: #0d1117;
 }
 
-/* ══════════════════════════════════════════════════
-   SIDEBAR — Desktop ≥ 1024px
-══════════════════════════════════════════════════ */
 .gym-nav {
   width: 240px;
   height: 100vh;
@@ -39,13 +32,12 @@ h1, p, span, button, input, select, textarea {
   align-items: stretch;
   gap: 2px;
   padding: 24px 16px 20px;
-  background: rgba(8, 8, 20, 0.98);
-  border-right: 1px solid rgba(255,255,255,.06);
+  background: #0d1117;
+  border-right: 1px solid #21262d;
   z-index: 100;
   overflow-y: auto;
 }
 
-/* ── SIDEBAR tablet 768–1023px ── */
 @media (min-width: 768px) and (max-width: 1023px) {
   .gym-nav {
     width: 76px;
@@ -55,7 +47,6 @@ h1, p, span, button, input, select, textarea {
   }
 }
 
-/* ── BOTTOM NAV mobile < 768px ── */
 @media (max-width: 767px) {
   .gym-nav {
     position: fixed;
@@ -69,17 +60,14 @@ h1, p, span, button, input, select, textarea {
     padding: 0 8px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-right: none;
-    border-top: 1px solid rgba(255,255,255,.08);
-    background: rgba(8,8,16,.97);
+    border-top: 1px solid #21262d;
+    background: rgba(13,17,23,.97);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     z-index: 200;
   }
 }
 
-/* ══════════════════════════════════════════════════
-   CONTENIDO PRINCIPAL
-══════════════════════════════════════════════════ */
 .gym-content {
   flex: 1;
   min-width: 0;
@@ -87,9 +75,6 @@ h1, p, span, button, input, select, textarea {
   flex-direction: column;
 }
 
-/* ══════════════════════════════════════════════════
-   NAV BOTONES
-══════════════════════════════════════════════════ */
 .gym-nav-btn {
   border: none;
   background: transparent;
@@ -101,12 +86,12 @@ h1, p, span, button, input, select, textarea {
   gap: 12px;
   width: 100%;
   padding: 11px 14px;
-  border-radius: 14px;
+  border-radius: 10px;
   position: relative;
   transition: background .15s;
 }
 
-.gym-nav-btn:hover { background: rgba(255,255,255,.06); }
+.gym-nav-btn:hover { background: #161b22; }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .gym-nav-btn {
@@ -116,7 +101,7 @@ h1, p, span, button, input, select, textarea {
     gap: 3px;
     padding: 10px 0;
     width: 60px;
-    border-radius: 14px;
+    border-radius: 10px;
   }
 }
 
@@ -132,10 +117,10 @@ h1, p, span, button, input, select, textarea {
   }
 }
 
-.gym-nav-icon { font-size: 20px; color: #4b4b6a; transition: color .2s; line-height: 1; flex-shrink: 0; }
+.gym-nav-icon { font-size: 18px; color: #6e7681; transition: color .2s; line-height: 1; flex-shrink: 0; }
 .gym-nav-icon.active { color: #a78bfa; }
-.gym-nav-label { font-size: 14px; font-weight: 500; color: #4b4b6a; transition: color .2s; white-space: nowrap; }
-.gym-nav-label.active { color: #a78bfa; }
+.gym-nav-label { font-size: 14px; font-weight: 500; color: #8b949e; transition: color .2s; white-space: nowrap; }
+.gym-nav-label.active { color: #e6edf3; font-weight: 600; }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .gym-nav-label { font-size: 9px; }
@@ -145,29 +130,25 @@ h1, p, span, button, input, select, textarea {
   .gym-nav-icon { font-size: 18px; }
 }
 
-/* Boton accent */
 .gym-nav-accent {
   width: 44px; height: 44px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #6c63ff, #e040fb);
   display: flex; align-items: center; justify-content: center;
   font-size: 22px;
-  box-shadow: 0 4px 18px rgba(108,99,255,.5);
+  box-shadow: 0 4px 18px rgba(108,99,255,.4);
   flex-shrink: 0;
 }
 
 @media (min-width: 1024px) {
   .gym-nav-btn-accent { padding: 6px 14px; margin: 8px 0; }
-  .gym-nav-accent { width: 100%; height: 46px; border-radius: 14px; font-size: 20px; }
+  .gym-nav-accent { width: 100%; height: 44px; border-radius: 12px; font-size: 20px; }
 }
 
 @media (max-width: 767px) {
   .gym-nav-accent { width: 46px; height: 46px; border-radius: 15px; font-size: 24px; margin-top: -16px; }
 }
 
-/* ══════════════════════════════════════════════════
-   NAV META — solo desktop
-══════════════════════════════════════════════════ */
 .gym-nav-section { display: none; }
 .gym-nav-divider { display: none; }
 .gym-nav-gym { display: none; }
@@ -181,13 +162,13 @@ h1, p, span, button, input, select, textarea {
     align-items: center;
     gap: 10px;
     padding: 4px 4px 20px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
+    border-bottom: 1px solid #21262d;
     margin-bottom: 12px;
   }
   .gym-nav-gym-logo {
     display: flex;
     width: 40px; height: 40px;
-    border-radius: 12px;
+    border-radius: 10px;
     background: linear-gradient(135deg,#6c63ff,#e040fb);
     align-items: center; justify-content: center;
     font-size: 18px;
@@ -197,35 +178,32 @@ h1, p, span, button, input, select, textarea {
   .gym-nav-gym-name {
     display: block;
     font-size: 14px; font-weight: 700;
-    color: #e2e8f0;
+    color: #e6edf3;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .gym-nav-gym-sub {
     display: block;
     font-size: 10px;
-    color: #4b4b6a;
+    color: #6e7681;
     text-transform: uppercase;
     letter-spacing: .8px;
     margin-top: 1px;
   }
   .gym-nav-section {
     display: block;
-    color: #2e2e4a;
-    font-size: 9px; font-weight: 700;
+    color: #6e7681;
+    font-size: 10px; font-weight: 600;
     text-transform: uppercase; letter-spacing: 1.2px;
-    padding: 16px 14px 5px;
+    padding: 16px 14px 6px;
   }
   .gym-nav-divider {
     display: block;
     height: 1px;
-    background: rgba(255,255,255,.05);
+    background: #21262d;
     margin: 8px 6px;
   }
 }
 
-/* ══════════════════════════════════════════════════
-   SCROLL PAD
-══════════════════════════════════════════════════ */
 .gym-scroll-pad {
   padding-bottom: 80px !important;
 }
@@ -236,9 +214,6 @@ h1, p, span, button, input, select, textarea {
   }
 }
 
-/* ══════════════════════════════════════════════════
-   DASHBOARD GRID
-══════════════════════════════════════════════════ */
 @media (min-width: 900px) {
   .dash-col-grid {
     display: grid;
@@ -249,14 +224,10 @@ h1, p, span, button, input, select, textarea {
   .dash-col-full { grid-column: 1 / -1; }
 }
 
-/* MEMBERS GRID */
 .gym-members-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (min-width: 768px)  { .gym-members-grid { grid-template-columns: 1fr 1fr 1fr; } }
 @media (min-width: 1100px) { .gym-members-grid { grid-template-columns: repeat(4, 1fr); } }
 
-/* ══════════════════════════════════════════════════
-   UTILIDADES
-══════════════════════════════════════════════════ */
 @media (min-width: 768px) { .mobile-only { display: none !important; } }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -264,8 +235,8 @@ h1, p, span, button, input, select, textarea {
 ::-webkit-scrollbar-thumb { background: rgba(167,139,250,.2); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,.4); }
 
-input::placeholder { color: #3d3d5c; }
-select option { background: #191928; }
+input::placeholder { color: #484f58; }
+select option { background: #161b22; }
 button:active { opacity: .75; }
 
 @keyframes fadeUp   { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
@@ -277,15 +248,13 @@ button:active { opacity: .75; }
 .card:nth-child(2) { animation-delay: .06s; }
 .card:nth-child(3) { animation-delay: .12s; }
 .card:nth-child(4) { animation-delay: .18s; }
-.rh:hover { background: rgba(255,255,255,.06) !important; transition: background .2s; }
+.rh:hover { background: #1c2128 !important; transition: background .2s; }
 .wa-pulse { animation: pulse 2s infinite; }
 
-/* Spacer — empuja config/logout al fondo en desktop */
 .gym-nav-spacer { display: none; }
 @media (min-width: 1024px) {
   .gym-nav-spacer { display: block; flex: 1; min-height: 16px; }
 }
 
-/* desktop-only — visible solo ≥1024px */
 .desktop-only { display: none; }
 @media (min-width: 1024px) { .desktop-only { display: flex; } }
