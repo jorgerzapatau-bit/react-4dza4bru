@@ -1,6 +1,5 @@
 import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL } from "../utils";
-import Inp from "../components/Inp";
-import Btn from "../components/Btn";
+import UI from "../components/UI";
 import { supabase } from "../supabase";
 
 export default function ConfigScreen({
