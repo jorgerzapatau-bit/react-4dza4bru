@@ -8,14 +8,11 @@ import {
 } from "../utils";
 
 // Components
-import Badge from "./Badge";
-import Inp from "./Inp";
-import Btn from "./Btn";
-import Modal from "./Modal";
-import PhotoModal from "./PhotoModal";
-import MemberDetailModal from "./MemberDetailModal";
-import EditTxModal from "./EditTxModal";
-import CalendarioEventos from "./CalendarioEventos";
+import Badge from "./components/UI";
+import PhotoModal from "./components/PhotoModal";
+import MemberDetailModal from "./modals/MemberDetailModal";
+import EditTxModal from "./modals/EditTxModal";
+import CalendarioEventos from "./modals/CalendarioEventos";
 import MensajesScreen from "../screens/MensajesScreen";
 
 // Screens
