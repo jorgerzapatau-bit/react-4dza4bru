@@ -21,6 +21,7 @@ import MiembrosScreen from "../screens/MiembrosScreen";
 import EstadisticasScreen from "../screens/EstadisticasScreen";
 import CajaScreen from "../screens/CajaScreen";
 import ConfigScreen from "../screens/ConfigScreen";
+import ScannerScreen from "../screens/ScannerScreen";
 
 // ── Inline Dashboard screen (kept here since it's tightly coupled to GymApp state) ──
 // If you want to extract it later, follow the same pattern as the other screens.
@@ -459,6 +460,16 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           <CajaScreen txs={txs} miembros={miembros} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} />
         )}
 
+        {/* ═══ SCANNER / CONTROL DE ACCESO ═══ */}
+        {!loading && !configScreen && screen === "scanner" && (
+          <ScannerScreen
+            gymId={GYM_ID}
+            miembros={miembros}
+            txs={txs}
+            darkMode={darkMode}
+          />
+        )}
+
         {/* ═══ MODAL CALENDARIO ═══ */}
         {modal === "calendario" && (
           <div style={{ position: "fixed", inset: 0, background: "#13131f", zIndex: 300, display: "flex", flexDirection: "column" }}>
@@ -513,6 +524,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
             onUpdatePlantillas={updatePlantillas}
             onDelete={deleteMiembro}
             onGoToMensajes={(m) => { setMensajesMiembro(m); setModoMensajes("mensajes"); setScreen("mensajes"); setModal(null); }}
+            gymId={GYM_ID}
+            onMemberUpdate={(updated) => setMiembros(prev => prev.map(x => x.id === updated.id ? updated : x))}
           />
         )}
 

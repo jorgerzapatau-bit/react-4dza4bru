@@ -1,5 +1,6 @@
 // src/modals/MemberDetailModal.jsx
 import { useState, useEffect, useMemo } from "react";
+import MemberQRTab from "./MemberQRTab";
 const useIsDesktop = () => {
   const [ok, setOk] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : false);
   useEffect(() => {
@@ -225,6 +226,8 @@ export default function MemberDetailModal({
   onUpdatePlantillas,
   onDelete,
   onGoToMensajes,
+  gymId,
+  onMemberUpdate,
 }) {
   const isDesktop = useIsDesktop();
   const [detTab, setDetTab] = useState("perfil");
@@ -864,7 +867,7 @@ export default function MemberDetailModal({
 
       {/* ── Tabs ── */}
       <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 18 }}>
-        {[{ k: "perfil", label: "📋 Perfil" }, { k: "historial", label: "💳 Historial" }].map((t) => (
+        {[{ k: "perfil", label: "📋 Perfil" }, { k: "historial", label: "💳 Historial" }, { k: "qr", label: "🔳 QR" }].map((t) => (
           <button
             key={t.k}
             onClick={() => setDetTab(t.k)}
@@ -1414,6 +1417,15 @@ export default function MemberDetailModal({
                   });
               })()}
             </div>
+          )}
+
+          {detTab === "qr" && (
+            <MemberQRTab
+              m={m}
+              gymId={gymId}
+              onMemberUpdate={onMemberUpdate}
+              darkMode={!!gymConfig?.darkMode}
+            />
           )}
 
           {pagoModal && (

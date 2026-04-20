@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Estado de Cuenta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg: #05060f;
+      --card: #0d0f1e;
+      --card2: #111427;
+      --border: rgba(255,255,255,.07);
+      --accent: #6c63ff;
+      --accent2: #e040fb;
+      --green: #22c55e;
+      --red: #f43f5e;
+      --amber: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    .wrap { position: relative; z-index: 1; width: 100%; max-width: 420px; }
+
+    /* ── Header gym logo area ── */
+    .gym-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .gym-logo {
+      width: 64px; height: 64px; border-radius: 20px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; margin: 0 auto 12px;
+      box-shadow: 0 8px 32px rgba(108,99,255,.35);
+    }
+    .gym-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 700; color: var(--text);
+      letter-spacing: .04em;
+    }
+    .gym-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Member card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Avatar + name ── */
+    .member-row {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+    }
+    .avatar {
+      width: 64px; height: 64px; border-radius: 18px;
+      background: linear-gradient(135deg, #1e1b4b, #2e1065);
+      border: 2px solid rgba(108,99,255,.4);
+      overflow: hidden; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .member-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px; font-weight: 700; line-height: 1.2;
+    }
+    .member-id {
+      font-size: 11px; color: var(--muted); margin-top: 4px;
+      font-family: monospace; letter-spacing: .08em;
+    }
+
+    /* ── Status badge ── */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      font-size: 12px; font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .status-badge.ok { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+    .status-badge.warn { background: rgba(245,158,11,.15); color: var(--amber); border: 1px solid rgba(245,158,11,.3); }
+    .status-badge.bad { background: rgba(244,63,94,.15); color: var(--red); border: 1px solid rgba(244,63,94,.3); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* ── Info grid ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .info-cell {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 14px 16px;
+    }
+    .info-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .info-value { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+    .info-value.accent { color: var(--accent); }
+    .info-value.green { color: var(--green); }
+    .info-value.red { color: var(--red); }
+    .info-value.amber { color: var(--amber); }
+
+    /* ── Days bar ── */
+    .days-bar-wrap { margin-top: 20px; }
+    .days-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .days-bar-track {
+      height: 8px; background: rgba(255,255,255,.07); border-radius: 999px; overflow: hidden;
+    }
+    .days-bar-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 1s ease;
+    }
+
+    /* ── Recent accesses ── */
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .1em;
+      margin-bottom: 12px;
+    }
+    .access-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .access-item:last-child { border-bottom: none; }
+    .access-dot {
+      width: 34px; height: 34px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .access-dot.ok { background: rgba(34,197,94,.15); }
+    .access-dot.bad { background: rgba(244,63,94,.12); }
+    .access-dot.warn { background: rgba(245,158,11,.12); }
+    .access-info { flex: 1; min-width: 0; }
+    .access-result { font-size: 13px; font-weight: 600; }
+    .access-result.ok { color: var(--green); }
+    .access-result.bad { color: var(--red); }
+    .access-result.warn { color: var(--amber); }
+    .access-when { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Loading / error ── */
+    .spinner {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 3px solid rgba(108,99,255,.2);
+      border-top-color: var(--accent);
+      animation: spin .8s linear infinite;
+      margin: 60px auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .center { text-align: center; }
+    .error-icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 32px; text-align: center;
+      font-size: 11px; color: var(--muted); line-height: 1.8;
+    }
+
+    /* ── Powered ── */
+    .powered {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 999px; padding: 6px 14px;
+      font-size: 11px; color: var(--muted); margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Loading state -->
+  <div id="loading" class="center">
+    <div class="spinner"></div>
+    <p style="color:var(--muted);font-size:13px">Cargando tu estado de cuenta…</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="error-state" style="display:none" class="center">
+    <div class="error-icon">🔒</div>
+    <p style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px">QR no válido</p>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6">Este código QR no corresponde a ningún miembro activo.</p>
+  </div>
+
+  <!-- Main content -->
+  <div id="main" style="display:none">
+
+    <!-- Gym header -->
+    <div class="gym-header">
+      <div class="gym-logo" id="gym-logo">💪</div>
+      <div class="gym-name" id="gym-name">GymFit Pro</div>
+      <div class="gym-sub">Estado de cuenta del miembro</div>
+    </div>
+
+    <!-- Member identity card -->
+    <div class="card">
+      <div class="member-row">
+        <div class="avatar" id="avatar-wrap">🏋️</div>
+        <div>
+          <div class="member-name" id="member-name">—</div>
+          <div class="member-id" id="member-id">ID: —</div>
+        </div>
+      </div>
+
+      <div id="status-badge" class="status-badge ok">
+        <span class="dot"></span>
+        <span id="status-text">—</span>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="info-label">Plan</div>
+          <div class="info-value accent" id="plan-val">—</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Vence</div>
+          <div class="info-value" id="vence-val">—</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Días restantes</div>
+          <div class="info-value green" id="dias-val">—</div>
+        </div>
+        <div class="info-cell">
+          <div class="info-label">Miembro desde</div>
+          <div class="info-value" id="desde-val">—</div>
+        </div>
+      </div>
+
+      <div class="days-bar-wrap">
+        <div class="days-bar-label">
+          <span>Período actual</span>
+          <span id="bar-pct">—</span>
+        </div>
+        <div class="days-bar-track">
+          <div class="days-bar-fill" id="days-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent accesses -->
+    <div class="card">
+      <div class="section-title">Últimos accesos al gimnasio</div>
+      <div id="access-list">
+        <p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">Sin registros todavía</p>
+      </div>
+    </div>
+
+    <footer>
+      Este es tu estado de cuenta personal.<br>
+      Solo tú puedes ver esta página con tu código QR.
+      <div class="powered">💪 GymFit Pro</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+// ── Config ── 
+const SUPABASE_URL = "https://wcyskoithxycvvnkctdv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjeXNrb2l0aHh5Y3Z2bmtjdGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NDE5MjAsImV4cCI6MjA4ODQxNzkyMH0.y3DrstdyEAgycz86zELFYjaRhXgNbhbMmtHPjwf9cNM";
+const HEADERS = { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` };
+
+const params = new URLSearchParams(location.search);
+const TOKEN  = params.get("token");
+const GYM_ID = params.get("gym");
+
+async function load() {
+  if (!TOKEN || !GYM_ID) { show("error"); return; }
+
+  try {
+    // 1. Fetch miembro by qr_token
+    const mRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/miembros?qr_token=eq.${TOKEN}&gym_id=eq.${GYM_ID}&select=*`,
+      { headers: HEADERS }
+    );
+    const mData = await mRes.json();
+    if (!mData || !mData.length) { show("error"); return; }
+    const m = mData[0];
+
+    // 2. Fetch gym config
+    const gRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${GYM_ID}&select=nombre,logo`,
+      { headers: HEADERS }
+    );
+    const gData = await gRes.json();
+    const gym = gData?.[0] || {};
+
+    // 3. Fetch last membership transaction
+    const tRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/transacciones?miembro_id=eq.${m.id}&gym_id=eq.${GYM_ID}&categoria=eq.Membresías&order=fecha_vence.desc&limit=1&select=*`,
+      { headers: HEADERS }
+    );
+    const tData = await tRes.json();
+    const lastTx = tData?.[0];
+
+    // 4. Fetch recent accesses
+    const aRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/accesos?miembro_id=eq.${m.id}&gym_id=eq.${GYM_ID}&order=escaneado_en.desc&limit=10&select=*`,
+      { headers: HEADERS }
+    );
+    const accesos = await aRes.json() || [];
+
+    render(m, gym, lastTx, accesos);
+    show("main");
+  } catch(e) {
+    console.error(e);
+    show("error");
+  }
+}
+
+function render(m, gym, lastTx, accesos) {
+  // Gym
+  document.getElementById("gym-name").textContent = gym.nombre || "GymFit Pro";
+  if (gym.logo) {
+    const logo = document.getElementById("gym-logo");
+    logo.innerHTML = `<img src="${gym.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:18px">`;
+  }
+
+  // Member
+  document.getElementById("member-name").textContent = m.nombre || "—";
+  document.getElementById("member-id").textContent   = `ID: ${String(m.id).padStart(4,"0")}`;
+  document.getElementById("desde-val").textContent   = m.fecha_incorporacion ? fmtDate(m.fecha_incorporacion) : "—";
+  document.getElementById("plan-val").textContent    = m.plan || lastTx?.descripcion || "—";
+
+  if (m.foto) {
+    document.getElementById("avatar-wrap").innerHTML = `<img src="${m.foto}" alt="">`;
+  }
+
+  // Membership dates
+  let diasRestantes = null, porcentaje = 0;
+  if (lastTx?.fecha_vence) {
+    const vence = new Date(lastTx.fecha_vence);
+    const hoy   = new Date();
+    hoy.setHours(0,0,0,0); vence.setHours(0,0,0,0);
+    diasRestantes = Math.ceil((vence - hoy) / 86400000);
+
+    // Calc period %
+    const inicio = lastTx.fecha ? new Date(lastTx.fecha) : null;
+    if (inicio) {
+      const totalDias = Math.ceil((vence - inicio) / 86400000);
+      const transcurridos = Math.ceil((hoy - inicio) / 86400000);
+      porcentaje = Math.max(0, Math.min(100, Math.round((transcurridos / totalDias) * 100)));
+    }
+
+    document.getElementById("vence-val").textContent = fmtDate(lastTx.fecha_vence);
+    document.getElementById("bar-pct").textContent   = `${100 - porcentaje}% restante`;
+    setTimeout(() => {
+      document.getElementById("days-bar").style.width = `${100 - porcentaje}%`;
+    }, 200);
+
+    // Days remaining display
+    if (diasRestantes > 0) {
+      document.getElementById("dias-val").textContent = `${diasRestantes}`;
+      document.getElementById("dias-val").className   = "info-value green";
+    } else {
+      document.getElementById("dias-val").textContent = "Vencido";
+      document.getElementById("dias-val").className   = "info-value red";
+    }
+
+    // Status badge
+    const badge = document.getElementById("status-badge");
+    const text  = document.getElementById("status-text");
+    if (diasRestantes > 7) {
+      badge.className = "status-badge ok"; text.textContent = "✓ Membresía activa";
+    } else if (diasRestantes > 0) {
+      badge.className = "status-badge warn"; text.textContent = `⚠ Vence en ${diasRestantes} días`;
+    } else {
+      badge.className = "status-badge bad"; text.textContent = "✕ Membresía vencida";
+    }
+  } else {
+    document.getElementById("status-badge").className = "status-badge bad";
+    document.getElementById("status-text").textContent = "✕ Sin membresía";
+    document.getElementById("vence-val").textContent = "—";
+    document.getElementById("dias-val").textContent  = "—";
+  }
+
+  // Access list
+  const list = document.getElementById("access-list");
+  if (!accesos.length) {
+    list.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">Sin registros todavía</p>`;
+    return;
+  }
+  list.innerHTML = accesos.map(a => {
+    const isOk   = a.resultado === "permitido";
+    const isWarn = a.resultado === "vencido";
+    const cls    = isOk ? "ok" : isWarn ? "warn" : "bad";
+    const icon   = isOk ? "✓"  : isWarn ? "⏰"   : "✕";
+    const label  = isOk ? "Acceso permitido" : isWarn ? "Membresía vencida" : "Acceso denegado";
+    return `
+      <div class="access-item">
+        <div class="access-dot ${cls}">${icon}</div>
+        <div class="access-info">
+          <div class="access-result ${cls}">${label}</div>
+          <div class="access-when">${fmtDatetime(a.escaneado_en)}</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function show(state) {
+  document.getElementById("loading").style.display     = state === "loading" ? "" : "none";
+  document.getElementById("error-state").style.display = state === "error"   ? "" : "none";
+  document.getElementById("main").style.display        = state === "main"    ? "" : "none";
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso + (iso.includes("T") ? "" : "T12:00:00"));
+  return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function fmtDatetime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+load();
+</script>
+</body>
+</html>

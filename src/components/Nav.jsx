@@ -1,4 +1,10 @@
-// Nav.jsx — Sidebar desktop / bottom nav mobile
+// src/components/Nav.jsx — con botón de Control de Acceso (Scanner)
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMBIOS respecto al original:
+//   • Nuevo ícono IC.qr (código QR)
+//   • Nuevo NAV_ITEM "Scanner" que navega a la pantalla "scanner"
+//   • Estilo especial: resalta en verde cuando está activo (tema de acceso)
+// ─────────────────────────────────────────────────────────────────────────────
 
 const IC = {
   home:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
@@ -12,17 +18,30 @@ const IC = {
   chevron: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
   sun:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
   moon:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>,
+  // ── NEW: QR / Scanner icon ──────────────────────────────────────────────────
+  qr: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+      <rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/>
+      <rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+      <path d="M14 14h3v3h-3zM17 14h3M17 17v3M14 17v3"/>
+    </svg>
+  ),
 };
 
+// ── Nav items ────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
   { label: "Inicio",   icon: IC.home,    s: "dashboard" },
   { label: "Miembros", icon: IC.members, s: "miembros"  },
-  { label: "Mensajes", icon: IC.chat,    s: "mensajes", hasBadge: true },
+  { label: "Mensajes", icon: IC.chat,    s: "mensajes",  hasBadge: true },
   { label: "Caja",     icon: IC.cash,    s: "caja"      },
 ];
 
-function NavBtn({ label, icon, active, onClick, badge, totalRecordatorios, darkMode }) {
-  const activeBg = "#2563eb";
+function NavBtn({ label, icon, active, onClick, badge, totalRecordatorios, darkMode, accentColor }) {
+  const activeBg = accentColor || "#2563eb";
   const hoverBg  = darkMode ? "#161b22" : "#f0f0f5";
   return (
     <button
@@ -69,7 +88,6 @@ function ThemeToggle({ darkMode, setDarkMode }) {
       <span style={{ fontSize: 14, fontWeight: 500 }}>
         {darkMode ? "Modo claro" : "Modo oscuro"}
       </span>
-      {/* Toggle pill */}
       <span style={{
         marginLeft: "auto", width: 36, height: 20, borderRadius: 10,
         background: darkMode ? "#334155" : "#d1d5db",
@@ -160,6 +178,17 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         onClick={() => setScreen("estadisticas")}
       />
 
+      {/* ── NUEVO: Control de Acceso / Scanner ─────────────────────────────── */}
+      <NavBtn
+        label="Control de Acceso"
+        icon={IC.qr}
+        active={screen === "scanner"}
+        darkMode={darkMode}
+        accentColor="#059669"   /* Verde — indica que es acceso físico */
+        onClick={() => setScreen("scanner")}
+      />
+      {/* ── /NUEVO ──────────────────────────────────────────────────────────── */}
+
       <div className="gym-nav-spacer" />
       <div className="gym-nav-divider" style={dividerStyle} />
 
@@ -204,6 +233,18 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           )}
         </button>
       ))}
+
+      {/* Scanner en mobile nav (icono QR) */}
+      <button
+        className="gym-nav-btn mobile-only"
+        onClick={() => setScreen("scanner")}
+      >
+        <span style={{ color: screen === "scanner" ? "#22c55e" : "#6e7681", display: "flex" }}>{IC.qr}</span>
+        <span className={"gym-nav-label" + (screen === "scanner" ? " active" : "")}
+          style={{ color: screen === "scanner" ? "#22c55e" : undefined }}>
+          Acceso
+        </span>
+      </button>
 
       {/* ⊕ central mobile */}
       <button className="gym-nav-btn mobile-only" onClick={() => setModal("quickAdd")}>
