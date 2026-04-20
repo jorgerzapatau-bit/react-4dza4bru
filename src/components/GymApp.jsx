@@ -1,11 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
-import {
-  fmt, fmtDate, today, todayISO, parseDate,
-  getMembershipInfo, diasParaVencer, diasParaCumple,
-  DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL,
-  CAT_ING, CAT_GAS,
-} from "../utils";
+import { fmt, fmtDate, today, todayISO, parseDate } from "../utils/dateUtils";
+import { getMembershipInfo, diasParaVencer, diasParaCumple } from "../utils/membershipUtils";
+import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS } from "../utils/constants";
 
 // Components
 import UI from "./UI";
