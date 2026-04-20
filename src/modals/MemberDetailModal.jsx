@@ -1,5 +1,14 @@
 // src/modals/MemberDetailModal.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+const useIsDesktop = () => {
+  const [ok, setOk] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : false);
+  useEffect(() => {
+    const h = () => setOk(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return ok;
+};
 import { Modal, Btn, Inp } from "../components/UI";
 import PhotoModal from "../components/PhotoModal";
 import { CAT_ICON } from "../utils/constants";
@@ -217,6 +226,7 @@ export default function MemberDetailModal({
   onDelete,
   onGoToMensajes,
 }) {
+  const isDesktop = useIsDesktop();
   const [detTab, setDetTab] = useState("perfil");
   const [editing, setEditing] = useState(false);
   const memInfo = getMembershipInfo(m.id, txs, m);
@@ -421,17 +431,20 @@ export default function MemberDetailModal({
               backdropFilter: "blur(10px)",
               zIndex: 200,
               display: "flex",
-              alignItems: "flex-end",
+              alignItems: isDesktop ? "center" : "flex-end",
+              justifyContent: isDesktop ? "center" : "flex-start",
+              padding: isDesktop ? 24 : 0,
             }}
           >
             <div
               style={{
                 width: "100%",
+                maxWidth: isDesktop ? 520 : "100%",
                 background: "#1a1a2e",
-                borderRadius: "28px 28px 0 0",
+                borderRadius: isDesktop ? 20 : "28px 28px 0 0",
                 padding: "24px 24px 44px",
-                animation: "slideUp .3s ease",
-                maxHeight: "90%",
+                animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease",
+                maxHeight: isDesktop ? "85vh" : "90%",
                 overflowY: "auto",
               }}
             >
@@ -565,13 +578,16 @@ export default function MemberDetailModal({
           <div
             style={{
               position: "fixed", inset: 0, background: "rgba(0,0,0,.88)",
-              backdropFilter: "blur(10px)", zIndex: 200, display: "flex", alignItems: "flex-end",
+              backdropFilter: "blur(10px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: isDesktop ? "center" : "flex-start", padding: isDesktop ? 24 : 0,
             }}
           >
             <div
               style={{
-                width: "100%", background: "#1a1a2e", borderRadius: "28px 28px 0 0",
-                padding: "24px 24px 44px", animation: "slideUp .3s ease",
+                width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#1a1a2e",
+                borderRadius: isDesktop ? 20 : "28px 28px 0 0",
+                padding: "24px 24px 44px",
+                animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease",
+                maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -1401,8 +1417,8 @@ export default function MemberDetailModal({
           )}
 
           {pagoModal && (
-            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: "flex-end" }}>
-              <div style={{ width: "100%", background: "#1e1e30", borderRadius: "28px 28px 0 0", padding: "24px 24px 44px", animation: "slideUp .3s ease" }}>
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: isDesktop ? "center" : "flex-start", padding: isDesktop ? 24 : 0 }}>
+              <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#1e1e30", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                   <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
                   <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#9ca3af", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>

@@ -7,6 +7,7 @@ import { diasParaCumple } from "../utils/dateUtils";
 import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS } from "../utils/constants";
 
 // Components
+import Nav from "./Nav";
 import { Badge, Btn, Inp, Modal } from "./UI";
 import PhotoModal from "./PhotoModal";
 import MemberDetailModal from "../modals/MemberDetailModal";
@@ -303,31 +304,17 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   return (
     <div className="gym-root">
 
-      {/* ═══ SIDEBAR NAV (primero en DOM = izquierda en desktop) ═══ */}
+      {/* ═══ SIDEBAR NAV ═══ */}
       {!configScreen && !loading && (
-        <nav className="gym-nav">
-          <div className="gym-nav-gym-name">{gymConfig?.nombre || "GymFit Pro"}</div>
-          <div className="gym-nav-divider" />
-          {[
-            { label: "Inicio", icon: "⌂", s: "dashboard", t: null },
-            { label: "Miembros", icon: "◎", s: "miembros", t: null },
-            { label: "Agregar", icon: "⊕", accent: true },
-            { label: "Mensajes", icon: "💬", s: "mensajes", t: null, badge: totalRecordatorios },
-            { label: "Caja", icon: "💵", s: "caja", t: null },
-          ].map((n, i) => (
-            <button key={i} className={"gym-nav-btn" + (n.accent ? " gym-nav-btn-accent" : "")} onClick={() => { if (n.accent) { setModal("quickAdd"); return; } setScreen(n.s); if (n.t !== null) setTab(n.t); }}>
-              {n.accent ? (
-                <div className="gym-nav-accent">{n.icon}</div>
-              ) : (
-                <>
-                  <span className={"gym-nav-icon" + (screen === n.s ? " active" : "")}>{n.icon}</span>
-                  <span className={"gym-nav-label" + (screen === n.s ? " active" : "")}>{n.label}</span>
-                  {n.badge > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 0, right: "18%", width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #13131f" }} />}
-                </>
-              )}
-            </button>
-          ))}
-        </nav>
+        <Nav
+          screen={screen}
+          setScreen={setScreen}
+          tab={tab}
+          setTab={setTab}
+          setModal={setModal}
+          totalRecordatorios={totalRecordatorios}
+          gymConfig={gymConfig}
+        />
       )}
 
       {/* ═══ CONTENIDO PRINCIPAL ═══ */}

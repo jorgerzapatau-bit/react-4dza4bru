@@ -385,10 +385,10 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
   const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       {/* ── Header ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <button onClick={onBack} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
           <div style={{ flex: 1 }}>
@@ -428,7 +428,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
 
       {/* ── Contenido scrollable ── */}
       <div className="gym-scroll-pad" style={{ flex: 1, padding: "10px 20px 0" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
 
         {/* ── Resumen financiero ── */}
         <div style={{ background: "linear-gradient(135deg,#1e1e3a,#251e3a)", borderRadius: 22, padding: "18px 18px 14px", marginBottom: 14, border: "1px solid rgba(108,99,255,.25)", boxShadow: "0 6px 28px rgba(0,0,0,.3)" }}>

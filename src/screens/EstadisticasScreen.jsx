@@ -37,9 +37,9 @@ export default function EstadisticasScreen({
   const mejorMes = mesesData.reduce((a, b) => b.util > a.util ? b : a, mesesData[0]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "16px 24px 0", flexShrink: 0 }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <button className="mobile-only" onClick={() => setScreen("dashboard")} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>📊 Estadísticas</h1>
@@ -47,7 +47,7 @@ export default function EstadisticasScreen({
         </div>
       </div>
       <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 24px 0" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
         {/* Annual summary cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
           {[
