@@ -34,14 +34,13 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
       {NAV_ITEMS.map((item, i) => (
         <button
           key={i}
-          className="gym-nav-btn"
+          className={"gym-nav-btn" + (screen === item.s ? " gym-nav-btn-active" : "")}
           onClick={() => { setScreen(item.s); if (item.s === "dashboard") setTab(0); }}
-          className={screen === item.s ? "active-nav" : ""}
         >
           <span className={"gym-nav-icon" + (screen === item.s ? " active" : "")}>{item.icon}</span>
           <span className={"gym-nav-label" + (screen === item.s ? " active" : "")}>{item.label}</span>
           {item.hasBadge && totalRecordatorios > 0 && (
-            <span className="wa-pulse" style={{ position: "absolute", top: 8, right: 12, width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #08081c" }} />
+            <span className="wa-pulse" style={{ position: "absolute", top: 8, right: 12, width: 8, height: 8, background: "#f43f5e", borderRadius: "50%", border: "2px solid #0d1117" }} />
           )}
         </button>
       ))}
@@ -59,7 +58,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
       <div className="gym-nav-divider" />
       <span className="gym-nav-section">Herramientas</span>
 
-      <button className="gym-nav-btn" onClick={() => setScreen("estadisticas")}>
+      <button className={"gym-nav-btn" + (screen === "estadisticas" ? " gym-nav-btn-active" : "")} onClick={() => setScreen("estadisticas")}>
         <span className={"gym-nav-icon" + (screen === "estadisticas" ? " active" : "")}>📊</span>
         <span className={"gym-nav-label" + (screen === "estadisticas" ? " active" : "")}>Estadísticas</span>
       </button>

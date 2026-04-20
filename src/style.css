@@ -93,6 +93,11 @@ h1, p, span, button, input, select, textarea {
 
 .gym-nav-btn:hover { background: #161b22; }
 
+.gym-nav-btn-active {
+  background: rgba(167,139,250,.12) !important;
+  border-left: 2px solid #a78bfa;
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   .gym-nav-btn {
     flex-direction: column;
