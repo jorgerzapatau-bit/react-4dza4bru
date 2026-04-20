@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase, getGymId, auth, getUserGymId } from "./supabase";
 import GymApp from "./components/GymApp";
-import LoginScreen from "./components/LoginScreen";
+import LoginScreen from "./screens/LoginScreen";
 
 export default function App() {
   const [authState, setAuthState] = useState("checking"); // "checking" | "login" | "app"
