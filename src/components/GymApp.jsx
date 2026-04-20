@@ -8,7 +8,7 @@ import {
 } from "../utils";
 
 // Components
-import Badge from "./components/UI";
+import UI from "./components/UI";
 import PhotoModal from "./components/PhotoModal";
 import MemberDetailModal from "./modals/MemberDetailModal";
 import EditTxModal from "./modals/EditTxModal";
