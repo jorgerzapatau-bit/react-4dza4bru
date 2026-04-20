@@ -100,7 +100,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "11px 0",
-        borderBottom: "1px solid rgba(255,255,255,.05)",
+        borderBottom: "1px solid var(--border)",
       }}
     >
       <span
@@ -116,7 +116,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
       </span>
       <span
         style={{
-          color: accent || "#fff",
+          color: accent || "var(--text-primary)",
           fontSize: 14,
           fontWeight: accent ? 700 : 500,
           fontFamily: accent ? "'DM Mono',monospace" : "inherit",
@@ -158,7 +158,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
         >
           <div
             style={{
-              background: "#1e1e30",
+              background: "var(--bg-card)",
               borderRadius: 24,
               padding: 24,
               width: "100%",
@@ -180,7 +180,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
               </h3>
               <p style={{ color: "#8b949e", fontSize: 13, lineHeight: 1.6 }}>
                 Estás por editar un movimiento de{" "}
-                <strong style={{ color: "#fff" }}>{mesNombre}</strong>. Esto
+                <strong style={{ color: "var(--text-primary)" }}>{mesNombre}</strong>. Esto
                 afectará los totales y estadísticas de ese mes.
               </p>
             </div>
@@ -317,7 +317,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
 
           <div
             style={{
-              background: "#13181f",
+              background: "var(--bg-elevated)",
               borderRadius: 16,
               padding: "0 14px",
             }}
@@ -416,15 +416,15 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                     }}
                     style={{
                       width: "100%",
-                      background: "#21262d",
+                      background: "var(--bg-elevated)",
                       border: `1px solid ${
                         esMesPasado
                           ? "rgba(245,158,11,.4)"
-                          : "rgba(255,255,255,.15)"
+                          : "var(--border)"
                       }`,
                       borderRadius: 12,
                       padding: "12px 10px",
-                      color: "#fff",
+                      color: "var(--text-primary)",
                       fontSize: 13,
                       fontFamily: "inherit",
                       outline: "none",
@@ -453,7 +453,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
                     }
                     style={{
                       width: "100%",
-                      background: "#21262d",
+                      background: "var(--bg-elevated)",
                       border: "1px solid rgba(34,211,238,.3)",
                       borderRadius: 12,
                       padding: "12px 10px",

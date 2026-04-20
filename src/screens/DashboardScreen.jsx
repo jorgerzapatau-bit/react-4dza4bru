@@ -65,7 +65,7 @@ export default function DashboardScreen({
                   ? <img src={gymConfig.logo} alt="logo" style={{ maxWidth: 36, maxHeight: 28, width: "auto", height: "auto", objectFit: "contain", borderRadius: 6, flexShrink: 0 }} />
                   : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>💪</div>
                 }
-                <h1 style={{ color: "#fff", fontSize: 16, fontWeight: 700 }}>{gymConfig?.nombre || "GymFit Pro"}</h1>
+                <h1 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700 }}>{gymConfig?.nombre || "GymFit Pro"}</h1>
               </div>
             </div>
 
@@ -105,7 +105,7 @@ export default function DashboardScreen({
                   <p style={{ color: "rgba(255,255,255,.8)", fontSize: 12, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>UTILIDAD NETA · {mesLabel.toUpperCase()}</p>
                   <button onClick={() => navMes(1)} style={{ background: isCurrentMonth ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.18)", border: "none", borderRadius: 8, width: 30, height: 30, cursor: isCurrentMonth ? "default" : "pointer", color: isCurrentMonth ? "rgba(255,255,255,.2)" : "#fff", fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>
                 </div>
-                <h2 style={{ color: "#fff", fontSize: 38, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 12px", position: "relative", zIndex: 1 }}>{fmt(utilidad)}</h2>
+                <h2 style={{ color: "var(--text-primary)", fontSize: 38, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 12px", position: "relative", zIndex: 1 }}>{fmt(utilidad)}</h2>
                 <div style={{ position: "relative", zIndex: 1 }}>
                   {crecUtil !== null
                     ? <><Badge val={crecUtil} /><span style={{ color: "rgba(255,255,255,.5)", fontSize: 11, marginLeft: 8 }}>vs {mesAnteriorLabel}</span></>
@@ -142,7 +142,7 @@ export default function DashboardScreen({
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: nuevosEsteMes.length > 0 ? 12 : 0 }}>
                           <div>
                             <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase" }}>Miembros activos</p>
-                            <p style={{ color: "#fff", fontSize: 32, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0" }}>{mActivos}</p>
+                            <p style={{ color: "var(--text-primary)", fontSize: 32, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0" }}>{mActivos}</p>
                             <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>{miembros.filter(m => m.estado === "Vencido").length} vencidos · {miembros.length} total</p>
                           </div>
                           <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,#6c63ff,#e040fb)", border: "none", borderRadius: 12, padding: "10px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
@@ -229,7 +229,7 @@ export default function DashboardScreen({
                                 {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
                               </div>
                               <div style={{ flex: 1 }}>
-                                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                                 <p style={{ color: "var(--text-tertiary)", fontSize: 10, marginTop: 1 }}>
                                   {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
                                   Vence: {fmtDate(m.vence)}
@@ -261,7 +261,7 @@ export default function DashboardScreen({
                             {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.diasCumple === 0 ? "🎂" : "🎁")}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                            <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                             <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 2 }}>
                               {m.diasCumple === 0 ? "🎉 ¡Hoy!" : m.diasCumple === 1 ? "Mañana" : `En ${m.diasCumple} días`}
                               {calcEdad(m.fecha_nacimiento) !== null && ` · cumple ${calcEdad(m.fecha_nacimiento) + (m.diasCumple === 0 ? 0 : 1)} años`}
@@ -294,7 +294,7 @@ export default function DashboardScreen({
                             );
                           })()}
                           <div>
-                            <p style={{ color: "#fff", fontSize: 12, fontWeight: 500, maxWidth: 200, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
+                            <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 500, maxWidth: 200, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
                             <p style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{fmtDate(t.fecha)}</p>
                           </div>
                         </div>
@@ -328,7 +328,7 @@ export default function DashboardScreen({
                     );
                   })()}
                   <div>
-                    <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
+                    <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
                     <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                   </div>
                 </div>
@@ -353,7 +353,7 @@ export default function DashboardScreen({
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 42, height: 42, borderRadius: 14, fontSize: 18, background: "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{CAT_ICON[t.categoria] || "📝"}</div>
                   <div>
-                    <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
+                    <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
                     <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                   </div>
                 </div>
@@ -439,7 +439,7 @@ export default function DashboardScreen({
                           );
                         })()}
                         <div>
-                          <p style={{ color: "#fff", fontSize: 12, fontWeight: 500, maxWidth: 280, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
+                          <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 500, maxWidth: 280, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
                           <p style={{ color: "var(--text-tertiary)", fontSize: 10, marginTop: 2 }}>{t.categoria} · {fmtDate(t.fecha)}</p>
                         </div>
                       </div>

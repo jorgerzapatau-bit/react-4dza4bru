@@ -31,14 +31,14 @@ export default function ConfigScreen({
     <div style={{ flex: 1, padding: "24px 24px 60px" }}>
       {gymConfig && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <button onClick={() => setConfigScreen(false)} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
-          <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>⚙️ Configuración</h2>
+          <button onClick={() => setConfigScreen(false)} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "var(--text-primary)", fontSize: 18 }}>←</button>
+          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 700 }}>⚙️ Configuración</h2>
         </div>
       )}
       {!gymConfig && (
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 64, height: 64, borderRadius: 20, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 12px", boxShadow: "0 8px 32px rgba(108,99,255,.4)" }}>💪</div>
-          <h1 style={{ color: "#fff", fontSize: 22, fontWeight: 700 }}>Configura tu Gimnasio</h1>
+          <h1 style={{ color: "var(--text-primary)", fontSize: 22, fontWeight: 700 }}>Configura tu Gimnasio</h1>
           <p style={{ color: "#8b949e", fontSize: 13, marginTop: 6 }}>Esta información aparecerá en tu app</p>
         </div>
       )}
@@ -91,11 +91,11 @@ export default function ConfigScreen({
         value={formCfg.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL}
         onChange={e => setFormCfg(p => ({ ...p, recordatorio_tpl: e.target.value }))}
         rows={10}
-        style={{ width: "100%", background: "#21262d", border: "1px solid rgba(167,139,250,.25)", borderRadius: 14, padding: "12px 14px", color: "#d1d5db", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 8, boxSizing: "border-box" }}
+        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 14, padding: "12px 14px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 8, boxSizing: "border-box" }}
       />
       <button
         onClick={() => setFormCfg(p => ({ ...p, recordatorio_tpl: DEFAULT_RECORDATORIO_TPL }))}
-        style={{ background: "#21262d", border: "1px solid #30363d", borderRadius: 10, padding: "6px 14px", color: "#8b949e", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginBottom: 4 }}>
+        style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "6px 14px", color: "var(--text-secondary)", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginBottom: 4 }}>
         ↺ Restaurar mensaje predeterminado
       </button>
 
@@ -104,9 +104,9 @@ export default function ConfigScreen({
       {(formCfg.planes || DEFAULT_PLANES).map((plan, i) => {
         const isActive = plan.activo !== false;
         return (
-          <div key={i} style={{ background: isActive ? "#161b22" : "rgba(255,255,255,.02)", border: `1px solid ${isActive ? "rgba(167,139,250,.2)" : "#21262d"}`, borderRadius: 14, padding: "10px 14px", marginBottom: 8, opacity: isActive ? 1 : 0.5 }}>
+          <div key={i} style={{ background: isActive ? "var(--bg-card)" : "var(--bg-elevated)", border: `1px solid ${isActive ? "rgba(167,139,250,.2)" : "var(--border)"}`, borderRadius: 14, padding: "10px 14px", marginBottom: 8, opacity: isActive ? 1 : 0.5 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isActive ? 10 : 0 }}>
-              <span style={{ color: isActive ? "#fff" : "#8b949e", fontSize: 13, fontWeight: 600 }}>{plan.nombre}</span>
+              <span style={{ color: isActive ? "var(--text-primary)" : "var(--text-tertiary)", fontSize: 13, fontWeight: 600 }}>{plan.nombre}</span>
               <div onClick={() => setFormCfg(p => { const pl = [...p.planes]; pl[i] = { ...pl[i], activo: !isActive }; return { ...p, planes: pl }; })}
                 style={{ width: 44, height: 24, borderRadius: 12, background: isActive ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)", cursor: "pointer", position: "relative", transition: "background .2s", flexShrink: 0 }}>
                 <div style={{ position: "absolute", top: 3, left: isActive ? 23 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.3)" }} />
@@ -127,7 +127,7 @@ export default function ConfigScreen({
       {/* Notificaciones push */}
       <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "0 0 10px" }}>Recordatorios automáticos</p>
       <div style={{ background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
-        <p style={{ color: "#d1d5db", fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>
+        <p style={{ color: "var(--text-primary)", fontSize: 12, lineHeight: 1.6, marginBottom: 10 }}>
           🔔 Activa las notificaciones para recibir un aviso automático <strong style={{ color: "#a78bfa" }}>1 día antes</strong> del vencimiento de cada membresía.
         </p>
         <button onClick={async () => {

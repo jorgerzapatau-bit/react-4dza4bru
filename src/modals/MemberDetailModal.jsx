@@ -48,7 +48,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
     >
       <div
         style={{
-          background: "#161b22",
+          background: "var(--bg-card)",
           borderRadius: 24,
           padding: 24,
           width: "100%",
@@ -93,7 +93,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
                 borderRadius: 12,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                background: modo === op.val ? "rgba(96,165,250,.1)" : "#161b22",
+                background: modo === op.val ? "rgba(96,165,250,.1)" : "var(--bg-elevated)",
                 textAlign: "center",
               }}
             >
@@ -155,11 +155,11 @@ function ConfirmDeleteInput({ nombre, onConfirm, onCancel }) {
         placeholder="Escribe ELIMINAR"
         style={{
           width: "100%",
-          background: "#21262d",
-          border: `1px solid ${ok ? "rgba(244,63,94,.6)" : "rgba(255,255,255,.1)"}`,
+          background: "var(--bg-elevated)",
+          border: `1px solid ${ok ? "rgba(244,63,94,.6)" : "var(--border)"}`,
           borderRadius: 10,
           padding: "10px 12px",
-          color: "#fff",
+          color: "var(--text-primary)",
           fontSize: 13,
           fontFamily: "inherit",
           outline: "none",
@@ -172,14 +172,14 @@ function ConfirmDeleteInput({ nombre, onConfirm, onCancel }) {
           style={{
             flex: 1,
             padding: "10px",
-            border: "1px solid #30363d",
+            border: "1px solid var(--border-strong)",
             borderRadius: 10,
             cursor: "pointer",
             fontFamily: "inherit",
             fontSize: 12,
             fontWeight: 600,
-            background: "transparent",
-            color: "#8b949e",
+            background: "var(--bg-elevated)",
+            color: "var(--text-secondary)",
           }}
         >
           Cancelar
@@ -440,7 +440,7 @@ export default function MemberDetailModal({
               style={{
                 width: "100%",
                 maxWidth: isDesktop ? 520 : "100%",
-                background: "#161b22",
+                background: "var(--bg-card)",
                 borderRadius: isDesktop ? 20 : "28px 28px 0 0",
                 padding: "24px 24px 44px",
                 animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease",
@@ -449,7 +449,7 @@ export default function MemberDetailModal({
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>
+                <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>
                   💰 Cobrar a {m.nombre.split(" ")[0]}
                 </h2>
                 <button
@@ -473,7 +473,7 @@ export default function MemberDetailModal({
                       borderRadius: 20,
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      background: cobro.tipo === t.val ? "rgba(74,222,128,.12)" : "#161b22",
+                      background: cobro.tipo === t.val ? "rgba(74,222,128,.12)" : "var(--bg-elevated)",
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
@@ -496,7 +496,7 @@ export default function MemberDetailModal({
                 value={cobro.desc}
                 onChange={(e) => setCobro((p) => ({ ...p, desc: e.target.value }))}
                 placeholder={tipoInfo?.placeholder}
-                style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
+                style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
@@ -507,7 +507,7 @@ export default function MemberDetailModal({
                 value={cobro.monto}
                 onChange={(e) => setCobro((p) => ({ ...p, monto: e.target.value }))}
                 placeholder="0.00"
-                style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 16, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
+                style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 16, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
@@ -517,7 +517,7 @@ export default function MemberDetailModal({
                 type="date"
                 value={cobro.fecha}
                 onChange={(e) => setCobro((p) => ({ ...p, fecha: e.target.value }))}
-                style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
+                style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
@@ -532,7 +532,7 @@ export default function MemberDetailModal({
                       flex: 1, padding: "10px 4px",
                       border: cobro.formaPago === op.val ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                      background: cobro.formaPago === op.val ? "rgba(167,139,250,.15)" : "#161b22",
+                      background: cobro.formaPago === op.val ? "rgba(167,139,250,.15)" : "var(--bg-elevated)",
                       transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}
                   >
@@ -551,7 +551,7 @@ export default function MemberDetailModal({
                   width: "100%", padding: "14px", border: "none", borderRadius: 14,
                   cursor: cobro.monto ? "pointer" : "not-allowed", fontFamily: "inherit",
                   fontSize: 14, fontWeight: 700,
-                  background: cobro.monto ? "linear-gradient(135deg,#4ade80,#22c55e)" : "#21262d",
+                  background: cobro.monto ? "linear-gradient(135deg,#4ade80,#22c55e)" : "var(--bg-elevated)",
                   color: cobro.monto ? "#000" : "#8b949e",
                   boxShadow: cobro.monto ? "0 4px 18px rgba(74,222,128,.35)" : "none",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s",
@@ -583,7 +583,7 @@ export default function MemberDetailModal({
           >
             <div
               style={{
-                width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#161b22",
+                width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "var(--bg-card)",
                 borderRadius: isDesktop ? 20 : "28px 28px 0 0",
                 padding: "24px 24px 44px",
                 animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease",
@@ -591,7 +591,7 @@ export default function MemberDetailModal({
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>
+                <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>
                   🔄 {esPrimeraMembresía ? "Registrar membresía" : "Renovar membresía"}
                 </h2>
                 <button
@@ -671,7 +671,7 @@ export default function MemberDetailModal({
                       flex: 1, padding: "10px 4px",
                       border: renovar.formaPago === op.val ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                      background: renovar.formaPago === op.val ? "rgba(167,139,250,.15)" : "#161b22",
+                      background: renovar.formaPago === op.val ? "rgba(167,139,250,.15)" : "var(--bg-elevated)",
                       transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}
                   >
@@ -701,9 +701,9 @@ export default function MemberDetailModal({
                       }));
                     }}
                     style={{
-                      width: "100%", background: "#21262d",
-                      border: `1px solid ${esMesPasado ? "rgba(245,158,11,.4)" : "rgba(255,255,255,.15)"}`,
-                      borderRadius: 12, padding: "12px 10px", color: "#fff", fontSize: 13,
+                      width: "100%", background: "var(--bg-elevated)",
+                      border: `1px solid ${esMesPasado ? "rgba(245,158,11,.4)" : "var(--border)"}`,
+                      borderRadius: 12, padding: "12px 10px", color: "var(--text-primary)", fontSize: 13,
                       fontFamily: "inherit", outline: "none", marginBottom: 12,
                     }}
                   />
@@ -722,9 +722,9 @@ export default function MemberDetailModal({
                       setRenovar((p) => ({ ...p, vence: v, venceManual: true }));
                     }}
                     style={{
-                      width: "100%", background: "#21262d",
-                      border: "1px solid rgba(255,255,255,.15)",
-                      borderRadius: 12, padding: "12px 10px", color: "#fff", fontSize: 13,
+                      width: "100%", background: "var(--bg-elevated)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12, padding: "12px 10px", color: "var(--text-primary)", fontSize: 13,
                       fontFamily: "inherit", outline: "none", marginBottom: 12,
                     }}
                   />
@@ -789,7 +789,7 @@ export default function MemberDetailModal({
               position: "absolute", bottom: -4, right: -4,
               width: 30, height: 30, borderRadius: 10,
               background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-              border: "2px solid #191928", cursor: "pointer",
+              border: "2px solid var(--bg-base)", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 14, boxShadow: "0 2px 8px rgba(108,99,255,.5)",
             }}
@@ -798,7 +798,7 @@ export default function MemberDetailModal({
           </button>
         </div>
 
-        <h2 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>{m.nombre}</h2>
+        <h2 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700 }}>{m.nombre}</h2>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, marginTop: 8 }}>
           <span
             style={{
@@ -863,7 +863,7 @@ export default function MemberDetailModal({
       </div>
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 4, background: "#1c2128", borderRadius: 14, padding: 4, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 18 }}>
         {[{ k: "perfil", label: "📋 Perfil" }, { k: "historial", label: "💳 Historial" }].map((t) => (
           <button
             key={t.k}
@@ -902,10 +902,10 @@ export default function MemberDetailModal({
                 value={form.fecha_incorporacion}
                 onChange={(e) => setForm((p) => ({ ...p, fecha_incorporacion: e.target.value }))}
                 style={{
-                  width: "100%", background: "#21262d",
-                  border: `1px solid ${form.fecha_incorporacion ? "rgba(255,255,255,.1)" : "rgba(245,158,11,.4)"}`,
+                  width: "100%", background: "var(--bg-elevated)",
+                  border: `1px solid ${form.fecha_incorporacion ? "var(--border)" : "rgba(245,158,11,.4)"}`,
                   borderRadius: 12, padding: "12px 14px",
-                  color: form.fecha_incorporacion ? "#fff" : "#484f58",
+                  color: form.fecha_incorporacion ? "var(--text-primary)" : "var(--text-tertiary)",
                   fontSize: 14, fontFamily: "inherit", outline: "none",
                   marginBottom: form.fecha_incorporacion ? 12 : 6,
                 }}
@@ -932,7 +932,7 @@ export default function MemberDetailModal({
                       flex: 1, padding: "10px 0",
                       border: form.sexo === op.val ? `2px solid ${op.color}` : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                      background: form.sexo === op.val ? `${op.color}20` : "#161b22",
+                      background: form.sexo === op.val ? `${op.color}20` : "var(--bg-elevated)",
                       color: form.sexo === op.val ? op.color : "#8b949e",
                       fontSize: 12, fontWeight: 700, transition: "all .2s",
                     }}
@@ -951,10 +951,10 @@ export default function MemberDetailModal({
                 value={form.fecha_nacimiento}
                 onChange={(e) => setForm((p) => ({ ...p, fecha_nacimiento: e.target.value }))}
                 style={{
-                  width: "100%", background: "#21262d",
-                  border: `1px solid ${form.fecha_nacimiento ? "rgba(255,255,255,.1)" : "rgba(245,158,11,.4)"}`,
+                  width: "100%", background: "var(--bg-elevated)",
+                  border: `1px solid ${form.fecha_nacimiento ? "var(--border)" : "rgba(245,158,11,.4)"}`,
                   borderRadius: 12, padding: "12px 14px",
-                  color: form.fecha_nacimiento ? "#fff" : "#484f58",
+                  color: form.fecha_nacimiento ? "var(--text-primary)" : "var(--text-tertiary)",
                   fontSize: 14, fontFamily: "inherit", outline: "none",
                   marginBottom: form.fecha_nacimiento ? 12 : 6,
                 }}
@@ -975,9 +975,9 @@ export default function MemberDetailModal({
                 rows={3}
                 placeholder="Ej: Tiene lesión de rodilla. Paga los viernes. Familiar del dueño."
                 style={{
-                  width: "100%", background: "#21262d",
+                  width: "100%", background: "var(--bg-elevated)",
                   border: "1px solid rgba(167,139,250,.2)", borderRadius: 12,
-                  padding: "10px 14px", color: "#fff", fontSize: 13, fontFamily: "inherit",
+                  padding: "10px 14px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit",
                   outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 14,
                 }}
               />
@@ -991,7 +991,7 @@ export default function MemberDetailModal({
                     flex: 1, padding: "13px 20px", border: "none", borderRadius: 14,
                     cursor: hasChanges ? "pointer" : "not-allowed", fontFamily: "inherit",
                     fontSize: 14, fontWeight: 700,
-                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
                     color: hasChanges ? "#fff" : "#8b949e",
                     boxShadow: hasChanges ? "0 4px 18px rgba(108,99,255,.4)" : "none",
                     transition: "all .3s",
@@ -1002,7 +1002,7 @@ export default function MemberDetailModal({
               </div>
 
               {/* ── Eliminar miembro ── */}
-              <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #21262d" }}>
+              <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
                 {!confirmDelete ? (
                   <button
                     onClick={() => setConfirmDelete(true)}
@@ -1093,7 +1093,7 @@ export default function MemberDetailModal({
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Datos personales
               </p>
-              <div style={{ background: "#13181f", borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
+              <div style={{ background: "var(--bg-elevated)", borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
                 {[
                   { label: "📱 Teléfono", val: m.tel || "—" },
                   {
@@ -1101,7 +1101,7 @@ export default function MemberDetailModal({
                     custom: !m.fecha_incorporacion ? (
                       <span style={{ background: "rgba(245,158,11,.15)", color: "#f59e0b", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
                     ) : (
-                      <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{fmtDate(m.fecha_incorporacion) || m.fecha_incorporacion}</span>
+                      <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{fmtDate(m.fecha_incorporacion) || m.fecha_incorporacion}</span>
                     ),
                   },
                   {
@@ -1119,7 +1119,7 @@ export default function MemberDetailModal({
                     custom: !m.fecha_nacimiento ? (
                       <span style={{ background: "rgba(245,158,11,.15)", color: "#f59e0b", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
                     ) : (
-                      <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+                      <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>
                         {fmtDate(m.fecha_nacimiento)}{edad !== null ? ` · ${edad} años` : ""}
                         {diasCumple !== null && diasCumple <= 30 && (
                           <span style={{ color: "#fbbf24", marginLeft: 6, fontSize: 11 }}>🎂 en {diasCumple}d</span>
@@ -1133,11 +1133,11 @@ export default function MemberDetailModal({
                     style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
                       padding: "12px 0",
-                      borderBottom: i < arr.length - 1 ? "1px solid #21262d" : "none",
+                      borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
                     }}
                   >
                     <span style={{ color: "#8b949e", fontSize: 13 }}>{row.label}</span>
-                    {row.custom || <span style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{row.val || "—"}</span>}
+                    {row.custom || <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{row.val || "—"}</span>}
                   </div>
                 ))}
               </div>
@@ -1214,7 +1214,7 @@ export default function MemberDetailModal({
                       ? [{ label: "💳 Forma de pago", val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transferencia" : "💳 Tarjeta" }]
                       : []),
                   ].map((row, i, arr) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid #21262d" : "none" }}>
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none" }}>
                       <span style={{ color: "#8b949e", fontSize: 13 }}>{row.label}</span>
                       <span style={{ color: "#22d3ee", fontSize: 13, fontWeight: 600 }}>{row.val}</span>
                     </div>
@@ -1234,13 +1234,13 @@ export default function MemberDetailModal({
                   📝 Notas internas
                 </p>
                 {m.notas ? (
-                  <div style={{ background: "#161b22", border: "1px solid rgba(167,139,250,.15)", borderRadius: 12, padding: "10px 14px" }}>
-                    <p style={{ color: "#d1d5db", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.notas}</p>
+                  <div style={{ background: "var(--bg-elevated)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 12, padding: "10px 14px" }}>
+                    <p style={{ color: "var(--text-primary)", fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.notas}</p>
                   </div>
                 ) : (
                   <div
                     onClick={() => setEditing(true)}
-                    style={{ background: "#13181f", border: "1px dashed rgba(255,255,255,.08)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}
+                    style={{ background: "var(--bg-elevated)", border: "1px dashed var(--border)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}
                   >
                     <p style={{ color: "#8b949e", fontSize: 12 }}>Sin notas — toca para agregar</p>
                   </div>
@@ -1383,8 +1383,8 @@ export default function MemberDetailModal({
                               style={{
                                 display: "flex", alignItems: "center", gap: 12,
                                 padding: "13px 14px", borderRadius: 16, marginBottom: 8,
-                                background: "#161b22",
-                                border: "1px solid #21262d", cursor: "pointer",
+                                background: "var(--bg-card)",
+                                border: "1px solid var(--border)", cursor: "pointer",
                               }}
                             >
                               <div style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 18, background: bgColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: `2px solid ${color}30` }}>
@@ -1393,7 +1393,7 @@ export default function MemberDetailModal({
                                   : CAT_ICON[t.categoria] || (isIngreso ? "💰" : "💸")}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                                   {desc}
                                 </p>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
@@ -1418,9 +1418,9 @@ export default function MemberDetailModal({
 
           {pagoModal && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: isDesktop ? "center" : "flex-start", padding: isDesktop ? 24 : 0 }}>
-              <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "#1e1e30", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
+              <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "var(--bg-card)", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                  <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
+                  <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
                   <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#8b949e", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                 </div>
                 <Inp label="Descripción" value={pago.desc} onChange={(v) => setPago((p) => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." />

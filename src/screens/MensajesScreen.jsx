@@ -159,9 +159,9 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
           onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
           placeholder="Nombre del mensaje (ej: Promoción diciembre)"
           style={{
-            width: "100%", background: "#21262d",
-            border: "1px solid rgba(255,255,255,.15)", borderRadius: 10,
-            padding: "10px 12px", color: "#fff", fontSize: 13,
+            width: "100%", background: "var(--bg-elevated)",
+            border: "1px solid var(--border)", borderRadius: 10,
+            padding: "10px 12px", color: "var(--text-primary)", fontSize: 13,
             fontFamily: "inherit", outline: "none", marginBottom: 8,
           }}
         />
@@ -171,15 +171,15 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
           placeholder={`Escribe el mensaje. Usa {nombre} para incluir el nombre del miembro. Ej: Hola {nombre}, tenemos una promoción especial para ti 🎁 — ${gymNom}`}
           rows={4}
           style={{
-            width: "100%", background: "#21262d",
-            border: "1px solid rgba(255,255,255,.15)", borderRadius: 10,
-            padding: "10px 12px", color: "#fff", fontSize: 12,
+            width: "100%", background: "var(--bg-elevated)",
+            border: "1px solid var(--border)", borderRadius: 10,
+            padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
             fontFamily: "inherit", outline: "none", resize: "none",
             lineHeight: 1.6, marginBottom: 8,
           }}
         />
         {form.msg.trim() && (
-          <div style={{ background: "#161b22", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+          <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
             <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
             <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
           </div>
@@ -189,10 +189,10 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
             onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
             style={{
               flex: 1, padding: "10px",
-              border: "1px solid #30363d", borderRadius: 10,
+              border: "1px solid var(--border-strong)", borderRadius: 10,
               cursor: "pointer", fontFamily: "inherit",
               fontSize: 12, fontWeight: 600,
-              background: "transparent", color: "#8b949e",
+              background: "var(--bg-elevated)", color: "var(--text-secondary)",
             }}
           >
             Cancelar
@@ -222,7 +222,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
   if (tieneContenido) {
     return (
       <div style={{
-        background: "#161b22",
+        background: "var(--bg-card)",
         border: "1px solid rgba(108,99,255,.2)",
         borderRadius: 12, padding: "10px 14px",
         display: "flex", alignItems: "center", gap: 10,
@@ -248,9 +248,9 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
             onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
             style={{
               padding: "6px 10px",
-              border: "1px solid #30363d", borderRadius: 8,
+              border: "1px solid var(--border-strong)", borderRadius: 8,
               cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, background: "transparent", color: "#8b949e",
+              fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)",
             }}
           >
             ✏️
@@ -382,10 +382,10 @@ export default function MensajesScreen({
 
   const textareaStyle = {
     width: "100%",
-    background: "#21262d",
-    border: "1px solid #30363d",
+    background: "var(--bg-elevated)",
+    border: "1px solid var(--border-strong)",
     borderRadius: 14, padding: "14px",
-    color: "#fff", fontSize: 13,
+    color: "var(--text-primary)", fontSize: 13,
     fontFamily: "inherit", outline: "none",
     resize: "none", lineHeight: 1.6, marginBottom: 6,
   };
@@ -407,7 +407,7 @@ export default function MensajesScreen({
             }}
           >←</button>
           <div style={{ flex: 1 }}>
-            <h1 style={{ color: "#fff", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
+            <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
             <p style={{ color: "#8b949e", fontSize: 11 }}>WhatsApp · vencimientos, individual o masivo</p>
           </div>
           {pendientes > 0 && (
@@ -422,7 +422,7 @@ export default function MensajesScreen({
         </div>
 
         {/* Selector de modo */}
-        <div style={{ display: "flex", gap: 4, background: "#1c2128", borderRadius: 14, padding: 4, marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
           {modos.map(m => (
             <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
               {m.icon} {m.label}
@@ -454,8 +454,8 @@ export default function MensajesScreen({
                   <div
                     key={miembro.id}
                     style={{
-                      background: enviado ? "#13181f" : `${col}10`,
-                      border: `1px solid ${enviado ? "#21262d" : col + "35"}`,
+                      background: enviado ? "var(--bg-card)" : `${col}10`,
+                      border: `1px solid ${enviado ? "var(--border)" : col + "35"}`,
                       borderRadius: 18, padding: 14, marginBottom: 12,
                       opacity: enviado ? 0.65 : 1, transition: "all .3s",
                     }}
@@ -475,7 +475,7 @@ export default function MensajesScreen({
                         }
                       </div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
+                        <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
                         <p style={{ color: "#8b949e", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
                       </div>
                       <span style={{
@@ -493,9 +493,9 @@ export default function MensajesScreen({
                       onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
                       rows={3}
                       style={{
-                        width: "100%", background: "#21262d",
-                        border: "1px solid #30363d", borderRadius: 12,
-                        padding: "10px 12px", color: "#d1d5db", fontSize: 12,
+                        width: "100%", background: "var(--bg-elevated)",
+                        border: "1px solid var(--border-strong)", borderRadius: 12,
+                        padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
                         fontFamily: "inherit", outline: "none", resize: "none",
                         lineHeight: 1.5, marginBottom: 8,
                       }}
@@ -575,8 +575,8 @@ export default function MensajesScreen({
                           key={m.id}
                           onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
                           style={{
-                            background: "#161b22",
-                            border: "1px solid #21262d",
+                            background: "var(--bg-card)",
+                            border: "1px solid var(--border)",
                             borderRadius: 14, padding: "10px 14px",
                             cursor: "pointer", fontFamily: "inherit",
                             display: "flex", alignItems: "center", gap: 10,
@@ -592,7 +592,7 @@ export default function MensajesScreen({
                             {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
                           </div>
                           <div style={{ flex: 1, textAlign: "left" }}>
-                            <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                            <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                             <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
                           </div>
                           <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
@@ -775,8 +775,8 @@ export default function MensajesScreen({
                   key={i}
                   onClick={() => setMsgTexto(tpl.msg)}
                   style={{
-                    background: msgTexto === tpl.msg ? "rgba(37,211,102,.1)" : "#161b22",
-                    border: `1px solid ${msgTexto === tpl.msg ? "rgba(37,211,102,.3)" : "#21262d"}`,
+                    background: msgTexto === tpl.msg ? "rgba(37,211,102,.1)" : "var(--bg-card)",
+                    border: `1px solid ${msgTexto === tpl.msg ? "rgba(37,211,102,.3)" : "var(--border)"}`,
                     borderRadius: 12, padding: "10px 14px",
                     cursor: "pointer", fontFamily: "inherit",
                     display: "flex", alignItems: "center", gap: 10,
@@ -809,7 +809,7 @@ export default function MensajesScreen({
                         key={mb.id}
                         style={{
                           display: "flex", alignItems: "center", gap: 5,
-                          background: "#21262d",
+                          background: "var(--bg-elevated)",
                           borderRadius: 20, padding: "4px 10px 4px 4px",
                         }}
                       >
@@ -829,22 +829,22 @@ export default function MensajesScreen({
 
                 {/* Paso 1: Copiar mensaje */}
                 <div style={{
-                  background: "#161b22",
-                  border: copiadoMsg ? "1px solid rgba(37,211,102,.4)" : "1px solid #21262d",
+                  background: "var(--bg-card)",
+                  border: copiadoMsg ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)",
                   borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{
-                        background: copiadoMsg ? "rgba(37,211,102,.2)" : "rgba(255,255,255,.1)",
-                        color: copiadoMsg ? "#4ade80" : "#fff",
+                        background: copiadoMsg ? "rgba(37,211,102,.2)" : "var(--bg-elevated)",
+                        color: copiadoMsg ? "#4ade80" : "var(--text-primary)",
                         borderRadius: "50%", width: 22, height: 22,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 11, fontWeight: 700,
                       }}>
                         {copiadoMsg ? "✓" : "1"}
                       </span>
-                      <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Copia el mensaje</p>
+                      <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>Copia el mensaje</p>
                     </div>
                     <button
                       onClick={() => { navigator.clipboard.writeText(msgTexto); setCopiadoMsg(true); }}
@@ -862,15 +862,15 @@ export default function MensajesScreen({
 
                 {/* Paso 2: Copiar números */}
                 <div style={{
-                  background: "#161b22",
-                  border: copiadoNums ? "1px solid rgba(37,211,102,.4)" : "1px solid #21262d",
+                  background: "var(--bg-card)",
+                  border: copiadoNums ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)",
                   borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{
-                        background: copiadoNums ? "rgba(37,211,102,.2)" : "rgba(255,255,255,.1)",
-                        color: copiadoNums ? "#4ade80" : "#fff",
+                        background: copiadoNums ? "rgba(37,211,102,.2)" : "var(--bg-elevated)",
+                        color: copiadoNums ? "#4ade80" : "var(--text-primary)",
                         borderRadius: "50%", width: 22, height: 22,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 11, fontWeight: 700,
@@ -878,7 +878,7 @@ export default function MensajesScreen({
                         {copiadoNums ? "✓" : "2"}
                       </span>
                       <div>
-                        <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Copia los números</p>
+                        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>Copia los números</p>
                         <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{destMasivo.length} contactos</p>
                       </div>
                     </div>
@@ -898,11 +898,11 @@ export default function MensajesScreen({
 
                 {/* Paso 3: Instrucción */}
                 <div style={{
-                  background: "#13181f",
-                  border: "1px solid #21262d",
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
                   borderRadius: 14, padding: "12px 14px", marginBottom: 12,
                 }}>
-                  <p style={{ color: "#fff", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
+                  <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
                   <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
                     Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.
                   </p>

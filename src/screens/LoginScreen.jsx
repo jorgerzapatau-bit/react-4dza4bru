@@ -19,11 +19,11 @@ import { auth, getUserGymId } from "../supabase";
 // ── Estilos base reutilizados ────────────────
 const inputStyle = {
   width: "100%",
-  background: "#21262d",
-  border: "1px solid #30363d",
+  background: "var(--bg-elevated)",
+  border: "1px solid var(--border-strong)",
   borderRadius: 12,
   padding: "12px 14px",
-  color: "#fff",
+  color: "var(--text-primary)",
   fontSize: 14,
   outline: "none",
   boxSizing: "border-box",
@@ -120,7 +120,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#0a0a12",
+      background: "var(--bg-base)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -132,8 +132,8 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
       <div style={{
         width: "100%",
         maxWidth: 360,
-        background: "#161b22",
-        border: "1px solid #21262d",
+        background: "var(--bg-card)",
+        border: "1px solid var(--border)",
         borderRadius: 24,
         padding: "32px 28px 28px",
         backdropFilter: "blur(20px)",
@@ -170,7 +170,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
               </div>
             )
           }
-          <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, textAlign: "center", margin: 0 }}>
+          <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700, textAlign: "center", margin: 0 }}>
             {nombre}
           </h1>
           <p style={{ color: "#8b949e", fontSize: 12, marginTop: 4 }}>
