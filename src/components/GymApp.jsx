@@ -7,7 +7,7 @@ import { diasParaCumple } from "../utils/dateUtils";
 import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS } from "../utils/constants";
 
 // Components
-import UI from "./UI";
+import { Badge, Btn, Inp, Modal } from "./UI";
 import PhotoModal from "./PhotoModal";
 import MemberDetailModal from "../modals/MemberDetailModal";
 import EditTxModal from "../modals/EditTxModal";
