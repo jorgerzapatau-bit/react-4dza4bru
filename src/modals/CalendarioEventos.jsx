@@ -1,6 +1,6 @@
 // src/modals/CalendarioEventos.jsx
 import { useState } from "react";
-import { getMembershipInfo } from "../utils/dateUtils";
+import { getMembershipInfo } from "../utils/membershipUtils";
 
 const MESES_FULL  = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
