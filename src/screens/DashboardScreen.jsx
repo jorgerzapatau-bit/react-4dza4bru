@@ -39,7 +39,7 @@ export default function DashboardScreen({
     <div style={{ display: "flex", flexDirection: "column" }}>
 
       {/* ── Header sticky ── */}
-      <div style={{ flexShrink: 0, padding: "16px 28px 0", borderBottom: "1px solid #21262d", position: "sticky", top: 0, background: "rgba(13,17,23,0.95)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", zIndex: 50 }}>
+      <div style={{ flexShrink: 0, padding: "16px 28px 0", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--bg-base)", borderBottom: "1px solid var(--border)", zIndex: 50 }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
 
           {/* Fecha + hora + acciones mobile */}
@@ -53,7 +53,7 @@ export default function DashboardScreen({
                 const fechaFmt = fechaStr.replace(/\b(\w)/g, c => c.toUpperCase());
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, letterSpacing: .5, textTransform: "uppercase" }}>{fechaFmt}</p>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: .5, textTransform: "uppercase" }}>{fechaFmt}</p>
                     <span style={{ color: "rgba(167,139,250,.4)", fontSize: 10 }}>·</span>
                     <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{horaStr}</p>
                   </div>
@@ -80,7 +80,7 @@ export default function DashboardScreen({
           </div>
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: 3, background: "#161b22", borderRadius: 12, padding: 4, border: "1px solid #21262d" }}>
+          <div style={{ display: "flex", gap: 3, background: "var(--bg-card)", borderRadius: 12, padding: 4, border: "1px solid var(--border)" }}>
             {TABS.map((t, i) => (
               <button key={i} onClick={() => setTab(i)} style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 9, cursor: "pointer", background: tab === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "transparent", color: tab === i ? "#fff" : "#8b949e", fontSize: 12, fontWeight: tab === i ? 700 : 500, fontFamily: "inherit", boxShadow: tab === i ? "0 2px 10px rgba(108,99,255,.35)" : "none", transition: "all .2s" }}>{t}</button>
             ))}
@@ -126,9 +126,9 @@ export default function DashboardScreen({
                       { label: "Gastos",   val: totalGas, crec: crecGas, c: "#f43f5e", bg: "rgba(244,63,94,.07)",  bc: "rgba(244,63,94,.2)"  },
                     ].map((k, i) => (
                       <div key={i} style={{ background: k.bg, borderRadius: 18, padding: "16px 18px", border: `1px solid ${k.bc}` }}>
-                        <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase", marginBottom: 6 }}>{k.label}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase", marginBottom: 6 }}>{k.label}</p>
                         <p style={{ color: k.c, fontSize: 22, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginBottom: 8 }}>{fmt(k.val)}</p>
-                        {k.crec !== null ? <Badge val={k.crec} /> : <span style={{ color: "#6e7681", fontSize: 10 }}>Sin mes anterior</span>}
+                        {k.crec !== null ? <Badge val={k.crec} /> : <span style={{ color: "var(--text-tertiary)", fontSize: 10 }}>Sin mes anterior</span>}
                       </div>
                     ))}
                   </div>
@@ -138,18 +138,18 @@ export default function DashboardScreen({
                     const mesHoy = new Date().toISOString().slice(0, 7);
                     const nuevosEsteMes = miembros.filter(m => (m.fecha_incorporacion || "").startsWith(mesHoy));
                     return (
-                      <div className="card" style={{ background: "#161b22", borderRadius: 18, padding: 18, border: "1px solid #21262d", marginBottom: 14 }}>
+                      <div className="card" style={{ background: "var(--bg-card)", borderRadius: 18, padding: 18, border: "1px solid var(--border)", marginBottom: 14 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: nuevosEsteMes.length > 0 ? 12 : 0 }}>
                           <div>
-                            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase" }}>Miembros activos</p>
+                            <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase" }}>Miembros activos</p>
                             <p style={{ color: "#fff", fontSize: 32, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0" }}>{mActivos}</p>
-                            <p style={{ color: "#8b949e", fontSize: 11 }}>{miembros.filter(m => m.estado === "Vencido").length} vencidos · {miembros.length} total</p>
+                            <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>{miembros.filter(m => m.estado === "Vencido").length} vencidos · {miembros.length} total</p>
                           </div>
                           <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,#6c63ff,#e040fb)", border: "none", borderRadius: 12, padding: "10px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
                         </div>
                         {nuevosEsteMes.length > 0 && (
                           <>
-                            <div style={{ height: 1, background: "#21262d", marginBottom: 10 }} />
+                            <div style={{ height: 1, background: "var(--border)", marginBottom: 10 }} />
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                               <p style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>🆕 Nuevos este mes</p>
                               <button onClick={() => { setFiltroEstado("Nuevo"); setScreen("miembros"); }} style={{ background: "rgba(56,189,248,.15)", border: "none", borderRadius: 8, padding: "2px 10px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
@@ -163,8 +163,8 @@ export default function DashboardScreen({
                                   <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#38bdf8,#6c63ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>
                                     {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
                                   </div>
-                                  <p style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600, flex: 1 }}>{m.nombre}</p>
-                                  <p style={{ color: "#6e7681", fontSize: 10 }}>{fmtDate(m.fecha_incorporacion)}</p>
+                                  <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, flex: 1 }}>{m.nombre}</p>
+                                  <p style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{fmtDate(m.fecha_incorporacion)}</p>
                                 </div>
                               ))}
                               {nuevosEsteMes.length > 3 && (
@@ -180,17 +180,17 @@ export default function DashboardScreen({
                   })()}
 
                   {/* Composición por sexo */}
-                  <div className="card" style={{ background: "#161b22", borderRadius: 18, padding: "14px 18px", border: "1px solid #21262d", marginBottom: 14 }}>
+                  <div className="card" style={{ background: "var(--bg-card)", borderRadius: 18, padding: "14px 18px", border: "1px solid var(--border)", marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                       <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>👥 Composición</p>
                       <div style={{ display: "flex", gap: 10 }}>
-                        <span style={{ color: "#60a5fa", fontSize: 12, fontWeight: 700 }}>♂️ {mHombres} <span style={{ color: "#6e7681", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mHombres / miembros.length * 100) : 0}%</span></span>
-                        <span style={{ color: "#f472b6", fontSize: 12, fontWeight: 700 }}>♀️ {mMujeres} <span style={{ color: "#6e7681", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mMujeres / miembros.length * 100) : 0}%</span></span>
+                        <span style={{ color: "#60a5fa", fontSize: 12, fontWeight: 700 }}>♂️ {mHombres} <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mHombres / miembros.length * 100) : 0}%</span></span>
+                        <span style={{ color: "#f472b6", fontSize: 12, fontWeight: 700 }}>♀️ {mMujeres} <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mMujeres / miembros.length * 100) : 0}%</span></span>
                         {mSinSexo > 0 && <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 700 }}>— {mSinSexo}</span>}
                       </div>
                     </div>
                     {miembros.length > 0 && (
-                      <div style={{ height: 5, borderRadius: 3, background: "#21262d", overflow: "hidden", display: "flex" }}>
+                      <div style={{ height: 5, borderRadius: 3, background: "var(--border)", overflow: "hidden", display: "flex" }}>
                         <div style={{ height: "100%", width: `${Math.round(mHombres / miembros.length * 100)}%`, background: "linear-gradient(90deg,#60a5fa,#3b82f6)" }} />
                         <div style={{ height: "100%", width: `${Math.round(mMujeres / miembros.length * 100)}%`, background: "linear-gradient(90deg,#e040fb,#f472b6)" }} />
                       </div>
@@ -230,7 +230,7 @@ export default function DashboardScreen({
                               </div>
                               <div style={{ flex: 1 }}>
                                 <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                                <p style={{ color: "#6e7681", fontSize: 10, marginTop: 1 }}>
+                                <p style={{ color: "var(--text-tertiary)", fontSize: 10, marginTop: 1 }}>
                                   {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
                                   Vence: {fmtDate(m.vence)}
                                 </p>
@@ -262,7 +262,7 @@ export default function DashboardScreen({
                           </div>
                           <div style={{ flex: 1 }}>
                             <p style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                            <p style={{ color: "#6e7681", fontSize: 11, marginTop: 2 }}>
+                            <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 2 }}>
                               {m.diasCumple === 0 ? "🎉 ¡Hoy!" : m.diasCumple === 1 ? "Mañana" : `En ${m.diasCumple} días`}
                               {calcEdad(m.fecha_nacimiento) !== null && ` · cumple ${calcEdad(m.fecha_nacimiento) + (m.diasCumple === 0 ? 0 : 1)} años`}
                             </p>
@@ -276,14 +276,14 @@ export default function DashboardScreen({
                   )}
 
                   {/* Últimos movimientos */}
-                  <div className="card" style={{ background: "#161b22", borderRadius: 18, padding: 18, border: "1px solid #21262d" }}>
+                  <div className="card" style={{ background: "var(--bg-card)", borderRadius: 18, padding: 18, border: "1px solid var(--border)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                      <p style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>Últimos movimientos</p>
+                      <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>Últimos movimientos</p>
                       <button onClick={() => setTab(3)} style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Ver todos</button>
                     </div>
-                    {txsMes.length === 0 && <p style={{ color: "#8b949e", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Sin movimientos este mes</p>}
+                    {txsMes.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Sin movimientos este mes</p>}
                     {txsMes.slice(-5).reverse().map(t => (
-                      <div key={t.id} className="rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #21262d", cursor: "pointer" }}>
+                      <div key={t.id} className="rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           {(() => {
                             const mFoto = t.tipo === "ingreso" && (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
@@ -295,7 +295,7 @@ export default function DashboardScreen({
                           })()}
                           <div>
                             <p style={{ color: "#fff", fontSize: 12, fontWeight: 500, maxWidth: 200, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                            <p style={{ color: "#6e7681", fontSize: 10 }}>{fmtDate(t.fecha)}</p>
+                            <p style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{fmtDate(t.fecha)}</p>
                           </div>
                         </div>
                         <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
@@ -311,13 +311,13 @@ export default function DashboardScreen({
           {/* ════ TAB 1: INGRESOS ════ */}
           {tab === 1 && <>
             <div className="card" style={{ background: "rgba(34,211,238,.08)", borderRadius: 18, padding: 18, border: "1px solid rgba(34,211,238,.2)", marginBottom: 14 }}>
-              <p style={{ color: "#8b949e", fontSize: 12 }}>Total ingresos · {mesLabel}</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Total ingresos · {mesLabel}</p>
               <p style={{ color: "#22d3ee", fontSize: 30, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 8px" }}>{fmt(totalIng)}</p>
               <Badge val={crecIng} />
             </div>
             <button onClick={() => setModal("ingreso")} style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#22d3ee,#0ea5e9)", color: "#fff", marginBottom: 14 }}>+ Agregar ingreso</button>
             {txsMes.filter(t => t.tipo === "ingreso").map(t => (
-              <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#161b22", borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: "1px solid #21262d", cursor: "pointer" }}>
+              <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: "1px solid var(--border)", cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   {(() => {
                     const mFoto2 = (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
@@ -329,12 +329,12 @@ export default function DashboardScreen({
                   })()}
                   <div>
                     <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                    <p style={{ color: "#6e7681", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
+                    <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <p style={{ color: "#22d3ee", fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700 }}>+{fmt(t.monto)}</p>
-                  <span style={{ color: "#8b949e", fontSize: 13 }}>✏️</span>
+                  <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>✏️</span>
                 </div>
               </div>
             ))}
@@ -343,23 +343,23 @@ export default function DashboardScreen({
           {/* ════ TAB 2: GASTOS ════ */}
           {tab === 2 && <>
             <div className="card" style={{ background: "rgba(244,63,94,.08)", borderRadius: 18, padding: 18, border: "1px solid rgba(244,63,94,.2)", marginBottom: 14 }}>
-              <p style={{ color: "#8b949e", fontSize: 12 }}>Total gastos · {mesLabel}</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Total gastos · {mesLabel}</p>
               <p style={{ color: "#f43f5e", fontSize: 30, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 8px" }}>{fmt(totalGas)}</p>
               <Badge val={crecGas} />
             </div>
             <button onClick={() => setModal("gasto")} style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", marginBottom: 14 }}>+ Agregar gasto</button>
             {txsMes.filter(t => t.tipo === "gasto").map(t => (
-              <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#161b22", borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: "1px solid #21262d", cursor: "pointer" }}>
+              <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: "1px solid var(--border)", cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ width: 42, height: 42, borderRadius: 14, fontSize: 18, background: "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{CAT_ICON[t.categoria] || "📝"}</div>
                   <div>
                     <p style={{ color: "#fff", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                    <p style={{ color: "#6e7681", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
+                    <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <p style={{ color: "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700 }}>-{fmt(t.monto)}</p>
-                  <span style={{ color: "#8b949e", fontSize: 13 }}>✏️</span>
+                  <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>✏️</span>
                 </div>
               </div>
             ))}
@@ -367,9 +367,9 @@ export default function DashboardScreen({
 
           {/* ════ TAB 3: HISTORIAL ════ */}
           {tab === 3 && <>
-            <div style={{ background: "#161b22", borderRadius: 16, padding: "12px 14px", marginBottom: 14, border: "1px solid #21262d" }}>
+            <div style={{ background: "var(--bg-card)", borderRadius: 16, padding: "12px 14px", marginBottom: 14, border: "1px solid var(--border)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Filtrar por fecha</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Filtrar por fecha</p>
                 <div style={{ display: "flex", gap: 6 }}>
                   {[
                     { label: "Hoy",       get: () => { const t = todayISO(); return [t, t]; } },
@@ -386,11 +386,11 @@ export default function DashboardScreen({
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Desde</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Desde</p>
                   <input type="date" value={filtroDesde} onChange={e => setFiltroDesde(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
                 </div>
                 <div>
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Hasta</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Hasta</p>
                   <input type="date" value={filtroHasta} onChange={e => setFiltroHasta(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
                 </div>
               </div>
@@ -425,10 +425,10 @@ export default function DashboardScreen({
                   {filtered.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "36px 0" }}>
                       <p style={{ fontSize: 28, marginBottom: 8 }}>📭</p>
-                      <p style={{ color: "#8b949e", fontSize: 13 }}>Sin movimientos en este período</p>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Sin movimientos en este período</p>
                     </div>
                   ) : filtered.map(t => (
-                    <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 16, marginBottom: 10, background: "#161b22", border: "1px solid #21262d", cursor: "pointer" }}>
+                    <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 16, marginBottom: 10, background: "var(--bg-card)", border: "1px solid var(--border)", cursor: "pointer" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         {(() => {
                           const mFoto3 = t.tipo === "ingreso" && (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
@@ -440,12 +440,12 @@ export default function DashboardScreen({
                         })()}
                         <div>
                           <p style={{ color: "#fff", fontSize: 12, fontWeight: 500, maxWidth: 280, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                          <p style={{ color: "#6e7681", fontSize: 10, marginTop: 2 }}>{t.categoria} · {fmtDate(t.fecha)}</p>
+                          <p style={{ color: "var(--text-tertiary)", fontSize: 10, marginTop: 2 }}>{t.categoria} · {fmtDate(t.fecha)}</p>
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
-                        <span style={{ color: "#8b949e", fontSize: 14 }}>✏️</span>
+                        <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>✏️</span>
                       </div>
                     </div>
                   ))}

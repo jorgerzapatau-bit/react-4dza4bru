@@ -47,6 +47,15 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   const [statsTab, setStatsTab] = useState(0);
   const [statsChartType, setStatsChartType] = useState("bar");
   const [ahora, setAhora] = useState(new Date());
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('gymfit-theme');
+    return saved ? saved === 'dark' : true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('gymfit-theme', darkMode ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
   const [fI, setFI] = useState({ cat: "Clases extras", desc: "", monto: "", fecha: todayISO() });
   const [fG, setFG] = useState({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() });
   const [fM, setFM] = useState(() => ({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: "", notas: "", clasePrueba: false, fechaPrueba: todayISO() }));
@@ -302,7 +311,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
   // ── Render ──
   return (
-    <div className="gym-root">
+    <div className="gym-root" data-theme={darkMode ? "dark" : "light"}>
 
       {/* ═══ SIDEBAR NAV ═══ */}
       {!configScreen && !loading && (
@@ -316,6 +325,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           gymConfig={gymConfig}
           setConfigScreen={setConfigScreen}
           onLogout={onLogout}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
         />
       )}
 
