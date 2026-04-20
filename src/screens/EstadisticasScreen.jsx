@@ -1,6 +1,7 @@
-import { fmt, fmtDate, parseDate, getMembershipInfo } from "../utils";
+import { fmt, fmtDate } from "../utils/helpers";
+import { parseDate } from "../utils/dateUtils";
+import { getMembershipInfo } from "../utils/membershipUtils";
 import ReportePDF from "../components/ReportePDF";
-import CalendarioEventos from "../modals/CalendarioEventos";
 
 export default function EstadisticasScreen({
   txs,
