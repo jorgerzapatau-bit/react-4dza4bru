@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Modal, Btn, Inp } from "../components/UI";
 import { CAT_GAS, CAT_ING } from "../utils/constants";
-import { parseDate, displayToISO, fmtDate } from "../utils/helpers";
+import { parseDate, displayToISO, fmtDate } from "../utils/dateUtils";
 
 /* ─── EDIT TRANSACTION MODAL ─── */
 export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
