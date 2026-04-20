@@ -39,7 +39,7 @@ export default function Nav({
       <div className="gym-nav-gym">
         <div className="gym-nav-gym-logo">
           {gymLogo
-            ? <img src={gymLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ? <img src={gymLogo} alt="" style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain" }} />
             : "💪"
           }
         </div>

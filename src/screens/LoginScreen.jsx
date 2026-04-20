@@ -147,10 +147,12 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
                 src={logo}
                 alt="logo"
                 style={{
-                  width: 72, height: 72,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "2px solid rgba(167,139,250,.4)",
+                  maxWidth: 180,
+                  maxHeight: 90,
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  borderRadius: 10,
                   marginBottom: 12,
                 }}
               />

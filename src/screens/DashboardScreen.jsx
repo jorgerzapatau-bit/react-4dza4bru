@@ -60,7 +60,7 @@ export default function DashboardScreen({
               })()}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {gymConfig?.logo
-                  ? <img src={gymConfig.logo} alt="logo" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(167,139,250,.4)", flexShrink: 0 }} />
+                  ? <img src={gymConfig.logo} alt="logo" style={{ maxWidth: 44, maxHeight: 34, width: "auto", height: "auto", objectFit: "contain", borderRadius: 8, flexShrink: 0 }} />
                   : <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💪</div>
                 }
                 <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700 }}>{gymConfig?.nombre || "GymFit Pro"}</h1>
