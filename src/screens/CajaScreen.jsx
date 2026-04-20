@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { fmt, fmtDate, parseDate, CAT_ICON } from "../utils";
-import EditTxModal from "../components/EditTxModal";
+import EditTxModal from "../modals/EditTxModal";
 
 function CajaScreen({ txs, miembros, gymConfig, onBack }) {
   const tz = gymConfig?.zona_horaria || "America/Merida";
