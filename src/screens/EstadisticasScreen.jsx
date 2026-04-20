@@ -1,6 +1,6 @@
 import { fmt, fmtDate } from "../utils/helpers";
 import { parseDate } from "../utils/dateUtils";
-import { getMembershipInfo } from "../utils/membershipUtils";
+import { getMembershipInfo } from "../utils/dateUtils";
 import ReportePDF from "../components/ReportePDF";
 
 export default function EstadisticasScreen({
