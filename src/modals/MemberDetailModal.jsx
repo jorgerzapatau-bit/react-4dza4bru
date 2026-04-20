@@ -7,7 +7,7 @@ import {
   getMembershipInfo,
   diasParaVencer,
   calcVence,
-} from "../utils/dateUtils";
+} from "../utils/membershipUtils";
 import {
   parseDate,
   fmtDate,
