@@ -10,9 +10,9 @@ import {
 // Components
 import UI from "./UI";
 import PhotoModal from "./PhotoModal";
-import MemberDetailModal from "./modals/MemberDetailModal";
-import EditTxModal from "./modals/EditTxModal";
-import CalendarioEventos from "./modals/CalendarioEventos";
+import MemberDetailModal from "../modals/MemberDetailModal";
+import EditTxModal from "../modals/EditTxModal";
+import CalendarioEventos from "../modals/CalendarioEventos";
 import MensajesScreen from "../screens/MensajesScreen";
 
 // Screens
