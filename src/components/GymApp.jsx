@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
-import { fmt, fmtDate, today, todayISO, parseDate } from "../utils/dateUtils";
+import { fmt, fmtDate, today, todayISO, parseDate, calcEdad } from "../utils/dateUtils";
 import { getMembershipInfo } from "../utils/membershipUtils";
 import { diasParaVencer } from "../utils/dateUtils";
 import { diasParaCumple } from "../utils/dateUtils";
 import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS } from "../utils/constants";
+import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
+import TutorFields from "./TutorFields";
 
 // Components
 import Nav from "./Nav";
@@ -59,7 +61,22 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
   }, [darkMode]);
   const [fI, setFI] = useState({ cat: "Clases extras", desc: "", monto: "", fecha: todayISO() });
   const [fG, setFG] = useState({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() });
-  const [fM, setFM] = useState(() => ({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: "", notas: "", clasePrueba: false, fechaPrueba: todayISO() }));
+  const [fM, setFM] = useState(() => ({
+    nombre: "",
+    tel: "",
+    foto: null,
+    sexo: "",
+    fecha_nacimiento: "",
+    fecha_incorporacion: "",
+    notas: "",
+    clasePrueba: false,
+    fechaPrueba: todayISO(),
+    // ── Tutor (Fase 1) ──
+    tutor_nombre: "",
+    tutor_telefono: "",
+    tutor_parentesco: "",
+  }));
+  const [fMTutorErrores, setFMTutorErrores] = useState({});
   const [showFotoModal, setShowFotoModal] = useState(false);
 
   useEffect(() => { const t = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -126,7 +143,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         const txDb = await supabase.from("transacciones");
         const txData = await txDb.select(GYM_ID);
         setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null })));
-        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0 })));
+        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null })));
       } catch(e) {
         console.error("Error loading data:", e);
       }
@@ -221,12 +238,49 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
     setFG({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() }); setModal(null); setScreen("dashboard"); setTab(0);
   };
 
+  const fMEsMenor = esMenorDeEdad(fM.fecha_nacimiento);
+
   const addM = async () => {
     if (!fM.nombre) return;
+
+    // Validar tutor si el miembro es menor de edad
+    if (fMEsMenor) {
+      const { valido, errores } = validarTutor(fM);
+      if (!valido) {
+        setFMTutorErrores(errores);
+        return;
+      }
+    }
+    setFMTutorErrores({});
+
     const mDb = await supabase.from("miembros");
-    const savedM = await mDb.insert({ gym_id: GYM_ID, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null, notas: fM.notas || null });
+    const savedM = await mDb.insert({
+      gym_id: GYM_ID,
+      nombre: fM.nombre,
+      tel: fM.tel || "",
+      foto: fM.foto || null,
+      fecha_incorporacion: fM.fecha_incorporacion || todayISO(),
+      sexo: fM.sexo || null,
+      fecha_nacimiento: fM.fecha_nacimiento || null,
+      notas: fM.notas || null,
+      // ── Tutor (Fase 1) — solo se persiste si el miembro es menor ──
+      tutor_nombre:     fMEsMenor ? (fM.tutor_nombre || null)     : null,
+      tutor_telefono:   fMEsMenor ? (fM.tutor_telefono || null)   : null,
+      tutor_parentesco: fMEsMenor ? (fM.tutor_parentesco || null) : null,
+    });
     if (savedM) {
-      setMiembros(p => [{ id: savedM.id, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null }, ...p]);
+      setMiembros(p => [{
+        id: savedM.id,
+        nombre: fM.nombre,
+        tel: fM.tel || "",
+        foto: fM.foto || null,
+        fecha_incorporacion: fM.fecha_incorporacion || todayISO(),
+        sexo: fM.sexo || null,
+        fecha_nacimiento: fM.fecha_nacimiento || null,
+        tutor_nombre:     fMEsMenor ? (fM.tutor_nombre || null) : null,
+        tutor_telefono:   fMEsMenor ? (fM.tutor_telefono || null) : null,
+        tutor_parentesco: fMEsMenor ? (fM.tutor_parentesco || null) : null,
+      }, ...p]);
       if (fM.clasePrueba) {
         const tDb = await supabase.from("transacciones");
         const fechaPrueba = fM.fechaPrueba || todayISO();
@@ -234,9 +288,17 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
         if (savedT) setTxs(p => [{ id: savedT.id, tipo: "ingreso", categoria: "Otro", desc: `Clase prueba - ${fM.nombre}`, descripcion: `Clase prueba - ${fM.nombre}`, monto: 0, fecha: fechaPrueba, miembroId: savedM.id }, ...p]);
       }
     }
-    setFM({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: "", clasePrueba: false, fechaPrueba: todayISO() });
+    setFM({
+      nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "",
+      fecha_incorporacion: "", notas: "", clasePrueba: false, fechaPrueba: todayISO(),
+      tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "",
+    });
+    setFMTutorErrores({});
     setModal(null);
-    if (savedM) { setSelM({ id: savedM.id, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null }); setModal("detalle"); }
+    if (savedM) {
+      setSelM({ id: savedM.id, nombre: fM.nombre, tel: fM.tel || "", foto: fM.foto || null, fecha_incorporacion: fM.fecha_incorporacion || todayISO(), sexo: fM.sexo || null, fecha_nacimiento: fM.fecha_nacimiento || null });
+      setModal("detalle");
+    }
   };
 
   const archiveMiembro = async (id) => {
@@ -260,7 +322,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
     setMiembros(p => p.map(m => m.id === updated.id ? updated : m));
     setSelM(updated);
     const db = await supabase.from("miembros");
-    await db.update(updated.id, { nombre: updated.nombre, tel: updated.tel, foto: updated.foto || null, fecha_incorporacion: updated.fecha_incorporacion, sexo: updated.sexo || null, fecha_nacimiento: updated.fecha_nacimiento || null, notas: updated.notas || null, congelado: updated.congelado || false, fecha_descongelar: updated.fecha_descongelar || null, dias_congelados: updated.dias_congelados || 0 });
+    await db.update(updated.id, { nombre: updated.nombre, tel: updated.tel, foto: updated.foto || null, fecha_incorporacion: updated.fecha_incorporacion, sexo: updated.sexo || null, fecha_nacimiento: updated.fecha_nacimiento || null, notas: updated.notas || null, congelado: updated.congelado || false, fecha_descongelar: updated.fecha_descongelar || null, dias_congelados: updated.dias_congelados || 0, tutor_nombre: updated.tutor_nombre || null, tutor_telefono: updated.tutor_telefono || null, tutor_parentesco: updated.tutor_parentesco || null });
   };
 
   const saveExtraCfg = (patch) => {
@@ -503,6 +565,22 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
             <Inp label="Teléfono WhatsApp" value={fM.tel} onChange={v => setFM(p => ({ ...p, tel: v }))} placeholder="999 000 0000" type="tel" />
             <Inp label="Sexo" value={fM.sexo} onChange={v => setFM(p => ({ ...p, sexo: v }))} options={["", "Masculino", "Femenino"]} />
             <Inp label="Fecha de nacimiento" value={fM.fecha_nacimiento} onChange={v => setFM(p => ({ ...p, fecha_nacimiento: v }))} type="date" />
+            {fM.fecha_nacimiento && (
+              <p style={{ fontSize: 11, color: fMEsMenor ? "#fbbf24" : "var(--text-tertiary)", marginTop: -8, marginBottom: 8, paddingLeft: 2 }}>
+                {fMEsMenor
+                  ? `⚠️ Edad detectada: ${calcEdad(fM.fecha_nacimiento)} años — menor de edad`
+                  : `Edad detectada: ${calcEdad(fM.fecha_nacimiento)} años`
+                }
+              </p>
+            )}
+            {fMEsMenor && (
+              <TutorFields
+                tutor={{ tutor_nombre: fM.tutor_nombre, tutor_telefono: fM.tutor_telefono, tutor_parentesco: fM.tutor_parentesco }}
+                onChange={(campo, valor) => { setFM(p => ({ ...p, [campo]: valor })); setFMTutorErrores(p => ({ ...p, [campo]: undefined })); }}
+                errores={fMTutorErrores}
+                compact
+              />
+            )}
             <Inp label="Fecha de incorporación" value={fM.fecha_incorporacion} onChange={v => setFM(p => ({ ...p, fecha_incorporacion: v }))} type="date" />
             <Inp label="Notas" value={fM.notas} onChange={v => setFM(p => ({ ...p, notas: v }))} placeholder="Ej: lesión de rodilla, objetivo: perder peso" />
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 12, border: "1px solid rgba(255,255,255,.08)", cursor: "pointer" }} onClick={() => setFM(p => ({ ...p, clasePrueba: !p.clasePrueba }))}>

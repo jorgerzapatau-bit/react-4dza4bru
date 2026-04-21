@@ -28,6 +28,8 @@ import {
   diasParaVencer,
 } from "../utils/dateUtils";
 import { uid } from "../utils/helpers";
+import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
+import TutorFields from "../components/TutorFields";
 
 /* ─── CONGELAR MODAL (sub-componente interno) ─── */
 function CongelarModal({ m, onClose, onConfirm }) {
@@ -240,7 +242,12 @@ export default function MemberDetailModal({
     sexo: m.sexo || "",
     fecha_nacimiento: m.fecha_nacimiento || "",
     notas: m.notas || "",
+    // ── Tutor (Fase 1) ──
+    tutor_nombre:     m.tutor_nombre     || "",
+    tutor_telefono:   m.tutor_telefono   || "",
+    tutor_parentesco: m.tutor_parentesco || "",
   });
+  const [tutorErrores, setTutorErrores] = useState({});
   const [pagoModal, setPagoModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDelete2, setConfirmDelete2] = useState(false);
@@ -300,24 +307,50 @@ export default function MemberDetailModal({
   const diasCumple = diasParaCumple(m.fecha_nacimiento);
   const edad = calcEdad(m.fecha_nacimiento);
 
+  const esEdicionMenor = esMenorDeEdad(form.fecha_nacimiento);
+
   const hasChanges =
     form.nombre !== m.nombre ||
     form.tel !== (m.tel || "") ||
     form.fecha_incorporacion !== (m.fecha_incorporacion || "") ||
     form.sexo !== (m.sexo || "") ||
     form.fecha_nacimiento !== (m.fecha_nacimiento || "") ||
-    form.notas !== (m.notas || "");
+    form.notas !== (m.notas || "") ||
+    form.tutor_nombre     !== (m.tutor_nombre     || "") ||
+    form.tutor_telefono   !== (m.tutor_telefono   || "") ||
+    form.tutor_parentesco !== (m.tutor_parentesco || "");
 
   const handleSave = () => {
     if (!hasChanges) return;
+
+    // Validar tutor si el miembro en edición es menor
+    if (esEdicionMenor) {
+      const { valido, errores } = validarTutor(form);
+      if (!valido) {
+        setTutorErrores(errores);
+        return;
+      }
+    }
+    setTutorErrores({});
+
+    // Si pasó a ser mayor de edad, limpiar datos de tutor
+    const tutorData = esEdicionMenor
+      ? {
+          tutor_nombre:     form.tutor_nombre     || null,
+          tutor_telefono:   form.tutor_telefono   || null,
+          tutor_parentesco: form.tutor_parentesco || null,
+        }
+      : { tutor_nombre: null, tutor_telefono: null, tutor_parentesco: null };
+
     onSave({
       ...m,
-      nombre: form.nombre,
-      tel: form.tel,
+      nombre:              form.nombre,
+      tel:                 form.tel,
       fecha_incorporacion: form.fecha_incorporacion,
-      sexo: form.sexo,
-      fecha_nacimiento: form.fecha_nacimiento,
-      notas: form.notas,
+      sexo:                form.sexo,
+      fecha_nacimiento:    form.fecha_nacimiento,
+      notas:               form.notas,
+      ...tutorData,
     });
     setEditing(false);
   };
@@ -966,6 +999,34 @@ export default function MemberDetailModal({
                 <p style={{ color: "#f59e0b", fontSize: 11, marginBottom: 12 }}>
                   ⚠️ Sin fecha de nacimiento — agrégala para ver cumpleaños
                 </p>
+              )}
+              {form.fecha_nacimiento && (
+                <p style={{
+                  fontSize: 11,
+                  color: esEdicionMenor ? "#fbbf24" : "var(--text-tertiary)",
+                  marginTop: -8,
+                  marginBottom: 12,
+                  paddingLeft: 2,
+                }}>
+                  {esEdicionMenor
+                    ? `⚠️ Edad detectada: ${calcEdad(form.fecha_nacimiento)} años — menor de edad`
+                    : `Edad detectada: ${calcEdad(form.fecha_nacimiento)} años`
+                  }
+                </p>
+              )}
+              {esEdicionMenor && (
+                <TutorFields
+                  tutor={{
+                    tutor_nombre:     form.tutor_nombre,
+                    tutor_telefono:   form.tutor_telefono,
+                    tutor_parentesco: form.tutor_parentesco,
+                  }}
+                  onChange={(campo, valor) => {
+                    setForm(p => ({ ...p, [campo]: valor }));
+                    setTutorErrores(p => ({ ...p, [campo]: undefined }));
+                  }}
+                  errores={tutorErrores}
+                />
               )}
 
               <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
