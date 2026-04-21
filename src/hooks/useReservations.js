@@ -163,7 +163,7 @@ export function useReservations(gymId) {
       });
     }
     return created;
-  }, [gymId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gymId, addPayment]); // addPayment is stable (useCallback)
 
   const updateReservationStatus = useCallback(async (reservationId, newStatus, extra = {}) => {
     const body = { status: newStatus, updated_at: new Date().toISOString(), ...extra };
