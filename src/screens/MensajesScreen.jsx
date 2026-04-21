@@ -1,47 +1,40 @@
 // ─────────────────────────────────────────────
-//  screens/MensajesScreen.jsx
-//  Pantalla de mensajes WhatsApp.
-//  Tres modos: Vencimientos · Individual · Masivo
+//  screens/MensajesScreen.jsx  —  REFACTORIZADO
+//  Centro de Comunicación: 4 tabs
+//    1. Vencimientos   (usa plantillas del sistema)
+//    2. Individual     (+ sección Plantillas del sistema)
+//    3. Masivo         (sin cambios de UX)
+//    4. Mensajes del sistema  ← NUEVO
 //
-//  Sub-componentes internos (privados):
-//    GuardarEnSlot   — dropdown para guardar mensaje en un slot
-//    PlantillaCustom — slot de plantilla editable/usable
-//
-//  Props:
-//    miembros               array
-//    txs                    array
-//    gymConfig              object
-//    onBack                 () => void
-//    onUpdatePlantillas     (plantillas) => void
-//    miembroInicial         object | null  — abre en modo individual con este miembro
-//    modoInicial            string | null  — "vencimientos" | "individual" | "masivo"
-//    recordatoriosEnviados  object         — { [miembroId]: true }
-//    onMarcarRecordatorio   (miembroId) => void
-//
-//  Uso:
-//    import MensajesScreen from "./screens/MensajesScreen";
-//    <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig}
-//      onBack={() => setScreen("dashboard")} onUpdatePlantillas={updatePlantillas}
-//      miembroInicial={mensajesMiembro} modoInicial={modoMensajes}
-//      recordatoriosEnviados={recordatoriosEnviados}
-//      onMarcarRecordatorio={marcarRecordatorio} />
+//  Props: (mismas que antes, + gymId)
+//    miembros, txs, gymConfig, gymId
+//    onBack, onUpdatePlantillas
+//    miembroInicial, modoInicial
+//    recordatoriosEnviados, onMarcarRecordatorio
 // ─────────────────────────────────────────────
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   getMembershipInfo,
   diasParaVencer,
-  buildWAMsg,
-  buildWAUrl,
+  buildWAUrl,           // helper original — se mantiene para compatibilidad
 } from "../utils/constants";
+import {
+  replaceTemplateVars,
+  resolveRecipient,
+  buildWhatsappLink,
+  copyToClipboard,
+  buildVarsFromMember,
+  mapDiasToTemplateKey,
+  SYSTEM_TEMPLATE_KEYS,
+} from "../utils/communicationHelpers";
+import { useCommunication } from "../hooks/useCommunication";
 
 // ─────────────────────────────────────────────
-//  Sub-componente: GuardarEnSlot
-//  Dropdown que permite guardar el mensaje actual en uno de los 4 slots.
+//  Sub-componente: GuardarEnSlot  (sin cambios)
 // ─────────────────────────────────────────────
 function GuardarEnSlot({ tplsCustom, onGuardar }) {
   const [open, setOpen] = useState(false);
-
   return (
     <div style={{ position: "relative" }}>
       <button
@@ -49,55 +42,31 @@ function GuardarEnSlot({ tplsCustom, onGuardar }) {
         title="Guardar en mis mensajes"
         style={{
           width: 36, height: 36,
-          border: "1px solid rgba(108,99,255,.3)",
-          borderRadius: 10,
+          border: "1px solid rgba(108,99,255,.3)", borderRadius: 10,
           background: open ? "rgba(108,99,255,.2)" : "transparent",
-          cursor: "pointer",
-          color: "#a78bfa",
-          fontSize: 15,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexShrink: 0,
+          cursor: "pointer", color: "#a78bfa", fontSize: 15,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}
-      >
-        💾
-      </button>
+      >💾</button>
 
       {open && (
         <div style={{
           position: "absolute", right: 0, top: 42, zIndex: 50,
-          background: "#1e1e30",
-          border: "1px solid rgba(108,99,255,.3)",
-          borderRadius: 14,
-          padding: 10,
-          width: 220,
+          background: "#1e1e30", border: "1px solid rgba(108,99,255,.3)",
+          borderRadius: 14, padding: 10, width: 220,
           boxShadow: "0 8px 32px rgba(0,0,0,.5)",
         }}>
           <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 8 }}>
             Guardar en...
           </p>
-
           {tplsCustom.map((slot, i) => {
             const ocupado = slot.label.trim() || slot.msg.trim();
             return (
-              <button
-                key={i}
-                onClick={() => { onGuardar(i); setOpen(false); }}
-                style={{
-                  width: "100%", padding: "9px 12px",
-                  border: "none", borderRadius: 10,
-                  cursor: "pointer", fontFamily: "inherit",
-                  textAlign: "left", background: "transparent",
-                  display: "flex", alignItems: "center", gap: 8,
-                  marginBottom: 4,
-                }}
-              >
+              <button key={i} onClick={() => { onGuardar(i); setOpen(false); }}
+                style={{ width: "100%", padding: "9px 12px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", textAlign: "left", background: "transparent", display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <span style={{ fontSize: 14 }}>{ocupado ? "⭐" : "○"}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    color: ocupado ? "#fff" : "#8b949e",
-                    fontSize: 12, fontWeight: ocupado ? 600 : 400,
-                    whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                  }}>
+                  <p style={{ color: ocupado ? "#fff" : "#8b949e", fontSize: 12, fontWeight: ocupado ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {ocupado ? slot.label || `Mensaje ${i + 1}` : `Slot ${i + 1} — vacío`}
                   </p>
                   {ocupado && <p style={{ color: "#f59e0b", fontSize: 10, marginTop: 1 }}>⚠️ se sobreescribirá</p>}
@@ -105,17 +74,7 @@ function GuardarEnSlot({ tplsCustom, onGuardar }) {
               </button>
             );
           })}
-
-          <button
-            onClick={() => setOpen(false)}
-            style={{
-              width: "100%", padding: "7px",
-              border: "none", borderRadius: 8,
-              cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, background: "#1c2128", color: "#8b949e",
-              marginTop: 4,
-            }}
-          >
+          <button onClick={() => setOpen(false)} style={{ width: "100%", padding: "7px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "#1c2128", color: "#8b949e", marginTop: 4 }}>
             Cancelar
           </button>
         </div>
@@ -125,8 +84,7 @@ function GuardarEnSlot({ tplsCustom, onGuardar }) {
 }
 
 // ─────────────────────────────────────────────
-//  Sub-componente: PlantillaCustom
-//  Un slot de plantilla: puede estar vacío, con contenido, o en modo edición.
+//  Sub-componente: PlantillaCustom  (sin cambios)
 // ─────────────────────────────────────────────
 function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar }) {
   const [editando,  setEditando]  = useState(false);
@@ -134,7 +92,7 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
   const [guardando, setGuardando] = useState(false);
 
   const tieneContenido = tpl.label.trim() || tpl.msg.trim();
-  const msgFinal = (form.msg || "").replace(/\{nombre\}/g, nombreMiembro);
+  const msgFinal = (form.msg || "").replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro);
 
   const handleGuardar = async () => {
     setGuardando(true);
@@ -143,41 +101,13 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
     setEditando(false);
   };
 
-  // ── Modo edición ──
   if (editando) {
     return (
-      <div style={{
-        background: "rgba(108,99,255,.08)",
-        border: "1px solid rgba(108,99,255,.3)",
-        borderRadius: 14, padding: 14,
-      }}>
-        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>
-          Mensaje {index + 1}
-        </p>
-        <input
-          value={form.label}
-          onChange={e => setForm(p => ({ ...p, label: e.target.value }))}
-          placeholder="Nombre del mensaje (ej: Promoción diciembre)"
-          style={{
-            width: "100%", background: "var(--bg-elevated)",
-            border: "1px solid var(--border)", borderRadius: 10,
-            padding: "10px 12px", color: "var(--text-primary)", fontSize: 13,
-            fontFamily: "inherit", outline: "none", marginBottom: 8,
-          }}
-        />
-        <textarea
-          value={form.msg}
-          onChange={e => setForm(p => ({ ...p, msg: e.target.value }))}
-          placeholder={`Escribe el mensaje. Usa {nombre} para incluir el nombre del miembro. Ej: Hola {nombre}, tenemos una promoción especial para ti 🎁 — ${gymNom}`}
-          rows={4}
-          style={{
-            width: "100%", background: "var(--bg-elevated)",
-            border: "1px solid var(--border)", borderRadius: 10,
-            padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
-            fontFamily: "inherit", outline: "none", resize: "none",
-            lineHeight: 1.6, marginBottom: 8,
-          }}
-        />
+      <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: 14 }}>
+        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Mensaje {index + 1}</p>
+        <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Nombre del mensaje" style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 8 }} />
+        <textarea value={form.msg} onChange={e => setForm(p => ({ ...p, msg: e.target.value }))} placeholder={`Escribe el mensaje. Usa {student_name} para el nombre. — ${gymNom}`} rows={4}
+          style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 8 }} />
         {form.msg.trim() && (
           <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
             <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
@@ -185,32 +115,12 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
           </div>
         )}
         <div style={{ display: "flex", gap: 8 }}>
-          <button
-            onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
-            style={{
-              flex: 1, padding: "10px",
-              border: "1px solid var(--border-strong)", borderRadius: 10,
-              cursor: "pointer", fontFamily: "inherit",
-              fontSize: 12, fontWeight: 600,
-              background: "var(--bg-elevated)", color: "var(--text-secondary)",
-            }}
-          >
+          <button onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
+            style={{ flex: 1, padding: "10px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
             Cancelar
           </button>
-          <button
-            onClick={handleGuardar}
-            disabled={!form.label.trim() || !form.msg.trim() || guardando}
-            style={{
-              flex: 2, padding: "10px",
-              border: "none", borderRadius: 10,
-              cursor: "pointer", fontFamily: "inherit",
-              fontSize: 12, fontWeight: 700,
-              background: form.label.trim() && form.msg.trim()
-                ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                : "#21262d",
-              color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e",
-            }}
-          >
+          <button onClick={handleGuardar} disabled={!form.label.trim() || !form.msg.trim() || guardando}
+            style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: form.label.trim() && form.msg.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d", color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e" }}>
             {guardando ? "Guardando…" : "💾 Guardar"}
           </button>
         </div>
@@ -218,41 +128,21 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
     );
   }
 
-  // ── Slot con contenido ──
   if (tieneContenido) {
     return (
-      <div style={{
-        background: "var(--bg-card)",
-        border: "1px solid rgba(108,99,255,.2)",
-        borderRadius: 12, padding: "10px 14px",
-        display: "flex", alignItems: "center", gap: 10,
-      }}>
+      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: 18 }}>⭐</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
           <p style={{ color: "#8b949e", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button
-            onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro), tpl.label)}
-            style={{
-              padding: "6px 12px", border: "none", borderRadius: 8,
-              cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, fontWeight: 700,
-              background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff",
-            }}
-          >
+          <button onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro), tpl.label)}
+            style={{ padding: "6px 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff" }}>
             Usar
           </button>
-          <button
-            onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
-            style={{
-              padding: "6px 10px",
-              border: "1px solid var(--border-strong)", borderRadius: 8,
-              cursor: "pointer", fontFamily: "inherit",
-              fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)",
-            }}
-          >
+          <button onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
+            style={{ padding: "6px 10px", border: "1px solid var(--border-strong)", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
             ✏️
           </button>
         </div>
@@ -260,18 +150,9 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
     );
   }
 
-  // ── Slot vacío ──
   return (
-    <button
-      onClick={() => { setForm({ label: "", msg: "" }); setEditando(true); }}
-      style={{
-        width: "100%", padding: "12px 14px",
-        border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12,
-        cursor: "pointer", fontFamily: "inherit",
-        background: "transparent",
-        display: "flex", alignItems: "center", gap: 10,
-      }}
-    >
+    <button onClick={() => { setForm({ label: "", msg: "" }); setEditando(true); }}
+      style={{ width: "100%", padding: "12px 14px", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", background: "transparent", display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: 16, color: "#6c63ff" }}>＋</span>
       <span style={{ color: "#8b949e", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
     </button>
@@ -279,12 +160,175 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
 }
 
 // ─────────────────────────────────────────────
-//  MensajesScreen (export principal)
+//  Sub-componente: SystemMessageCard
+//  Tarjeta individual en el tab "Mensajes del sistema"
+// ─────────────────────────────────────────────
+function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChange, onSave, onReset }) {
+  const [editing,   setEditing]  = useState(false);
+  const [editText,  setEditText] = useState("");
+  const [saving,    setSaving]   = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const isActive    = automation?.is_active ?? false;
+  const offsetDays  = automation?.trigger_offset_days ?? 1;
+  const bodyText    = template?.body_text || "";
+  const preview     = bodyText.length > 90 ? bodyText.slice(0, 90) + "…" : bodyText;
+
+  const handleEdit = () => {
+    setEditText(bodyText);
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(template?.id, editText);
+    setSaving(false);
+    setEditing(false);
+  };
+
+  const handleReset = async () => {
+    setResetting(true);
+    await onReset(meta.key);
+    setResetting(false);
+    setEditing(false);
+  };
+
+  return (
+    <div style={{
+      background: "var(--bg-card)",
+      border: `1px solid ${isActive ? "rgba(108,99,255,.3)" : "var(--border)"}`,
+      borderRadius: 16, padding: 14, marginBottom: 10,
+      transition: "border .2s",
+    }}>
+      {/* Header: icono + nombre + switch */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 22, flexShrink: 0 }}>{meta.icon}</span>
+        <div style={{ flex: 1 }}>
+          <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>{meta.name}</p>
+          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>{meta.when}</p>
+        </div>
+        {/* Switch activo/inactivo */}
+        <div
+          onClick={() => onToggle(meta.key, !isActive)}
+          style={{
+            width: 44, height: 24, borderRadius: 12, flexShrink: 0,
+            background: isActive ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)",
+            cursor: "pointer", position: "relative", transition: "background .2s",
+          }}
+        >
+          <div style={{
+            position: "absolute", top: 3, left: isActive ? 23 : 3,
+            width: 18, height: 18, borderRadius: "50%",
+            background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.3)",
+          }} />
+        </div>
+      </div>
+
+      {/* Días antes (solo si hasOffset y activo) */}
+      {meta.hasOffset && isActive && !editing && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px" }}>
+          <p style={{ color: "#8b949e", fontSize: 11, flex: 1 }}>
+            {offsetDays >= 0
+              ? `Enviar ${offsetDays} día${offsetDays !== 1 ? "s" : ""} antes del vencimiento`
+              : `Enviar ${Math.abs(offsetDays)} día${Math.abs(offsetDays) !== 1 ? "s" : ""} después del vencimiento`
+            }
+          </p>
+          <div style={{ display: "flex", gap: 4 }}>
+            {[1, 2, 3, 5, 7].map(d => (
+              <button
+                key={d}
+                onClick={() => onOffsetChange(meta.key, d)}
+                style={{
+                  padding: "4px 8px", border: "none", borderRadius: 7,
+                  cursor: "pointer", fontFamily: "inherit",
+                  fontSize: 11, fontWeight: 600,
+                  background: offsetDays === d ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-card)",
+                  color: offsetDays === d ? "#fff" : "#8b949e",
+                }}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Vista previa del mensaje */}
+      {!editing && (
+        <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>
+            Mensaje
+          </p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>{preview}</p>
+        </div>
+      )}
+
+      {/* Editor inline */}
+      {editing && (
+        <div style={{ marginBottom: 10 }}>
+          <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>
+            Editando mensaje
+          </p>
+          <textarea
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            rows={6}
+            style={{
+              width: "100%", background: "var(--bg-elevated)",
+              border: "1px solid rgba(108,99,255,.4)", borderRadius: 10,
+              padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
+              fontFamily: "inherit", outline: "none", resize: "vertical",
+              lineHeight: 1.6, marginBottom: 6,
+            }}
+          />
+          <p style={{ color: "#8b949e", fontSize: 10, lineHeight: 1.5 }}>
+            Variables: {"{student_name}"} · {"{due_date}"} · {"{concept}"} · {"{amount}"} · {"{clabe}"} · {"{bank}"} · {"{propietario}"}
+          </p>
+        </div>
+      )}
+
+      {/* Botones de acción */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {!editing ? (
+          <>
+            <button onClick={handleEdit}
+              style={{ flex: 2, padding: "8px", border: "1px solid rgba(108,99,255,.3)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#a78bfa" }}>
+              ✏️ Editar mensaje
+            </button>
+            <button onClick={handleReset} disabled={resetting}
+              style={{ flex: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
+              {resetting ? "…" : "↺ Restaurar"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setEditing(false)}
+              style={{ flex: 1, padding: "8px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
+              Cancelar
+            </button>
+            <button onClick={handleReset} disabled={resetting}
+              style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
+              {resetting ? "…" : "↺ Default"}
+            </button>
+            <button onClick={handleSave} disabled={saving || !editText.trim()}
+              style={{ flex: 2, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: editText.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d", color: editText.trim() ? "#fff" : "#8b949e" }}>
+              {saving ? "Guardando…" : "💾 Guardar"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+//  MensajesScreen  —  Export principal
 // ─────────────────────────────────────────────
 export default function MensajesScreen({
   miembros,
   txs,
   gymConfig,
+  gymId,          // ← NUEVO: ID del gimnasio para Supabase
   onBack,
   onUpdatePlantillas,
   miembroInicial,
@@ -301,19 +345,77 @@ export default function MensajesScreen({
   const [copiadoMsg, setCopiadoMsg] = useState(false);
   const [copiadoNums, setCopiadoNums] = useState(false);
 
-  const gymNom    = gymConfig?.nombre || "GymFit Pro";
+  // ── Hook de comunicación ──
+  const {
+    templates,
+    automations,
+    loading: commLoading,
+    getTemplate,
+    getSystemTemplates,
+    getQuickTemplates,
+    saveTemplate,
+    resetTemplate,
+    toggleAutomation,
+    updateOffset,
+  } = useCommunication(gymId);
+
+  const gymNom     = gymConfig?.nombre || "GymFit Pro";
   const tplsCustom = gymConfig?.plantillas_wa || [
     { icon: "⭐", label: "", msg: "" },
     { icon: "⭐", label: "", msg: "" },
     { icon: "⭐", label: "", msg: "" },
   ];
 
-  const tplsFijas = [
-    { icon: "🚫", label: "Clase cancelada",  msg: `La clase de hoy ha sido cancelada. Disculpa los inconvenientes 🙏 — ${gymNom}` },
-    { icon: "⏰", label: "Cambio de horario", msg: `Aviso: hubo un cambio de horario. El nuevo horario es a las 7:00pm — ${gymNom}` },
-    { icon: "🏋️", label: "Evento especial",  msg: `🔥 Te invitamos a nuestro evento especial este sábado. ¡Esperamos verte! — ${gymNom}` },
-    { icon: "🛑", label: "Cierre temporal",  msg: `El gym estará cerrado mañana por mantenimiento — ${gymNom}` },
-  ];
+  // Plantillas rápidas: primero desde DB, fallback a hardcoded
+  const tplsRapidas = useMemo(() => {
+    const fromDB = getQuickTemplates();
+    if (fromDB.length > 0) return fromDB;
+    return [
+      { id: "q1", icon: "🚫", name: "Clase cancelada",  body_text: "¡Hola {student_name}! La clase de hoy ha sido cancelada. Disculpa los inconvenientes 🙏" },
+      { id: "q2", icon: "⏰", name: "Cambio de horario", body_text: "¡Hola {student_name}! Aviso: hubo un cambio de horario. El nuevo horario es a las 7:00pm 📅" },
+      { id: "q3", icon: "🏋️", name: "Evento especial",  body_text: `¡Hola {student_name}! 🔥 Te invitamos a nuestro evento especial este sábado. ¡Esperamos verte! — ${gymNom}` },
+      { id: "q4", icon: "🛑", name: "Cierre temporal",  body_text: `¡Hola {student_name}! El gym estará cerrado mañana por mantenimiento 🛑 — ${gymNom}` },
+    ];
+  }, [getQuickTemplates, gymNom]);
+
+  // ── Construir mensaje de vencimiento desde plantilla ──
+  const buildVencimientoMsg = useCallback((miembro, diasReales, memInfo) => {
+    const templateKey = mapDiasToTemplateKey(diasReales);
+    const tpl = getTemplate(templateKey);
+
+    // Si no hay template en DB, usar buildWAMsg original como fallback
+    if (!tpl) {
+      // Fallback: lógica anterior
+      const nombre   = miembro.nombre.split(" ")[0];
+      const vence    = memInfo?.vence || "";
+      const plan     = memInfo?.plan || "";
+      const gym      = gymNom;
+      const planStr  = plan ? ` *${plan}*` : "";
+      if (diasReales === 0) return `¡Hola ${nombre}! 🚨 Tu membresía${planStr} en *${gym}* vence *HOY*. Renueva ahora para no perder tu acceso 💪`;
+      if (diasReales <= 3)  return `¡Hola ${nombre}! ⏰ Tu membresía${planStr} vence en *${diasReales} días* (${vence}). No pierdas tu acceso al gym 🔥`;
+
+      // Template largo (1 día): usar recordatorio_tpl de gymConfig
+      const recordatorioTpl = gymConfig?.recordatorio_tpl || tpl?.body_text || "";
+      return recordatorioTpl
+        .replace(/\{nombre\}/gi,             nombre)
+        .replace(/\{student_name\}/gi,       nombre)
+        .replace(/\{fecha\}/gi,              vence)
+        .replace(/\{due_date\}/gi,           vence)
+        .replace(/\{clabe\}/gi,              gymConfig?.transferencia_clabe || "")
+        .replace(/\{titular\}/gi,            gymConfig?.transferencia_titular || "")
+        .replace(/\{banco\}/gi,              gymConfig?.transferencia_banco || "")
+        .replace(/\{bank\}/gi,               gymConfig?.transferencia_banco || "")
+        .replace(/\{propietario\}/gi,        gymConfig?.propietario_nombre || gym)
+        .replace(/\{propietario_titulo\}/gi, gymConfig?.propietario_titulo || "")
+        .replace(/\{gym\}/gi,                gym)
+        .replace(/\{plan\}/gi,               plan)
+        .replace(/\{concept\}/gi,            plan);
+    }
+
+    // Con template de DB
+    const vars = buildVarsFromMember(miembro, memInfo, gymConfig);
+    return replaceTemplateVars(tpl.body_text, vars);
+  }, [getTemplate, gymConfig, gymNom]);
 
   // ── Alertas: miembros activos que vencen en ≤5 días ──
   const alertas = useMemo(() => {
@@ -321,7 +423,7 @@ export default function MensajesScreen({
     miembros
       .filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo")
       .forEach(m => {
-        const info      = getMembershipInfo(m.id, txs, m);
+        const info       = getMembershipInfo(m.id, txs, m);
         const diasReales = diasParaVencer(info.vence);
         if (diasReales === null || diasReales < 0 || diasReales > 5) return;
         result.push({ miembro: m, diasReales, memInfo: info });
@@ -332,7 +434,6 @@ export default function MensajesScreen({
 
   const pendientes = alertas.filter(({ miembro }) => !enviados[miembro.id]).length;
 
-  // ── Helpers de urgencia ──
   const urgColor = (d) => d <= 1 ? "#f43f5e" : d <= 3 ? "#f59e0b" : "#22d3ee";
   const urgLabel = (d) => d === 0 ? "HOY 🚨" : d === 1 ? "MAÑANA" : `${d}d`;
 
@@ -349,11 +450,9 @@ export default function MensajesScreen({
     if (miembroId && onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
   };
 
-  // ── Derivados modo individual ──
   const selNombre1 = selMiembro?.nombre?.split(" ")[0] || "";
   const destMasivo = miembros.filter(mb => getMembershipInfo(mb.id, txs, mb).estado === "Activo" && mb.tel);
 
-  // ── Resetear estado al cambiar modo ──
   const cambiarModo = (nuevoModo) => {
     setModo(nuevoModo);
     setMsgTexto("");
@@ -362,32 +461,31 @@ export default function MensajesScreen({
     setCopiadoNums(false);
   };
 
+  // ── Tabs: 4 modos ──
   const modos = [
-    { k: "vencimientos", icon: "⏰", label: "Vencimientos" },
-    { k: "individual",   icon: "👤", label: "Individual"   },
-    { k: "masivo",       icon: "📢", label: "Masivo"       },
+    { k: "vencimientos",       icon: "⏰", label: "Vencimientos" },
+    { k: "individual",         icon: "👤", label: "Individual"   },
+    { k: "masivo",             icon: "📢", label: "Masivo"       },
+    { k: "mensajes_sistema",   icon: "⚙️", label: "Sistema"      },
   ];
 
-  // ── Estilos reutilizados ──
   const btnModoBase = (activo) => ({
     flex: 1, padding: "9px 4px",
     border: "none", borderRadius: 11,
     cursor: "pointer", fontFamily: "inherit",
     background: activo ? "linear-gradient(135deg,#25d366,#128c7e)" : "transparent",
     color: activo ? "#fff" : "#8b949e",
-    fontSize: 11, fontWeight: activo ? 700 : 500,
+    fontSize: 10, fontWeight: activo ? 700 : 500,
     boxShadow: activo ? "0 2px 12px rgba(37,211,102,.3)" : "none",
     transition: "all .2s",
   });
 
   const textareaStyle = {
-    width: "100%",
-    background: "var(--bg-elevated)",
-    border: "1px solid var(--border-strong)",
-    borderRadius: 14, padding: "14px",
-    color: "var(--text-primary)", fontSize: 13,
-    fontFamily: "inherit", outline: "none",
-    resize: "none", lineHeight: 1.6, marginBottom: 6,
+    width: "100%", background: "var(--bg-elevated)",
+    border: "1px solid var(--border-strong)", borderRadius: 14,
+    padding: "14px", color: "var(--text-primary)", fontSize: 13,
+    fontFamily: "inherit", outline: "none", resize: "none",
+    lineHeight: 1.6, marginBottom: 6,
   };
 
   // ─────────────────────────────────────────────
@@ -397,38 +495,27 @@ export default function MensajesScreen({
       {/* ── Header fijo ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          <button
-            onClick={onBack}
-            style={{
-              background: "#21262d", border: "none",
-              borderRadius: 10, width: 36, height: 36,
-              cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0,
-            }}
-          >←</button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
-            <p style={{ color: "#8b949e", fontSize: 11 }}>WhatsApp · vencimientos, individual o masivo</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <button onClick={onBack} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
+            <div style={{ flex: 1 }}>
+              <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
+              <p style={{ color: "#8b949e", fontSize: 11 }}>Centro de comunicación WhatsApp</p>
+            </div>
+            {pendientes > 0 && (
+              <span style={{ background: "#f43f5e", color: "#fff", borderRadius: 10, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>
+                {pendientes}
+              </span>
+            )}
           </div>
-          {pendientes > 0 && (
-            <span style={{
-              background: "#f43f5e", color: "#fff",
-              borderRadius: 10, padding: "3px 9px",
-              fontSize: 11, fontWeight: 700,
-            }}>
-              {pendientes}
-            </span>
-          )}
-        </div>
 
-        {/* Selector de modo */}
-        <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
-          {modos.map(m => (
-            <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
-              {m.icon} {m.label}
-            </button>
-          ))}
-        </div>
+          {/* Selector de 4 modos */}
+          <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
+            {modos.map(m => (
+              <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
+                {m.icon} {m.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -436,497 +523,372 @@ export default function MensajesScreen({
       <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 20px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
 
-        {/* ════ MODO: VENCIMIENTOS ════ */}
-        {modo === "vencimientos" && (
-          <>
-            {alertas.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "50px 0" }}>
-                <p style={{ fontSize: 40, marginBottom: 12 }}>🎉</p>
-                <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>¡Sin vencimientos próximos!</p>
-                <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
-              </div>
-            ) : (
-              alertas.map(({ miembro, diasReales, memInfo }) => {
-                const col     = urgColor(diasReales);
-                const enviado = !!enviados[miembro.id];
-                const msg     = buildWAMsg(miembro, diasReales, memInfo, gymNom, gymConfig);
-                return (
-                  <div
-                    key={miembro.id}
-                    style={{
-                      background: enviado ? "var(--bg-card)" : `${col}10`,
-                      border: `1px solid ${enviado ? "var(--border)" : col + "35"}`,
-                      borderRadius: 18, padding: 14, marginBottom: 12,
-                      opacity: enviado ? 0.65 : 1, transition: "all .3s",
-                    }}
-                  >
-                    {/* Miembro + badge urgencia */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <div style={{
-                        width: 42, height: 42, borderRadius: "50%", overflow: "hidden",
-                        flexShrink: 0, background: `${col}25`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 17, fontWeight: 700, color: col,
-                        border: `2px solid ${col}50`,
-                      }}>
-                        {miembro.foto
-                          ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          : miembro.nombre.charAt(0)
-                        }
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
-                        <p style={{ color: "#8b949e", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
-                      </div>
-                      <span style={{
-                        background: enviado ? "rgba(74,222,128,.15)" : `${col}25`,
-                        color: enviado ? "#4ade80" : col,
-                        borderRadius: 8, padding: "4px 9px", fontSize: 11, fontWeight: 700,
-                      }}>
-                        {enviado ? "✓" : urgLabel(diasReales)}
-                      </span>
-                    </div>
-
-                    {/* Mensaje editable por miembro */}
-                    <textarea
-                      value={enviado ? msg : (enviados["msg_" + miembro.id] ?? msg)}
-                      onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
-                      rows={3}
+          {/* ════ MODO: VENCIMIENTOS ════ */}
+          {modo === "vencimientos" && (
+            <>
+              {alertas.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "50px 0" }}>
+                  <p style={{ fontSize: 40, marginBottom: 12 }}>🎉</p>
+                  <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>¡Sin vencimientos próximos!</p>
+                  <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
+                </div>
+              ) : (
+                alertas.map(({ miembro, diasReales, memInfo }) => {
+                  const col     = urgColor(diasReales);
+                  const enviado = !!enviados[miembro.id];
+                  // ← CAMBIO: usar plantilla del sistema en lugar de buildWAMsg
+                  const msg     = buildVencimientoMsg(miembro, diasReales, memInfo);
+                  return (
+                    <div
+                      key={miembro.id}
                       style={{
-                        width: "100%", background: "var(--bg-elevated)",
-                        border: "1px solid var(--border-strong)", borderRadius: 12,
-                        padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
-                        fontFamily: "inherit", outline: "none", resize: "none",
-                        lineHeight: 1.5, marginBottom: 8,
-                      }}
-                    />
-
-                    <button
-                      onClick={() => enviarWA(miembro.tel, enviados["msg_" + miembro.id] ?? msg, miembro.id)}
-                      disabled={!miembro.tel}
-                      style={{
-                        width: "100%", padding: "11px",
-                        border: "none", borderRadius: 12,
-                        cursor: miembro.tel ? "pointer" : "not-allowed",
-                        fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                        background: enviado
-                          ? "rgba(74,222,128,.12)"
-                          : miembro.tel
-                            ? "linear-gradient(135deg,#25d366,#128c7e)"
-                            : "#21262d",
-                        color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#8b949e",
-                        boxShadow: !enviado && miembro.tel ? "0 4px 14px rgba(37,211,102,.3)" : "none",
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                        background: enviado ? "var(--bg-card)" : `${col}10`,
+                        border: `1px solid ${enviado ? "var(--border)" : col + "35"}`,
+                        borderRadius: 18, padding: 14, marginBottom: 12,
+                        opacity: enviado ? 0.65 : 1, transition: "all .3s",
                       }}
                     >
-                      {enviado ? "✓ Enviado" : miembro.tel ? "💬 Enviar por WhatsApp" : "Sin número registrado"}
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </>
-        )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 42, height: 42, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: `${col}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, color: col, border: `2px solid ${col}50` }}>
+                          {miembro.foto
+                            ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : miembro.nombre.charAt(0)
+                          }
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
+                          <p style={{ color: "#8b949e", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
+                        </div>
+                        <span style={{ background: enviado ? "rgba(74,222,128,.15)" : `${col}25`, color: enviado ? "#4ade80" : col, borderRadius: 8, padding: "4px 9px", fontSize: 11, fontWeight: 700 }}>
+                          {enviado ? "✓" : urgLabel(diasReales)}
+                        </span>
+                      </div>
 
-        {/* ════ MODO: INDIVIDUAL ════ */}
-        {modo === "individual" && (
-          <>
-            {/* Vista A: Selección de miembro */}
-            {!selMiembro && (
-              <>
-                {/* Buscador */}
-                <div style={{ position: "relative", marginBottom: 10 }}>
-                  <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#8b949e", pointerEvents: "none" }}>🔍</span>
-                  <input
-                    value={busqueda}
-                    onChange={e => setBusqueda(e.target.value)}
-                    placeholder="Buscar miembro..."
-                    style={{
-                      width: "100%", background: "#21262d",
-                      border: "1px solid #30363d", borderRadius: 12,
-                      padding: "10px 12px 10px 36px", color: "#fff",
-                      fontSize: 13, fontFamily: "inherit", outline: "none",
-                    }}
-                  />
-                  {busqueda && (
-                    <button
-                      onClick={() => setBusqueda("")}
-                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer", padding: 2 }}
-                    >✕</button>
-                  )}
-                </div>
+                      <textarea
+                        value={enviado ? msg : (enviados["msg_" + miembro.id] ?? msg)}
+                        onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
+                        rows={3}
+                        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.5, marginBottom: 8 }}
+                      />
 
-                {/* Lista filtrada */}
-                {(() => {
-                  const conTel    = miembros.filter(m => m.tel);
-                  const filtrados = busqueda.trim()
-                    ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
-                    : conTel;
-                  const sinTel    = miembros.filter(m => !m.tel).length;
-                  return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-                      {filtrados.length === 0 && (
-                        <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "20px 0" }}>
-                          No se encontró "{busqueda}"
-                        </p>
-                      )}
-                      {filtrados.map(m => (
-                        <button
-                          key={m.id}
-                          onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
-                          style={{
-                            background: "var(--bg-card)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 14, padding: "10px 14px",
-                            cursor: "pointer", fontFamily: "inherit",
-                            display: "flex", alignItems: "center", gap: 10,
-                            transition: "all .2s",
-                          }}
-                        >
-                          <div style={{
-                            width: 36, height: 36, borderRadius: "50%", overflow: "hidden",
-                            flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 14, fontWeight: 700, color: "#fff",
-                          }}>
-                            {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
-                          </div>
-                          <div style={{ flex: 1, textAlign: "left" }}>
-                            <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                            <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
-                          </div>
-                          <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
-                        </button>
-                      ))}
-                      {sinTel > 0 && !busqueda && (
-                        <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
-                          {sinTel} miembro{sinTel > 1 ? "s" : ""} sin número no aparecen
-                        </p>
-                      )}
+                      <button
+                        onClick={() => enviarWA(miembro.tel, enviados["msg_" + miembro.id] ?? msg, miembro.id)}
+                        disabled={!miembro.tel}
+                        style={{
+                          width: "100%", padding: "11px", border: "none", borderRadius: 12,
+                          cursor: miembro.tel ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                          background: enviado ? "rgba(74,222,128,.12)" : miembro.tel ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
+                          color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#8b949e",
+                          boxShadow: !enviado && miembro.tel ? "0 4px 14px rgba(37,211,102,.3)" : "none",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                        }}
+                      >
+                        {enviado ? "✓ Enviado" : miembro.tel ? "💬 Enviar por WhatsApp" : "Sin número registrado"}
+                      </button>
                     </div>
                   );
-                })()}
-              </>
-            )}
+                })
+              )}
+            </>
+          )}
 
-            {/* Vista B: Composición de mensaje para el miembro seleccionado */}
-            {selMiembro && (
-              <>
-                {/* Header compacto del destinatario */}
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  background: "rgba(108,99,255,.1)",
-                  border: "1px solid rgba(108,99,255,.3)",
-                  borderRadius: 14, padding: "10px 14px", marginBottom: 12,
-                }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: "50%", overflow: "hidden",
-                    flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 15, fontWeight: 700, color: "#fff",
-                  }}>
-                    {selMiembro.foto
-                      ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : selMiembro.nombre.charAt(0)
-                    }
+          {/* ════ MODO: INDIVIDUAL ════ */}
+          {modo === "individual" && (
+            <>
+              {/* Vista A: Selección de miembro */}
+              {!selMiembro && (
+                <>
+                  <div style={{ position: "relative", marginBottom: 10 }}>
+                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#8b949e", pointerEvents: "none" }}>🔍</span>
+                    <input
+                      value={busqueda}
+                      onChange={e => setBusqueda(e.target.value)}
+                      placeholder="Buscar miembro..."
+                      style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+                    />
+                    {busqueda && (
+                      <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer", padding: 2 }}>✕</button>
+                    )}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
-                    <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {selMiembro.tel}</p>
+
+                  {(() => {
+                    const conTel    = miembros.filter(m => m.tel);
+                    const filtrados = busqueda.trim()
+                      ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
+                      : conTel;
+                    const sinTel    = miembros.filter(m => !m.tel).length;
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                        {filtrados.length === 0 && <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>}
+                        {filtrados.map(m => (
+                          <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
+                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
+                            <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
+                              {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
+                            </div>
+                            <div style={{ flex: 1, textAlign: "left" }}>
+                              <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
+                              <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
+                            </div>
+                            <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
+                          </button>
+                        ))}
+                        {sinTel > 0 && !busqueda && <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>{sinTel} miembro{sinTel > 1 ? "s" : ""} sin número no aparecen</p>}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+
+              {/* Vista B: Composición de mensaje */}
+              {selMiembro && (
+                <>
+                  {/* Header destinatario */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff" }}>
+                      {selMiembro.foto ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selMiembro.nombre.charAt(0)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
+                      <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {selMiembro.tel}</p>
+                    </div>
+                    <button onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
+                      style={{ background: "#21262d", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "#8b949e", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+                      Cambiar ✕
+                    </button>
                   </div>
+
+                  {/* Textarea */}
+                  <textarea
+                    value={msgTexto}
+                    onChange={e => setMsgTexto(e.target.value)}
+                    placeholder={`Hola ${selNombre1}, escribe o elige una plantilla abajo...`}
+                    rows={4} autoFocus
+                    style={textareaStyle}
+                  />
+                  <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
+
+                  {/* Botón enviar */}
                   <button
-                    onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
+                    onClick={() => enviarWAIndividual(selMiembro.tel, msgTexto.trim(), selMiembro.id)}
+                    disabled={!msgTexto.trim()}
                     style={{
-                      background: "#21262d", border: "none",
-                      borderRadius: 10, padding: "6px 12px",
-                      cursor: "pointer", fontFamily: "inherit",
-                      color: "#8b949e", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                      width: "100%", padding: "14px", border: "none", borderRadius: 14,
+                      cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                      background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
+                      color: msgTexto.trim() ? "#fff" : "#8b949e",
+                      boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20,
                     }}
                   >
-                    Cambiar ✕
+                    <span style={{ fontSize: 18 }}>💬</span>
+                    {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
                   </button>
-                </div>
 
-                {/* Área de texto del mensaje */}
-                <textarea
-                  value={msgTexto}
-                  onChange={e => setMsgTexto(e.target.value)}
-                  placeholder={`Hola ${selNombre1}, escribe o elige una plantilla abajo...`}
-                  rows={4}
-                  autoFocus
-                  style={textareaStyle}
-                />
-                <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 10 }}>
-                  {msgTexto.length} caracteres
-                </p>
-
-                {/* Botón enviar */}
-                <button
-                  onClick={() => enviarWAIndividual(selMiembro.tel, msgTexto.trim(), selMiembro.id)}
-                  disabled={!msgTexto.trim()}
-                  style={{
-                    width: "100%", padding: "14px",
-                    border: "none", borderRadius: 14,
-                    cursor: msgTexto.trim() ? "pointer" : "not-allowed",
-                    fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                    background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
-                    color: msgTexto.trim() ? "#fff" : "#8b949e",
-                    boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                    marginBottom: 20,
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>💬</span>
-                  {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
-                </button>
-
-                {/* Mis mensajes guardados (4 slots) */}
-                <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
-                  💾 Mis mensajes guardados
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-                  {[0, 1, 2, 3].map(i => {
-                    const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
-                    return (
-                      <PlantillaCustom
-                        key={i}
-                        index={i}
-                        tpl={slot}
-                        nombreMiembro={selNombre1}
-                        gymNom={gymNom}
-                        onUsar={(msg) => setMsgTexto(msg)}
-                        onGuardar={async (nueva) => {
-                          const nuevas = [...tplsCustom];
-                          while (nuevas.length <= i) nuevas.push({ icon: "⭐", label: "", msg: "" });
-                          nuevas[i] = nueva;
-                          await onUpdatePlantillas(nuevas);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Plantillas rápidas colapsables */}
-                <details style={{ marginBottom: 14 }}>
-                  <summary style={{
-                    color: "#8b949e", fontSize: 11, fontWeight: 700,
-                    textTransform: "uppercase", letterSpacing: .5,
-                    cursor: "pointer", listStyle: "none",
-                    display: "flex", alignItems: "center", gap: 6, padding: "8px 0",
-                  }}>
-                    <span>⚡ Plantillas rápidas</span>
-                    <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
-                  </summary>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-                    {tplsFijas.map((tpl, i) => {
-                      const msgPersonal = `Hola ${selNombre1}! ` + tpl.msg;
+                  {/* Mis mensajes guardados */}
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💾 Mis mensajes guardados</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+                    {[0, 1, 2, 3].map(i => {
+                      const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
                       return (
-                        <button
-                          key={i}
-                          onClick={() => setMsgTexto(msgPersonal)}
-                          style={{
-                            background: msgTexto === msgPersonal ? "rgba(37,211,102,.1)" : "#161b22",
-                            border: `1px solid ${msgTexto === msgPersonal ? "rgba(37,211,102,.3)" : "#21262d"}`,
-                            borderRadius: 12, padding: "10px 14px",
-                            cursor: "pointer", fontFamily: "inherit",
-                            display: "flex", alignItems: "center", gap: 10,
-                            textAlign: "left", transition: "all .2s",
+                        <PlantillaCustom
+                          key={i} index={i} tpl={slot}
+                          nombreMiembro={selNombre1} gymNom={gymNom}
+                          onUsar={(msg) => setMsgTexto(msg)}
+                          onGuardar={async (nueva) => {
+                            const nuevas = [...tplsCustom];
+                            while (nuevas.length <= i) nuevas.push({ icon: "⭐", label: "", msg: "" });
+                            nuevas[i] = nueva;
+                            await onUpdatePlantillas(nuevas);
                           }}
-                        >
-                          <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                          <span style={{ color: msgTexto === msgPersonal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>
-                            {tpl.label}
-                          </span>
-                          {msgTexto === msgPersonal && <span style={{ color: "#4ade80" }}>✓</span>}
-                        </button>
+                        />
                       );
                     })}
                   </div>
-                </details>
-              </>
-            )}
-          </>
-        )}
 
-        {/* ════ MODO: MASIVO ════ */}
-        {modo === "masivo" && (
-          <>
-            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>
-              Mensaje para todos
-            </p>
-            <textarea
-              value={msgTexto}
-              onChange={e => setMsgTexto(e.target.value)}
-              placeholder={`Ej: Hola, la clase de hoy fue cancelada. Disculpen 🙏 — ${gymNom}`}
-              rows={5}
-              style={textareaStyle}
-            />
-            <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 12 }}>
-              {msgTexto.length} caracteres
-            </p>
+                  {/* ← NUEVO: Plantillas del sistema */}
+                  {getSystemTemplates().length > 0 && (
+                    <details style={{ marginBottom: 14 }}>
+                      <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
+                        <span>⚙️ Plantillas del sistema</span>
+                        <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                      </summary>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                        {getSystemTemplates().map(tpl => {
+                          const memInfo = getMembershipInfo(selMiembro.id, txs, selMiembro);
+                          const vars    = buildVarsFromMember(selMiembro, memInfo, gymConfig);
+                          const msgFinal = replaceTemplateVars(tpl.body_text, vars);
+                          return (
+                            <button key={tpl.id} onClick={() => setMsgTexto(msgFinal)}
+                              style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                              <span style={{ fontSize: 16 }}>⚙️</span>
+                              <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name}</span>
+                              {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  )}
 
-            {/* Plantillas rápidas masivo */}
-            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>
-              Plantillas rápidas
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-              {tplsFijas.map((tpl, i) => (
-                <button
-                  key={i}
-                  onClick={() => setMsgTexto(tpl.msg)}
-                  style={{
-                    background: msgTexto === tpl.msg ? "rgba(37,211,102,.1)" : "var(--bg-card)",
-                    border: `1px solid ${msgTexto === tpl.msg ? "rgba(37,211,102,.3)" : "var(--border)"}`,
-                    borderRadius: 12, padding: "10px 14px",
-                    cursor: "pointer", fontFamily: "inherit",
-                    display: "flex", alignItems: "center", gap: 10,
-                    textAlign: "left", transition: "all .2s",
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                  <span style={{ color: msgTexto === tpl.msg ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>
-                    {tpl.label}
-                  </span>
-                  {msgTexto === tpl.msg && <span style={{ color: "#4ade80" }}>✓</span>}
-                </button>
-              ))}
-            </div>
+                  {/* Plantillas rápidas */}
+                  <details style={{ marginBottom: 14 }}>
+                    <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
+                      <span>⚡ Plantillas rápidas</span>
+                      <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                    </summary>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                      {tplsRapidas.map((tpl, i) => {
+                        const vars     = { student_name: selNombre1 };
+                        const msgFinal = replaceTemplateVars(tpl.body_text || tpl.msg || "", vars);
+                        return (
+                          <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
+                            style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                            <span style={{ fontSize: 18 }}>{tpl.icon}</span>
+                            <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
+                            {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </details>
+                </>
+              )}
+            </>
+          )}
 
-            {msgTexto.trim() && (
-              <>
-                {/* Destinatarios */}
-                <div style={{
-                  background: "rgba(37,211,102,.06)",
-                  border: "1px solid rgba(37,211,102,.2)",
-                  borderRadius: 14, padding: "12px 14px", marginBottom: 10,
-                }}>
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>
-                    Destinatarios ({destMasivo.length})
-                  </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {destMasivo.map(mb => (
-                      <div
-                        key={mb.id}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 5,
-                          background: "var(--bg-elevated)",
-                          borderRadius: 20, padding: "4px 10px 4px 4px",
-                        }}
-                      >
-                        <div style={{
-                          width: 22, height: 22, borderRadius: "50%", overflow: "hidden",
-                          background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0,
-                        }}>
-                          {mb.foto ? <img src={mb.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mb.nombre.charAt(0)}
+          {/* ════ MODO: MASIVO ════ (sin cambios de UX) */}
+          {modo === "masivo" && (
+            <>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Mensaje para todos</p>
+              <textarea
+                value={msgTexto}
+                onChange={e => setMsgTexto(e.target.value)}
+                placeholder={`Ej: Hola, la clase de hoy fue cancelada. Disculpen 🙏 — ${gymNom}`}
+                rows={5} style={textareaStyle}
+              />
+              <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
+
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Plantillas rápidas</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                {tplsRapidas.map((tpl, i) => {
+                  const msgFinal = tpl.body_text || tpl.msg || "";
+                  return (
+                    <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
+                      style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "var(--border)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                      <span style={{ fontSize: 18 }}>{tpl.icon}</span>
+                      <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
+                      {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {msgTexto.trim() && (
+                <>
+                  <div style={{ background: "rgba(37,211,102,.06)", border: "1px solid rgba(37,211,102,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
+                    <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>Destinatarios ({destMasivo.length})</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {destMasivo.map(mb => (
+                        <div key={mb.id} style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--bg-elevated)", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
+                          <div style={{ width: 22, height: 22, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+                            {mb.foto ? <img src={mb.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mb.nombre.charAt(0)}
+                          </div>
+                          <span style={{ color: "#8b949e", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
                         </div>
-                        <span style={{ color: "#8b949e", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Paso 1: Copiar mensaje */}
-                <div style={{
-                  background: "var(--bg-card)",
-                  border: copiadoMsg ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)",
-                  borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{
-                        background: copiadoMsg ? "rgba(37,211,102,.2)" : "var(--bg-elevated)",
-                        color: copiadoMsg ? "#4ade80" : "var(--text-primary)",
-                        borderRadius: "50%", width: 22, height: 22,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 11, fontWeight: 700,
-                      }}>
-                        {copiadoMsg ? "✓" : "1"}
-                      </span>
-                      <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>Copia el mensaje</p>
+                      ))}
                     </div>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(msgTexto); setCopiadoMsg(true); }}
-                      style={{
-                        padding: "6px 14px", border: "none", borderRadius: 10,
-                        cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                        background: copiadoMsg ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
-                        color: copiadoMsg ? "#4ade80" : "#fff",
-                      }}
-                    >
-                      {copiadoMsg ? "✓ Copiado" : "📋 Copiar"}
-                    </button>
                   </div>
-                </div>
 
-                {/* Paso 2: Copiar números */}
-                <div style={{
-                  background: "var(--bg-card)",
-                  border: copiadoNums ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)",
-                  borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s",
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{
-                        background: copiadoNums ? "rgba(37,211,102,.2)" : "var(--bg-elevated)",
-                        color: copiadoNums ? "#4ade80" : "var(--text-primary)",
-                        borderRadius: "50%", width: 22, height: 22,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 11, fontWeight: 700,
-                      }}>
-                        {copiadoNums ? "✓" : "2"}
-                      </span>
-                      <div>
-                        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>Copia los números</p>
-                        <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{destMasivo.length} contactos</p>
+                  {[
+                    { num: 1, label: "Copia el mensaje", copiado: copiadoMsg,  action: () => { copyToClipboard(msgTexto); setCopiadoMsg(true); } },
+                    { num: 2, label: "Copia los números", sub: `${destMasivo.length} contactos`, copiado: copiadoNums, action: () => { copyToClipboard(destMasivo.map(mb => mb.tel.replace(/\D/g, "")).join("\n")); setCopiadoNums(true); } },
+                  ].map(step => (
+                    <div key={step.num} style={{ background: "var(--bg-card)", border: step.copiado ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)", borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ background: step.copiado ? "rgba(37,211,102,.2)" : "var(--bg-elevated)", color: step.copiado ? "#4ade80" : "var(--text-primary)", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                            {step.copiado ? "✓" : step.num}
+                          </span>
+                          <div>
+                            <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{step.label}</p>
+                            {step.sub && <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{step.sub}</p>}
+                          </div>
+                        </div>
+                        <button onClick={step.action} style={{ padding: "6px 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: step.copiado ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)", color: step.copiado ? "#4ade80" : "#fff" }}>
+                          {step.copiado ? "✓ Copiado" : "📋 Copiar"}
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => { navigator.clipboard.writeText(destMasivo.map(mb => mb.tel.replace(/\D/g, "")).join("\n")); setCopiadoNums(true); }}
-                      style={{
-                        padding: "6px 14px", border: "none", borderRadius: 10,
-                        cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                        background: copiadoNums ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
-                        color: copiadoNums ? "#4ade80" : "#fff",
-                      }}
-                    >
-                      {copiadoNums ? "✓ Copiados" : "📋 Copiar"}
-                    </button>
+                  ))}
+
+                  <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
+                    <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
+                    <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.</p>
                   </div>
-                </div>
 
-                {/* Paso 3: Instrucción */}
-                <div style={{
-                  background: "var(--bg-elevated)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 14, padding: "12px 14px", marginBottom: 12,
-                }}>
-                  <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
-                  <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
-                    Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.
-                  </p>
-                </div>
+                  <button onClick={() => window.open("https://wa.me", "_blank")}
+                    style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff", boxShadow: "0 4px 18px rgba(37,211,102,.35)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>💬</span> Abrir WhatsApp
+                  </button>
+                </>
+              )}
+            </>
+          )}
 
-                <button
-                  onClick={() => window.open("https://wa.me", "_blank")}
-                  style={{
-                    width: "100%", padding: "14px",
-                    border: "none", borderRadius: 14,
-                    cursor: "pointer", fontFamily: "inherit",
-                    fontSize: 14, fontWeight: 700,
-                    background: "linear-gradient(135deg,#25d366,#128c7e)",
-                    color: "#fff",
-                    boxShadow: "0 4px 18px rgba(37,211,102,.35)",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>💬</span> Abrir WhatsApp
-                </button>
-              </>
-            )}
-          </>
-        )}
+          {/* ════ MODO: MENSAJES DEL SISTEMA ════ */}
+          {modo === "mensajes_sistema" && (
+            <>
+              {/* Intro */}
+              <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
+                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚙️ Centro de automatización</p>
+                <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>
+                  Aquí configuras los mensajes que el sistema envía automáticamente. Actívalos, personaliza el texto y ajusta cuántos días antes se envían.
+                </p>
+              </div>
+
+              {commLoading && (
+                <div style={{ textAlign: "center", padding: "30px 0" }}>
+                  <p style={{ color: "#8b949e", fontSize: 13 }}>Cargando mensajes…</p>
+                </div>
+              )}
+
+              {!commLoading && (
+                <>
+                  {/* Tarjetas de mensajes del sistema */}
+                  {SYSTEM_TEMPLATE_KEYS.map(meta => {
+                    const template   = getTemplate(meta.key);
+                    const automation = automations.find(a => a.event_key === meta.key);
+                    return (
+                      <SystemMessageCard
+                        key={meta.key}
+                        meta={meta}
+                        template={template}
+                        automation={automation}
+                        onToggle={toggleAutomation}
+                        onOffsetChange={updateOffset}
+                        onSave={saveTemplate}
+                        onReset={resetTemplate}
+                      />
+                    );
+                  })}
+
+                  {/* Aviso si no hay templates en DB */}
+                  {templates.filter(t => t.scope === "system").length === 0 && (
+                    <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 8 }}>
+                      <p style={{ color: "#f59e0b", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ Sin plantillas en base de datos</p>
+                      <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>
+                        Ejecuta el seed SQL en Supabase para inicializar las plantillas del sistema:
+                      </p>
+                      <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", marginTop: 8 }}>
+                        SELECT seed_communication_templates('{gymId || "TU_GYM_ID"}');
+                      </code>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
 
         </div>
       </div>

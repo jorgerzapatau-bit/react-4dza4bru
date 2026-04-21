@@ -561,11 +561,15 @@ model miembros {
   dias_congelados     Int?            @default(0)
   deuda               Decimal?        @default(0) @db.Decimal
   qr_token            String?         @unique(map: "idx_miembros_qr_token")
+  tutor_nombre        String?
+  tutor_telefono      String?
+  tutor_parentesco    String?
   accesos             accesos[]
   gimnasios           gimnasios?      @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   transacciones       transacciones[]
 
   @@index([gym_id], map: "idx_miembros_gym")
+  @@index([gym_id, tutor_nombre], map: "idx_miembros_tutor", where: raw("(tutor_nombre IS NOT NULL)"))
   @@schema("public")
 }
 
@@ -586,6 +590,46 @@ model transacciones {
 
   @@index([gym_id, fecha], map: "idx_tx_fecha")
   @@index([gym_id], map: "idx_tx_gym")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model communication_automations {
+  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id                  String
+  event_key               String
+  name                    String
+  is_active               Boolean?                 @default(true)
+  trigger_offset_days     Int?                     @default(1)
+  template_id             String?                  @db.Uuid
+  created_at              DateTime?                @default(now()) @db.Timestamptz(6)
+  communication_templates communication_templates? @relation(fields: [template_id], references: [id], onUpdate: NoAction)
+
+  @@unique([gym_id, event_key])
+  @@index([gym_id], map: "idx_comm_automations_gym")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model communication_templates {
+  id                        String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id                    String
+  scope                     String
+  template_key              String?
+  name                      String
+  category                  String?
+  body_text                 String
+  variables_json            Json?                       @default("[]")
+  is_active                 Boolean?                    @default(true)
+  is_editable               Boolean?                    @default(true)
+  is_quick_template         Boolean?                    @default(false)
+  created_at                DateTime?                   @default(now()) @db.Timestamptz(6)
+  communication_automations communication_automations[]
+
+  @@index([gym_id], map: "idx_comm_templates_gym")
+  @@index([gym_id, template_key], map: "idx_comm_templates_key")
+  @@index([gym_id, scope], map: "idx_comm_templates_scope")
   @@schema("public")
 }
 
