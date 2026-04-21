@@ -136,15 +136,15 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
   }, []);
 
   const dividerStyle = { height: 1, background: darkMode ? "#21262d" : "#e5e7eb", margin: "10px 0" };
-  const sectionStyle = {
-    fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
-    textTransform: "uppercase", color: darkMode ? "#6e7681" : "#9ca3af",
-    padding: "16px 12px 6px", display: collapsed ? "none" : "block",
-  };
 
   // ── Sidebar content (shared between desktop and mobile drawer) ──
   const sidebarContent = (isMobileDrawer = false) => {
     const isCollapsed = isMobileDrawer ? false : collapsed;
+    const sectionStyle = {
+      fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
+      textTransform: "uppercase", color: darkMode ? "#6e7681" : "#9ca3af",
+      padding: "16px 12px 6px", display: isCollapsed ? "none" : "block",
+    };
     return (
       <>
         {/* ── Header: hamburguesa + logo ── */}
@@ -279,8 +279,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         className="gym-nav desktop-nav"
         style={{
           width: collapsed ? 68 : 240,
-          transition: "width .22s cubic-bezier(.4,0,.2,1)",
-          overflow: "hidden",
+          minWidth: collapsed ? 68 : 240,
           padding: "20px 8px 16px",
         }}
       >

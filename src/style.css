@@ -67,7 +67,7 @@ h1, p, span, button, input, select, textarea {
   z-index: 100;
   overflow-y: auto;
   overflow-x: hidden;
-  transition: background .25s, border-color .25s, width .22s cubic-bezier(.4,0,.2,1);
+  transition: background .25s, border-color .25s, width .22s cubic-bezier(.4,0,.2,1), min-width .22s cubic-bezier(.4,0,.2,1);
 }
 
 /* Hide desktop nav on mobile */
