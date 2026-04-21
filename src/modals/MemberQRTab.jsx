@@ -1,5 +1,4 @@
 // src/modals/MemberQRTab.jsx
-// ── Pestaña "QR" dentro de MemberDetailModal ─────────────────────────────
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase";
@@ -7,11 +6,10 @@ import { copyToClipboard } from "../utils/helpers";
 
 const MEMBER_PAGE_BASE = `${window.location.origin}/member`;
 
-// ── Carga qrcodejs desde CDN de forma segura, esperando a que esté listo ──
+// ── Carga qrcodejs desde CDN de forma segura ──
 function loadQRScript() {
   return new Promise((resolve) => {
     if (window.QRCode) { resolve(true); return; }
-    // Si ya hay un script en carga, esperar
     const existing = document.querySelector('script[data-qrcode]');
     if (existing) {
       const check = setInterval(() => {
@@ -35,18 +33,16 @@ async function ensureQrToken(miembro, onUpdate) {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map(b => b.toString(16).padStart(2, "0")).join("");
 
-  const { error } = await supabase
-    .from("miembros")
-    .update({ qr_token: token })
-    .eq("id", miembro.id);
-
-  if (error) console.error("Error saving qr_token:", error);
+  // ⚠️ Tu supabase.from() es async — hay que hacer await primero
+  const tb = await supabase.from("miembros");
+  const ok = await tb.update(miembro.id, { qr_token: token });
+  if (!ok) console.error("No se pudo guardar qr_token en Supabase");
 
   onUpdate?.({ ...miembro, qr_token: token });
   return token;
 }
 
-/* ─── QR Canvas: espera a que window.QRCode esté listo ─── */
+/* ─── QR Canvas ─── */
 function QRCanvas({ url }) {
   const ref = useRef(null);
   const [scriptReady, setScriptReady] = useState(!!window.QRCode);
@@ -128,9 +124,9 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
         const t = await ensureQrToken(m, onMemberUpdate);
         if (!cancelled) { setToken(t); setLoading(false); }
       } catch (e) {
-        console.error(e);
+        console.error("ensureQrToken error:", e);
         if (!cancelled) {
-          setError("No se pudo generar el QR. Verifica la conexión o que la columna qr_token exista en Supabase.");
+          setError("No se pudo generar el QR: " + (e?.message || String(e)));
           setLoading(false);
         }
       }
@@ -158,13 +154,10 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
     const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
       .map(b => b.toString(16).padStart(2, "0")).join("");
     try {
-      const { error } = await supabase
-        .from("miembros")
-        .update({ qr_token: newToken })
-        .eq("id", m.id);
-      if (error) console.error("Error regenerating qr_token:", error);
+      const tb = await supabase.from("miembros");
+      await tb.update(m.id, { qr_token: newToken });
     } catch (e) {
-      console.error(e);
+      console.error("Regenerate error:", e);
     }
     setToken(newToken);
     onMemberUpdate?.({ ...m, qr_token: newToken });
@@ -195,9 +188,6 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
     <div style={{ textAlign: "center", padding: "40px 16px" }}>
       <p style={{ fontSize: 32, marginBottom: 10 }}>⚠️</p>
       <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{error}</p>
-      <p style={{ color: muted, fontSize: 11, lineHeight: 1.6 }}>
-        Asegúrate de que la columna <code style={{ background: "rgba(0,0,0,.08)", padding: "1px 5px", borderRadius: 4 }}>qr_token</code> existe en tu tabla <code style={{ background: "rgba(0,0,0,.08)", padding: "1px 5px", borderRadius: 4 }}>miembros</code>.
-      </p>
       <button
         onClick={runEnsure}
         style={{
