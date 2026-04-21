@@ -874,17 +874,27 @@ export default function MensajesScreen({
                     );
                   })}
 
-                  {/* Aviso modo offline (tablas no creadas aún) */}
-                  {!dbAvailable && (
+                  {/* Banner solo si hay gymId pero la DB no está inicializada */}
+                  {!dbAvailable && !gymId && (
+                    <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
+                      <p style={{ color: "#f43f5e", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                        ⚠️ Error de configuración — gymId no disponible
+                      </p>
+                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
+                        No se pudo determinar el ID del gimnasio. Verifica que hayas iniciado sesión correctamente y recarga la página.
+                      </p>
+                    </div>
+                  )}
+                  {!dbAvailable && gymId && (
                     <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
                       <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
                         📋 Modo vista previa — los cambios no se guardarán
                       </p>
                       <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
-                        Para persistir los cambios ejecuta en Supabase SQL Editor:
+                        Las tablas de comunicación aún no están inicializadas. Para activar el guardado, ejecuta en Supabase SQL Editor:
                       </p>
                       <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", wordBreak: "break-all" }}>
-                        SELECT seed_communication_templates('{gymId}');
+                        {`SELECT seed_communication_templates('${gymId}');`}
                       </code>
                     </div>
                   )}

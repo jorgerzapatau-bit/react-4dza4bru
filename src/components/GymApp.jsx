@@ -412,7 +412,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
         {/* ═══ MENSAJES ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
-          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
+          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} gymId={GYM_ID} onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
         )}
 
         {/* ═══ LOADING ═══ */}
