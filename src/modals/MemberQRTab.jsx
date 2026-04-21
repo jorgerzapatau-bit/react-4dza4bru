@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase";
-import { copyToClipboard } from "../utils/helpers";
 
 const MEMBER_PAGE_BASE = `${window.location.origin}/member`;
 
@@ -26,20 +25,132 @@ function loadQRScript() {
   });
 }
 
-/* ─── Genera o recupera el qr_token del miembro ─── */
+/* ─── Genera o recupera el qr_token ─── */
 async function ensureQrToken(miembro, onUpdate) {
   if (miembro.qr_token) return miembro.qr_token;
-
   const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map(b => b.toString(16).padStart(2, "0")).join("");
-
-  // ⚠️ Tu supabase.from() es async — hay que hacer await primero
   const tb = await supabase.from("miembros");
   const ok = await tb.update(miembro.id, { qr_token: token });
-  if (!ok) console.error("No se pudo guardar qr_token en Supabase");
-
+  if (!ok) console.error("No se pudo guardar qr_token");
   onUpdate?.({ ...miembro, qr_token: token });
   return token;
+}
+
+/* ─── Genera canvas de la tarjeta completa (QR + nombre + ID corto) ─── */
+async function buildCardCanvas(qrWrapEl, memberName, shortId) {
+  const qrCanvas = qrWrapEl.querySelector("canvas");
+  if (!qrCanvas) return null;
+
+  const W = 400, PAD = 32;
+  const qrSize = 260;
+  const headerH = 56;
+  const footerH = 110;
+  const H = headerH + qrSize + footerH + PAD * 2;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // Fondo blanco con bordes redondeados
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, 0, 0, W, H, 24);
+  ctx.fill();
+
+  // Sombra exterior (solo en descarga, no importa)
+  ctx.shadowColor = "rgba(0,0,0,0.10)";
+  ctx.shadowBlur = 0;
+
+  // ── Header: nombre del gimnasio / branding ──
+  ctx.fillStyle = "#6c63ff";
+  roundRect(ctx, 0, 0, W, headerH, { tl: 24, tr: 24, br: 0, bl: 0 });
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 15px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("🏋️  IDENTIFICACIÓN DIGITAL", W / 2, 34);
+
+  // ── QR centrado ──
+  const qrX = (W - qrSize) / 2;
+  const qrY = headerH + PAD;
+
+  // Marco blanco con sombra suave
+  ctx.shadowColor = "rgba(0,0,0,0.12)";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 18);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Dibuja el QR
+  ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+
+  // ── Footer: nombre + ID corto ──
+  const footerY = headerH + PAD + qrSize + PAD;
+
+  // Nombre del miembro
+  ctx.fillStyle = "#1e293b";
+  ctx.font = "bold 18px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  // Truncar nombre si es muy largo
+  const maxNameW = W - PAD * 2;
+  let name = memberName;
+  while (ctx.measureText(name).width > maxNameW && name.length > 3) {
+    name = name.slice(0, -1);
+  }
+  if (name !== memberName) name += "…";
+  ctx.fillText(name, W / 2, footerY + 22);
+
+  // Separador
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD * 2, footerY + 38);
+  ctx.lineTo(W - PAD * 2, footerY + 38);
+  ctx.stroke();
+
+  // Etiqueta "ID"
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "600 10px system-ui, sans-serif";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("CÓDIGO DE ACCESO", W / 2, footerY + 58);
+
+  // ID corto con punto verde
+  const dotR = 5;
+  const idText = shortId;
+  ctx.font = "bold 22px 'Courier New', monospace";
+  const idW = ctx.measureText(idText).width;
+  const totalW = dotR * 2 + 8 + idW;
+  const startX = (W - totalW) / 2;
+
+  ctx.fillStyle = "#22c55e";
+  ctx.beginPath();
+  ctx.arc(startX + dotR, footerY + 88, dotR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#1e293b";
+  ctx.textAlign = "left";
+  ctx.fillText(idText, startX + dotR * 2 + 8, footerY + 94);
+
+  return canvas;
+}
+
+// Utilidad: rectángulo redondeado compatible
+function roundRect(ctx, x, y, w, h, r) {
+  if (typeof r === "number") r = { tl: r, tr: r, br: r, bl: r };
+  ctx.beginPath();
+  ctx.moveTo(x + r.tl, y);
+  ctx.lineTo(x + w - r.tr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+  ctx.lineTo(x + w, y + h - r.br);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+  ctx.lineTo(x + r.bl, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+  ctx.lineTo(x, y + r.tl);
+  ctx.quadraticCurveTo(x, y, x + r.tl, y);
+  ctx.closePath();
 }
 
 /* ─── QR Canvas ─── */
@@ -49,7 +160,7 @@ function QRCanvas({ url }) {
 
   useEffect(() => {
     if (scriptReady) return;
-    loadQRScript().then((ok) => setScriptReady(ok));
+    loadQRScript().then(setScriptReady);
   }, []);
 
   useEffect(() => {
@@ -58,8 +169,8 @@ function QRCanvas({ url }) {
     try {
       new window.QRCode(ref.current, {
         text: url,
-        width: 220,
-        height: 220,
+        width: 240,
+        height: 240,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: window.QRCode.CorrectLevel.H,
@@ -69,51 +180,32 @@ function QRCanvas({ url }) {
     }
   }, [scriptReady, url]);
 
-  if (!scriptReady) {
-    return (
-      <div style={{ width: 220, height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 12 }}>
-        Cargando…
-      </div>
-    );
-  }
+  if (!scriptReady) return (
+    <div style={{ width: 240, height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 12 }}>
+      Cargando…
+    </div>
+  );
 
   return (
-    <div
-      ref={ref}
-      style={{
-        background: "#fff",
-        padding: 14,
-        borderRadius: 18,
-        display: "inline-flex",
-        boxShadow: "0 8px 32px rgba(0,0,0,.18)",
-      }}
-    />
+    <div ref={ref} style={{ background: "#fff", padding: 12, borderRadius: 16, display: "inline-flex", boxShadow: "0 8px 32px rgba(0,0,0,.15)" }} />
   );
-}
-
-/* ─── Descarga el QR como PNG ─── */
-function downloadQR(memberName) {
-  const canvas = document.querySelector("#qr-wrap canvas");
-  if (!canvas) { alert("El QR aún no está listo, espera un momento."); return; }
-  const link = document.createElement("a");
-  link.download = `QR_${memberName.replace(/\s+/g, "_")}.png`;
-  link.href = canvas.toDataURL("image/png");
-  link.click();
 }
 
 /* ════════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ════════════════════════════════════════════════════════════════ */
 export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
-  const [token, setToken]         = useState(m.qr_token || null);
-  const [loading, setLoading]     = useState(!m.qr_token);
-  const [error, setError]         = useState(null);
-  const [copiedUrl, setCopiedUrl] = useState(false);
-  const [regenerating, setReg]    = useState(false);
+  const [token, setToken]     = useState(m.qr_token || null);
+  const [loading, setLoading] = useState(!m.qr_token);
+  const [error, setError]     = useState(null);
+  const [copied, setCopied]   = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [regenerating, setReg] = useState(false);
+  const qrWrapRef = useRef(null);
 
-  const memberUrl = token
-    ? `${MEMBER_PAGE_BASE}?token=${token}&gym=${gymId}`
-    : null;
+  const memberUrl = token ? `${MEMBER_PAGE_BASE}?token=${token}&gym=${gymId}` : null;
+  // ID corto: "DZ-" + primeros 8 chars del token
+  const shortId = token ? `DZ-${token.slice(0, 4).toUpperCase()}` : "";
 
   const runEnsure = () => {
     setError(null);
@@ -124,11 +216,7 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
         const t = await ensureQrToken(m, onMemberUpdate);
         if (!cancelled) { setToken(t); setLoading(false); }
       } catch (e) {
-        console.error("ensureQrToken error:", e);
-        if (!cancelled) {
-          setError("No se pudo generar el QR: " + (e?.message || String(e)));
-          setLoading(false);
-        }
+        if (!cancelled) { setError("No se pudo generar el QR: " + (e?.message || e)); setLoading(false); }
       }
     })();
     return () => { cancelled = true; };
@@ -139,26 +227,55 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
     return runEnsure();
   }, []); // eslint-disable-line
 
-  const handleCopyUrl = () => {
-    if (!memberUrl) return;
-    copyToClipboard(memberUrl);
-    setCopiedUrl(true);
-    setTimeout(() => setCopiedUrl(false), 2000);
+  /* ── Descargar tarjeta completa ── */
+  const handleDownload = async () => {
+    if (!qrWrapRef.current) return;
+    const card = await buildCardCanvas(qrWrapRef.current, m.nombre, shortId);
+    if (!card) { alert("El QR aún no está listo."); return; }
+    const link = document.createElement("a");
+    link.download = `Tarjeta_${m.nombre.replace(/\s+/g, "_")}.png`;
+    link.href = card.toDataURL("image/png");
+    link.click();
   };
 
-  const handleDownload = () => downloadQR(m.nombre);
+  /* ── Copiar tarjeta como imagen al portapapeles ── */
+  const handleCopyImage = async () => {
+    if (!qrWrapRef.current || copying) return;
+    setCopying(true);
+    try {
+      const card = await buildCardCanvas(qrWrapRef.current, m.nombre, shortId);
+      if (!card) throw new Error("Canvas vacío");
+      card.toBlob(async (blob) => {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob })
+          ]);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        } catch (e) {
+          // Fallback: si el navegador no soporta clipboard images, descarga
+          console.warn("Clipboard image not supported, downloading instead:", e);
+          const link = document.createElement("a");
+          link.download = `Tarjeta_${m.nombre.replace(/\s+/g, "_")}.png`;
+          link.href = card.toDataURL("image/png");
+          link.click();
+          alert("Tu navegador no permite copiar imágenes directamente. Se descargó la tarjeta en su lugar.");
+        }
+        setCopying(false);
+      }, "image/png");
+    } catch (e) {
+      console.error(e);
+      setCopying(false);
+    }
+  };
 
   const handleRegenerate = async () => {
     if (!window.confirm("¿Regenerar el QR? El código anterior dejará de funcionar.")) return;
     setReg(true);
     const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
       .map(b => b.toString(16).padStart(2, "0")).join("");
-    try {
-      const tb = await supabase.from("miembros");
-      await tb.update(m.id, { qr_token: newToken });
-    } catch (e) {
-      console.error("Regenerate error:", e);
-    }
+    const tb = await supabase.from("miembros");
+    await tb.update(m.id, { qr_token: newToken });
     setToken(newToken);
     onMemberUpdate?.({ ...m, qr_token: newToken });
     setReg(false);
@@ -170,66 +287,50 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
   const text   = darkMode ? "#e2e8f0" : "#1e293b";
   const cardBg = darkMode ? "#111427" : "#f8fafc";
 
-  /* ── Loading ── */
   if (loading) return (
     <div style={{ textAlign: "center", padding: "48px 0" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{
-        width: 38, height: 38, borderRadius: "50%",
-        border: "3px solid rgba(108,99,255,.2)", borderTopColor: "#6c63ff",
-        animation: "spin .8s linear infinite", margin: "0 auto 14px",
-      }} />
+      <div style={{ width: 38, height: 38, borderRadius: "50%", border: "3px solid rgba(108,99,255,.2)", borderTopColor: "#6c63ff", animation: "spin .8s linear infinite", margin: "0 auto 14px" }} />
       <p style={{ color: muted, fontSize: 13 }}>Generando código QR…</p>
     </div>
   );
 
-  /* ── Error ── */
   if (error) return (
     <div style={{ textAlign: "center", padding: "40px 16px" }}>
       <p style={{ fontSize: 32, marginBottom: 10 }}>⚠️</p>
       <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{error}</p>
-      <button
-        onClick={runEnsure}
-        style={{
-          marginTop: 16, padding: "10px 20px", border: "none", borderRadius: 12,
-          background: "#6c63ff", color: "#fff", fontSize: 13, fontWeight: 700,
-          cursor: "pointer", fontFamily: "inherit",
-        }}
-      >
+      <button onClick={runEnsure} style={{ marginTop: 16, padding: "10px 20px", border: "none", borderRadius: 12, background: "#6c63ff", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
         Reintentar
       </button>
     </div>
   );
 
-  const displayId = `DZ-${String(m.id).padStart(4, "0")}`;
-
   return (
     <div style={{ paddingBottom: 8 }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-        @keyframes spin{to{transform:rotate(360deg)}}
-      `}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {/* ── QR Card ── */}
-      <div style={{
-        background: bg, border: `1px solid ${border}`,
-        borderRadius: 24, padding: "28px 24px", textAlign: "center", marginBottom: 16,
-      }}>
-        <div id="qr-wrap" style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-          {memberUrl
-            ? <QRCanvas url={memberUrl} />
-            : (
-              <div style={{
-                width: 220, height: 220, background: cardBg, borderRadius: 18,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: muted, fontSize: 13,
-              }}>Sin token</div>
-            )
-          }
+      <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 24, padding: "28px 24px", textAlign: "center", marginBottom: 16 }}>
+
+        {/* QR visible */}
+        <div ref={qrWrapRef} id="qr-wrap" style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          {memberUrl ? <QRCanvas url={memberUrl} /> : (
+            <div style={{ width: 240, height: 240, background: cardBg, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", color: muted, fontSize: 13 }}>Sin token</div>
+          )}
+        </div>
+
+        {/* ID corto visible */}
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".18em", color: muted, textTransform: "uppercase", marginBottom: 6 }}>Código de acceso</p>
+          <p style={{ fontFamily: "'Courier New', monospace", fontSize: 20, fontWeight: 800, color: text, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 8px #22c55e", flexShrink: 0 }} />
+            {shortId}
+          </p>
         </div>
 
         {/* Botones */}
-        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 20 }}>
+          {/* Descargar tarjeta */}
           <button onClick={handleDownload} style={{
             display: "flex", alignItems: "center", gap: 8,
             padding: "11px 20px", border: "none", borderRadius: 14, cursor: "pointer",
@@ -238,41 +339,39 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
             boxShadow: "0 4px 18px rgba(108,99,255,.3)",
           }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             Descargar
           </button>
-          <button onClick={handleCopyUrl} style={{
+
+          {/* Copiar imagen */}
+          <button onClick={handleCopyImage} disabled={copying} style={{
             display: "flex", alignItems: "center", gap: 8,
-            padding: "11px 20px", border: `1.5px solid ${border}`, borderRadius: 14, cursor: "pointer",
-            background: "transparent", color: text, fontSize: 13, fontWeight: 600,
-            fontFamily: "inherit", transition: "all .15s",
+            padding: "11px 20px", border: `1.5px solid ${border}`, borderRadius: 14, cursor: copying ? "wait" : "pointer",
+            background: copied ? "rgba(34,197,94,.08)" : "transparent",
+            color: copied ? "#22c55e" : text,
+            borderColor: copied ? "rgba(34,197,94,.3)" : border,
+            fontSize: 13, fontWeight: 600, fontFamily: "inherit", transition: "all .2s",
           }}>
-            {copiedUrl
-              ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Copiado!</>
-              : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar enlace</>
-            }
+            {copied ? (
+              <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Copiada!</>
+            ) : copying ? (
+              <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: "spin .8s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Copiando…</>
+            ) : (
+              <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16a2 2 0 01-2-2V4a2 2 0 012-2h10a2 2 0 012 2"/></svg> Copiar imagen</>
+            )}
           </button>
         </div>
 
-        {/* ID Digital */}
-        <div style={{ borderTop: `1px solid ${border}`, paddingTop: 20 }}>
-          <p style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: ".18em",
-            color: muted, textTransform: "uppercase", marginBottom: 8,
-          }}>Identificación Digital</p>
-          <p style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color: text,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-          }}>
-            <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 8px #22c55e" }} />
-            {displayId}
-          </p>
-          <p style={{ color: muted, fontSize: 12, marginTop: 8, lineHeight: 1.6 }}>
-            Este código QR es permanente y único para <strong style={{ color: text }}>{m.nombre}</strong>.{" "}
-            Úsalo para check-in y evaluaciones.
+        <p style={{ color: muted, fontSize: 11, lineHeight: 1.6 }}>
+          💡 <strong style={{ color: text }}>Copiar imagen</strong> guarda la tarjeta en el portapapeles para pegarla directo en WhatsApp.
+        </p>
+
+        {/* Separador */}
+        <div style={{ borderTop: `1px solid ${border}`, marginTop: 20, paddingTop: 20 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".18em", color: muted, textTransform: "uppercase", marginBottom: 6 }}>Identificación</p>
+          <p style={{ color: muted, fontSize: 12, lineHeight: 1.6 }}>
+            QR permanente y único para <strong style={{ color: text }}>{m.nombre}</strong>.
           </p>
         </div>
       </div>
@@ -281,11 +380,12 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
       <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 20, padding: "16px 18px", marginBottom: 16 }}>
         <p style={{ color: muted, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", marginBottom: 12 }}>¿Cómo funciona?</p>
         {[
+          { icon: "📲", title: "Enviar por WhatsApp", desc: 'Presiona "Copiar imagen" y pégala directo en el chat del miembro. La muestra al llegar al gym.' },
           { icon: "🏠", title: "Desde casa", desc: "El miembro escanea su QR con la cámara del celular y ve su estado de cuenta, plan y vencimiento." },
-          { icon: "🏋️", title: "En el gimnasio", desc: "El staff usa la pantalla de Scanner para leer el QR y validar el acceso en tiempo real." },
+          { icon: "🏋️", title: "En el gimnasio", desc: `Si el scanner falla, el miembro puede dar su código corto (${shortId}) para buscarle manualmente.` },
         ].map(item => (
           <div key={item.icon} style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{item.icon}</span>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
             <div>
               <p style={{ color: text, fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{item.title}</p>
               <p style={{ color: muted, fontSize: 12, lineHeight: 1.5 }}>{item.desc}</p>
@@ -294,32 +394,13 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
         ))}
       </div>
 
-      {/* ── URL preview ── */}
-      <div style={{
-        background: cardBg, border: `1px solid ${border}`,
-        borderRadius: 14, padding: "10px 14px", marginBottom: 16,
-        display: "flex", alignItems: "center", gap: 8,
-      }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round">
-          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
-          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
-        </svg>
-        <p style={{ color: muted, fontSize: 11, fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
-          {memberUrl || "—"}
-        </p>
-      </div>
-
       {/* ── Regenerar ── */}
       <div style={{ textAlign: "center" }}>
-        <button
-          onClick={handleRegenerate}
-          disabled={regenerating}
-          style={{
-            background: "transparent", border: "none", cursor: "pointer",
-            color: "#f43f5e", fontSize: 12, fontFamily: "inherit",
-            opacity: regenerating ? .5 : .7, textDecoration: "underline",
-          }}
-        >
+        <button onClick={handleRegenerate} disabled={regenerating} style={{
+          background: "transparent", border: "none", cursor: "pointer",
+          color: "#f43f5e", fontSize: 12, fontFamily: "inherit",
+          opacity: regenerating ? .5 : .7, textDecoration: "underline",
+        }}>
           {regenerating ? "Regenerando…" : "🔄 Regenerar código QR"}
         </button>
       </div>
