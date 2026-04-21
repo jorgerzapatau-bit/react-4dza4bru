@@ -22,8 +22,8 @@ async function ensureQrToken(miembro, onUpdate) {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
     .map(b => b.toString(16).padStart(2, "0")).join("");
 
-  const tb = await supabase.from("miembros");
-  await tb.update(miembro.id, { qr_token: token });
+  const tb = await supabase.from("miembros").update({ qr_token: token }).eq("id", miembro.id);
+  if (tb.error) console.error("Error saving qr_token:", tb.error);
 
   onUpdate({ ...miembro, qr_token: token });
   return token;
@@ -109,8 +109,8 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
     setReg(true);
     const newToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
       .map(b => b.toString(16).padStart(2, "0")).join("");
-    const tb = await supabase.from("miembros");
-    await tb.update(m.id, { qr_token: newToken });
+    const { error } = await supabase.from("miembros").update({ qr_token: newToken }).eq("id", m.id);
+    if (error) console.error("Error regenerating qr_token:", error);
     setToken(newToken);
     onMemberUpdate({ ...m, qr_token: newToken });
     setReg(false);

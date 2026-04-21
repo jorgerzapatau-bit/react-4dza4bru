@@ -1419,15 +1419,6 @@ export default function MemberDetailModal({
             </div>
           )}
 
-          {detTab === "qr" && (
-            <MemberQRTab
-              m={m}
-              gymId={gymId}
-              onMemberUpdate={onMemberUpdate}
-              darkMode={!!gymConfig?.darkMode}
-            />
-          )}
-
           {pagoModal && (
             <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: isDesktop ? "center" : "flex-start", padding: isDesktop ? 24 : 0 }}>
               <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "var(--bg-card)", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
@@ -1443,6 +1434,16 @@ export default function MemberDetailModal({
             </div>
           )}
         </>
+      )}
+
+      {/* ══════════ TAB: QR ══════════ */}
+      {detTab === "qr" && (
+        <MemberQRTab
+          m={m}
+          gymId={gymId}
+          onMemberUpdate={onMemberUpdate}
+          darkMode={!!gymConfig?.darkMode}
+        />
       )}
     </Modal>
   );
