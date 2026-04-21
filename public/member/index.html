@@ -397,12 +397,17 @@ async function load() {
     const gData = await gRes.json();
     const gym   = gData?.[0] || {};
 
-    // 3. Todas las transacciones del miembro (igual que la app — busca por ambos campos)
-    const tRes  = await fetch(
-      `${SUPABASE_URL}/rest/v1/transacciones?gym_id=eq.${GYM_ID}&or=(miembroId.eq.${m.id},miembro_id.eq.${m.id})&order=fecha.desc&select=*`,
-      { headers: HEADERS }
-    );
-    const txs = await tRes.json() || [];
+    // 3. Transacciones — dos queries separadas por compatibilidad con Supabase REST
+    const [tRes1, tRes2] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/transacciones?gym_id=eq.${GYM_ID}&miembro_id=eq.${m.id}&order=fecha.desc&select=*`, { headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/transacciones?gym_id=eq.${GYM_ID}&miembroId=eq.${m.id}&order=fecha.desc&select=*`,  { headers: HEADERS }),
+    ]);
+    const txs1 = tRes1.ok ? await tRes1.json() : [];
+    const txs2 = tRes2.ok ? await tRes2.json() : [];
+    // Combinar y deduplicar por id
+    const seen = new Set();
+    const txs  = [...(Array.isArray(txs1) ? txs1 : []), ...(Array.isArray(txs2) ? txs2 : [])]
+      .filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
 
     // 4. Accesos recientes
     const aRes   = await fetch(
