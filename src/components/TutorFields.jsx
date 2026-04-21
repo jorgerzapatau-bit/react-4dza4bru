@@ -9,7 +9,19 @@
 //   errores     { tutor_nombre?, tutor_telefono? }   (opcional)
 //   compact     boolean  — versión compacta para el modal de alta (default: false)
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
+
+const PARENTESCO_OPCIONES = [
+  { value: "", label: "Seleccionar..." },
+  { value: "Madre", label: "Madre" },
+  { value: "Padre", label: "Padre" },
+  { value: "Abuela", label: "Abuela" },
+  { value: "Abuelo", label: "Abuelo" },
+  { value: "Hermano/a", label: "Hermano/a" },
+  { value: "Tío/a", label: "Tío/a" },
+  { value: "Tutor legal", label: "Tutor legal" },
+  { value: "Otro", label: "Otro" },
+];
 
 const SECTION_STYLE = {
   marginTop: 4,
@@ -54,6 +66,116 @@ const HEADER_STYLE = {
   marginBottom: 12,
 };
 
+// ── Custom Select ─────────────────────────────────────────────────────────────
+function CustomSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const selected = PARENTESCO_OPCIONES.find((o) => o.value === value) || PARENTESCO_OPCIONES[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [open]);
+
+  const triggerStyle = {
+    ...INPUT_STYLE(false),
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    cursor: "pointer",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+  };
+
+  const dropdownStyle = {
+    position: "absolute",
+    top: "calc(100% + 4px)",
+    left: 0,
+    right: 0,
+    background: "var(--bg-elevated, #1e1e2e)",
+    border: "1px solid var(--border, #333)",
+    borderRadius: 10,
+    zIndex: 9999,
+    overflow: "hidden",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+  };
+
+  const optionBaseStyle = {
+    padding: "10px 14px",
+    fontSize: 13,
+    cursor: "pointer",
+    color: "var(--text-primary, #e0e0e0)",
+    background: "transparent",
+  };
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div
+        role="combobox"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        tabIndex={0}
+        style={triggerStyle}
+        onClick={() => setOpen((o) => !o)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen((o) => !o); }
+          if (e.key === "Escape") setOpen(false);
+        }}
+      >
+        <span style={{ color: value ? "var(--text-primary, #e0e0e0)" : "var(--text-tertiary, #888)" }}>
+          {selected.label}
+        </span>
+        <svg
+          width="12" height="12" viewBox="0 0 12 12"
+          style={{ flexShrink: 0, transition: "transform .15s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        >
+          <path fill="var(--text-tertiary, #888)" d="M6 8L1 3h10z" />
+        </svg>
+      </div>
+
+      {open && (
+        <div style={dropdownStyle} role="listbox">
+          {PARENTESCO_OPCIONES.map((op) => {
+            const isActive = op.value === value;
+            return (
+              <div
+                key={op.value}
+                role="option"
+                aria-selected={isActive}
+                style={{
+                  ...optionBaseStyle,
+                  background: isActive ? "rgba(251,191,36,.15)" : "transparent",
+                  color: isActive ? "#fbbf24" : op.value === "" ? "var(--text-tertiary, #888)" : "var(--text-primary, #e0e0e0)",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,.06)"; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(op.value);
+                  setOpen(false);
+                }}
+              >
+                {op.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
 export default function TutorFields({ tutor, onChange, errores = {}, compact = false }) {
   return (
     <div style={SECTION_STYLE} role="group" aria-label="Datos del tutor responsable">
@@ -73,9 +195,7 @@ export default function TutorFields({ tutor, onChange, errores = {}, compact = f
 
       {/* Nombre del tutor */}
       <div style={{ marginBottom: 10 }}>
-        <label style={LABEL_STYLE}>
-          Nombre del tutor *
-        </label>
+        <label style={LABEL_STYLE}>Nombre del tutor *</label>
         <input
           type="text"
           value={tutor.tutor_nombre}
@@ -84,16 +204,12 @@ export default function TutorFields({ tutor, onChange, errores = {}, compact = f
           style={INPUT_STYLE(errores.tutor_nombre)}
           autoComplete="off"
         />
-        {errores.tutor_nombre && (
-          <p style={ERROR_STYLE}>{errores.tutor_nombre}</p>
-        )}
+        {errores.tutor_nombre && <p style={ERROR_STYLE}>{errores.tutor_nombre}</p>}
       </div>
 
       {/* Teléfono del tutor */}
       <div style={{ marginBottom: 10 }}>
-        <label style={LABEL_STYLE}>
-          Teléfono del tutor *
-        </label>
+        <label style={LABEL_STYLE}>Teléfono del tutor *</label>
         <input
           type="tel"
           value={tutor.tutor_telefono}
@@ -103,42 +219,19 @@ export default function TutorFields({ tutor, onChange, errores = {}, compact = f
           autoComplete="off"
           inputMode="numeric"
         />
-        {errores.tutor_telefono && (
-          <p style={ERROR_STYLE}>{errores.tutor_telefono}</p>
-        )}
+        {errores.tutor_telefono && <p style={ERROR_STYLE}>{errores.tutor_telefono}</p>}
       </div>
 
-      {/* Parentesco — opcional */}
+      {/* Parentesco — opcional (custom select para evitar estilos nativos del OS) */}
       <div>
         <label style={LABEL_STYLE}>
-          Parentesco <span style={{ color: "var(--text-tertiary)", fontWeight: 400 }}>(opcional)</span>
+          Parentesco{" "}
+          <span style={{ color: "var(--text-tertiary)", fontWeight: 400 }}>(opcional)</span>
         </label>
-        <select
+        <CustomSelect
           value={tutor.tutor_parentesco}
-          onChange={(e) => onChange("tutor_parentesco", e.target.value)}
-          style={{
-            ...INPUT_STYLE(false),
-            appearance: "none",
-            WebkitAppearance: "none",
-            MozAppearance: "none",
-            cursor: "pointer",
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 12px center",
-            paddingRight: 36,
-            colorScheme: "dark",
-          }}
-        >
-          <option value="">Seleccionar...</option>
-          <option value="Madre">Madre</option>
-          <option value="Padre">Padre</option>
-          <option value="Abuela">Abuela</option>
-          <option value="Abuelo">Abuelo</option>
-          <option value="Hermano/a">Hermano/a</option>
-          <option value="Tío/a">Tío/a</option>
-          <option value="Tutor legal">Tutor legal</option>
-          <option value="Otro">Otro</option>
-        </select>
+          onChange={(val) => onChange("tutor_parentesco", val)}
+        />
       </div>
     </div>
   );
