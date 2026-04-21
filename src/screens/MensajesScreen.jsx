@@ -350,6 +350,7 @@ export default function MensajesScreen({
     templates,
     automations,
     loading: commLoading,
+    dbAvailable,
     getTemplate,
     getSystemTemplates,
     getQuickTemplates,
@@ -873,15 +874,17 @@ export default function MensajesScreen({
                     );
                   })}
 
-                  {/* Aviso si no hay templates en DB */}
-                  {templates.filter(t => t.scope === "system").length === 0 && (
-                    <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 8 }}>
-                      <p style={{ color: "#f59e0b", fontSize: 13, fontWeight: 700, marginBottom: 6 }}>⚠️ Sin plantillas en base de datos</p>
-                      <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>
-                        Ejecuta el seed SQL en Supabase para inicializar las plantillas del sistema:
+                  {/* Aviso modo offline (tablas no creadas aún) */}
+                  {!dbAvailable && (
+                    <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
+                      <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                        📋 Modo vista previa — los cambios no se guardarán
                       </p>
-                      <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", marginTop: 8 }}>
-                        SELECT seed_communication_templates('{gymId || "TU_GYM_ID"}');
+                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
+                        Para persistir los cambios ejecuta en Supabase SQL Editor:
+                      </p>
+                      <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", wordBreak: "break-all" }}>
+                        SELECT seed_communication_templates('{gymId}');
                       </code>
                     </div>
                   )}
