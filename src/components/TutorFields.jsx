@@ -120,7 +120,13 @@ export default function TutorFields({ tutor, onChange, errores = {}, compact = f
             ...INPUT_STYLE(false),
             appearance: "none",
             WebkitAppearance: "none",
+            MozAppearance: "none",
             cursor: "pointer",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 12px center",
+            paddingRight: 36,
+            colorScheme: "dark",
           }}
         >
           <option value="">Seleccionar...</option>
