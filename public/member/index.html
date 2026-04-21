@@ -273,8 +273,7 @@
 </div>
 
 <script>
-// ── Config ── 
-const SUPABASE_URL = "https://wcyskoithxycvvnkctdv.supabase.co";
+const SUPABASE_URL     = "https://wcyskoithxycvvnkctdv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjeXNrb2l0aHh5Y3Z2bmtjdGR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4NDE5MjAsImV4cCI6MjA4ODQxNzkyMH0.y3DrstdyEAgycz86zELFYjaRhXgNbhbMmtHPjwf9cNM";
 const HEADERS = { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` };
 
@@ -282,43 +281,123 @@ const params = new URLSearchParams(location.search);
 const TOKEN  = params.get("token");
 const GYM_ID = params.get("gym");
 
+// ── Misma lógica que membershipUtils.js ──
+const MESES_N    = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const PLAN_MESES = { Mensual: 1, Trimestral: 3, Semestral: 6, Anual: 12 };
+
+function parseDate(str) {
+  if (!str) return null;
+  // Formato "DD Mes YYYY" ej: "15 Abr 2026"
+  const mesIdx = MESES_N.indexOf(str.slice(3, 6));
+  if (mesIdx >= 0) {
+    return new Date(
+      parseInt(str.slice(7)),
+      mesIdx,
+      parseInt(str.slice(0, 2))
+    );
+  }
+  // Formato ISO "YYYY-MM-DD"
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const [y, m, d] = str.slice(0, 10).split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
+}
+
+function getMembershipInfo(txs, miembro) {
+  // Filtrar txs de membresía de este miembro
+  const memTxs = txs
+    .filter(t =>
+      t.categoria === "Membresías" &&
+      (String(t.miembroId) === String(miembro.id) ||
+       String(t.miembro_id) === String(miembro.id))
+    )
+    .sort((a, b) => {
+      const da = parseDate(a.fecha), db = parseDate(b.fecha);
+      if (da && db) return db - da;
+      return (b.fecha || "").localeCompare(a.fecha || "");
+    });
+
+  if (!memTxs.length) return { estado: "Sin membresía", vence: null, inicio: null, plan: null };
+
+  const ultima   = memTxs[0];
+  const descStr  = ultima.desc || ultima.descripcion || "";
+  const planMatch = descStr.match(/Renovación (\w+)/) || descStr.match(/(Mensual|Trimestral|Semestral|Anual)/);
+  const plan      = planMatch ? planMatch[1] : "Mensual";
+
+  const diasCongelados = miembro.dias_congelados || 0;
+
+  // Calcular vencimiento: primero vence_manual, luego cálculo
+  let venceDate = null;
+  const venceManualISO = ultima.vence_manual || (() => {
+    const m = descStr.match(/\(vence:(\d{4}-\d{2}-\d{2})\)/);
+    return m ? m[1] : null;
+  })();
+
+  if (venceManualISO) {
+    const [vy, vm, vd] = venceManualISO.split("-").map(Number);
+    venceDate = new Date(vy, vm - 1, vd);
+  } else {
+    const inicioDate = parseDate(ultima.fecha);
+    if (inicioDate) {
+      venceDate = new Date(inicioDate);
+      venceDate.setMonth(venceDate.getMonth() + (PLAN_MESES[plan] || 1));
+    }
+  }
+
+  if (venceDate && diasCongelados > 0) {
+    venceDate.setDate(venceDate.getDate() + diasCongelados);
+  }
+
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  let diasRestantes = null;
+  if (venceDate) {
+    venceDate.setHours(0, 0, 0, 0);
+    diasRestantes = Math.ceil((venceDate - hoy) / 86400000);
+  }
+
+  const congelado = !!(miembro.congelado);
+  const hoyISO    = hoy.toISOString().split("T")[0];
+  const sigueCongelado = congelado && (!miembro.fecha_descongelar || miembro.fecha_descongelar > hoyISO);
+
+  const estado = sigueCongelado ? "Congelado"
+    : diasRestantes !== null && diasRestantes >= 0 ? "Activo"
+    : diasRestantes !== null ? "Vencido"
+    : "Sin membresía";
+
+  return { estado, vence: venceDate, diasRestantes: sigueCongelado ? 999 : diasRestantes, inicio: parseDate(ultima.fecha), plan };
+}
+
 async function load() {
   if (!TOKEN || !GYM_ID) { show("error"); return; }
-
   try {
-    // 1. Fetch miembro by qr_token
-    const mRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/miembros?qr_token=eq.${TOKEN}&gym_id=eq.${GYM_ID}&select=*`,
-      { headers: HEADERS }
-    );
+    // 1. Miembro por qr_token
+    const mRes  = await fetch(`${SUPABASE_URL}/rest/v1/miembros?qr_token=eq.${TOKEN}&gym_id=eq.${GYM_ID}&select=*`, { headers: HEADERS });
     const mData = await mRes.json();
-    if (!mData || !mData.length) { show("error"); return; }
+    if (!mData?.length) { show("error"); return; }
     const m = mData[0];
 
-    // 2. Fetch gym config
-    const gRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${GYM_ID}&select=nombre,logo`,
-      { headers: HEADERS }
-    );
+    // 2. Gym
+    const gRes  = await fetch(`${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${GYM_ID}&select=nombre,logo`, { headers: HEADERS });
     const gData = await gRes.json();
-    const gym = gData?.[0] || {};
+    const gym   = gData?.[0] || {};
 
-    // 3. Fetch last membership transaction
-    const tRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/transacciones?miembro_id=eq.${m.id}&gym_id=eq.${GYM_ID}&categoria=eq.Membresías&order=fecha_vence.desc&limit=1&select=*`,
+    // 3. Todas las transacciones del miembro (igual que la app — busca por ambos campos)
+    const tRes  = await fetch(
+      `${SUPABASE_URL}/rest/v1/transacciones?gym_id=eq.${GYM_ID}&or=(miembroId.eq.${m.id},miembro_id.eq.${m.id})&order=fecha.desc&select=*`,
       { headers: HEADERS }
     );
-    const tData = await tRes.json();
-    const lastTx = tData?.[0];
+    const txs = await tRes.json() || [];
 
-    // 4. Fetch recent accesses
-    const aRes = await fetch(
+    // 4. Accesos recientes
+    const aRes   = await fetch(
       `${SUPABASE_URL}/rest/v1/accesos?miembro_id=eq.${m.id}&gym_id=eq.${GYM_ID}&order=escaneado_en.desc&limit=10&select=*`,
       { headers: HEADERS }
     );
     const accesos = await aRes.json() || [];
 
-    render(m, gym, lastTx, accesos);
+    render(m, gym, txs, accesos);
     show("main");
   } catch(e) {
     console.error(e);
@@ -326,73 +405,77 @@ async function load() {
   }
 }
 
-function render(m, gym, lastTx, accesos) {
+function render(m, gym, txs, accesos) {
   // Gym
   document.getElementById("gym-name").textContent = gym.nombre || "GymFit Pro";
   if (gym.logo) {
-    const logo = document.getElementById("gym-logo");
-    logo.innerHTML = `<img src="${gym.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:18px">`;
+    document.getElementById("gym-logo").innerHTML =
+      `<img src="${gym.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:18px">`;
   }
 
-  // Member
+  // Miembro
   document.getElementById("member-name").textContent = m.nombre || "—";
-  document.getElementById("member-id").textContent   = `ID: ${String(m.id).padStart(4,"0")}`;
-  document.getElementById("desde-val").textContent   = m.fecha_incorporacion ? fmtDate(m.fecha_incorporacion) : "—";
-  document.getElementById("plan-val").textContent    = m.plan || lastTx?.descripcion || "—";
+  // ID corto: DZ- + primeros 4 chars del qr_token en mayúsculas
+  const shortId = m.qr_token ? `DZ-${m.qr_token.slice(0,4).toUpperCase()}` : `#${String(m.id).slice(-4)}`;
+  document.getElementById("member-id").textContent = `ID: ${shortId}`;
+  document.getElementById("desde-val").textContent = m.fecha_incorporacion ? fmtDate(m.fecha_incorporacion) : "—";
 
   if (m.foto) {
     document.getElementById("avatar-wrap").innerHTML = `<img src="${m.foto}" alt="">`;
   }
 
-  // Membership dates
-  let diasRestantes = null, porcentaje = 0;
-  if (lastTx?.fecha_vence) {
-    const vence = new Date(lastTx.fecha_vence);
-    const hoy   = new Date();
-    hoy.setHours(0,0,0,0); vence.setHours(0,0,0,0);
-    diasRestantes = Math.ceil((vence - hoy) / 86400000);
+  // Calcular membresía con la misma lógica que la app
+  const info = getMembershipInfo(txs, m);
 
-    // Calc period %
-    const inicio = lastTx.fecha ? new Date(lastTx.fecha) : null;
-    if (inicio) {
-      const totalDias = Math.ceil((vence - inicio) / 86400000);
-      const transcurridos = Math.ceil((hoy - inicio) / 86400000);
-      porcentaje = Math.max(0, Math.min(100, Math.round((transcurridos / totalDias) * 100)));
-    }
+  document.getElementById("plan-val").textContent = info.plan || "—";
 
-    document.getElementById("vence-val").textContent = fmtDate(lastTx.fecha_vence);
-    document.getElementById("bar-pct").textContent   = `${100 - porcentaje}% restante`;
-    setTimeout(() => {
-      document.getElementById("days-bar").style.width = `${100 - porcentaje}%`;
-    }, 200);
-
-    // Days remaining display
-    if (diasRestantes > 0) {
-      document.getElementById("dias-val").textContent = `${diasRestantes}`;
-      document.getElementById("dias-val").className   = "info-value green";
-    } else {
-      document.getElementById("dias-val").textContent = "Vencido";
-      document.getElementById("dias-val").className   = "info-value red";
-    }
-
-    // Status badge
-    const badge = document.getElementById("status-badge");
-    const text  = document.getElementById("status-text");
-    if (diasRestantes > 7) {
-      badge.className = "status-badge ok"; text.textContent = "✓ Membresía activa";
-    } else if (diasRestantes > 0) {
-      badge.className = "status-badge warn"; text.textContent = `⚠ Vence en ${diasRestantes} días`;
-    } else {
-      badge.className = "status-badge bad"; text.textContent = "✕ Membresía vencida";
-    }
+  if (info.vence) {
+    document.getElementById("vence-val").textContent = fmtDate(info.vence);
   } else {
-    document.getElementById("status-badge").className = "status-badge bad";
-    document.getElementById("status-text").textContent = "✕ Sin membresía";
     document.getElementById("vence-val").textContent = "—";
-    document.getElementById("dias-val").textContent  = "—";
   }
 
-  // Access list
+  // Días restantes
+  const dias = info.diasRestantes;
+  if (info.estado === "Congelado") {
+    document.getElementById("dias-val").textContent = "❄ Congelado";
+    document.getElementById("dias-val").className   = "info-value accent";
+  } else if (dias !== null && dias >= 0) {
+    document.getElementById("dias-val").textContent = `${dias}`;
+    document.getElementById("dias-val").className   = dias <= 5 ? "info-value amber" : "info-value green";
+  } else {
+    document.getElementById("dias-val").textContent = "Vencido";
+    document.getElementById("dias-val").className   = "info-value red";
+  }
+
+  // Barra de progreso
+  if (info.vence && info.inicio) {
+    const hoy       = new Date(); hoy.setHours(0,0,0,0);
+    const totalDias = Math.ceil((info.vence - info.inicio) / 86400000);
+    const trans     = Math.ceil((hoy - info.inicio) / 86400000);
+    const pct       = totalDias > 0 ? Math.max(0, Math.min(100, Math.round(((totalDias - trans) / totalDias) * 100))) : 0;
+    document.getElementById("bar-pct").textContent = `${pct}% restante`;
+    setTimeout(() => { document.getElementById("days-bar").style.width = `${pct}%`; }, 200);
+  } else {
+    document.getElementById("bar-pct").textContent = "—";
+  }
+
+  // Badge de estado
+  const badge = document.getElementById("status-badge");
+  const text  = document.getElementById("status-text");
+  if (info.estado === "Congelado") {
+    badge.className = "status-badge warn"; text.textContent = "❄ Membresía congelada";
+  } else if (info.estado === "Activo" && dias > 7) {
+    badge.className = "status-badge ok";  text.textContent = "✓ Membresía activa";
+  } else if (info.estado === "Activo") {
+    badge.className = "status-badge warn"; text.textContent = `⚠ Vence en ${dias} día${dias === 1 ? "" : "s"}`;
+  } else if (info.estado === "Vencido") {
+    badge.className = "status-badge bad"; text.textContent = "✕ Membresía vencida";
+  } else {
+    badge.className = "status-badge bad"; text.textContent = "✕ Sin membresía";
+  }
+
+  // Accesos
   const list = document.getElementById("access-list");
   if (!accesos.length) {
     list.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">Sin registros todavía</p>`;
@@ -402,16 +485,15 @@ function render(m, gym, lastTx, accesos) {
     const isOk   = a.resultado === "permitido";
     const isWarn = a.resultado === "vencido";
     const cls    = isOk ? "ok" : isWarn ? "warn" : "bad";
-    const icon   = isOk ? "✓"  : isWarn ? "⏰"   : "✕";
+    const icon   = isOk ? "✓"  : isWarn ? "⏰"  : "✕";
     const label  = isOk ? "Acceso permitido" : isWarn ? "Membresía vencida" : "Acceso denegado";
-    return `
-      <div class="access-item">
-        <div class="access-dot ${cls}">${icon}</div>
-        <div class="access-info">
-          <div class="access-result ${cls}">${label}</div>
-          <div class="access-when">${fmtDatetime(a.escaneado_en)}</div>
-        </div>
-      </div>`;
+    return `<div class="access-item">
+      <div class="access-dot ${cls}">${icon}</div>
+      <div class="access-info">
+        <div class="access-result ${cls}">${label}</div>
+        <div class="access-when">${fmtDatetime(a.escaneado_en)}</div>
+      </div>
+    </div>`;
   }).join("");
 }
 
@@ -421,9 +503,10 @@ function show(state) {
   document.getElementById("main").style.display        = state === "main"    ? "" : "none";
 }
 
-function fmtDate(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso + (iso.includes("T") ? "" : "T12:00:00"));
+function fmtDate(val) {
+  if (!val) return "—";
+  const d = val instanceof Date ? val : new Date(String(val) + (String(val).includes("T") ? "" : "T12:00:00"));
+  if (isNaN(d)) return String(val);
   return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
 
