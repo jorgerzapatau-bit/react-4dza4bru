@@ -113,8 +113,8 @@ h1, p, span, button, input, select, textarea {
 
 .gym-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-/* Hide old .gym-nav generic styles - now handled by .desktop-nav / .mobile-bottom-nav */
-.gym-nav { display: contents; }
+/* .gym-nav solo aplica cuando NO es desktop-nav ni mobile-bottom-nav */
+.gym-nav:not(.desktop-nav):not(.mobile-bottom-nav) { display: contents; }
 
 /* ══ NAV BOTONES (mobile) ══ */
 .gym-nav-btn {
