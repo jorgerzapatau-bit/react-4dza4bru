@@ -369,12 +369,26 @@ function getMembershipInfo(txs, miembro) {
   return { estado, vence: venceDate, diasRestantes: sigueCongelado ? 999 : diasRestantes, inicio: parseDate(ultima.fecha), plan };
 }
 
+function showError(msg) {
+  const p = document.querySelector("#error-state p:last-child");
+  if (p && msg) p.textContent = msg;
+  show("error");
+}
+
 async function load() {
   if (!TOKEN || !GYM_ID) { show("error"); return; }
   try {
-    // 1. Miembro por qr_token
-    const mRes  = await fetch(`${SUPABASE_URL}/rest/v1/miembros?qr_token=eq.${TOKEN}&gym_id=eq.${GYM_ID}&select=*`, { headers: HEADERS });
+    // 1. Miembro por qr_token (token completo de 32 chars hex)
+    const mRes  = await fetch(`${SUPABASE_URL}/rest/v1/miembros?qr_token=eq.${encodeURIComponent(TOKEN)}&gym_id=eq.${encodeURIComponent(GYM_ID)}&select=*`, { headers: HEADERS });
+    console.log("🔍 Buscando qr_token:", TOKEN, "gym:", GYM_ID, "status:", mRes.status);
+    if (!mRes.ok) {
+      const err = await mRes.text();
+      console.error("❌ Error Supabase:", mRes.status, err);
+      showError("Error " + mRes.status + ": " + err.slice(0, 100));
+      return;
+    }
     const mData = await mRes.json();
+    console.log("👤 Resultado:", JSON.stringify(mData));
     if (!mData?.length) { show("error"); return; }
     const m = mData[0];
 
