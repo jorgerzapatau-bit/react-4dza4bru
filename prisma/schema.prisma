@@ -544,29 +544,30 @@ model gym_users {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model miembros {
-  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  gym_id              String?
-  nombre              String
-  tel                 String?
-  estado              String          @default("Activo")
-  foto                String?
-  created_at          DateTime?       @default(now()) @db.Timestamptz(6)
-  fecha_incorporacion DateTime?       @default(dbgenerated("CURRENT_DATE")) @db.Date
-  sexo                String?
-  fecha_nacimiento    DateTime?       @db.Date
-  notas               String?
-  congelado           Boolean?        @default(false)
-  fecha_congelado     DateTime?       @db.Date
-  fecha_descongelar   DateTime?       @db.Date
-  dias_congelados     Int?            @default(0)
-  deuda               Decimal?        @default(0) @db.Decimal
-  qr_token            String?         @unique(map: "idx_miembros_qr_token")
-  tutor_nombre        String?
-  tutor_telefono      String?
-  tutor_parentesco    String?
-  accesos             accesos[]
-  gimnasios           gimnasios?      @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  transacciones       transacciones[]
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id               String?
+  nombre               String
+  tel                  String?
+  estado               String                 @default("Activo")
+  foto                 String?
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  fecha_incorporacion  DateTime?              @default(dbgenerated("CURRENT_DATE")) @db.Date
+  sexo                 String?
+  fecha_nacimiento     DateTime?              @db.Date
+  notas                String?
+  congelado            Boolean?               @default(false)
+  fecha_congelado      DateTime?              @db.Date
+  fecha_descongelar    DateTime?              @db.Date
+  dias_congelados      Int?                   @default(0)
+  deuda                Decimal?               @default(0) @db.Decimal
+  qr_token             String?                @unique(map: "idx_miembros_qr_token")
+  tutor_nombre         String?
+  tutor_telefono       String?
+  tutor_parentesco     String?
+  accesos              accesos[]
+  gimnasios            gimnasios?             @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_reservations product_reservations[]
+  transacciones        transacciones[]
 
   @@index([gym_id], map: "idx_miembros_gym")
   @@index([gym_id, tutor_nombre], map: "idx_miembros_tutor", where: raw("(tutor_nombre IS NOT NULL)"))
@@ -630,6 +631,72 @@ model communication_templates {
   @@index([gym_id], map: "idx_comm_templates_gym")
   @@index([gym_id, template_key], map: "idx_comm_templates_key")
   @@index([gym_id, scope], map: "idx_comm_templates_scope")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model product_reservations {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id                String
+  member_id             String                 @db.Uuid
+  product_id            String                 @db.Uuid
+  quantity              Int                    @default(1)
+  unit_price            Decimal                @db.Decimal
+  total_amount          Decimal                @db.Decimal
+  deposit_amount        Decimal                @default(0) @db.Decimal
+  balance_due           Decimal                @default(0) @db.Decimal
+  status                String                 @default("reserved")
+  expected_arrival_date DateTime?              @db.Date
+  notes                 String?
+  created_by            String?                @db.Uuid
+  created_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?              @default(now()) @db.Timestamptz(6)
+  miembros              miembros               @relation(fields: [member_id], references: [id], onUpdate: NoAction)
+  products              products               @relation(fields: [product_id], references: [id], onUpdate: NoAction)
+  reservation_payments  reservation_payments[]
+
+  @@index([gym_id], map: "reservations_gym_idx")
+  @@index([member_id], map: "reservations_member_idx")
+  @@index([status], map: "reservations_status_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model products {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id               String
+  name                 String
+  description          String?
+  image_url            String?
+  public_price         Decimal                @default(0) @db.Decimal
+  is_active            Boolean                @default(true)
+  is_reservable        Boolean                @default(true)
+  min_deposit_amount   Decimal?               @db.Decimal
+  min_deposit_percent  Decimal?               @db.Decimal
+  lead_time_days       Int?                   @default(0)
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  product_reservations product_reservations[]
+
+  @@index([gym_id], map: "products_gym_idx")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model reservation_payments {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reservation_id       String               @db.Uuid
+  gym_id               String
+  amount               Decimal              @db.Decimal
+  payment_method       String?
+  notes                String?
+  created_by           String?              @db.Uuid
+  created_at           DateTime?            @default(now()) @db.Timestamptz(6)
+  product_reservations product_reservations @relation(fields: [reservation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([gym_id], map: "res_payments_gym_idx")
+  @@index([reservation_id], map: "res_payments_reservation_idx")
   @@schema("public")
 }
 

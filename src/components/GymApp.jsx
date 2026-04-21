@@ -16,6 +16,7 @@ import MemberDetailModal from "../modals/MemberDetailModal";
 import EditTxModal from "../modals/EditTxModal";
 import CalendarioEventos from "../modals/CalendarioEventos";
 import MensajesScreen from "../screens/MensajesScreen";
+import TiendaScreen from "../screens/TiendaScreen";
 
 // Screens
 import DashboardScreen from "../screens/DashboardScreen";
@@ -529,6 +530,30 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
             miembros={miembros}
             txs={txs}
             darkMode={darkMode}
+          />
+        )}
+
+        {/* ═══ TIENDA & RESERVAS ═══ */}
+        {!loading && !configScreen && screen === "tienda" && (
+          <TiendaScreen
+            gymId={GYM_ID}
+            miembros={miembros}
+            txs={txs}
+            onBack={() => setScreen("dashboard")}
+            onAddTx={async (pagoData) => {
+              const db = await supabase.from("transacciones");
+              const descFinal = pagoData.descripcion || pagoData.desc || "-";
+              const saved = await db.insert({
+                gym_id: GYM_ID, tipo: pagoData.tipo, categoria: pagoData.categoria,
+                descripcion: descFinal, monto: pagoData.monto, fecha: pagoData.fecha,
+                miembro_id: pagoData.miembroId || null,
+              });
+              if (saved) setTxs(p => [...p, {
+                id: saved.id, tipo: pagoData.tipo, categoria: pagoData.categoria,
+                desc: descFinal, descripcion: descFinal, monto: pagoData.monto,
+                fecha: pagoData.fecha, miembroId: pagoData.miembroId || null,
+              }]);
+            }}
           />
         )}
 
