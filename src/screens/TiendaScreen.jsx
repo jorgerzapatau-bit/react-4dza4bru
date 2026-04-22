@@ -104,13 +104,30 @@ function ModalProducto({ product, onSave, onClose }) {
   });
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState("");
-  const [imgMode,     setImgMode]     = useState("url"); // "url" | "upload" | "camera"
+  const [imgMode,     setImgMode]     = useState("idle"); // "idle" | "camera"
   const [cameraActive,setCameraActive]= useState(false);
+  const [variants,    setVariants]    = useState(product?.variants || []);
   const videoRef    = useRef(null);
   const streamRef   = useRef(null);
   const fileInputRef= useRef(null);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // ── Redimensionar imagen a 300x300 cuadrada ──────────────────────
+  const resizeTo300 = (src) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 300; canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      const size = Math.min(img.width, img.height);
+      const sx   = (img.width  - size) / 2;
+      const sy   = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    img.src = src;
+  });
 
   // ── Cámara ──────────────────────────────────────────────────────
   const startCamera = async () => {
@@ -121,6 +138,7 @@ function ModalProducto({ product, onSave, onClose }) {
       setCameraActive(true);
     } catch {
       setError("No se pudo acceder a la cámara");
+      setImgMode("idle");
     }
   };
 
@@ -130,29 +148,32 @@ function ModalProducto({ product, onSave, onClose }) {
     setCameraActive(false);
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     const video = videoRef.current;
     if (!video) return;
     const canvas = document.createElement("canvas");
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d").drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    set("image_url", dataUrl);
+    const raw     = canvas.toDataURL("image/jpeg", 0.9);
+    const resized = await resizeTo300(raw);
+    set("image_url", resized);
     stopCamera();
-    setImgMode("url");
+    setImgMode("idle");
   };
 
   // ── Galería / subir archivo ──────────────────────────────────────
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      set("image_url", ev.target.result);
-      setImgMode("url");
+    reader.onload = async (ev) => {
+      const resized = await resizeTo300(ev.target.result);
+      set("image_url", resized);
+      setImgMode("idle");
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   // ── Cambio de modo imagen ────────────────────────────────────────
@@ -160,8 +181,13 @@ function ModalProducto({ product, onSave, onClose }) {
     if (cameraActive) stopCamera();
     setImgMode(mode);
     if (mode === "camera") startCamera();
-    if (mode === "upload") setTimeout(() => fileInputRef.current?.click(), 50);
+    if (mode === "gallery") setTimeout(() => fileInputRef.current?.click(), 50);
   };
+
+  // ── Variantes (talla / color) ────────────────────────────────────
+  const addVariant    = ()        => setVariants(v => [...v, { talla: "", color: "" }]);
+  const removeVariant = (i)       => setVariants(v => v.filter((_, idx) => idx !== i));
+  const setVariant    = (i, k, v) => setVariants(prev => prev.map((item, idx) => idx === i ? { ...item, [k]: v } : item));
 
   // cleanup on unmount
   const cleanupRef = useRef(stopCamera);
@@ -189,6 +215,7 @@ function ModalProducto({ product, onSave, onClose }) {
         min_deposit_amount:  form.min_deposit_amount !== "" ? Number(form.min_deposit_amount) : null,
         min_deposit_percent: form.min_deposit_percent !== "" ? Number(form.min_deposit_percent) : null,
         lead_time_days:      form.lead_time_days !== "" ? Number(form.lead_time_days) : 0,
+        variants:            variants.filter(v => v.talla.trim() || v.color.trim()),
       });
       onClose();
     } catch (e) {
@@ -236,41 +263,59 @@ function ModalProducto({ product, onSave, onClose }) {
       {/* ── Sección: Imagen ── */}
       {sectionLabel("🖼️ Imagen del producto")}
 
-      {/* Selector de modo imagen */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-        {[
-          { mode: "url",    icon: "🔗", label: "URL" },
-          { mode: "upload", icon: "🖼️", label: "Galería" },
-          { mode: "camera", icon: "📷", label: "Cámara" },
-        ].map(({ mode, icon, label }) => (
-          <button key={mode} onClick={() => switchImgMode(mode)} style={{
-            flex: 1, padding: "8px 4px", border: "none", borderRadius: 10, cursor: "pointer",
-            fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-            background: imgMode === mode ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#13131f)",
-            color: imgMode === mode ? "#fff" : "#8b949e",
-            border: imgMode === mode ? "none" : "1px solid var(--border-strong,#30363d)",
-            transition: "all .2s",
-          }}>
-            {icon} {label}
-          </button>
-        ))}
-      </div>
-
       {/* Input oculto para archivo */}
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
 
-      {/* Modo URL */}
-      {imgMode === "url" && (
-        <Field label="URL de imagen">
-          <input value={form.image_url} onChange={e => set("image_url", e.target.value)} style={inputStyle} placeholder="https://..." />
-        </Field>
-      )}
+      <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "flex-start" }}>
+        {/* Preview cuadrada 300x300 */}
+        <div style={{
+          width: 110, height: 110, flexShrink: 0, borderRadius: 14,
+          background: "var(--bg-elevated,#13131f)",
+          border: "1px dashed var(--border-strong,#30363d)",
+          overflow: "hidden", position: "relative",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          {form.image_url
+            ? <>
+                <img src={form.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <button onClick={() => set("image_url", "")} style={{
+                  position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,.75)",
+                  border: "none", borderRadius: "50%", width: 22, height: 22,
+                  cursor: "pointer", color: "#fff", fontSize: 11,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>✕</button>
+              </>
+            : <span style={{ fontSize: 28, opacity: .4 }}>📦</span>
+          }
+        </div>
+
+        {/* Botones de acción */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+          <button onClick={() => switchImgMode("gallery")} style={{
+            padding: "10px 14px", border: "1px solid var(--border-strong,#30363d)",
+            borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+            background: "var(--bg-elevated,#13131f)", color: "var(--text-primary,#fff)",
+            display: "flex", alignItems: "center", gap: 8,
+          }}>
+            🖼️ Elegir de galería
+          </button>
+          <button onClick={() => switchImgMode(imgMode === "camera" ? "idle" : "camera")} style={{
+            padding: "10px 14px", border: "none", borderRadius: 10, cursor: "pointer",
+            fontFamily: "inherit", fontSize: 13, fontWeight: 600,
+            background: imgMode === "camera" ? "rgba(244,63,94,.15)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
+            color: "#fff", display: "flex", alignItems: "center", gap: 8,
+          }}>
+            {imgMode === "camera" ? "✕ Cancelar cámara" : "📷 Tomar foto"}
+          </button>
+          <p style={{ color: "#8b949e", fontSize: 10, margin: 0 }}>Imagen guardada en 300×300 px</p>
+        </div>
+      </div>
 
       {/* Modo cámara */}
       {imgMode === "camera" && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ borderRadius: 12, overflow: "hidden", background: "#000", position: "relative", marginBottom: 8 }}>
-            <video ref={videoRef} autoPlay playsInline style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }} />
+          <div style={{ borderRadius: 12, overflow: "hidden", background: "#000", position: "relative", marginBottom: 8, aspectRatio: "1/1" }}>
+            <video ref={videoRef} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             {!cameraActive && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <p style={{ color: "#8b949e", fontSize: 12 }}>Iniciando cámara…</p>
@@ -286,19 +331,6 @@ function ModalProducto({ product, onSave, onClose }) {
               📸 Tomar foto
             </button>
           )}
-        </div>
-      )}
-
-      {/* Preview imagen */}
-      {form.image_url && (
-        <div style={{ position: "relative", marginBottom: 10 }}>
-          <img src={form.image_url} alt="" onError={e => e.target.style.display = "none"}
-            style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12 }} />
-          <button onClick={() => set("image_url", "")} style={{
-            position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,.7)",
-            border: "none", borderRadius: "50%", width: 26, height: 26,
-            cursor: "pointer", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
-          }}>✕</button>
         </div>
       )}
 
@@ -361,6 +393,46 @@ function ModalProducto({ product, onSave, onClose }) {
           <input type="number" value={form.min_deposit_percent} onChange={e => set("min_deposit_percent", e.target.value)}
             style={inputStyle} placeholder="Ej: 30" min="0" max="100" />
         </Field>
+      </div>
+
+      {/* ── Sección: Variantes ── */}
+      {sectionLabel("🎨 Tallas y colores (variantes)")}
+
+      <div style={{ marginBottom: 12 }}>
+        {variants.length === 0 ? (
+          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 8 }}>
+            Sin variantes. Agrega tallas o colores disponibles.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+            {variants.map((v, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 32px", gap: 8, alignItems: "center" }}>
+                <input
+                  value={v.talla} placeholder="Talla (Ej: S, M, L, XL, 42)"
+                  onChange={e => setVariant(i, "talla", e.target.value)}
+                  style={{ ...inputStyle, padding: "8px 10px", fontSize: 12 }}
+                />
+                <input
+                  value={v.color} placeholder="Color (Ej: Rojo, Negro)"
+                  onChange={e => setVariant(i, "color", e.target.value)}
+                  style={{ ...inputStyle, padding: "8px 10px", fontSize: 12 }}
+                />
+                <button onClick={() => removeVariant(i)} style={{
+                  width: 32, height: 32, border: "none", borderRadius: 8,
+                  background: "rgba(244,63,94,.12)", color: "#f43f5e",
+                  cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
+                }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <button onClick={addVariant} style={{
+          padding: "8px 14px", border: "1px dashed rgba(108,99,255,.4)", borderRadius: 10,
+          cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+          background: "rgba(108,99,255,.06)", color: "#a78bfa",
+        }}>
+          + Agregar variante
+        </button>
       </div>
 
       {/* ── Toggles ── */}
