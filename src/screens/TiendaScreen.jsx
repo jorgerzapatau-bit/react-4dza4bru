@@ -3,7 +3,7 @@
 //  Módulo: Catálogo de Productos + Reservas / Apartados
 // ─────────────────────────────────────────────
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useReservations } from "../hooks/useReservations";
 import { fmt, todayISO, fmtDate } from "../utils/dateUtils";
 
@@ -88,31 +88,102 @@ function ModalProducto({ product, onSave, onClose }) {
   const isEdit = !!product?.id;
   const [form, setForm] = useState({
     name:                product?.name                || "",
+    sku:                 product?.sku                 || "",
+    category:            product?.category            || "",
     description:         product?.description         || "",
     image_url:           product?.image_url           || "",
     public_price:        product?.public_price        ?? "",
+    acquisition_cost:    product?.acquisition_cost    ?? "",
+    stock_initial:       product?.stock_initial       ?? "",
+    stock_alert_limit:   product?.stock_alert_limit   ?? "",
     is_active:           product?.is_active           ?? true,
     is_reservable:       product?.is_reservable       ?? true,
     min_deposit_amount:  product?.min_deposit_amount  ?? "",
     min_deposit_percent: product?.min_deposit_percent ?? "",
     lead_time_days:      product?.lead_time_days      ?? "",
   });
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState("");
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState("");
+  const [imgMode,     setImgMode]     = useState("url"); // "url" | "upload" | "camera"
+  const [cameraActive,setCameraActive]= useState(false);
+  const videoRef    = useRef(null);
+  const streamRef   = useRef(null);
+  const fileInputRef= useRef(null);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  // ── Cámara ──────────────────────────────────────────────────────
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraActive(true);
+    } catch {
+      setError("No se pudo acceder a la cámara");
+    }
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setCameraActive(false);
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    set("image_url", dataUrl);
+    stopCamera();
+    setImgMode("url");
+  };
+
+  // ── Galería / subir archivo ──────────────────────────────────────
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      set("image_url", ev.target.result);
+      setImgMode("url");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ── Cambio de modo imagen ────────────────────────────────────────
+  const switchImgMode = (mode) => {
+    if (cameraActive) stopCamera();
+    setImgMode(mode);
+    if (mode === "camera") startCamera();
+    if (mode === "upload") setTimeout(() => fileInputRef.current?.click(), 50);
+  };
+
+  // cleanup on unmount
+  const cleanupRef = useRef(stopCamera);
+  cleanupRef.current = stopCamera;
+  useState(() => () => cleanupRef.current());
+
   const handleSave = async () => {
     if (!form.name.trim()) { setError("El nombre es obligatorio"); return; }
-    if (!form.public_price || isNaN(Number(form.public_price))) { setError("Precio inválido"); return; }
+    if (!form.public_price || isNaN(Number(form.public_price))) { setError("Precio público inválido"); return; }
     setSaving(true);
     try {
       await onSave({
         ...(isEdit ? { id: product.id } : {}),
         name:                form.name.trim(),
+        sku:                 form.sku.trim() || null,
+        category:            form.category.trim() || null,
         description:         form.description.trim() || null,
         image_url:           form.image_url.trim() || null,
         public_price:        Number(form.public_price),
+        acquisition_cost:    form.acquisition_cost !== "" ? Number(form.acquisition_cost) : null,
+        stock_initial:       form.stock_initial !== "" ? Number(form.stock_initial) : null,
+        stock_alert_limit:   form.stock_alert_limit !== "" ? Number(form.stock_alert_limit) : null,
         is_active:           form.is_active,
         is_reservable:       form.is_reservable,
         min_deposit_amount:  form.min_deposit_amount !== "" ? Number(form.min_deposit_amount) : null,
@@ -127,6 +198,12 @@ function ModalProducto({ product, onSave, onClose }) {
     }
   };
 
+  const sectionLabel = (txt) => (
+    <p style={{ color: "#6c63ff", fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: .8, marginBottom: 10, marginTop: 6, borderBottom: "1px solid rgba(108,99,255,.15)", paddingBottom: 6 }}>
+      {txt}
+    </p>
+  );
+
   return (
     <Modal title={isEdit ? "✏️ Editar producto" : "📦 Nuevo producto"} onClose={onClose}>
       {error && (
@@ -135,37 +212,146 @@ function ModalProducto({ product, onSave, onClose }) {
         </div>
       )}
 
+      {/* ── Sección: Información básica ── */}
+      {sectionLabel("📋 Información básica")}
+
       <Field label="Nombre del producto *">
         <input value={form.name} onChange={e => set("name", e.target.value)} style={inputStyle} placeholder="Ej: Guantes de Box Everlast" />
       </Field>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="SKU / Identificador" hint="Código único del producto">
+          <input value={form.sku} onChange={e => set("sku", e.target.value)} style={inputStyle} placeholder="Ej: GBX-001" />
+        </Field>
+        <Field label="Categoría">
+          <input value={form.category} onChange={e => set("category", e.target.value)} style={inputStyle} placeholder="Ej: Equipamiento" />
+        </Field>
+      </div>
 
       <Field label="Descripción">
         <textarea value={form.description} onChange={e => set("description", e.target.value)} rows={2}
           style={{ ...inputStyle, resize: "none" }} placeholder="Características, talla, color..." />
       </Field>
 
-      <Field label="URL de imagen">
-        <input value={form.image_url} onChange={e => set("image_url", e.target.value)} style={inputStyle} placeholder="https://..." />
-        {form.image_url && (
+      {/* ── Sección: Imagen ── */}
+      {sectionLabel("🖼️ Imagen del producto")}
+
+      {/* Selector de modo imagen */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        {[
+          { mode: "url",    icon: "🔗", label: "URL" },
+          { mode: "upload", icon: "🖼️", label: "Galería" },
+          { mode: "camera", icon: "📷", label: "Cámara" },
+        ].map(({ mode, icon, label }) => (
+          <button key={mode} onClick={() => switchImgMode(mode)} style={{
+            flex: 1, padding: "8px 4px", border: "none", borderRadius: 10, cursor: "pointer",
+            fontFamily: "inherit", fontSize: 12, fontWeight: 600,
+            background: imgMode === mode ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#13131f)",
+            color: imgMode === mode ? "#fff" : "#8b949e",
+            border: imgMode === mode ? "none" : "1px solid var(--border-strong,#30363d)",
+            transition: "all .2s",
+          }}>
+            {icon} {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Input oculto para archivo */}
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
+
+      {/* Modo URL */}
+      {imgMode === "url" && (
+        <Field label="URL de imagen">
+          <input value={form.image_url} onChange={e => set("image_url", e.target.value)} style={inputStyle} placeholder="https://..." />
+        </Field>
+      )}
+
+      {/* Modo cámara */}
+      {imgMode === "camera" && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ borderRadius: 12, overflow: "hidden", background: "#000", position: "relative", marginBottom: 8 }}>
+            <video ref={videoRef} autoPlay playsInline style={{ width: "100%", height: 180, objectFit: "cover", display: "block" }} />
+            {!cameraActive && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <p style={{ color: "#8b949e", fontSize: 12 }}>Iniciando cámara…</p>
+              </div>
+            )}
+          </div>
+          {cameraActive && (
+            <button onClick={capturePhoto} style={{
+              width: "100%", padding: "10px", border: "none", borderRadius: 12,
+              cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+              background: "linear-gradient(135deg,#22d3ee,#059669)", color: "#fff",
+            }}>
+              📸 Tomar foto
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Preview imagen */}
+      {form.image_url && (
+        <div style={{ position: "relative", marginBottom: 10 }}>
           <img src={form.image_url} alt="" onError={e => e.target.style.display = "none"}
-            style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 10, marginTop: 8 }} />
-        )}
-      </Field>
+            style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 12 }} />
+          <button onClick={() => set("image_url", "")} style={{
+            position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,.7)",
+            border: "none", borderRadius: "50%", width: 26, height: 26,
+            cursor: "pointer", color: "#fff", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>✕</button>
+        </div>
+      )}
+
+      {/* ── Sección: Precios ── */}
+      {sectionLabel("💰 Precios")}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Precio de venta *">
+        <Field label="Precio público *">
           <input type="number" value={form.public_price} onChange={e => set("public_price", e.target.value)}
             style={inputStyle} placeholder="0.00" min="0" />
         </Field>
-        <Field label="Días de espera">
+        <Field label="Costo de adquisición" hint="Tu costo (interno)">
+          <input type="number" value={form.acquisition_cost} onChange={e => set("acquisition_cost", e.target.value)}
+            style={inputStyle} placeholder="0.00" min="0" />
+        </Field>
+      </div>
+
+      {/* Margen calculado */}
+      {form.public_price && form.acquisition_cost && Number(form.public_price) > 0 && (
+        <div style={{ background: "rgba(74,222,128,.07)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
+          <span style={{ color: "#8b949e", fontSize: 12 }}>Margen de ganancia</span>
+          <span style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>
+            {(((Number(form.public_price) - Number(form.acquisition_cost)) / Number(form.public_price)) * 100).toFixed(1)}%
+            &nbsp;·&nbsp;
+            +${(Number(form.public_price) - Number(form.acquisition_cost)).toFixed(2)}
+          </span>
+        </div>
+      )}
+
+      {/* ── Sección: Inventario ── */}
+      {sectionLabel("📦 Inventario")}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Stock inicial" hint="Unidades disponibles al crear">
+          <input type="number" value={form.stock_initial} onChange={e => set("stock_initial", e.target.value)}
+            style={inputStyle} placeholder="0" min="0" />
+        </Field>
+        <Field label="Límite crítico 🔔" hint="Alerta cuando el stock baje a este nivel">
+          <input type="number" value={form.stock_alert_limit} onChange={e => set("stock_alert_limit", e.target.value)}
+            style={inputStyle} placeholder="Ej: 5" min="0" />
+        </Field>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Días de espera (pedido)">
           <input type="number" value={form.lead_time_days} onChange={e => set("lead_time_days", e.target.value)}
             style={inputStyle} placeholder="0" min="0" />
         </Field>
       </div>
 
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 8 }}>
-        Anticipo mínimo (elige uno o deja vacío)
-      </p>
+      {/* ── Sección: Anticipo ── */}
+      {sectionLabel("🔖 Anticipo mínimo (elige uno o deja vacío)")}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label="Monto fijo $">
           <input type="number" value={form.min_deposit_amount} onChange={e => set("min_deposit_amount", e.target.value)}
@@ -177,6 +363,7 @@ function ModalProducto({ product, onSave, onClose }) {
         </Field>
       </div>
 
+      {/* ── Toggles ── */}
       <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
         {[["is_active", "Activo"], ["is_reservable", "Reservable"]].map(([k, lbl]) => (
           <div key={k} onClick={() => set(k, !form[k])}
