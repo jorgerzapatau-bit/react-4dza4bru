@@ -128,6 +128,17 @@ export async function getUserGymId(userId) {
   return data[0]?.gym_id || null;
 }
 
+// ── Obtener rol del usuario (owner | admin) ──────────────────────
+export async function getUserRole(userId) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/gym_users?user_id=eq.${userId}&select=role&limit=1`,
+    { headers: getAuthHeaders() }
+  );
+  if (!r.ok) return null;
+  const data = await r.json();
+  return data[0]?.role || null;
+}
+
 // ══════════════════════════════════════════════
 // SUPABASE CLIENT — igual que antes, pero usando
 // el token de sesión del usuario logueado

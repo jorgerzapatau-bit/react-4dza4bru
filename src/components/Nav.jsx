@@ -125,7 +125,7 @@ function ThemeToggle({ darkMode, setDarkMode, collapsed }) {
   );
 }
 
-export default function Nav({ screen, setScreen, setTab, setModal, totalRecordatorios, gymConfig, setConfigScreen, onLogout, darkMode, setDarkMode }) {
+export default function Nav({ screen, setScreen, setTab, setModal, totalRecordatorios, gymConfig, setConfigScreen, onLogout, darkMode, setDarkMode, isOwner = false }) {
   const gymNombre = gymConfig?.nombre || "GymFit Pro";
   const gymLogo   = gymConfig?.logo   || null;
 
@@ -199,7 +199,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
                   {gymNombre}
                 </div>
                 <div style={{ fontSize: 9, color: darkMode ? "#64748b" : "#9ca3af", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 1 }}>
-                  Panel Admin
+                  {isOwner ? "👑 Dueño" : "🛡️ Administrador"}
                 </div>
               </div>
             </>
@@ -247,7 +247,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         <div style={dividerStyle} />
         {!isCollapsed && <span style={sectionStyle}>Herramientas</span>}
 
-        <NavBtn label="Estadísticas" icon={IC.stats} active={screen === "estadisticas"} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setScreen("estadisticas")} />
+        {isOwner && <NavBtn label="Estadísticas" icon={IC.stats} active={screen === "estadisticas"} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setScreen("estadisticas")} />}
         <NavBtn label="Control de Acceso" icon={IC.qr} active={screen === "scanner"} darkMode={darkMode} accentColor="#059669" collapsed={isCollapsed} onClick={() => setScreen("scanner")} />
 
         {/* Spacer */}
@@ -256,7 +256,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
 
         <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} collapsed={isCollapsed} />
 
-        <NavBtn label="Configuración" icon={IC.gear} active={false} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setConfigScreen(true)} />
+        {isOwner && <NavBtn label="Configuración" icon={IC.gear} active={false} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setConfigScreen(true)} />}
 
         <button
           onClick={onLogout}

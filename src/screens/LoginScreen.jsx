@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────
 
 import { useState } from "react";
-import { auth, getUserGymId } from "../supabase";
+import { auth, getUserGymId, getUserRole } from "../supabase";
 
 // ── Estilos base reutilizados ────────────────
 const inputStyle = {
@@ -94,8 +94,11 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
       return;
     }
 
+    // Obtener rol del usuario para este gym
+    const userRole = await getUserRole(user.id);
+
     setLoading(false);
-    onLogin(user);
+    onLogin(user, userRole || "admin");
   };
 
   // ── Recuperar contraseña ─────────────────────

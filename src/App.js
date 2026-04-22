@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { supabase, getGymId, auth, getUserGymId } from "./supabase";
+import { supabase, getGymId, auth, getUserGymId, getUserRole } from "./supabase";
 import GymApp from "./components/GymApp";
 import LoginScreen from "./screens/LoginScreen";
 
 export default function App() {
   const [authState, setAuthState] = useState("checking"); // "checking" | "login" | "app"
   const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [gymIdForLogin, setGymIdForLogin] = useState(null);
   const [gymConfigForLogin, setGymConfigForLogin] = useState(null);
   const [gymIdNoExiste, setGymIdNoExiste] = useState(false);
@@ -31,6 +32,8 @@ export default function App() {
         const userGymId = await getUserGymId(session.user.id);
         if (userGymId === GYM_ID_URL) {
           setCurrentUser(session.user);
+          const role = await getUserRole(session.user.id);
+          setUserRole(role || "admin");
           setAuthState("app");
           return;
         }
@@ -41,14 +44,16 @@ export default function App() {
     checkSession();
   }, []); // eslint-disable-line
 
-  const handleLogin = (user) => {
+  const handleLogin = (user, role) => {
     setCurrentUser(user);
+    setUserRole(role || "admin");
     setAuthState("app");
   };
 
   const handleLogout = async () => {
     await auth.signOut();
     setCurrentUser(null);
+    setUserRole(null);
     setAuthState("login");
   };
 
@@ -93,5 +98,5 @@ export default function App() {
 
   // ── App principal ──
   const GYM_ID = gymIdForLogin || GYM_ID_URL;
-  return <GymApp gymId={GYM_ID} currentUser={currentUser} onLogout={handleLogout} />;
+  return <GymApp gymId={GYM_ID} currentUser={currentUser} userRole={userRole} onLogout={handleLogout} />;
 }

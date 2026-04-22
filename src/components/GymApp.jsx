@@ -29,7 +29,10 @@ import ScannerScreen from "../screens/ScannerScreen";
 // ── Inline Dashboard screen (kept here since it's tightly coupled to GymApp state) ──
 // If you want to extract it later, follow the same pattern as the other screens.
 
-export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
+export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin", onLogout }) {
+
+  // ── Role helpers ──
+  const isOwner = userRole === "owner";
 
   // ── State ──
   const [screen, setScreen] = useState("dashboard");
@@ -391,6 +394,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           onLogout={onLogout}
           darkMode={darkMode}
           setDarkMode={setDarkMode}
+          isOwner={isOwner}
         />
       )}
 
@@ -479,6 +483,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           filtroHasta={filtroHasta}
           setFiltroHasta={setFiltroHasta}
           setEditTx={setEditTx}
+          isOwner={isOwner}
         />}
 
         {/* ═══ MIEMBROS ═══ */}
@@ -500,8 +505,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
           />
         )}
 
-        {/* ═══ ESTADÍSTICAS ═══ */}
-        {!loading && !configScreen && screen === "estadisticas" && (
+        {/* ═══ ESTADÍSTICAS ═══ (solo owner) */}
+        {!loading && !configScreen && isOwner && screen === "estadisticas" && (
           <EstadisticasScreen
             txs={txs}
             miembros={miembros}
@@ -520,7 +525,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, onLogout }) {
 
         {/* ═══ CAJA ═══ */}
         {!loading && !configScreen && screen === "caja" && (
-          <CajaScreen txs={txs} miembros={miembros} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} />
+          <CajaScreen txs={txs} miembros={miembros} gymConfig={gymConfig} onBack={() => setScreen("dashboard")} isOwner={isOwner} />
         )}
 
         {/* ═══ SCANNER / CONTROL DE ACCESO ═══ */}
