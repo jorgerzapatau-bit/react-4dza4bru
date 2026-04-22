@@ -132,6 +132,33 @@ export function useReservations(gymId) {
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, is_active: isActive } : p));
   }, [gymId]);
 
+  // ── PAGOS ─────────────────────────────────────────────────────
+  // (definido antes de createReservation para evitar referencia circular)
+
+  const addPayment = useCallback(async (data) => {
+    // data: { reservation_id, amount, payment_method, notes }
+    const body = {
+      gym_id:         gymId,
+      reservation_id: data.reservation_id,
+      amount:         data.amount,
+      payment_method: data.payment_method || "Efectivo",
+      notes:          data.notes || null,
+    };
+    const created = await sbPost("reservation_payments", body);
+    setPayments(prev => [...prev, created]);
+
+    // Recargar la reserva actualizada (el trigger recalculó balance en DB)
+    const updated = await sbGet(
+      `product_reservations?id=eq.${data.reservation_id}&gym_id=eq.${gymId}`
+    );
+    if (updated && updated[0]) {
+      setReservations(prev => prev.map(r =>
+        r.id === data.reservation_id ? updated[0] : r
+      ));
+    }
+    return created;
+  }, [gymId]);
+
   // ── RESERVAS ──────────────────────────────────────────────────
 
   const createReservation = useCallback(async (data) => {
@@ -155,15 +182,18 @@ export function useReservations(gymId) {
 
     // Registrar anticipo inicial como primer pago si > 0
     if (data.deposit_amount > 0) {
-      await addPayment({
+      const payBody = {
+        gym_id:         gymId,
         reservation_id: created.id,
         amount:         data.deposit_amount,
         payment_method: data.payment_method || "Efectivo",
         notes:          "Anticipo inicial",
-      });
+      };
+      const savedPay = await sbPost("reservation_payments", payBody);
+      if (savedPay) setPayments(prev => [...prev, savedPay]);
     }
     return created;
-  }, [gymId, addPayment]); // addPayment is stable (useCallback)
+  }, [gymId]);
 
   const updateReservationStatus = useCallback(async (reservationId, newStatus, extra = {}) => {
     const body = { status: newStatus, updated_at: new Date().toISOString(), ...extra };
@@ -176,32 +206,6 @@ export function useReservations(gymId) {
   const cancelReservation = useCallback(async (reservationId) => {
     await updateReservationStatus(reservationId, "cancelled");
   }, [updateReservationStatus]);
-
-  // ── PAGOS ─────────────────────────────────────────────────────
-
-  const addPayment = useCallback(async (data) => {
-    // data: { reservation_id, amount, payment_method, notes }
-    const body = {
-      gym_id:         gymId,
-      reservation_id: data.reservation_id,
-      amount:         data.amount,
-      payment_method: data.payment_method || "Efectivo",
-      notes:          data.notes || null,
-    };
-    const created = await sbPost("reservation_payments", body);
-    setPayments(prev => [...prev, created]);
-
-    // Recargar la reserva actualizada (el trigger ya recalculó en DB)
-    const updated = await sbGet(
-      `product_reservations?id=eq.${data.reservation_id}&gym_id=eq.${gymId}`
-    );
-    if (updated && updated[0]) {
-      setReservations(prev => prev.map(r =>
-        r.id === data.reservation_id ? updated[0] : r
-      ));
-    }
-    return created;
-  }, [gymId]);
 
   // ── Helpers derivados ─────────────────────────────────────────
 
