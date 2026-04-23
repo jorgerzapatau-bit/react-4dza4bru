@@ -1,1336 +1,830 @@
 // ─────────────────────────────────────────────
 //  src/screens/TiendaScreen.jsx
-//  Módulo: Catálogo de Productos + Reservas / Apartados
+//
+//  Catálogo de productos + Reservas.
+//  Tarjetas mejoradas con:
+//    · Stock disponible / Reservados / Disponibles
+//    · Fecha de próximo arribo
+//    · Historial de reservas por producto
 // ─────────────────────────────────────────────
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useReservations } from "../hooks/useReservations";
-import { fmt, todayISO, fmtDate } from "../utils/dateUtils";
 
-// ── Colores y labels por estado ───────────────────────────────────
-const STATUS_META = {
-  reserved:         { label: "Apartado",          color: "#a78bfa", bg: "rgba(167,139,250,.12)", icon: "🔖" },
-  partially_paid:   { label: "Anticipo pagado",   color: "#f59e0b", bg: "rgba(245,158,11,.12)",  icon: "💰" },
-  ordered:          { label: "Pedido realizado",  color: "#22d3ee", bg: "rgba(34,211,238,.12)",  icon: "📦" },
-  ready_for_pickup: { label: "Listo para entrega",color: "#4ade80", bg: "rgba(74,222,128,.12)",  icon: "✅" },
-  delivered:        { label: "Entregado",         color: "#6ee7b7", bg: "rgba(110,231,183,.12)", icon: "🎉" },
-  cancelled:        { label: "Cancelado",         color: "#f43f5e", bg: "rgba(244,63,94,.12)",   icon: "❌" },
-  refunded:         { label: "Reembolsado",       color: "#8b949e", bg: "rgba(139,148,158,.12)", icon: "↩️" },
+// ── Helpers ──────────────────────────────────
+function fmt$(n) {
+  return "$" + Number(n || 0).toLocaleString("es-MX");
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function todayISO() {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+// ── Colores status reserva ────────────────────
+const STATUS_LABEL = {
+  reserved:       { label: "Reservado",     bg: "rgba(167,139,250,.18)", color: "#a78bfa" },
+  partially_paid: { label: "Con anticipo",  bg: "rgba(251,191,36,.18)",  color: "#fbbf24" },
+  paid:           { label: "Pagado",        bg: "rgba(52,211,153,.18)",  color: "#34d399" },
+  delivered:      { label: "Entregado",     bg: "rgba(96,165,250,.18)",  color: "#60a5fa" },
+  cancelled:      { label: "Cancelado",     bg: "rgba(248,113,113,.18)", color: "#f87171" },
 };
 
-const PAYMENT_METHODS = ["Efectivo", "Transferencia", "Tarjeta"];
-
-// ── Componente: StatusBadge ───────────────────────────────────────
-function StatusBadge({ status }) {
-  const meta = STATUS_META[status] || STATUS_META.reserved;
+function StatusPill({ status }) {
+  const s = STATUS_LABEL[status] || { label: status, bg: "rgba(255,255,255,.1)", color: "#aaa" };
   return (
     <span style={{
-      background: meta.bg, color: meta.color,
-      border: `1px solid ${meta.color}40`,
-      borderRadius: 8, padding: "3px 9px",
-      fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
-    }}>
-      {meta.icon} {meta.label}
-    </span>
+      background: s.bg, color: s.color,
+      borderRadius: 20, padding: "2px 9px", fontSize: 11, fontWeight: 600,
+    }}>{s.label}</span>
   );
 }
 
-// ── Componente: Modal base ────────────────────────────────────────
-function Modal({ title, onClose, children, wide }) {
+// ── Stat box pequeño ──────────────────────────
+function StatBox({ label, value, color }) {
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 500,
-      background: "rgba(0,0,0,.7)", backdropFilter: "blur(6px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: "16px",
-    }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{
-        background: "var(--bg-card, #1e1e30)",
-        border: "1px solid rgba(108,99,255,.2)",
-        borderRadius: 20, padding: 20,
-        width: "100%", maxWidth: wide ? 640 : 420,
-        maxHeight: "90vh", overflowY: "auto",
-        boxShadow: "0 24px 64px rgba(0,0,0,.6)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-          <h2 style={{ color: "var(--text-primary,#fff)", fontSize: 16, fontWeight: 700, flex: 1 }}>{title}</h2>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "var(--text-primary,#fff)", fontSize: 16 }}>✕</button>
-        </div>
-        {children}
-      </div>
+      background: "rgba(255,255,255,.04)",
+      borderRadius: 10, padding: "7px 10px",
+      display: "flex", flexDirection: "column", gap: 2,
+      border: "1px solid rgba(255,255,255,.06)",
+    }}>
+      <span style={{ fontSize: 9, color: "var(--text-tertiary, #6b7280)", textTransform: "uppercase", letterSpacing: ".05em", fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 17, fontWeight: 700, color: color || "var(--text-primary, #fff)" }}>{value}</span>
     </div>
   );
 }
 
-// ── Componente: Field (label + input) ─────────────────────────────
-function Field({ label, children, hint }) {
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ display: "block", color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 5 }}>
-        {label}
-      </label>
-      {children}
-      {hint && <p style={{ color: "#8b949e", fontSize: 10, marginTop: 4 }}>{hint}</p>}
-    </div>
-  );
-}
+// ── ProductCard ───────────────────────────────
+function ProductCard({ product, reservations, onApartar, onEdit, onToggleActive }) {
+  const [expanded, setExpanded] = useState(false);
 
-const inputStyle = {
-  width: "100%", background: "var(--bg-elevated,#13131f)",
-  border: "1px solid var(--border-strong,#30363d)",
-  borderRadius: 10, padding: "10px 12px",
-  color: "var(--text-primary,#fff)", fontSize: 13,
-  fontFamily: "inherit", outline: "none",
-};
+  // Reservas activas de este producto
+  const activeRes = useMemo(() =>
+    reservations.filter(r =>
+      r.product_id === product.id &&
+      ["reserved", "partially_paid", "paid"].includes(r.status)
+    ), [reservations, product.id]);
 
-// ── Sub-modal: Nuevo/Editar Producto ─────────────────────────────
-function ModalProducto({ product, onSave, onClose }) {
-  const isEdit = !!product?.id;
-  const [form, setForm] = useState({
-    name:                product?.name                || "",
-    sku:                 product?.sku                 || "",
-    category:            product?.category            || "",
-    description:         product?.description         || "",
-    image_url:           product?.image_url           || "",
-    public_price:        product?.public_price        ?? "",
-    acquisition_cost:    product?.acquisition_cost    ?? "",
-    stock_initial:       product?.stock_initial       ?? "",
-    stock_alert_limit:   product?.stock_alert_limit   ?? "",
-    is_active:           product?.is_active           ?? true,
-    is_reservable:       product?.is_reservable       ?? true,
-    min_deposit_amount:  product?.min_deposit_amount  ?? "",
-    min_deposit_percent: product?.min_deposit_percent ?? "",
-    lead_time_days:      product?.lead_time_days      ?? "",
-  });
-  const [saving,      setSaving]      = useState(false);
-  const [error,       setError]       = useState("");
-  const [imgMode,     setImgMode]     = useState("idle"); // "idle" | "camera"
-  const [cameraActive,setCameraActive]= useState(false);
-  const [variants,    setVariants]    = useState(product?.variants || []);
-  const videoRef    = useRef(null);
-  const streamRef   = useRef(null);
-  const fileInputRef= useRef(null);
+  const totalReserved = activeRes.reduce((s, r) => s + (r.quantity || 1), 0);
+  const stock = product.stock_quantity ?? null;
+  const available = stock !== null ? Math.max(0, stock - totalReserved) : null;
 
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  // Próxima llegada: la fecha de expected_arrival_date más próxima entre reservas pendientes
+  const nextArrival = useMemo(() => {
+    const dates = reservations
+      .filter(r => r.product_id === product.id && r.expected_arrival_date && ["reserved", "partially_paid"].includes(r.status))
+      .map(r => r.expected_arrival_date)
+      .sort();
+    return dates[0] || null;
+  }, [reservations, product.id]);
 
-  // ── Redimensionar imagen a 300x300 cuadrada ──────────────────────
-  const resizeTo300 = (src) => new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 300; canvas.height = 300;
-      const ctx = canvas.getContext("2d");
-      const size = Math.min(img.width, img.height);
-      const sx   = (img.width  - size) / 2;
-      const sy   = (img.height - size) / 2;
-      ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
-      resolve(canvas.toDataURL("image/jpeg", 0.82));
-    };
-    img.src = src;
-  });
+  // Todas las reservas del producto (historial)
+  const allRes = useMemo(() =>
+    reservations.filter(r => r.product_id === product.id)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  , [reservations, product.id]);
 
-  // ── Cámara ──────────────────────────────────────────────────────
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCameraActive(true);
-    } catch {
-      setError("No se pudo acceder a la cámara");
-      setImgMode("idle");
-    }
-  };
-
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    streamRef.current = null;
-    setCameraActive(false);
-  };
-
-  const capturePhoto = async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    const canvas = document.createElement("canvas");
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext("2d").drawImage(video, 0, 0);
-    const raw     = canvas.toDataURL("image/jpeg", 0.9);
-    const resized = await resizeTo300(raw);
-    set("image_url", resized);
-    stopCamera();
-    setImgMode("idle");
-  };
-
-  // ── Galería / subir archivo ──────────────────────────────────────
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const resized = await resizeTo300(ev.target.result);
-      set("image_url", resized);
-      setImgMode("idle");
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
-  // ── Cambio de modo imagen ────────────────────────────────────────
-  const switchImgMode = (mode) => {
-    if (cameraActive) stopCamera();
-    setImgMode(mode);
-    if (mode === "camera") startCamera();
-    if (mode === "gallery") setTimeout(() => fileInputRef.current?.click(), 50);
-  };
-
-  // ── Variantes (talla / color) ────────────────────────────────────
-  const addVariant    = ()        => setVariants(v => [...v, { talla: "", color: "" }]);
-  const removeVariant = (i)       => setVariants(v => v.filter((_, idx) => idx !== i));
-  const setVariant    = (i, k, v) => setVariants(prev => prev.map((item, idx) => idx === i ? { ...item, [k]: v } : item));
-
-  // cleanup on unmount
-  const cleanupRef = useRef(stopCamera);
-  cleanupRef.current = stopCamera;
-  useState(() => () => cleanupRef.current());
-
-  const handleSave = async () => {
-    if (!form.name.trim()) { setError("El nombre es obligatorio"); return; }
-    if (!form.public_price || isNaN(Number(form.public_price))) { setError("Precio público inválido"); return; }
-    setSaving(true);
-    try {
-      await onSave({
-        ...(isEdit ? { id: product.id } : {}),
-        name:                form.name.trim(),
-        sku:                 form.sku.trim() || null,
-        category:            form.category.trim() || null,
-        description:         form.description.trim() || null,
-        image_url:           form.image_url.trim() || null,
-        public_price:        Number(form.public_price),
-        acquisition_cost:    form.acquisition_cost !== "" ? Number(form.acquisition_cost) : null,
-        stock_initial:       form.stock_initial !== "" ? Number(form.stock_initial) : null,
-        stock_alert_limit:   form.stock_alert_limit !== "" ? Number(form.stock_alert_limit) : null,
-        is_active:           form.is_active,
-        is_reservable:       form.is_reservable,
-        min_deposit_amount:  form.min_deposit_amount !== "" ? Number(form.min_deposit_amount) : null,
-        min_deposit_percent: form.min_deposit_percent !== "" ? Number(form.min_deposit_percent) : null,
-        lead_time_days:      form.lead_time_days !== "" ? Number(form.lead_time_days) : 0,
-        variants:            variants.filter(v => v.talla.trim() || v.color.trim()),
-      });
-      onClose();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const sectionLabel = (txt) => (
-    <p style={{ color: "#6c63ff", fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: .8, marginBottom: 10, marginTop: 6, borderBottom: "1px solid rgba(108,99,255,.15)", paddingBottom: 6 }}>
-      {txt}
-    </p>
-  );
+  const isActive = product.is_active !== false;
 
   return (
-    <Modal title={isEdit ? "✏️ Editar producto" : "📦 Nuevo producto"} onClose={onClose}>
-      {error && (
-        <div style={{ background: "rgba(244,63,94,.1)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, color: "#f43f5e", fontSize: 12 }}>
-          {error}
-        </div>
-      )}
+    <div style={{
+      background: "var(--bg-card, #1a1a2e)",
+      border: `1px solid ${isActive ? "rgba(255,255,255,.10)" : "rgba(255,255,255,.04)"}`,
+      borderRadius: 18,
+      overflow: "hidden",
+      opacity: isActive ? 1 : 0.55,
+      display: "flex", flexDirection: "column",
+      transition: "opacity .2s",
+    }}>
 
-      {/* ── Sección: Información básica ── */}
-      {sectionLabel("📋 Información básica")}
-
-      <Field label="Nombre del producto *">
-        <input value={form.name} onChange={e => set("name", e.target.value)} style={inputStyle} placeholder="Ej: Guantes de Box Everlast" />
-      </Field>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="SKU / Identificador" hint="Código único del producto">
-          <input value={form.sku} onChange={e => set("sku", e.target.value)} style={inputStyle} placeholder="Ej: GBX-001" />
-        </Field>
-        <Field label="Categoría">
-          <input value={form.category} onChange={e => set("category", e.target.value)} style={inputStyle} placeholder="Ej: Equipamiento" />
-        </Field>
-      </div>
-
-      <Field label="Descripción">
-        <textarea value={form.description} onChange={e => set("description", e.target.value)} rows={2}
-          style={{ ...inputStyle, resize: "none" }} placeholder="Características, talla, color..." />
-      </Field>
-
-      {/* ── Sección: Imagen ── */}
-      {sectionLabel("🖼️ Imagen del producto")}
-
-      {/* Input oculto para archivo */}
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
-
-      <div style={{ display: "flex", gap: 12, marginBottom: 12, alignItems: "flex-start" }}>
-        {/* Preview cuadrada 300x300 */}
-        <div style={{
-          width: 110, height: 110, flexShrink: 0, borderRadius: 14,
-          background: "var(--bg-elevated,#13131f)",
-          border: "1px dashed var(--border-strong,#30363d)",
-          overflow: "hidden", position: "relative",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          {form.image_url
-            ? <>
-                <img src={form.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                <button onClick={() => set("image_url", "")} style={{
-                  position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,.75)",
-                  border: "none", borderRadius: "50%", width: 22, height: 22,
-                  cursor: "pointer", color: "#fff", fontSize: 11,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>✕</button>
-              </>
-            : <span style={{ fontSize: 28, opacity: .4 }}>📦</span>
-          }
-        </div>
-
-        {/* Botones de acción */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-          <button onClick={() => switchImgMode("gallery")} style={{
-            padding: "10px 14px", border: "1px solid var(--border-strong,#30363d)",
-            borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600,
-            background: "var(--bg-elevated,#13131f)", color: "var(--text-primary,#fff)",
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            🖼️ Elegir de galería
-          </button>
-          <button onClick={() => switchImgMode(imgMode === "camera" ? "idle" : "camera")} style={{
-            padding: "10px 14px", border: "none", borderRadius: 10, cursor: "pointer",
-            fontFamily: "inherit", fontSize: 13, fontWeight: 600,
-            background: imgMode === "camera" ? "rgba(244,63,94,.15)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
-            color: "#fff", display: "flex", alignItems: "center", gap: 8,
-          }}>
-            {imgMode === "camera" ? "✕ Cancelar cámara" : "📷 Tomar foto"}
-          </button>
-          <p style={{ color: "#8b949e", fontSize: 10, margin: 0 }}>Imagen guardada en 300×300 px</p>
-        </div>
-      </div>
-
-      {/* Modo cámara */}
-      {imgMode === "camera" && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ borderRadius: 12, overflow: "hidden", background: "#000", position: "relative", marginBottom: 8, aspectRatio: "1/1" }}>
-            <video ref={videoRef} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            {!cameraActive && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <p style={{ color: "#8b949e", fontSize: 12 }}>Iniciando cámara…</p>
-              </div>
+      {/* Imagen */}
+      {product.image_url ? (
+        <div style={{ position: "relative", height: 180, background: "#0f0f1a", overflow: "hidden" }}>
+          <img
+            src={product.image_url}
+            alt={product.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+          {/* Badges sobre imagen */}
+          <div style={{ position: "absolute", bottom: 8, left: 8, display: "flex", gap: 5, flexWrap: "wrap" }}>
+            {product.is_reservable && (
+              <span style={{ background: "rgba(124,58,237,.75)", color: "#ede9fe", borderRadius: 20, padding: "3px 8px", fontSize: 10, fontWeight: 700, backdropFilter: "blur(4px)" }}>
+                🚀 Reservable
+              </span>
+            )}
+            {product.min_deposit_amount > 0 && (
+              <span style={{ background: "rgba(180,83,9,.75)", color: "#fde68a", borderRadius: 20, padding: "3px 8px", fontSize: 10, fontWeight: 700, backdropFilter: "blur(4px)" }}>
+                💰 Anticipo {fmt$(product.min_deposit_amount)}
+              </span>
+            )}
+            {product.lead_time_days > 0 && (
+              <span style={{ background: "rgba(6,95,70,.75)", color: "#a7f3d0", borderRadius: 20, padding: "3px 8px", fontSize: 10, fontWeight: 700, backdropFilter: "blur(4px)" }}>
+                🕐 {product.lead_time_days}d entrega
+              </span>
             )}
           </div>
-          {cameraActive && (
-            <button onClick={capturePhoto} style={{
-              width: "100%", padding: "10px", border: "none", borderRadius: 12,
-              cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-              background: "linear-gradient(135deg,#22d3ee,#059669)", color: "#fff",
-            }}>
-              📸 Tomar foto
+        </div>
+      ) : (
+        <div style={{ height: 100, background: "rgba(255,255,255,.03)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 36, opacity: .3 }}>📦</span>
+        </div>
+      )}
+
+      {/* Cuerpo */}
+      <div style={{ padding: "14px 14px 12px", flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+
+        {/* Nombre + precio */}
+        <div>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary, #fff)", margin: 0 }}>{product.name}</p>
+          {product.description && (
+            <p style={{ fontSize: 12, color: "var(--text-tertiary, #9ca3af)", margin: "2px 0 0" }}>{product.description}</p>
+          )}
+          <p style={{ fontSize: 22, fontWeight: 700, color: "#34d399", margin: "6px 0 0" }}>{fmt$(product.public_price)}</p>
+        </div>
+
+        {/* Separador */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.07)" }} />
+
+        {/* Stats: Stock / Reservados / Disponibles */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          <StatBox
+            label="En stock"
+            value={stock !== null ? stock : "—"}
+            color={stock === null ? "#6b7280" : stock > 5 ? "#34d399" : stock > 0 ? "#fbbf24" : "#f87171"}
+          />
+          <StatBox
+            label="Reservados"
+            value={totalReserved}
+            color={totalReserved > 0 ? "#fbbf24" : "#6b7280"}
+          />
+          <StatBox
+            label="Disponibles"
+            value={available !== null ? available : "—"}
+            color={available === null ? "#6b7280" : available > 0 ? "#60a5fa" : "#f87171"}
+          />
+        </div>
+
+        {/* Próximo arribo */}
+        {nextArrival ? (
+          <div style={{
+            background: "rgba(251,191,36,.08)",
+            border: "1px solid rgba(251,191,36,.20)",
+            borderRadius: 10, padding: "8px 12px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em" }}>Próximo arribo</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#fbbf24" }}>📅 {fmtDate(nextArrival)}</span>
+          </div>
+        ) : product.is_reservable ? (
+          <div style={{
+            background: "rgba(255,255,255,.03)",
+            border: "1px solid rgba(255,255,255,.06)",
+            borderRadius: 10, padding: "8px 12px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <span style={{ fontSize: 11, color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".04em" }}>Próximo arribo</span>
+            <span style={{ fontSize: 12, color: "#4b5563" }}>Sin fecha definida</span>
+          </div>
+        ) : null}
+
+        {/* Botones acción */}
+        <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
+          {product.is_reservable && isActive && (
+            <button
+              onClick={() => onApartar(product)}
+              style={{
+                flex: 1, background: "linear-gradient(135deg,#7c3aed,#5b21b6)",
+                color: "#fff", border: "none", borderRadius: 12,
+                padding: "10px 0", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}
+            >
+              🚀 Apartar
             </button>
           )}
+
+          <button
+            onClick={() => onEdit(product)}
+            style={{
+              width: 40, height: 40, background: "rgba(255,255,255,.06)",
+              border: "1px solid rgba(255,255,255,.10)", borderRadius: 10,
+              color: "#9ca3af", fontSize: 16, cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            title="Editar"
+          >✏️</button>
+
+          <button
+            onClick={() => onToggleActive(product.id, !isActive)}
+            style={{
+              width: 40, height: 40, background: "rgba(255,255,255,.06)",
+              border: "1px solid rgba(255,255,255,.10)", borderRadius: 10,
+              color: isActive ? "#9ca3af" : "#34d399", fontSize: 16, cursor: "pointer", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+            title={isActive ? "Pausar" : "Activar"}
+          >{isActive ? "⏸" : "▶️"}</button>
+
+          {allRes.length > 0 && (
+            <button
+              onClick={() => setExpanded(e => !e)}
+              style={{
+                width: 40, height: 40, background: "rgba(255,255,255,.06)",
+                border: "1px solid rgba(255,255,255,.10)", borderRadius: 10,
+                color: "#9ca3af", fontSize: 13, cursor: "pointer", flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700,
+              }}
+              title="Ver reservas"
+            >{expanded ? "▲" : `${allRes.length}`}</button>
+          )}
         </div>
-      )}
 
-      {/* ── Sección: Precios ── */}
-      {sectionLabel("💰 Precios")}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Precio público *">
-          <input type="number" value={form.public_price} onChange={e => set("public_price", e.target.value)}
-            style={inputStyle} placeholder="0.00" min="0" />
-        </Field>
-        <Field label="Costo de adquisición" hint="Tu costo (interno)">
-          <input type="number" value={form.acquisition_cost} onChange={e => set("acquisition_cost", e.target.value)}
-            style={inputStyle} placeholder="0.00" min="0" />
-        </Field>
-      </div>
-
-      {/* Margen calculado */}
-      {form.public_price && form.acquisition_cost && Number(form.public_price) > 0 && (
-        <div style={{ background: "rgba(74,222,128,.07)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
-          <span style={{ color: "#8b949e", fontSize: 12 }}>Margen de ganancia</span>
-          <span style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>
-            {(((Number(form.public_price) - Number(form.acquisition_cost)) / Number(form.public_price)) * 100).toFixed(1)}%
-            &nbsp;·&nbsp;
-            +${(Number(form.public_price) - Number(form.acquisition_cost)).toFixed(2)}
-          </span>
-        </div>
-      )}
-
-      {/* ── Sección: Inventario ── */}
-      {sectionLabel("📦 Inventario")}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Stock inicial" hint="Unidades disponibles al crear">
-          <input type="number" value={form.stock_initial} onChange={e => set("stock_initial", e.target.value)}
-            style={inputStyle} placeholder="0" min="0" />
-        </Field>
-        <Field label="Límite crítico 🔔" hint="Alerta cuando el stock baje a este nivel">
-          <input type="number" value={form.stock_alert_limit} onChange={e => set("stock_alert_limit", e.target.value)}
-            style={inputStyle} placeholder="Ej: 5" min="0" />
-        </Field>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Días de espera (pedido)">
-          <input type="number" value={form.lead_time_days} onChange={e => set("lead_time_days", e.target.value)}
-            style={inputStyle} placeholder="0" min="0" />
-        </Field>
-      </div>
-
-      {/* ── Sección: Anticipo ── */}
-      {sectionLabel("🔖 Anticipo mínimo (elige uno o deja vacío)")}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Monto fijo $">
-          <input type="number" value={form.min_deposit_amount} onChange={e => set("min_deposit_amount", e.target.value)}
-            style={inputStyle} placeholder="Ej: 200" min="0" />
-        </Field>
-        <Field label="Porcentaje %">
-          <input type="number" value={form.min_deposit_percent} onChange={e => set("min_deposit_percent", e.target.value)}
-            style={inputStyle} placeholder="Ej: 30" min="0" max="100" />
-        </Field>
-      </div>
-
-      {/* ── Sección: Variantes ── */}
-      {sectionLabel("🎨 Tallas y colores (variantes)")}
-
-      <div style={{ marginBottom: 12 }}>
-        {variants.length === 0 ? (
-          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 8 }}>
-            Sin variantes. Agrega tallas o colores disponibles.
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
-            {variants.map((v, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 32px", gap: 8, alignItems: "center" }}>
-                <input
-                  value={v.talla} placeholder="Talla (Ej: S, M, L, XL, 42)"
-                  onChange={e => setVariant(i, "talla", e.target.value)}
-                  style={{ ...inputStyle, padding: "8px 10px", fontSize: 12 }}
-                />
-                <input
-                  value={v.color} placeholder="Color (Ej: Rojo, Negro)"
-                  onChange={e => setVariant(i, "color", e.target.value)}
-                  style={{ ...inputStyle, padding: "8px 10px", fontSize: 12 }}
-                />
-                <button onClick={() => removeVariant(i)} style={{
-                  width: 32, height: 32, border: "none", borderRadius: 8,
-                  background: "rgba(244,63,94,.12)", color: "#f43f5e",
-                  cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
-                }}>✕</button>
+        {/* Reservas expandidas */}
+        {expanded && allRes.length > 0 && (
+          <div style={{
+            borderTop: "1px solid rgba(255,255,255,.07)", paddingTop: 10,
+            display: "flex", flexDirection: "column", gap: 6,
+          }}>
+            <p style={{ fontSize: 11, color: "#6b7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", margin: 0 }}>Reservas</p>
+            {allRes.map(r => (
+              <div key={r.id} style={{
+                background: "rgba(255,255,255,.03)", borderRadius: 8, padding: "7px 10px",
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary, #fff)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {r.member_name || r.member_id?.slice(0, 8) || "Cliente"}
+                  </p>
+                  <p style={{ fontSize: 10, color: "#6b7280", margin: "1px 0 0" }}>
+                    {fmtDate(r.created_at?.slice(0, 10))}
+                    {r.expected_arrival_date ? ` · llega ${fmtDate(r.expected_arrival_date)}` : ""}
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: "#9ca3af" }}>×{r.quantity || 1}</span>
+                  <StatusPill status={r.status} />
+                </div>
               </div>
             ))}
           </div>
         )}
-        <button onClick={addVariant} style={{
-          padding: "8px 14px", border: "1px dashed rgba(108,99,255,.4)", borderRadius: 10,
-          cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-          background: "rgba(108,99,255,.06)", color: "#a78bfa",
-        }}>
-          + Agregar variante
-        </button>
       </div>
-
-      {/* ── Toggles ── */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-        {[["is_active", "Activo"], ["is_reservable", "Reservable"]].map(([k, lbl]) => (
-          <div key={k} onClick={() => set(k, !form[k])}
-            style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-            <div style={{
-              width: 40, height: 22, borderRadius: 11,
-              background: form[k] ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)",
-              position: "relative", transition: "background .2s",
-            }}>
-              <div style={{
-                position: "absolute", top: 3, left: form[k] ? 20 : 3,
-                width: 16, height: 16, borderRadius: "50%",
-                background: "#fff", transition: "left .2s",
-                boxShadow: "0 1px 4px rgba(0,0,0,.3)",
-              }} />
-            </div>
-            <span style={{ color: "var(--text-secondary,#aaa)", fontSize: 13 }}>{lbl}</span>
-          </div>
-        ))}
-      </div>
-
-      <button onClick={handleSave} disabled={saving} style={{
-        width: "100%", padding: "12px", border: "none", borderRadius: 12,
-        cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit",
-        fontSize: 14, fontWeight: 700,
-        background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
-        boxShadow: "0 4px 16px rgba(108,99,255,.3)",
-      }}>
-        {saving ? "Guardando…" : (isEdit ? "💾 Guardar cambios" : "✅ Crear producto")}
-      </button>
-    </Modal>
+    </div>
   );
 }
 
-// ── Sub-modal: Nueva Reserva ──────────────────────────────────────
-function ModalNuevaReserva({ product, miembros, onSave, onClose }) {
-  const minDeposit = product.min_deposit_amount
-    ? product.min_deposit_amount
-    : product.min_deposit_percent
-      ? Math.ceil(product.public_price * product.min_deposit_percent / 100)
-      : 0;
-
+// ── Modal Producto ────────────────────────────
+function ProductModal({ product, onClose, onSave }) {
+  const isNew = !product?.id;
   const [form, setForm] = useState({
-    member_id:            "",
-    quantity:             1,
-    deposit_amount:       String(minDeposit || ""),
-    payment_method:       "Efectivo",
-    expected_arrival_date: product.lead_time_days
-      ? (() => {
-          const d = new Date();
-          d.setDate(d.getDate() + product.lead_time_days);
-          return d.toISOString().slice(0, 10);
-        })()
-      : "",
-    notes: "",
+    name:               product?.name || "",
+    description:        product?.description || "",
+    image_url:          product?.image_url || "",
+    public_price:       product?.public_price || "",
+    stock_quantity:     product?.stock_quantity ?? "",
+    expected_arrival_date: product?.expected_arrival_date || "",
+    is_reservable:      product?.is_reservable ?? true,
+    min_deposit_amount: product?.min_deposit_amount || "",
+    lead_time_days:     product?.lead_time_days ?? "",
+    is_active:          product?.is_active ?? true,
   });
   const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState("");
-  const [busqueda, setBusqueda] = useState("");
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const total    = product.public_price * form.quantity;
-  const deposit  = Number(form.deposit_amount) || 0;
-  const balance  = Math.max(total - deposit, 0);
-
-  const miembrosFiltrados = miembros.filter(m =>
-    m.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (m.tel || "").includes(busqueda)
-  );
-
-  const selMiembro = miembros.find(m => m.id === form.member_id);
-
-  const handleSave = async () => {
-    if (!form.member_id) { setError("Selecciona un miembro"); return; }
-    if (minDeposit > 0 && deposit < minDeposit) {
-      setError(`El anticipo mínimo es ${fmt(minDeposit)}`);
-      return;
+  async function handleSave() {
+    if (!form.name.trim() || !form.public_price) return;
+    setSaving(true);
+    try {
+      const payload = {
+        ...product,
+        ...form,
+        public_price:       parseFloat(form.public_price) || 0,
+        stock_quantity:     form.stock_quantity !== "" ? parseInt(form.stock_quantity) : null,
+        min_deposit_amount: form.min_deposit_amount !== "" ? parseFloat(form.min_deposit_amount) : null,
+        lead_time_days:     form.lead_time_days !== "" ? parseInt(form.lead_time_days) : 0,
+        expected_arrival_date: form.expected_arrival_date || null,
+      };
+      await onSave(payload);
+      onClose();
+    } finally {
+      setSaving(false);
     }
+  }
+
+  const S = {
+    overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" },
+    sheet: { background: "var(--bg-base, #13131f)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", padding: "20px 20px 40px" },
+    label: { display: "block", fontSize: 11, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 5 },
+    inp: { width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" },
+    row: { marginBottom: 14 },
+  };
+
+  return (
+    <div style={S.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={S.sheet}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700, margin: 0 }}>{isNew ? "➕ Nuevo producto" : "✏️ Editar producto"}</h2>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 32, height: 32, color: "#fff", cursor: "pointer", fontSize: 16 }}>✕</button>
+        </div>
+
+        <div style={S.row}>
+          <label style={S.label}>Nombre *</label>
+          <input style={S.inp} value={form.name} onChange={e => set("name", e.target.value)} placeholder="Ej: Guantes de Karate" />
+        </div>
+
+        <div style={S.row}>
+          <label style={S.label}>Descripción</label>
+          <input style={S.inp} value={form.description} onChange={e => set("description", e.target.value)} placeholder="Descripción breve" />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={S.label}>Precio público *</label>
+            <input style={S.inp} type="number" value={form.public_price} onChange={e => set("public_price", e.target.value)} placeholder="500" />
+          </div>
+          <div>
+            <label style={S.label}>Stock en inventario</label>
+            <input style={S.inp} type="number" value={form.stock_quantity} onChange={e => set("stock_quantity", e.target.value)} placeholder="0" />
+          </div>
+        </div>
+
+        <div style={S.row}>
+          <label style={S.label}>Fecha próximo arribo</label>
+          <input style={S.inp} type="date" value={form.expected_arrival_date || ""} onChange={e => set("expected_arrival_date", e.target.value)} />
+        </div>
+
+        <div style={S.row}>
+          <label style={S.label}>URL de imagen</label>
+          <input style={S.inp} value={form.image_url} onChange={e => set("image_url", e.target.value)} placeholder="https://..." />
+        </div>
+
+        {/* Toggle reservable */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+          <div>
+            <p style={{ color: "#fff", fontSize: 14, fontWeight: 600, margin: 0 }}>Permitir reservas</p>
+            <p style={{ color: "#6b7280", fontSize: 12, margin: 0 }}>Los clientes pueden apartar este producto</p>
+          </div>
+          <button
+            onClick={() => set("is_reservable", !form.is_reservable)}
+            style={{ width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer", background: form.is_reservable ? "#7c3aed" : "rgba(255,255,255,.1)", position: "relative", transition: "background .2s" }}
+          >
+            <span style={{ position: "absolute", top: 2, left: form.is_reservable ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .2s" }} />
+          </button>
+        </div>
+
+        {form.is_reservable && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+            <div>
+              <label style={S.label}>Anticipo mínimo ($)</label>
+              <input style={S.inp} type="number" value={form.min_deposit_amount} onChange={e => set("min_deposit_amount", e.target.value)} placeholder="200" />
+            </div>
+            <div>
+              <label style={S.label}>Días de entrega</label>
+              <input style={S.inp} type="number" value={form.lead_time_days} onChange={e => set("lead_time_days", e.target.value)} placeholder="2" />
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving || !form.name.trim() || !form.public_price}
+          style={{
+            width: "100%", background: saving ? "rgba(124,58,237,.4)" : "linear-gradient(135deg,#7c3aed,#5b21b6)",
+            color: "#fff", border: "none", borderRadius: 12, padding: 14,
+            fontSize: 14, fontWeight: 700, cursor: saving ? "default" : "pointer", marginTop: 6,
+          }}
+        >
+          {saving ? "Guardando…" : isNew ? "Crear producto" : "Guardar cambios"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal Apartar ─────────────────────────────
+function ApartarModal({ product, miembros, onClose, onSave }) {
+  const [form, setForm] = useState({
+    member_id: "",
+    quantity: 1,
+    deposit_amount: product?.min_deposit_amount || 0,
+    expected_arrival_date: "",
+    notes: "",
+    payment_method: "Efectivo",
+  });
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const total = (product?.public_price || 0) * form.quantity;
+
+  async function handleSave() {
+    if (!form.member_id) return;
     setSaving(true);
     try {
       await onSave({
         member_id:            form.member_id,
         product_id:           product.id,
-        quantity:             Number(form.quantity),
-        unit_price:           product.public_price,
-        deposit_amount:       deposit,
-        payment_method:       form.payment_method,
+        quantity:             parseInt(form.quantity) || 1,
+        unit_price:           parseFloat(product.public_price) || 0,
+        deposit_amount:       parseFloat(form.deposit_amount) || 0,
         expected_arrival_date: form.expected_arrival_date || null,
         notes:                form.notes || null,
+        payment_method:       form.payment_method,
       });
       onClose();
-    } catch (e) {
-      setError(e.message);
     } finally {
       setSaving(false);
     }
+  }
+
+  const S = {
+    overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" },
+    sheet: { background: "var(--bg-base, #13131f)", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: "20px 20px 40px" },
+    label: { display: "block", fontSize: 11, color: "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 5 },
+    inp: { width: "100%", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" },
+    row: { marginBottom: 14 },
   };
 
   return (
-    <Modal title="🔖 Nueva reserva" onClose={onClose} wide>
-      {/* Producto seleccionado */}
-      <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
-        {product.image_url && (
-          <img src={product.image_url} alt="" style={{ width: 52, height: 52, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
-        )}
-        <div>
-          <p style={{ color: "#a78bfa", fontSize: 14, fontWeight: 700 }}>{product.name}</p>
-          <p style={{ color: "#8b949e", fontSize: 12 }}>{fmt(product.public_price)} c/u</p>
+    <div style={S.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={S.sheet}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700, margin: 0 }}>🚀 Apartar: {product?.name}</h2>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 32, height: 32, color: "#fff", cursor: "pointer", fontSize: 16 }}>✕</button>
         </div>
-      </div>
 
-      {error && (
-        <div style={{ background: "rgba(244,63,94,.1)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, color: "#f43f5e", fontSize: 12 }}>
-          {error}
+        {/* Precio referencia */}
+        <div style={{ background: "rgba(52,211,153,.08)", border: "1px solid rgba(52,211,153,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
+          <span style={{ color: "#9ca3af", fontSize: 13 }}>Precio unitario</span>
+          <span style={{ color: "#34d399", fontWeight: 700, fontSize: 15 }}>{fmt$(product?.public_price)}</span>
         </div>
-      )}
 
-      {/* Selección de miembro */}
-      {!selMiembro ? (
-        <Field label="Miembro *">
-          <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 6 }} placeholder="Buscar por nombre o teléfono..." />
-          <div style={{ maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-            {miembrosFiltrados.slice(0, 8).map(m => (
-              <button key={m.id} onClick={() => { set("member_id", m.id); setBusqueda(""); }}
-                style={{ background: "var(--bg-elevated,#13131f)", border: "1px solid var(--border,#21262d)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", fontFamily: "inherit", display: "flex", gap: 8, alignItems: "center", textAlign: "left" }}>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
-                  {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} /> : m.nombre.charAt(0)}
-                </div>
-                <div>
-                  <p style={{ color: "var(--text-primary,#fff)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                  {m.tel && <p style={{ color: "#8b949e", fontSize: 11 }}>{m.tel}</p>}
-                </div>
-              </button>
+        <div style={S.row}>
+          <label style={S.label}>Miembro *</label>
+          <select style={S.inp} value={form.member_id} onChange={e => set("member_id", e.target.value)}>
+            <option value="">Seleccionar miembro…</option>
+            {(miembros || []).map(m => (
+              <option key={m.id} value={m.id}>{m.nombre}</option>
             ))}
-          </div>
-        </Field>
-      ) : (
-        <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "8px 12px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
-            {selMiembro.foto ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} /> : selMiembro.nombre.charAt(0)}
-          </div>
-          <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, flex: 1 }}>{selMiembro.nombre}</p>
-          <button onClick={() => set("member_id", "")} style={{ background: "none", border: "none", color: "#8b949e", cursor: "pointer", fontSize: 13 }}>✕</button>
-        </div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Cantidad">
-          <input type="number" value={form.quantity} min="1"
-            onChange={e => set("quantity", Math.max(1, Number(e.target.value)))}
-            style={inputStyle} />
-        </Field>
-        <Field label="Fecha estimada de llegada">
-          <input type="date" value={form.expected_arrival_date}
-            onChange={e => set("expected_arrival_date", e.target.value)} style={inputStyle} />
-        </Field>
-      </div>
-
-      {/* Resumen de montos */}
-      <div style={{ background: "var(--bg-elevated,#13131f)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ color: "#8b949e", fontSize: 12 }}>Total ({form.quantity} × {fmt(product.public_price)})</span>
-          <span style={{ color: "var(--text-primary,#fff)", fontSize: 13, fontWeight: 700 }}>{fmt(total)}</span>
-        </div>
-        {minDeposit > 0 && (
-          <p style={{ color: "#f59e0b", fontSize: 11, marginBottom: 4 }}>
-            ⚠️ Anticipo mínimo: {fmt(minDeposit)}
-          </p>
-        )}
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ color: "#8b949e", fontSize: 12 }}>Anticipo registrado</span>
-          <span style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>{fmt(deposit)}</span>
-        </div>
-        <div style={{ height: 1, background: "rgba(255,255,255,.06)", margin: "6px 0" }} />
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ color: "#8b949e", fontSize: 12, fontWeight: 700 }}>Saldo pendiente</span>
-          <span style={{ color: balance > 0 ? "#f59e0b" : "#4ade80", fontSize: 14, fontWeight: 700 }}>{fmt(balance)}</span>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label={`Anticipo${minDeposit > 0 ? ` (mín ${fmt(minDeposit)})` : ""}`}>
-          <input type="number" value={form.deposit_amount} min="0" max={total}
-            onChange={e => set("deposit_amount", e.target.value)} style={inputStyle} placeholder="0" />
-        </Field>
-        <Field label="Forma de pago anticipo">
-          <select value={form.payment_method} onChange={e => set("payment_method", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-            {PAYMENT_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-        </Field>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={S.label}>Cantidad</label>
+            <input style={S.inp} type="number" min={1} value={form.quantity} onChange={e => set("quantity", e.target.value)} />
+          </div>
+          <div>
+            <label style={S.label}>Total</label>
+            <div style={{ ...S.inp, color: "#34d399", fontWeight: 700 }}>{fmt$(total)}</div>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div>
+            <label style={S.label}>Anticipo ($)</label>
+            <input style={S.inp} type="number" min={0} value={form.deposit_amount} onChange={e => set("deposit_amount", e.target.value)} />
+          </div>
+          <div>
+            <label style={S.label}>Forma de pago</label>
+            <select style={S.inp} value={form.payment_method} onChange={e => set("payment_method", e.target.value)}>
+              <option>Efectivo</option>
+              <option>Transferencia</option>
+              <option>Tarjeta</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={S.row}>
+          <label style={S.label}>Fecha de llegada esperada</label>
+          <input style={S.inp} type="date" value={form.expected_arrival_date} onChange={e => set("expected_arrival_date", e.target.value)} min={todayISO()} />
+        </div>
+
+        <div style={S.row}>
+          <label style={S.label}>Notas</label>
+          <input style={S.inp} value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Talla, color, observaciones…" />
+        </div>
+
+        {/* Resumen */}
+        {parseFloat(form.deposit_amount) > 0 && (
+          <div style={{ background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.18)", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#9ca3af", fontSize: 12 }}>Anticipo</span>
+              <span style={{ color: "#fbbf24", fontWeight: 700 }}>{fmt$(form.deposit_amount)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+              <span style={{ color: "#9ca3af", fontSize: 12 }}>Saldo pendiente</span>
+              <span style={{ color: "#f87171", fontWeight: 700 }}>{fmt$(Math.max(0, total - form.deposit_amount))}</span>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={handleSave}
+          disabled={saving || !form.member_id}
+          style={{
+            width: "100%", background: saving ? "rgba(124,58,237,.4)" : "linear-gradient(135deg,#7c3aed,#5b21b6)",
+            color: "#fff", border: "none", borderRadius: 12, padding: 14,
+            fontSize: 14, fontWeight: 700, cursor: saving ? "default" : "pointer",
+          }}
+        >
+          {saving ? "Guardando…" : "Confirmar reserva"}
+        </button>
       </div>
-
-      <Field label="Notas">
-        <input value={form.notes} onChange={e => set("notes", e.target.value)}
-          style={inputStyle} placeholder="Talla, color, indicaciones..." />
-      </Field>
-
-      <button onClick={handleSave} disabled={saving || !form.member_id} style={{
-        width: "100%", padding: "12px", border: "none", borderRadius: 12,
-        cursor: (saving || !form.member_id) ? "not-allowed" : "pointer",
-        fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-        background: form.member_id ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
-        color: form.member_id ? "#fff" : "#8b949e",
-        boxShadow: form.member_id ? "0 4px 16px rgba(108,99,255,.3)" : "none",
-      }}>
-        {saving ? "Guardando…" : "🔖 Crear apartado"}
-      </button>
-    </Modal>
+    </div>
   );
 }
 
-// ── Sub-modal: Detalle de Reserva ─────────────────────────────────
-function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPayment, onUpdateStatus, onClose, addingToCaja }) {
-  const [showPago, setShowPago] = useState(false);
-  const [pago, setPago]         = useState({ amount: "", payment_method: "Efectivo", notes: "" });
-  const [saving, setSaving]     = useState(false);
-  const [error,  setError]      = useState("");
+// ── Vista Reservas ────────────────────────────
+function ReservasView({ reservations, products, miembros, onUpdateStatus }) {
+  const [filtroStatus, setFiltroStatus] = useState("activas");
 
-  const totalPagado = payments.reduce((s, p) => s + Number(p.amount), 0);
-  const saldo       = Math.max(reservation.total_amount - totalPagado, 0);
-  const meta        = STATUS_META[reservation.status] || STATUS_META.reserved;
+  const filtered = useMemo(() => {
+    return reservations.filter(r => {
+      if (filtroStatus === "activas") return ["reserved", "partially_paid"].includes(r.status);
+      if (filtroStatus === "pagadas") return r.status === "paid";
+      if (filtroStatus === "entregadas") return r.status === "delivered";
+      if (filtroStatus === "canceladas") return r.status === "cancelled";
+      return true;
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }, [reservations, filtroStatus]);
 
-  const handlePago = async () => {
-    if (!pago.amount || isNaN(Number(pago.amount)) || Number(pago.amount) <= 0) {
-      setError("Ingresa un monto válido");
-      return;
-    }
-    setSaving(true);
-    try {
-      await onAddPayment({
-        reservation_id: reservation.id,
-        amount:         Number(pago.amount),
-        payment_method: pago.payment_method,
-        notes:          pago.notes || null,
-      });
-      setPago({ amount: "", payment_method: "Efectivo", notes: "" });
-      setShowPago(false);
-      setError("");
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Acciones de flujo según estado actual
-  const actions = {
-    ordered:    { label: "Marcar como listo para entregar", status: "ready_for_pickup", icon: "✅", color: "#4ade80" },
-    ready_for_pickup: { label: "Marcar como entregado", status: "delivered", icon: "🎉", color: "#6ee7b7" },
-  };
-  const nextAction     = actions[reservation.status];
-  const canDeliver     = nextAction?.status === "delivered" ? saldo === 0 : true;
-  const canCancel      = !["delivered", "cancelled", "refunded"].includes(reservation.status);
+  const FILTERS = [
+    { key: "activas",   label: "Activas" },
+    { key: "pagadas",   label: "Pagadas" },
+    { key: "entregadas",label: "Entregadas" },
+    { key: "canceladas",label: "Canceladas" },
+    { key: "todas",     label: "Todas" },
+  ];
 
   return (
-    <Modal title="📋 Detalle de reserva" onClose={onClose} wide>
-      {/* Header producto + miembro */}
-      <div style={{ background: "var(--bg-elevated,#13131f)", borderRadius: 14, padding: 14, marginBottom: 16, display: "flex", gap: 12, alignItems: "flex-start" }}>
-        {product?.image_url && (
-          <img src={product.image_url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
-        )}
-        <div style={{ flex: 1 }}>
-          <p style={{ color: "var(--text-primary,#fff)", fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{product?.name || "Producto"}</p>
-          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 4 }}>
-            {miembro?.nombre} · x{reservation.quantity}
-          </p>
-          <StatusBadge status={reservation.status} />
-        </div>
-      </div>
-
-      {/* Resumen financiero */}
-      <div style={{ background: "var(--bg-elevated,#13131f)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
-        {[
-          ["Total", fmt(reservation.total_amount), "var(--text-primary,#fff)"],
-          ["Pagado", fmt(totalPagado), "#4ade80"],
-          ["Saldo pendiente", fmt(saldo), saldo > 0 ? "#f59e0b" : "#4ade80"],
-        ].map(([lbl, val, color]) => (
-          <div key={lbl} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ color: "#8b949e", fontSize: 12 }}>{lbl}</span>
-            <span style={{ color, fontSize: 13, fontWeight: 700 }}>{val}</span>
-          </div>
+    <div>
+      {/* Filtros */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        {FILTERS.map(f => (
+          <button key={f.key} onClick={() => setFiltroStatus(f.key)}
+            style={{
+              background: filtroStatus === f.key ? "#7c3aed" : "rgba(255,255,255,.06)",
+              color: filtroStatus === f.key ? "#fff" : "#9ca3af",
+              border: `1px solid ${filtroStatus === f.key ? "#7c3aed" : "rgba(255,255,255,.1)"}`,
+              borderRadius: 20, padding: "5px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            }}
+          >{f.label}</button>
         ))}
-        {reservation.expected_arrival_date && (
-          <div style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid rgba(255,255,255,.06)" }}>
-            <p style={{ color: "#8b949e", fontSize: 11 }}>📅 Llegada estimada: {fmtDate(reservation.expected_arrival_date)}</p>
-          </div>
-        )}
-        {reservation.notes && (
-          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>📝 {reservation.notes}</p>
-        )}
       </div>
 
-      {/* Historial de pagos */}
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 8 }}>
-        Pagos registrados ({payments.length})
-      </p>
-      {payments.length === 0 ? (
-        <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "12px 0", marginBottom: 12 }}>Sin pagos aún</p>
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: "#4b5563" }}>
+          <p style={{ fontSize: 32, margin: "0 0 8px" }}>🚀</p>
+          <p style={{ fontSize: 15, fontWeight: 600 }}>Sin reservas {filtroStatus}</p>
+        </div>
       ) : (
-        <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 6 }}>
-          {payments.map(p => (
-            <div key={p.id} style={{ background: "var(--bg-card,#191928)", border: "1px solid rgba(74,222,128,.15)", borderRadius: 10, padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>{fmt(p.amount)}</p>
-                <p style={{ color: "#8b949e", fontSize: 11 }}>{p.payment_method} · {fmtDate(p.created_at?.slice(0, 10))}</p>
-                {p.notes && <p style={{ color: "#8b949e", fontSize: 10 }}>{p.notes}</p>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {error && (
-        <div style={{ background: "rgba(244,63,94,.1)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 10, padding: "8px 12px", marginBottom: 10, color: "#f43f5e", fontSize: 12 }}>
-          {error}
-        </div>
-      )}
-
-      {/* Registrar pago */}
-      {!["delivered", "cancelled", "refunded"].includes(reservation.status) && (
-        <>
-          {saldo <= 0 ? (
-            <div style={{ background: "rgba(74,222,128,.08)", border: "1px solid rgba(74,222,128,.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16 }}>✅</span>
-              <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>Pago completado — sin saldo pendiente</p>
-            </div>
-          ) : !showPago ? (
-            <button onClick={() => setShowPago(true)} style={{
-              width: "100%", padding: "11px", border: "1px solid rgba(74,222,128,.3)", borderRadius: 12,
-              cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-              background: "rgba(74,222,128,.08)", color: "#4ade80", marginBottom: 10,
-            }}>
-              💵 Agregar pago ({fmt(saldo)} pendiente)
-            </button>
-          ) : (
-            <div style={{ background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 12, padding: 14, marginBottom: 10 }}>
-              <p style={{ color: "#4ade80", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Nuevo pago — saldo restante: {fmt(saldo)}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
-                <Field label="Monto">
-                  <input type="number" value={pago.amount} min="0.01" max={saldo}
-                    onChange={e => setPago(p => ({ ...p, amount: e.target.value }))}
-                    style={inputStyle} placeholder={`Máx ${fmt(saldo)}`} autoFocus />
-                </Field>
-                <Field label="Forma de pago">
-                  <select value={pago.payment_method}
-                    onChange={e => setPago(p => ({ ...p, payment_method: e.target.value }))}
-                    style={{ ...inputStyle, cursor: "pointer" }}>
-                    {PAYMENT_METHODS.map(m => <option key={m}>{m}</option>)}
-                  </select>
-                </Field>
-              </div>
-              <Field label="Notas (opcional)">
-                <input value={pago.notes} onChange={e => setPago(p => ({ ...p, notes: e.target.value }))}
-                  style={inputStyle} placeholder="Ej: Pago de saldo completo" />
-              </Field>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => { setShowPago(false); setError(""); }}
-                  style={{ flex: 1, padding: "10px", border: "1px solid var(--border-strong,#30363d)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, background: "var(--bg-elevated,#13131f)", color: "#8b949e" }}>
-                  Cancelar
-                </button>
-                <button onClick={handlePago} disabled={saving}
-                  style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "linear-gradient(135deg,#22d3ee,#059669)", color: "#fff" }}>
-                  {saving ? "Guardando…" : "✅ Guardar pago"}
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Acciones de estado */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {nextAction && (
-          <>
-            <button
-              onClick={() => canDeliver && onUpdateStatus(reservation.id, nextAction.status)}
-              disabled={!canDeliver}
-              title={!canDeliver ? `No se puede entregar: quedan ${fmt(saldo)} pendientes` : ""}
-              style={{
-                width: "100%", padding: "11px", borderRadius: 12,
-                cursor: canDeliver ? "pointer" : "not-allowed",
-                fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                background: canDeliver ? `${nextAction.color}18` : "rgba(255,255,255,.04)",
-                color: canDeliver ? nextAction.color : "#8b949e",
-                border: `1px solid ${canDeliver ? nextAction.color + "40" : "rgba(255,255,255,.08)"}`,
-                opacity: canDeliver ? 1 : 0.6,
-                transition: "all .2s",
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map(r => {
+            const prod = products.find(p => p.id === r.product_id);
+            const miembro = miembros?.find(m => m.id === r.member_id);
+            const balance = parseFloat(r.balance_due || 0);
+            return (
+              <div key={r.id} style={{
+                background: "var(--bg-card, #1a1a2e)",
+                border: "1px solid rgba(255,255,255,.08)",
+                borderRadius: 14, padding: "14px 16px",
+                display: "flex", alignItems: "center", gap: 12,
               }}>
-              {nextAction.icon} {nextAction.label}
-            </button>
-            {!canDeliver && (
-              <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.25)", borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 14 }}>🔒</span>
-                <p style={{ color: "#f43f5e", fontSize: 12, fontWeight: 600 }}>
-                  Saldo pendiente de <strong>{fmt(saldo)}</strong>. Registra el pago completo para poder entregar.
-                </p>
+                {/* Imagen mini */}
+                {prod?.image_url ? (
+                  <img src={prod.image_url} alt={prod?.name} style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: 48, height: 48, borderRadius: 10, background: "rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 20 }}>📦</div>
+                )}
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 2 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", margin: 0 }}>{prod?.name || "Producto"}</p>
+                    <StatusPill status={r.status} />
+                  </div>
+                  <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
+                    {miembro?.nombre || "—"} · ×{r.quantity || 1} · {fmt$(r.total_amount)}
+                    {r.expected_arrival_date ? ` · 📅 ${fmtDate(r.expected_arrival_date)}` : ""}
+                  </p>
+                  {balance > 0 && (
+                    <p style={{ fontSize: 11, color: "#fbbf24", margin: "2px 0 0" }}>Saldo: {fmt$(balance)}</p>
+                  )}
+                </div>
+
+                {/* Acciones rápidas */}
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  {r.status === "reserved" && (
+                    <button onClick={() => onUpdateStatus(r.id, "partially_paid")}
+                      style={{ background: "rgba(251,191,36,.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      Anticipo
+                    </button>
+                  )}
+                  {["reserved", "partially_paid"].includes(r.status) && (
+                    <button onClick={() => onUpdateStatus(r.id, "paid")}
+                      style={{ background: "rgba(52,211,153,.15)", color: "#34d399", border: "1px solid rgba(52,211,153,.3)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      Pagado
+                    </button>
+                  )}
+                  {r.status === "paid" && (
+                    <button onClick={() => onUpdateStatus(r.id, "delivered")}
+                      style={{ background: "rgba(96,165,250,.15)", color: "#60a5fa", border: "1px solid rgba(96,165,250,.3)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      Entregar
+                    </button>
+                  )}
+                  {["reserved", "partially_paid"].includes(r.status) && (
+                    <button onClick={() => onUpdateStatus(r.id, "cancelled")}
+                      style={{ background: "rgba(248,113,113,.10)", color: "#f87171", border: "1px solid rgba(248,113,113,.25)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-          </>
-        )}
-        {reservation.status === "partially_paid" && (
-          <button onClick={() => onUpdateStatus(reservation.id, "ordered")} style={{
-            width: "100%", padding: "11px", border: "1px solid rgba(34,211,238,.3)", borderRadius: 12,
-            cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            background: "rgba(34,211,238,.08)", color: "#22d3ee",
-          }}>
-            📦 Marcar pedido realizado al proveedor
-          </button>
-        )}
-        {canCancel && (
-          <button onClick={() => { if (window.confirm("¿Cancelar esta reserva?")) onUpdateStatus(reservation.id, "cancelled"); }}
-            style={{ width: "100%", padding: "10px", border: "1px solid rgba(244,63,94,.2)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, background: "transparent", color: "#f43f5e" }}>
-            ❌ Cancelar reserva
-          </button>
-        )}
-      </div>
-    </Modal>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
-// ── PANTALLA PRINCIPAL ────────────────────────────────────────────
-export default function TiendaScreen({ gymId, miembros, txs, onBack, onAddTx }) {
+// ── TiendaScreen principal ────────────────────
+export default function TiendaScreen({ gymId, miembros, onBack }) {
   const {
     products, reservations, loading, error,
     saveProduct, deleteProduct, toggleProductActive,
     createReservation, updateReservationStatus,
-    addPayment, getPaymentsForReservation, getProductById, reload,
+    reload,
   } = useReservations(gymId);
 
-  const [tab,            setTab]            = useState("catalogo"); // catalogo | reservas
-  const [modalProducto,  setModalProducto]  = useState(null); // null | {} | product
-  const [modalReserva,   setModalReserva]   = useState(null); // null | product
-  const [modalDetalle,   setModalDetalle]   = useState(null); // null | reservation
-  const [filtroEstado,   setFiltroEstado]   = useState("activas");
-  const [busquedaProd,   setBusquedaProd]   = useState("");
-  const [saving,         setSaving]         = useState(false);
+  const [tab, setTab] = useState(0); // 0=Catálogo, 1=Reservas
+  const [busqueda, setBusqueda] = useState("");
+  const [modalProducto, setModalProducto] = useState(null); // null | product | {}
+  const [modalApartar, setModalApartar] = useState(null);   // null | product
 
-  // Integración con Caja: cada pago de reserva genera un ingreso
-  const handleAddPayment = async (data) => {
-    const result = await addPayment(data);
-    // Reflejar en caja / transacciones si onAddTx está disponible
-    if (onAddTx && result) {
-      const reservation = reservations.find(r => r.id === data.reservation_id);
-      const product     = reservation ? getProductById(reservation.product_id) : null;
-      const miembro     = reservation ? miembros.find(m => m.id === reservation.member_id) : null;
-      await onAddTx({
-        tipo:       "ingreso",
-        categoria:  "Tienda",
-        descripcion: `Reserva: ${product?.name || "Producto"} — ${miembro?.nombre || ""}`,
-        monto:      data.amount,
-        fecha:      todayISO(),
-        miembroId:  reservation?.member_id || null,
-      });
-    }
-    // Actualizar detalle si está abierto
-    if (modalDetalle?.id === data.reservation_id) {
-      setModalDetalle(prev => ({ ...prev, _refreshPays: Date.now() }));
-    }
-    return result;
-  };
+  // Stats resumen
+  const stats = useMemo(() => {
+    const activos = products.filter(p => p.is_active).length;
+    const criticos = products.filter(p => {
+      const stock = p.stock_quantity;
+      if (stock === null || stock === undefined) return false;
+      const reserved = reservations.filter(r => r.product_id === p.id && ["reserved", "partially_paid", "paid"].includes(r.status)).reduce((s, r) => s + (r.quantity || 1), 0);
+      return (stock - reserved) <= 2;
+    }).length;
+    const valorInv = products.reduce((s, p) => s + (parseFloat(p.public_price) || 0) * (p.stock_quantity || 0), 0);
+    const resActivas = reservations.filter(r => ["reserved", "partially_paid"].includes(r.status)).length;
+    return { activos, criticos, valorInv, resActivas };
+  }, [products, reservations]);
 
-  const handleCreateReservation = async (data) => {
-    setSaving(true);
-    try {
-      const result = await createReservation(data);
-      // Anticipo inicial → caja
-      if (onAddTx && data.deposit_amount > 0) {
-        const product = getProductById(data.product_id);
-        const miembro = miembros.find(m => m.id === data.member_id);
-        await onAddTx({
-          tipo:        "ingreso",
-          categoria:   "Tienda",
-          descripcion: `Anticipo reserva: ${product?.name || "Producto"} — ${miembro?.nombre || ""}`,
-          monto:       data.deposit_amount,
-          fecha:       todayISO(),
-          miembroId:   data.member_id,
-        });
-      }
-      return result;
-    } finally {
-      setSaving(false);
-    }
-  };
+  const productosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.description || "").toLowerCase().includes(q)
+    );
+  }, [products, busqueda]);
 
-  // Filtros de reservas
-  const reservasFiltradas = useMemo(() => {
-    if (filtroEstado === "activas") {
-      return reservations.filter(r => !["delivered", "cancelled", "refunded"].includes(r.status));
-    }
-    if (filtroEstado === "entregadas") {
-      return reservations.filter(r => r.status === "delivered");
-    }
-    if (filtroEstado === "canceladas") {
-      return reservations.filter(r => ["cancelled", "refunded"].includes(r.status));
-    }
-    return reservations;
-  }, [reservations, filtroEstado]);
+  const TABS = ["📦 Catálogo", "🚀 Reservas"];
 
-  const productosFiltrados = useMemo(() =>
-    products.filter(p => p.name.toLowerCase().includes(busquedaProd.toLowerCase())),
-    [products, busquedaProd]
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", color: "#9ca3af" }}>
+      <p>Cargando tienda…</p>
+    </div>
   );
 
-  if (loading) {
-    return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 16, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🛍️</div>
-        <p style={{ color: "#a78bfa", fontSize: 14, fontWeight: 600 }}>Cargando catálogo…</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ flex: 1, padding: 20 }}>
-        <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 14, padding: 16 }}>
-          <p style={{ color: "#f43f5e", fontWeight: 700, marginBottom: 4 }}>Error al cargar</p>
-          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 10 }}>{error}</p>
-          <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 8 }}>¿Las tablas están creadas? Ejecuta en Supabase SQL Editor:</p>
-          <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa" }}>
-            -- Ver archivo: sql/catalogo_reservas.sql
-          </code>
-          <button onClick={reload} style={{ marginTop: 10, padding: "8px 16px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff" }}>
-            Reintentar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-
-      {/* Modales */}
-      {modalProducto !== null && (
-        <ModalProducto
-          product={modalProducto?.id ? modalProducto : null}
-          onSave={saveProduct}
-          onClose={() => setModalProducto(null)}
-        />
-      )}
-      {modalReserva && (
-        <ModalNuevaReserva
-          product={modalReserva}
-          miembros={miembros}
-          onSave={handleCreateReservation}
-          onClose={() => setModalReserva(null)}
-        />
-      )}
-      {modalDetalle && (() => {
-        const res     = reservations.find(r => r.id === modalDetalle.id) || modalDetalle;
-        const product = getProductById(res.product_id);
-        const miembro = miembros.find(m => m.id === res.member_id);
-        const pays    = getPaymentsForReservation(res.id);
-        return (
-          <ModalDetalleReserva
-            key={modalDetalle._refreshPays}
-            reservation={res}
-            product={product}
-            miembro={miembro}
-            payments={pays}
-            onAddPayment={handleAddPayment}
-            onUpdateStatus={updateReservationStatus}
-            onClose={() => setModalDetalle(null)}
-          />
-        );
-      })()}
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg-base, #13131f)", overflowX: "hidden" }}>
 
       {/* ── Header ── */}
-      <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <button onClick={onBack} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18 }}>←</button>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ color: "var(--text-primary,#fff)", fontSize: 19, fontWeight: 700 }}>🛍️ Tienda & Reservas</h1>
-              <p style={{ color: "#8b949e", fontSize: 11 }}>Catálogo de productos y apartados</p>
-            </div>
-            {tab === "catalogo" && (
-              <button onClick={() => setModalProducto({})} style={{
-                padding: "8px 14px", border: "none", borderRadius: 10, cursor: "pointer",
-                fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
-              }}>
-                + Producto
-              </button>
-            )}
+      <div style={{ flexShrink: 0, padding: "14px 16px 0", borderBottom: "1px solid rgba(255,255,255,.08)", background: "var(--bg-base, #13131f)", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+          <button onClick={onBack} style={{ background: "rgba(255,255,255,.08)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 700, margin: 0 }}>🛍️ Tienda & Reservas</h1>
+            <p style={{ color: "#9ca3af", fontSize: 11, margin: 0 }}>Catálogo de productos y apartados</p>
           </div>
+          {tab === 0 && (
+            <button
+              onClick={() => setModalProducto({})}
+              style={{ background: "linear-gradient(135deg,#7c3aed,#5b21b6)", color: "#fff", border: "none", borderRadius: 12, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+            >+ Producto</button>
+          )}
+        </div>
 
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated,#13131f)", borderRadius: 12, padding: 4, marginBottom: 14 }}>
-            {[["catalogo", "📦 Catálogo"], ["reservas", "🔖 Reservas"]].map(([k, lbl]) => (
-              <button key={k} onClick={() => setTab(k)} style={{
-                flex: 1, padding: "9px 4px", border: "none", borderRadius: 9,
-                cursor: "pointer", fontFamily: "inherit",
-                background: tab === k ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "transparent",
-                color: tab === k ? "#fff" : "#8b949e",
-                fontSize: 13, fontWeight: tab === k ? 700 : 500,
-                boxShadow: tab === k ? "0 2px 12px rgba(108,99,255,.3)" : "none",
-                transition: "all .2s",
-              }}>
-                {lbl}
-                {k === "reservas" && reservasFiltradas.length > 0 && tab !== "reservas" && (
-                  <span style={{ marginLeft: 6, background: "#f43f5e", color: "#fff", borderRadius: 6, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
-                    {reservasFiltradas.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+        {/* Tabs */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 }}>
+          {TABS.map((t, i) => (
+            <button key={i} onClick={() => setTab(i)}
+              style={{
+                background: tab === i ? "linear-gradient(135deg,#7c3aed,#9333ea)" : "rgba(255,255,255,.05)",
+                color: tab === i ? "#fff" : "#9ca3af",
+                border: `1px solid ${tab === i ? "#7c3aed" : "rgba(255,255,255,.1)"}`,
+                borderRadius: 12, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              }}
+            >{t}</button>
+          ))}
         </div>
       </div>
 
-      {/* ── Contenido scrollable ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 40px" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      {/* ── Contenido ── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px 40px" }}>
 
-          {/* ════ TAB: CATÁLOGO ════ */}
-          {tab === "catalogo" && (
-            <>
-              {/* ── Dashboard rápido ── */}
-              {(() => {
-                const activos       = products.filter(p => p.is_active).length;
-                const stockCritico  = products.filter(p =>
-                  p.is_active &&
-                  p.stock_initial != null &&
-                  p.stock_alert_limit != null &&
-                  p.stock_initial <= p.stock_alert_limit
-                ).length;
-                const valorizacion  = products
-                  .filter(p => p.is_active)
-                  .reduce((s, p) => s + (Number(p.public_price) * (Number(p.stock_initial) || 0)), 0);
-                const proveedores   = new Set(
-                  products.filter(p => p.supplier).map(p => p.supplier)
-                ).size;
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
+          {[
+            { icon: "📦", label: "PRODUCTOS ACTIVOS", value: stats.activos, color: "#a78bfa" },
+            { icon: "⚠️", label: "STOCK CRÍTICO",      value: stats.criticos, color: stats.criticos > 0 ? "#fbbf24" : "#34d399" },
+            { icon: "💰", label: "VALOR INVENTARIO",   value: fmt$(stats.valorInv), color: "#34d399" },
+            { icon: "🚀", label: "RESERVAS ACTIVAS",   value: stats.resActivas, color: stats.resActivas > 0 ? "#60a5fa" : "#6b7280" },
+          ].map(s => (
+            <div key={s.label} style={{ background: "var(--bg-card, #1a1a2e)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 14, padding: "12px 14px" }}>
+              <p style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", margin: "0 0 4px" }}>{s.icon} {s.label}</p>
+              <p style={{ fontSize: 20, fontWeight: 700, color: s.color, margin: 0 }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
 
-                const cards = [
-                  {
-                    icon: "📦", label: "Productos Activos",
-                    value: activos,
-                    color: "#a78bfa", bg: "rgba(167,139,250,.10)",
-                    border: "rgba(167,139,250,.25)",
-                  },
-                  {
-                    icon: "⚠️", label: "Stock Crítico",
-                    value: stockCritico,
-                    color: stockCritico > 0 ? "#f43f5e" : "#4ade80",
-                    bg: stockCritico > 0 ? "rgba(244,63,94,.08)" : "rgba(74,222,128,.08)",
-                    border: stockCritico > 0 ? "rgba(244,63,94,.25)" : "rgba(74,222,128,.25)",
-                  },
-                  {
-                    icon: "💰", label: "Valor Inventario",
-                    value: valorizacion > 0 ? fmt(valorizacion) : "$0",
-                    color: "#22d3ee", bg: "rgba(34,211,238,.08)",
-                    border: "rgba(34,211,238,.25)",
-                  },
-                  {
-                    icon: "🏭", label: "Proveedores",
-                    value: proveedores,
-                    color: "#f59e0b", bg: "rgba(245,158,11,.08)",
-                    border: "rgba(245,158,11,.25)",
-                  },
-                ];
+        {/* ── Tab Catálogo ── */}
+        {tab === 0 && (
+          <>
+            {/* Búsqueda */}
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, opacity: .4 }}>🔍</span>
+              <input
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar producto…"
+                style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.10)", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
 
-                return (
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                    gap: 10, marginBottom: 16,
-                  }}>
-                    {cards.map(c => (
-                      <div key={c.label} style={{
-                        background: c.bg,
-                        border: `1px solid ${c.border}`,
-                        borderRadius: 14, padding: "14px 14px 12px",
-                        display: "flex", flexDirection: "column", gap: 6,
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 18 }}>{c.icon}</span>
-                          <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, lineHeight: 1.2 }}>{c.label}</span>
-                        </div>
-                        <p style={{ color: c.color, fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{c.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* Buscador */}
-              <div style={{ position: "relative", marginBottom: 14 }}>
-                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#8b949e" }}>🔍</span>
-                <input value={busquedaProd} onChange={e => setBusquedaProd(e.target.value)}
-                  placeholder="Buscar producto..."
-                  style={{ ...inputStyle, paddingLeft: 36, marginBottom: 0 }} />
+            {error && (
+              <div style={{ background: "rgba(248,113,113,.1)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 12, padding: "10px 14px", marginBottom: 14, color: "#f87171", fontSize: 13 }}>
+                Error: {error}
               </div>
+            )}
 
-              {productosFiltrados.length === 0 && (
-                <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <p style={{ fontSize: 36, marginBottom: 10 }}>📦</p>
-                  <p style={{ color: "#8b949e", fontSize: 14, marginBottom: 8 }}>
-                    {busquedaProd ? `Sin resultados para "${busquedaProd}"` : "No hay productos aún"}
-                  </p>
-                  {!busquedaProd && (
-                    <button onClick={() => setModalProducto({})} style={{ padding: "10px 20px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff" }}>
-                      + Agregar primer producto
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
-                {productosFiltrados.map(product => {
-                  const resActivas = reservations.filter(r => r.product_id === product.id && !["delivered", "cancelled", "refunded"].includes(r.status)).length;
-                  return (
-                    <div key={product.id} style={{
-                      background: "var(--bg-card,#1e1e30)",
-                      border: `1px solid ${product.is_active ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.06)"}`,
-                      borderRadius: 16, overflow: "hidden",
-                      opacity: product.is_active ? 1 : 0.6,
-                      transition: "transform .2s",
-                    }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-                    >
-                      {/* Imagen */}
-                      <div style={{ width: "100%", height: 140, background: "rgba(108,99,255,.08)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
-                        {product.image_url
-                          ? <img src={product.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />
-                          : <span style={{ fontSize: 40 }}>📦</span>
-                        }
-                        {!product.is_active && (
-                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <span style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, background: "#0d1117", borderRadius: 6, padding: "4px 8px" }}>INACTIVO</span>
-                          </div>
-                        )}
-                        {resActivas > 0 && (
-                          <span style={{ position: "absolute", top: 8, right: 8, background: "#f43f5e", color: "#fff", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
-                            {resActivas} apartado{resActivas > 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div style={{ padding: "12px 14px" }}>
-                        <p style={{ color: "var(--text-primary,#fff)", fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{product.name}</p>
-                        {product.description && (
-                          <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{product.description}</p>
-                        )}
-                        <p style={{ color: "#4ade80", fontSize: 16, fontWeight: 800, marginBottom: 8 }}>{fmt(product.public_price)}</p>
-
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                          {product.is_reservable && (
-                            <span style={{ background: "rgba(167,139,250,.12)", color: "#a78bfa", borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 600 }}>
-                              🔖 Reservable
-                            </span>
-                          )}
-                          {(product.min_deposit_amount || product.min_deposit_percent) && (
-                            <span style={{ background: "rgba(245,158,11,.1)", color: "#f59e0b", borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 600 }}>
-                              💰 Anticipo {product.min_deposit_amount ? fmt(product.min_deposit_amount) : `${product.min_deposit_percent}%`}
-                            </span>
-                          )}
-                          {product.lead_time_days > 0 && (
-                            <span style={{ background: "rgba(34,211,238,.1)", color: "#22d3ee", borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 600 }}>
-                              ⏱ {product.lead_time_days}d
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {product.is_reservable && product.is_active && (
-                            <button onClick={() => setModalReserva(product)} style={{
-                              flex: 2, padding: "8px", border: "none", borderRadius: 10,
-                              cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                              background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
-                            }}>
-                              🔖 Apartar
-                            </button>
-                          )}
-                          <button onClick={() => setModalProducto(product)} style={{
-                            flex: 1, padding: "8px", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10,
-                            cursor: "pointer", fontFamily: "inherit", fontSize: 12,
-                            background: "transparent", color: "#8b949e",
-                          }}>
-                            ✏️
-                          </button>
-                          <button onClick={() => toggleProductActive(product.id, !product.is_active)} style={{
-                            padding: "8px 10px", border: "1px solid rgba(255,255,255,.1)", borderRadius: 10,
-                            cursor: "pointer", fontFamily: "inherit", fontSize: 12,
-                            background: "transparent", color: product.is_active ? "#f43f5e" : "#4ade80",
-                          }} title={product.is_active ? "Desactivar" : "Activar"}>
-                            {product.is_active ? "⏸" : "▶"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* ════ TAB: RESERVAS ════ */}
-          {tab === "reservas" && (
-            <>
-              {/* Filtros de estado */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
-                {[
-                  ["activas", "Activas"],
-                  ["entregadas", "Entregadas"],
-                  ["canceladas", "Canceladas"],
-                  ["todas", "Todas"],
-                ].map(([k, lbl]) => (
-                  <button key={k} onClick={() => setFiltroEstado(k)} style={{
-                    padding: "7px 14px", border: "none", borderRadius: 20, whiteSpace: "nowrap",
-                    cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600,
-                    background: filtroEstado === k ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#13131f)",
-                    color: filtroEstado === k ? "#fff" : "#8b949e",
-                    transition: "all .2s",
-                  }}>
-                    {lbl}
+            {productosFiltrados.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <p style={{ fontSize: 40, margin: "0 0 8px" }}>📦</p>
+                <p style={{ color: "#9ca3af", fontSize: 15, fontWeight: 600 }}>Sin productos{busqueda ? " encontrados" : ""}</p>
+                {!busqueda && (
+                  <button onClick={() => setModalProducto({})} style={{ marginTop: 12, background: "#7c3aed", color: "#fff", border: "none", borderRadius: 12, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                    + Agregar primer producto
                   </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+                {productosFiltrados.map(p => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    reservations={reservations}
+                    onApartar={setModalApartar}
+                    onEdit={setModalProducto}
+                    onToggleActive={toggleProductActive}
+                  />
                 ))}
               </div>
+            )}
+          </>
+        )}
 
-              {reservasFiltradas.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <p style={{ fontSize: 36, marginBottom: 10 }}>🔖</p>
-                  <p style={{ color: "#8b949e", fontSize: 14 }}>No hay reservas {filtroEstado !== "todas" ? `"${filtroEstado}"` : ""}</p>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {reservasFiltradas.map(res => {
-                    const product = getProductById(res.product_id);
-                    const miembro = miembros.find(m => m.id === res.member_id);
-                    const pays    = getPaymentsForReservation(res.id);
-                    const totalPagado = pays.reduce((s, p) => s + Number(p.amount), 0);
-                    const saldo = Math.max(res.total_amount - totalPagado, 0);
-                    const progreso = res.total_amount > 0 ? Math.min(100, (totalPagado / res.total_amount) * 100) : 0;
-                    const meta = STATUS_META[res.status] || STATUS_META.reserved;
-
-                    return (
-                      <div key={res.id} onClick={() => setModalDetalle(res)}
-                        style={{
-                          background: "var(--bg-card,#1e1e30)",
-                          border: `1px solid ${meta.color}25`,
-                          borderRadius: 16, padding: "14px 16px",
-                          cursor: "pointer", transition: "all .2s",
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = `${meta.color}60`; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = `${meta.color}25`; e.currentTarget.style.transform = "translateY(0)"; }}
-                      >
-                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                          {/* Imagen mini */}
-                          <div style={{ width: 48, height: 48, borderRadius: 10, background: "rgba(108,99,255,.1)", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {product?.image_url
-                              ? <img src={product.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              : <span style={{ fontSize: 20 }}>📦</span>
-                            }
-                          </div>
-
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 3, flexWrap: "wrap" }}>
-                              <p style={{ color: "var(--text-primary,#fff)", fontSize: 13, fontWeight: 700 }}>{product?.name || "Producto"}</p>
-                              <StatusBadge status={res.status} />
-                            </div>
-                            <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 6 }}>
-                              👤 {miembro?.nombre || "—"} · x{res.quantity}
-                              {res.expected_arrival_date && ` · 📅 ${fmtDate(res.expected_arrival_date)}`}
-                            </p>
-
-                            {/* Barra de progreso */}
-                            <div style={{ height: 4, background: "rgba(255,255,255,.08)", borderRadius: 2, marginBottom: 6, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: `${progreso}%`, background: progreso === 100 ? "#4ade80" : "linear-gradient(90deg,#6c63ff,#e040fb)", borderRadius: 2, transition: "width .4s" }} />
-                            </div>
-
-                            <div style={{ display: "flex", gap: 12 }}>
-                              <span style={{ color: "#8b949e", fontSize: 11 }}>Total: <strong style={{ color: "var(--text-primary,#fff)" }}>{fmt(res.total_amount)}</strong></span>
-                              <span style={{ color: "#8b949e", fontSize: 11 }}>Pagado: <strong style={{ color: "#4ade80" }}>{fmt(totalPagado)}</strong></span>
-                              {saldo > 0 && <span style={{ color: "#8b949e", fontSize: 11 }}>Saldo: <strong style={{ color: "#f59e0b" }}>{fmt(saldo)}</strong></span>}
-                            </div>
-                          </div>
-
-                          <span style={{ color: "#8b949e", fontSize: 18 }}>›</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
-          )}
-
-        </div>
+        {/* ── Tab Reservas ── */}
+        {tab === 1 && (
+          <ReservasView
+            reservations={reservations}
+            products={products}
+            miembros={miembros}
+            onUpdateStatus={updateReservationStatus}
+          />
+        )}
       </div>
+
+      {/* ── Modales ── */}
+      {modalProducto !== null && (
+        <ProductModal
+          product={modalProducto?.id ? modalProducto : null}
+          onClose={() => setModalProducto(null)}
+          onSave={saveProduct}
+        />
+      )}
+
+      {modalApartar && (
+        <ApartarModal
+          product={modalApartar}
+          miembros={miembros}
+          onClose={() => setModalApartar(null)}
+          onSave={createReservation}
+        />
+      )}
     </div>
   );
 }
