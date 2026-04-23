@@ -688,8 +688,9 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
     ordered:    { label: "Marcar como listo para entregar", status: "ready_for_pickup", icon: "✅", color: "#4ade80" },
     ready_for_pickup: { label: "Marcar como entregado", status: "delivered", icon: "🎉", color: "#6ee7b7" },
   };
-  const nextAction = actions[reservation.status];
-  const canCancel  = !["delivered", "cancelled", "refunded"].includes(reservation.status);
+  const nextAction     = actions[reservation.status];
+  const canDeliver     = nextAction?.status === "delivered" ? saldo === 0 : true;
+  const canCancel      = !["delivered", "cancelled", "refunded"].includes(reservation.status);
 
   return (
     <Modal title="📋 Detalle de reserva" onClose={onClose} wide>
@@ -756,19 +757,24 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
       )}
 
       {/* Registrar pago */}
-      {!["delivered", "cancelled", "refunded"].includes(reservation.status) && saldo > 0 && (
+      {!["delivered", "cancelled", "refunded"].includes(reservation.status) && (
         <>
-          {!showPago ? (
+          {saldo <= 0 ? (
+            <div style={{ background: "rgba(74,222,128,.08)", border: "1px solid rgba(74,222,128,.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16 }}>✅</span>
+              <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>Pago completado — sin saldo pendiente</p>
+            </div>
+          ) : !showPago ? (
             <button onClick={() => setShowPago(true)} style={{
               width: "100%", padding: "11px", border: "1px solid rgba(74,222,128,.3)", borderRadius: 12,
               cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
               background: "rgba(74,222,128,.08)", color: "#4ade80", marginBottom: 10,
             }}>
-              💵 Registrar pago
+              💵 Agregar pago ({fmt(saldo)} pendiente)
             </button>
           ) : (
             <div style={{ background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 12, padding: 14, marginBottom: 10 }}>
-              <p style={{ color: "#4ade80", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Nuevo pago</p>
+              <p style={{ color: "#4ade80", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Nuevo pago — saldo restante: {fmt(saldo)}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 8 }}>
                 <Field label="Monto">
                   <input type="number" value={pago.amount} min="0.01" max={saldo}
@@ -805,14 +811,32 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
       {/* Acciones de estado */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {nextAction && (
-          <button onClick={() => onUpdateStatus(reservation.id, nextAction.status)} style={{
-            width: "100%", padding: "11px", border: "none", borderRadius: 12,
-            cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            background: `${nextAction.color}18`, color: nextAction.color,
-            border: `1px solid ${nextAction.color}40`,
-          }}>
-            {nextAction.icon} {nextAction.label}
-          </button>
+          <>
+            <button
+              onClick={() => canDeliver && onUpdateStatus(reservation.id, nextAction.status)}
+              disabled={!canDeliver}
+              title={!canDeliver ? `No se puede entregar: quedan ${fmt(saldo)} pendientes` : ""}
+              style={{
+                width: "100%", padding: "11px", borderRadius: 12,
+                cursor: canDeliver ? "pointer" : "not-allowed",
+                fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                background: canDeliver ? `${nextAction.color}18` : "rgba(255,255,255,.04)",
+                color: canDeliver ? nextAction.color : "#8b949e",
+                border: `1px solid ${canDeliver ? nextAction.color + "40" : "rgba(255,255,255,.08)"}`,
+                opacity: canDeliver ? 1 : 0.6,
+                transition: "all .2s",
+              }}>
+              {nextAction.icon} {nextAction.label}
+            </button>
+            {!canDeliver && (
+              <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.25)", borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14 }}>🔒</span>
+                <p style={{ color: "#f43f5e", fontSize: 12, fontWeight: 600 }}>
+                  Saldo pendiente de <strong>{fmt(saldo)}</strong>. Registra el pago completo para poder entregar.
+                </p>
+              </div>
+            )}
+          </>
         )}
         {reservation.status === "partially_paid" && (
           <button onClick={() => onUpdateStatus(reservation.id, "ordered")} style={{
@@ -1033,6 +1057,74 @@ export default function TiendaScreen({ gymId, miembros, txs, onBack, onAddTx }) 
           {/* ════ TAB: CATÁLOGO ════ */}
           {tab === "catalogo" && (
             <>
+              {/* ── Dashboard rápido ── */}
+              {(() => {
+                const activos       = products.filter(p => p.is_active).length;
+                const stockCritico  = products.filter(p =>
+                  p.is_active &&
+                  p.stock_initial != null &&
+                  p.stock_alert_limit != null &&
+                  p.stock_initial <= p.stock_alert_limit
+                ).length;
+                const valorizacion  = products
+                  .filter(p => p.is_active)
+                  .reduce((s, p) => s + (Number(p.public_price) * (Number(p.stock_initial) || 0)), 0);
+                const proveedores   = new Set(
+                  products.filter(p => p.supplier).map(p => p.supplier)
+                ).size;
+
+                const cards = [
+                  {
+                    icon: "📦", label: "Productos Activos",
+                    value: activos,
+                    color: "#a78bfa", bg: "rgba(167,139,250,.10)",
+                    border: "rgba(167,139,250,.25)",
+                  },
+                  {
+                    icon: "⚠️", label: "Stock Crítico",
+                    value: stockCritico,
+                    color: stockCritico > 0 ? "#f43f5e" : "#4ade80",
+                    bg: stockCritico > 0 ? "rgba(244,63,94,.08)" : "rgba(74,222,128,.08)",
+                    border: stockCritico > 0 ? "rgba(244,63,94,.25)" : "rgba(74,222,128,.25)",
+                  },
+                  {
+                    icon: "💰", label: "Valor Inventario",
+                    value: valorizacion > 0 ? fmt(valorizacion) : "$0",
+                    color: "#22d3ee", bg: "rgba(34,211,238,.08)",
+                    border: "rgba(34,211,238,.25)",
+                  },
+                  {
+                    icon: "🏭", label: "Proveedores",
+                    value: proveedores,
+                    color: "#f59e0b", bg: "rgba(245,158,11,.08)",
+                    border: "rgba(245,158,11,.25)",
+                  },
+                ];
+
+                return (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                    gap: 10, marginBottom: 16,
+                  }}>
+                    {cards.map(c => (
+                      <div key={c.label} style={{
+                        background: c.bg,
+                        border: `1px solid ${c.border}`,
+                        borderRadius: 14, padding: "14px 14px 12px",
+                        display: "flex", flexDirection: "column", gap: 6,
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: 18 }}>{c.icon}</span>
+                          <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, lineHeight: 1.2 }}>{c.label}</span>
+                        </div>
+                        <p style={{ color: c.color, fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{c.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
               {/* Buscador */}
               <div style={{ position: "relative", marginBottom: 14 }}>
                 <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#8b949e" }}>🔍</span>
