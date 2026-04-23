@@ -19,7 +19,8 @@ import MensajesScreen from "../screens/MensajesScreen";
 import TiendaScreen from "../screens/TiendaScreen";
 
 // Screens
-import DashboardScreen from "../screens/DashboardScreen";
+import DashboardScreen from "../screens/AdminDashboardScreen";
+import FinanzasScreen from "../screens/FinanzasScreen";
 import MiembrosScreen from "../screens/MiembrosScreen";
 import EstadisticasScreen from "../screens/EstadisticasScreen";
 import CajaScreen from "../screens/CajaScreen";
@@ -443,8 +444,22 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           />
         )}
 
-        {/* ═══ DASHBOARD ═══ */}
+        {/* ═══ DASHBOARD (Admin) ═══ */}
         {!loading && !configScreen && screen === "dashboard" && <DashboardScreen
+          gymConfig={gymConfig}
+          ahora={ahora}
+          miembros={miembros}
+          txs={txs}
+          setScreen={setScreen}
+          setSelM={setSelM}
+          setModal={setModal}
+          setFiltroEstado={setFiltroEstado}
+          gymId={GYM_ID}
+          darkMode={darkMode}
+        />}
+
+        {/* ═══ FINANZAS (solo owner) ═══ */}
+        {!loading && !configScreen && isOwner && screen === "finanzas" && <FinanzasScreen
           gymConfig={gymConfig}
           ahora={ahora}
           utilidad={utilidad}

@@ -41,12 +41,24 @@ const IC = {
   ),
 };
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { label: "Inicio",   icon: IC.home,    s: "dashboard" },
   { label: "Miembros", icon: IC.members, s: "miembros"  },
   { label: "Mensajes", icon: IC.chat,    s: "mensajes",  hasBadge: true },
   { label: "Caja",     icon: IC.cash,    s: "caja"      },
   { label: "Tienda",   icon: IC.store,   s: "tienda"    },
+];
+
+const OWNER_EXTRA_ITEMS = [
+  {
+    label: "Finanzas",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+      </svg>
+    ),
+    s: "finanzas",
+  },
 ];
 
 // ── NavBtn: soporta modo colapsado (solo icono con tooltip) ──
@@ -209,7 +221,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         {/* ── Menú principal ── */}
         {!isCollapsed && <span style={sectionStyle}>Menú</span>}
 
-        {NAV_ITEMS.map((item, i) => (
+        {[...BASE_NAV_ITEMS, ...(isOwner ? OWNER_EXTRA_ITEMS : [])].map((item, i) => (
           <NavBtn
             key={i}
             label={item.label}
@@ -357,7 +369,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
 
       {/* ══ MOBILE BOTTOM NAV ══ */}
       <nav className="gym-nav mobile-bottom-nav">
-        {NAV_ITEMS.map((item, i) => (
+        {[...BASE_NAV_ITEMS, ...(isOwner ? OWNER_EXTRA_ITEMS : [])].map((item, i) => (
           <button
             key={"m"+i}
             className="gym-nav-btn mobile-only"
