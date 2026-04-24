@@ -1037,15 +1037,7 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
           </>
         )}
 
-        {reservation.status === "partially_paid" && (
-          <button onClick={() => onUpdateStatus(reservation.id, "ordered")} style={{
-            width: "100%", padding: "11px", border: "1px solid rgba(34,211,238,.3)", borderRadius: 12,
-            cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            background: "rgba(34,211,238,.08)", color: "#22d3ee",
-          }}>
-            📦 Marcar pedido realizado al proveedor
-          </button>
-        )}
+
 
         {canCancel && (
           <button onClick={() => setConfirmCancel(true)} style={{
