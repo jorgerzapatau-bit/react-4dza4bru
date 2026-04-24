@@ -72,6 +72,7 @@ export function useReservations(gymId) {
   const [products,     setProducts]     = useState([]);
   const [reservations, setReservations] = useState([]);
   const [payments,     setPayments]     = useState([]); // todos los pagos del gym
+  const [kardex,       setKardex]       = useState([]); // entradas/salidas de stock
   const [loading,      setLoading]      = useState(true);
   const [error,        setError]        = useState(null);
 
@@ -93,6 +94,15 @@ export function useReservations(gymId) {
       if (res && res.length > 0) {
         const pays = await sbGet(`reservation_payments?gym_id=eq.${gymId}&order=created_at.asc`);
         setPayments(pays || []);
+      }
+
+      // Cargar kardex de stock (tabla puede no existir, ignorar error)
+      try {
+        const kd = await sbGet(`product_stock_entries?gym_id=eq.${gymId}&order=created_at.desc`);
+        setKardex(kd || []);
+      } catch (_) {
+        // tabla aún no existe, kardex vacío
+        setKardex([]);
       }
     } catch (err) {
       console.error("[useReservations] load error:", err.message);
@@ -221,11 +231,69 @@ export function useReservations(gymId) {
     return products.find(p => p.id === productId) || null;
   }, [products]);
 
+  // ── KARDEX / STOCK ENTRIES ────────────────────────────────────
+
+  const addStockEntry = useCallback(async (data) => {
+    const body = {
+      gym_id:     gymId,
+      product_id: data.product_id,
+      tipo:       data.tipo || "entrada",
+      cantidad:   data.cantidad,
+      costo:      data.costo ?? null,
+      proveedor:  data.proveedor ?? null,
+      notas:      data.notas ?? null,
+      fecha:      data.fecha || new Date().toISOString().slice(0, 10),
+    };
+
+    let created = null;
+    try {
+      created = await sbPost("product_stock_entries", body);
+      if (created) setKardex(prev => [created, ...prev]);
+    } catch (err) {
+      console.warn("[addStockEntry] tabla no existe, solo actualizando stock:", err.message);
+      created = { ...body, id: `local-${Date.now()}`, created_at: new Date().toISOString() };
+      setKardex(prev => [created, ...prev]);
+    }
+
+    const product = products.find(p => p.id === data.product_id);
+    const stockActual = Number(product?.stock_current ?? product?.stock_initial ?? 0);
+    const delta = (data.tipo === "entrada" ? 1 : -1) * data.cantidad;
+    const nuevoStock = Math.max(0, stockActual + delta);
+
+    try {
+      await sbPatch(
+        `products?id=eq.${data.product_id}&gym_id=eq.${gymId}`,
+        { stock_current: nuevoStock, updated_at: new Date().toISOString() }
+      );
+    } catch (err) {
+      console.warn("[addStockEntry] no se pudo actualizar stock_current:", err.message);
+    }
+
+    setProducts(prev => prev.map(p =>
+      p.id === data.product_id ? { ...p, stock_current: nuevoStock } : p
+    ));
+
+    return created;
+  }, [gymId, products]);
+
+  const getKardexForProduct = useCallback((productId) => {
+    return kardex.filter(k => k.product_id === productId);
+  }, [kardex]);
+
+  const editReservation = useCallback(async (reservationId, data) => {
+    const body = { ...data, updated_at: new Date().toISOString() };
+    await sbPatch(`product_reservations?id=eq.${reservationId}&gym_id=eq.${gymId}`, body);
+    setReservations(prev => prev.map(r =>
+      r.id === reservationId ? { ...r, ...body } : r
+    ));
+  }, [gymId]);
+
   return {
     // estado
     products,
     reservations,
     payments,
+    kardex,
     loading,
     error,
     // productos
@@ -236,8 +304,12 @@ export function useReservations(gymId) {
     createReservation,
     updateReservationStatus,
     cancelReservation,
+    editReservation,
     // pagos
     addPayment,
+    // stock / kardex
+    addStockEntry,
+    getKardexForProduct,
     // helpers
     getPaymentsForReservation,
     getReservationsForMember,
