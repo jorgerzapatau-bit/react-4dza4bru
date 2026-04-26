@@ -390,7 +390,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-          <button onClick={onBack} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
+          <button onClick={onBack} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "var(--text-primary)", fontSize: 18, flexShrink: 0 }}>←</button>
           <div style={{ flex: 1 }}>
             <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💵 Caja</h1>
             <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>Movimientos por fecha · Corte de caja</p>
@@ -402,8 +402,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
           {PERIODOS.map((p, i) => (
             <button key={i} onClick={() => aplicarPeriodo(i)}
               style={{ flexShrink: 0, padding: "6px 12px", border: "none", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, transition: "all .15s",
-                background: periodoActivo === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
-                color: periodoActivo === i ? "#fff" : "#8b949e",
+                background: periodoActivo === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                color: periodoActivo === i ? "#fff" : "var(--text-secondary)",
                 boxShadow: periodoActivo === i ? "0 2px 10px rgba(108,99,255,.3)" : "none" }}>
               {p.label}
             </button>
@@ -413,14 +413,14 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
         {/* Rango personalizado */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 4 }}>
           <div>
-            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Desde</p>
-            <input type="date" value={desde} onChange={e => { setDesde(e.target.value); setPeriodoActivo(-1); }}
-              style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+            <label htmlFor="fecha-desde" style={{ display: "block", color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Desde</label>
+            <input id="fecha-desde" type="date" value={desde} onChange={e => { setDesde(e.target.value); setPeriodoActivo(-1); }}
+              style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 10px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
           </div>
           <div>
-            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Hasta</p>
-            <input type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPeriodoActivo(-1); }}
-              style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 10px", color: "#fff", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
+            <label htmlFor="fecha-hasta" style={{ display: "block", color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Hasta</label>
+            <input id="fecha-hasta" type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPeriodoActivo(-1); }}
+              style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 10px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none" }} />
           </div>
         </div>
         </div>
@@ -431,8 +431,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
 
         {/* ── Resumen financiero ── */}
-        <div style={{ background: "linear-gradient(135deg,#1e1e3a,#251e3a)", borderRadius: 22, padding: "18px 18px 14px", marginBottom: 14, border: "1px solid rgba(108,99,255,.25)", boxShadow: "0 6px 28px rgba(0,0,0,.3)" }}>
-          <p style={{ color: "rgba(255,255,255,.45)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+        <div style={{ background: "var(--bg-card)", borderRadius: 22, padding: "18px 18px 14px", marginBottom: 14, border: "1px solid rgba(108,99,255,.25)", boxShadow: "0 6px 28px rgba(0,0,0,.15)" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
             {desde === hasta ? `📅 ${fmtDate(desde)}` : `📅 ${fmtDate(desde)} → ${fmtDate(hasta)}`}
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
@@ -442,12 +442,14 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               { label: "Utilidad", val: utilidad, color: utilidad >= 0 ? "#4ade80" : "#f87171", bg: utilidad >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: utilidad >= 0 ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)" },
             ].map(card => (
               <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
-                <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{card.label}</p>
-                <p style={{ color: card.color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{card.val < 0 ? "-" : card.label === "Utilidad" && card.val > 0 ? "+" : ""}{fmt$(Math.abs(card.val))}</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{card.label}</p>
+                <p style={{ color: card.color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
+                  {card.val < 0 ? "-" : card.label === "Utilidad" && card.val > 0 ? "+" : ""}{fmt$(Math.abs(card.val))}
+                </p>
               </div>
             ))}
           </div>
-          <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center" }}>{txsFiltradas.length} movimiento{txsFiltradas.length !== 1 ? "s" : ""} en el período</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, textAlign: "center" }}>{txsFiltradas.length} movimiento{txsFiltradas.length !== 1 ? "s" : ""} en el período</p>
         </div>
 
         {/* ── Desglose ingresos por categoría ── */}
@@ -526,11 +528,20 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 18, padding: "16px", marginBottom: 14 }}>
           <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📸 Corte de caja</p>
           <p style={{ color: "var(--text-secondary)", fontSize: 12, marginBottom: 14 }}>Genera un resumen sellado con la hora exacta del corte.</p>
-          <button onClick={generarCorte}
-            style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-              background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
-              boxShadow: "0 4px 18px rgba(108,99,255,.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <span style={{ fontSize: 18 }}>📸</span> Hacer corte ahora
+          <button onClick={() => {
+              if (corte && !window.confirm("Ya existe un corte generado. ¿Deseas reemplazarlo?")) return;
+              generarCorte();
+            }}
+            disabled={txsFiltradas.length === 0}
+            style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14,
+              cursor: txsFiltradas.length === 0 ? "not-allowed" : "pointer",
+              fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+              background: txsFiltradas.length === 0 ? "var(--bg-elevated)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
+              color: txsFiltradas.length === 0 ? "var(--text-tertiary)" : "#fff",
+              boxShadow: txsFiltradas.length === 0 ? "none" : "0 4px 18px rgba(108,99,255,.4)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              opacity: txsFiltradas.length === 0 ? .6 : 1 }}>
+            <span style={{ fontSize: 18 }}>📸</span> {txsFiltradas.length === 0 ? "Sin movimientos en el período" : "Hacer corte ahora"}
           </button>
 
           {/* Resultado del corte */}
@@ -585,12 +596,12 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={descargarPDFCorte} disabled={generandoPDF}
                   style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: generandoPDF ? "not-allowed" : "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                    background: generandoPDF ? "#21262d" : "linear-gradient(135deg,#f43f5e,#e11d48)",
-                    color: generandoPDF ? "#8b949e" : "#fff",
+                    background: generandoPDF ? "var(--bg-elevated)" : "linear-gradient(135deg,#f43f5e,#e11d48)",
+                    color: generandoPDF ? "var(--text-secondary)" : "#fff",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     boxShadow: generandoPDF ? "none" : "0 3px 12px rgba(244,63,94,.35)" }}>
                   <span style={{ fontSize: 14 }}>{generandoPDF ? "⏳" : "📄"}</span>
-                  {generandoPDF ? "Generando..." : "Descargar PDF"}
+                  {generandoPDF ? "Generando..." : "PDF"}
                 </button>
                 <button onClick={() => { const url = `https://wa.me/?text=${encodeURIComponent(textoCorte)}`; window.open(url, "_blank"); }}
                   style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
@@ -598,6 +609,14 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                     boxShadow: "0 3px 12px rgba(37,211,102,.3)" }}>
                   <span style={{ fontSize: 14 }}>💬</span> WhatsApp
+                </button>
+                <button onClick={() => { navigator.clipboard.writeText(textoCorte).then(() => setCopiadoCorte(true)); setTimeout(() => setCopiadoCorte(false), 2000); }}
+                  style={{ flex: 1, padding: "10px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                    background: copiadoCorte ? "linear-gradient(135deg,#4ade80,#16a34a)" : "var(--bg-elevated)",
+                    color: copiadoCorte ? "#fff" : "var(--text-secondary)",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .2s" }}>
+                  <span style={{ fontSize: 14 }}>{copiadoCorte ? "✓" : "📋"}</span>
+                  {copiadoCorte ? "¡Copiado!" : "Copiar"}
                 </button>
               </div>
             </div>
@@ -610,8 +629,8 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
             {[{ val: "todos", label: "Todos" }, { val: "ingreso", label: "💰 Ingresos" }, { val: "gasto", label: "💸 Gastos" }].map(f => (
               <button key={f.val} onClick={() => setTipoFiltro(f.val)}
                 style={{ flex: 1, padding: "8px 4px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, transition: "all .15s",
-                  background: tipoFiltro === f.val ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
-                  color: tipoFiltro === f.val ? "#fff" : "#8b949e" }}>
+                  background: tipoFiltro === f.val ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                  color: tipoFiltro === f.val ? "#fff" : "var(--text-secondary)" }}>
                 {f.label}
               </button>
             ))}
@@ -620,24 +639,30 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
           {listaOrdenada.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>📭</p>
-              <p style={{ color: "#8b949e", fontSize: 13 }}>Sin movimientos en este período</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Sin movimientos en este período</p>
             </div>
-          ) : listaOrdenada.map(t => {
+          ) : (() => {
+            const maxIngId = listaOrdenada.filter(t => t.tipo === "ingreso").reduce((max, t) => !max || Number(t.monto) > Number(max.monto) ? t : max, null)?.id;
+            return listaOrdenada.map(t => {
             const isIng = t.tipo === "ingreso";
             const color = isIng ? "#4ade80" : "#f87171";
+            const esMayor = isIng && t.id === maxIngId && ingresos.length > 1;
             const mFoto = isIng && (t.miembroId || t.miembro_id)
               ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null)
               : null;
             return (
-              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, marginBottom: 8, background: "var(--bg-card)", border: "1px solid var(--border)" }}>
+              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, marginBottom: 8, background: "var(--bg-card)", border: `1px solid ${esMayor ? "rgba(250,204,21,.35)" : "var(--border)"}` }}>
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: isIng ? "rgba(74,222,128,.12)" : "rgba(248,113,113,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden", border: `2px solid ${color}30` }}>
                   {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || (isIng ? "💰" : "💸")}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || "—"}</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                    <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || "—"}</p>
+                    {esMayor && <span style={{ background: "rgba(250,204,21,.15)", color: "#ca8a04", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700, flexShrink: 0 }}>★ Mayor</span>}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ background: isIng ? "rgba(74,222,128,.12)" : "rgba(248,113,113,.12)", color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{t.categoria}</span>
-                    <span style={{ color: "#8b949e", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
+                    <span style={{ color: "var(--text-secondary)", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
                   </div>
                 </div>
                 <p style={{ color, fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
@@ -645,7 +670,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                 </p>
               </div>
             );
-          })}
+          })})()}
         </div>
         </div>
       </div>
