@@ -47,15 +47,22 @@ const IC = {
       <line x1="3" y1="10" x2="21" y2="10"/>
     </svg>
   ),
+  card: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2"/>
+      <line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+  ),
 };
 
 const BASE_NAV_ITEMS = [
-  { label: "Inicio",    icon: IC.home,     s: "dashboard" },
-  { label: "Miembros",  icon: IC.members,  s: "miembros"  },
-  { label: "Mensajes",  icon: IC.chat,     s: "mensajes",  hasBadge: true },
-  { label: "Caja",      icon: IC.cash,     s: "caja"      },
-  { label: "Tienda",    icon: IC.store,    s: "tienda"    },
-  { label: "Horarios",  icon: IC.calendar, s: "horarios"  },
+  { label: "Inicio",      icon: IC.home,     s: "dashboard"  },
+  { label: "Miembros",    icon: IC.members,  s: "miembros"   },
+  { label: "Membresías",  icon: IC.card,     s: "membresias" },
+  { label: "Mensajes",    icon: IC.chat,     s: "mensajes",  hasBadge: true },
+  { label: "Caja",        icon: IC.cash,     s: "caja"       },
+  { label: "Tienda",      icon: IC.store,    s: "tienda"     },
+  { label: "Horarios",    icon: IC.calendar, s: "horarios"   },
 ];
 
 const OWNER_EXTRA_ITEMS = [

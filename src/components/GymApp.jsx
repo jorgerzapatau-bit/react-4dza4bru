@@ -28,6 +28,7 @@ import EstadisticasScreen from "../screens/EstadisticasScreen";
 import CajaScreen from "../screens/CajaScreen";
 import ConfigScreen from "../screens/ConfigScreen";
 import ScannerScreen from "../screens/ScannerScreen";
+import MembresiasScreen from "../screens/MembresiasScreen";
 
 // ── Inline Dashboard screen (kept here since it's tightly coupled to GymApp state) ──
 // If you want to extract it later, follow the same pattern as the other screens.
@@ -530,6 +531,17 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             setScreen={setScreen}
             activePlanes={activePlanes}
             setFM={setFM}
+          />
+        )}
+
+        {/* ═══ MEMBRESÍAS ═══ */}
+        {!loading && !configScreen && screen === "membresias" && (
+          <MembresiasScreen
+            gymId={GYM_ID}
+            gymConfig={gymConfig}
+            miembros={miembros}
+            txs={txs}
+            isOwner={isOwner}
           />
         )}
 

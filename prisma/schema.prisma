@@ -513,20 +513,22 @@ model accesos {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model gimnasios {
-  id               String          @id
-  nombre           String
-  slogan           String?
-  telefono         String?
-  direccion        String?
-  color_primario   String?         @default("#6c63ff")
-  color_secundario String?         @default("#e040fb")
-  planes           Json?           @default("[{\"meses\": 1, \"nombre\": \"Mensual\", \"precio\": 850}, {\"meses\": 3, \"nombre\": \"Trimestral\", \"precio\": 2200}, {\"meses\": 6, \"nombre\": \"Semestral\", \"precio\": 3900}, {\"meses\": 12, \"nombre\": \"Anual\", \"precio\": 7500}]")
-  created_at       DateTime?       @default(now()) @db.Timestamptz(6)
-  zona_horaria     String?         @default("America/Merida")
-  logo             String?
-  accesos          accesos[]
-  miembros         miembros[]
-  transacciones    transacciones[]
+  id                  String                @id
+  nombre              String
+  slogan              String?
+  telefono            String?
+  direccion           String?
+  color_primario      String?               @default("#6c63ff")
+  color_secundario    String?               @default("#e040fb")
+  planes              Json?                 @default("[{\"meses\": 1, \"nombre\": \"Mensual\", \"precio\": 850}, {\"meses\": 3, \"nombre\": \"Trimestral\", \"precio\": 2200}, {\"meses\": 6, \"nombre\": \"Semestral\", \"precio\": 3900}, {\"meses\": 12, \"nombre\": \"Anual\", \"precio\": 7500}]")
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  zona_horaria        String?               @default("America/Merida")
+  logo                String?
+  accesos             accesos[]
+  miembros            miembros[]
+  planes_membresia    planes_membresia[]
+  politicas_membresia politicas_membresia[]
+  transacciones       transacciones[]
 
   @@schema("public")
 }
@@ -565,6 +567,7 @@ model miembros {
   tutor_nombre         String?
   tutor_telefono       String?
   tutor_parentesco     String?
+  clase_id             String?                @db.Uuid
   accesos              accesos[]
   gimnasios            gimnasios?             @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_reservations product_reservations[]
@@ -572,6 +575,7 @@ model miembros {
 
   @@index([gym_id], map: "idx_miembros_gym")
   @@index([gym_id, tutor_nombre], map: "idx_miembros_tutor", where: raw("(tutor_nombre IS NOT NULL)"))
+  @@index([clase_id], map: "idx_miembros_clase_id")
   @@schema("public")
 }
 
@@ -726,6 +730,123 @@ model product_stock_entries {
 
   @@index([gym_id], map: "idx_stock_entries_gym")
   @@index([product_id], map: "idx_stock_entries_product")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model clases {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id            String
+  nombre            String
+  descripcion       String?
+  instructor_id     String?         @db.Uuid
+  instructor_nombre String?
+  edad_min          Int?            @default(0)
+  edad_max          Int?            @default(99)
+  cupo_max          Int             @default(20)
+  costo             Decimal         @default(0) @db.Decimal(10, 2)
+  duracion_meses    Int             @default(1)
+  color             String?         @default("#6c63ff")
+  activo            Boolean         @default(true)
+  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  horarios          horarios[]
+  inscripciones     inscripciones[]
+
+  @@index([gym_id, activo], map: "idx_clases_gym_activo")
+  @@index([gym_id], map: "idx_clases_gym_id")
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model horarios {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clase_id     String    @db.Uuid
+  gym_id       String
+  hora_inicio  DateTime  @db.Time(6)
+  hora_fin     DateTime  @db.Time(6)
+  dias_semana  String[]  @default([])
+  fecha_inicio DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  fecha_fin    DateTime? @db.Date
+  activo       Boolean   @default(true)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  clases       clases    @relation(fields: [clase_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([clase_id], map: "idx_horarios_clase_id")
+  @@index([gym_id], map: "idx_horarios_gym_id")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model inscripciones {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  miembro_id        String    @db.Uuid
+  clase_id          String    @db.Uuid
+  gym_id            String
+  fecha_inscripcion DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  estado            String    @default("activa")
+  tx_id             String?   @db.Uuid
+  fecha_vencimiento DateTime? @db.Date
+  notas             String?
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  clases            clases    @relation(fields: [clase_id], references: [id], onUpdate: NoAction)
+
+  @@index([clase_id], map: "idx_inscripciones_clase_id")
+  @@index([clase_id, estado], map: "idx_inscripciones_cupo", where: raw("(estado = 'activa'::text)"))
+  @@index([gym_id], map: "idx_inscripciones_gym_id")
+  @@index([miembro_id], map: "idx_inscripciones_miembro_id")
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model planes_membresia {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id              String
+  nombre              String
+  imagen_url          String?
+  sucursal            String?
+  precio_publico      Decimal              @default(0) @db.Decimal
+  costo_operativo     Decimal              @default(0) @db.Decimal
+  ciclo_renovacion    String               @default("mensual")
+  limite_clases       Int                  @default(0)
+  activo              Boolean              @default(true)
+  created_at          DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime             @default(now()) @db.Timestamptz(6)
+  gimnasios           gimnasios            @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  politicas_membresia politicas_membresia?
+
+  @@index([gym_id, activo], map: "idx_planes_activo")
+  @@index([gym_id, ciclo_renovacion], map: "idx_planes_ciclo")
+  @@index([gym_id], map: "idx_planes_gym")
+  @@index([gym_id, sucursal], map: "idx_planes_sucursal", where: raw("(sucursal IS NOT NULL)"))
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model politicas_membresia {
+  id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id                 String
+  plan_id                String           @unique @db.Uuid
+  dias_gracia            Int              @default(5)
+  penalidad_mora         Decimal          @default(0) @db.Decimal
+  tipo_penalidad         String           @default("fijo")
+  cobro_automatico       Boolean          @default(false)
+  permitir_congelamiento Boolean          @default(true)
+  dias_max_congelamiento Int              @default(30)
+  requiere_contrato      Boolean          @default(false)
+  notas                  String?
+  created_at             DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime         @default(now()) @db.Timestamptz(6)
+  gimnasios              gimnasios        @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  planes_membresia       planes_membresia @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([gym_id], map: "idx_politicas_gym")
+  @@index([plan_id], map: "idx_politicas_plan")
   @@schema("public")
 }
 
