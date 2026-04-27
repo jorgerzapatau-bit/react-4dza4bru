@@ -17,7 +17,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../supabase";
 import { todayISO, fmtDate, calcEdad } from "../utils/dateUtils";
-import { Modal, Btn, Inp } from "./UI";
+import { Modal, Btn, Inp } from "../components/UI";
 
 // ── Constantes ────────────────────────────────────────────────────
 const DIAS = [
