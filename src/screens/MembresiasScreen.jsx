@@ -793,6 +793,7 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
         costo_operativo: planData.costo_operativo, ciclo_renovacion: planData.ciclo_renovacion,
         limite_clases: planData.limite_clases, imagen_url: planData.imagen_url,
         sucursal: planData.sucursal, activo: planData.activo,
+        clases_vinculadas: planData.clases_vinculadas || [],
       });
       setPlanes(prev => prev.map(p => p.id === selPlan.id ? { ...p, ...planData } : p));
 

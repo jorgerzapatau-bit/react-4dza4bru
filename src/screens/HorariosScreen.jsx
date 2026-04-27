@@ -106,7 +106,7 @@ function ClaseCard({ clase, horarios, inscripciones, planes, onSelect }) {
   const pct = clase.cupo_max > 0 ? Math.round((inscritos / clase.cupo_max) * 100) : 0;
   const cupoColor = pct >= 90 ? "#f87171" : pct >= 70 ? "#f59e0b" : "#4ade80";
   // Planes que incluyen esta clase
-  const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).includes(String(clase.id)));
+  const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)));
 
   return (
     <div
@@ -757,7 +757,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
     ...ins,
     miembro: miembros.find(m => String(m.id) === String(ins.miembro_id)),
   })).filter(i => i.miembro);
-  const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).includes(String(clase.id)));
+  const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)));
 
   const [tabActiva, setTabActiva] = useState("alumnos");
 
