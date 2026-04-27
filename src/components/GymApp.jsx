@@ -423,7 +423,6 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} gymId={GYM_ID} onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
         )}
 
-        // Junto a los otros bloques screen === "..."
         {!loading && !configScreen && screen === "horarios" && (
           <HorariosScreen
             gymId={GYM_ID}
