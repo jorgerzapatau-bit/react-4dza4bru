@@ -72,17 +72,52 @@ function Input({ value, onChange, type = "text", placeholder, min, step, disable
 }
 
 function Select({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.value === value) || options[0];
   return (
-    <select
-      value={value} onChange={e => onChange(e.target.value)}
-      style={{
-        width: "100%", padding: "9px 12px", borderRadius: 10, border: `1px solid ${C.border}`,
-        background: "rgba(255,255,255,.04)", color: C.text, fontSize: 14,
-        fontFamily: "inherit", outline: "none", cursor: "pointer",
-      }}
+    <div style={{ position: "relative", userSelect: "none" }}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}
+      tabIndex={-1}
     >
-      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
+      <div onClick={() => setOpen(o => !o)}
+        style={{
+          padding: "9px 36px 9px 12px", borderRadius: 10,
+          border: `1px solid ${open ? C.accent : C.border}`,
+          background: "#1c1c2e", color: C.text, fontSize: 14,
+          fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box",
+          display: "flex", alignItems: "center", position: "relative",
+          transition: "border-color .15s",
+        }}>
+        <span>{selected?.label}</span>
+        <span style={{
+          position: "absolute", right: 12, top: "50%",
+          transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`,
+          transition: "transform .2s", color: C.textSub, fontSize: 11, pointerEvents: "none",
+        }}>▾</span>
+      </div>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 700,
+          background: "#1c1c2e", border: `1px solid ${C.accent}`,
+          borderRadius: 10, overflow: "hidden",
+          boxShadow: "0 8px 32px rgba(0,0,0,.7)",
+        }}>
+          {options.map(o => (
+            <div key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{
+                padding: "10px 14px", fontSize: 14, cursor: "pointer",
+                color: o.value === value ? "#fff" : C.textSub,
+                background: o.value === value ? C.accent : "transparent",
+                transition: "background .12s",
+              }}
+              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = "rgba(108,99,255,.18)"; }}
+              onMouseLeave={e => { if (o.value !== value) e.currentTarget.style.background = "transparent"; }}
+            >{o.label}</div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -287,6 +322,105 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig }) {
   );
 }
 
+// ── ImagePicker: cámara + galería + resize 300×300 ─────────────────
+function ImagePicker({ value, onChange }) {
+  const fileRef  = useState(null);
+  const camRef   = useState(null);
+  const [prev, setPrev] = useState(value || null);
+
+  // Resize a 300×300 con canvas
+  const resizeToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width  = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext("2d");
+        // Recorte centrado (object-fit: cover)
+        const ratio  = Math.max(300 / img.width, 300 / img.height);
+        const newW   = img.width  * ratio;
+        const newH   = img.height * ratio;
+        const offX   = (300 - newW) / 2;
+        const offY   = (300 - newH) / 2;
+        ctx.drawImage(img, offX, offY, newW, newH);
+        resolve(canvas.toDataURL("image/jpeg", 0.88));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const b64 = await resizeToBase64(file);
+      setPrev(b64);
+      onChange(b64);
+    } catch { /* ignorar errores de lectura */ }
+    e.target.value = "";
+  };
+
+  const handleRemove = () => { setPrev(null); onChange(""); };
+
+  return (
+    <div>
+      {/* Preview */}
+      {prev ? (
+        <div style={{ position: "relative", width: 120, height: 120, marginBottom: 12 }}>
+          <img src={prev} alt="portada"
+            style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 12, border: `2px solid ${C.border}` }} />
+          <button onClick={handleRemove}
+            style={{
+              position: "absolute", top: -8, right: -8,
+              width: 24, height: 24, borderRadius: "50%",
+              background: C.red, border: "2px solid #1c1c2e",
+              color: "#fff", fontSize: 14, lineHeight: 1,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}>×</button>
+          <p style={{ fontSize: 10, color: C.textMut, marginTop: 4 }}>Imagen guardada en 300×300 px</p>
+        </div>
+      ) : (
+        <div style={{ width: 120, height: 120, borderRadius: 12, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, color: C.textMut, fontSize: 32 }}>
+          🖼️
+        </div>
+      )}
+
+      {/* Botones */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300 }}>
+        {/* Galería */}
+        <label style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+          border: `1px solid ${C.border}`, background: "rgba(255,255,255,.05)",
+          color: C.text, fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+        }}>
+          🖼️ &nbsp;Elegir de galería
+          <input ref={e => fileRef[1](e)} type="file" accept="image/*"
+            style={{ display: "none" }} onChange={handleFile} />
+        </label>
+
+        {/* Cámara */}
+        <label style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+          background: `linear-gradient(135deg, ${C.accent}, ${C.accent2})`,
+          color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+          border: "none", boxShadow: `0 4px 14px ${C.accent}50`,
+        }}>
+          📷 &nbsp;Tomar foto
+          <input type="file" accept="image/*" capture="environment"
+            style={{ display: "none" }} onChange={handleFile} />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════
 // FORM DE PLAN (crear / editar)
 // ══════════════════════════════════════════════════════════════════
@@ -393,21 +527,8 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
             <Input type="number" value={fP.limite_clases} onChange={v => upP("limite_clases", v)} placeholder="0 = ilimitado" min="0" />
           </Field>
 
-          <Field label="Imagen de portada (URL)">
-            <Input value={fP.imagen_url} onChange={v => upP("imagen_url", v)} placeholder="https://..." />
-            {fP.imagen_url && (
-              <div style={{ marginTop: 8, borderRadius: 10, overflow: "hidden", height: 100 }}>
-                <img src={fP.imagen_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; }} />
-              </div>
-            )}
-          </Field>
-
-          <Field label="Unidad de negocio / Sucursal">
-            {sucursales && sucursales.length > 0
-              ? <Select value={fP.sucursal} onChange={v => upP("sucursal", v)}
-                  options={[{ value: "", label: "— Todas —" }, ...sucursales.map(s => ({ value: s, label: s }))]} />
-              : <Input value={fP.sucursal} onChange={v => upP("sucursal", v)} placeholder="Ej: Dojo Seiza" />
-            }
+          <Field label="Imagen de portada">
+            <ImagePicker value={fP.imagen_url} onChange={v => upP("imagen_url", v)} />
           </Field>
 
           <Toggle checked={fP.activo} onChange={v => upP("activo", v)} label="Plan activo (visible y asignable)" />
