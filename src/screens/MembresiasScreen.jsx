@@ -75,7 +75,7 @@ function Select({ value, onChange, options }) {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.value === value) || options[0];
   return (
-    <div style={{ position: "relative", userSelect: "none" }}
+    <div style={{ position: "relative", userSelect: "none", width: "100%" }}
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}
       tabIndex={-1}
     >
@@ -86,7 +86,7 @@ function Select({ value, onChange, options }) {
           background: "#1c1c2e", color: C.text, fontSize: 14,
           fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box",
           display: "flex", alignItems: "center", position: "relative",
-          transition: "border-color .15s",
+          width: "100%", transition: "border-color .15s",
         }}>
         <span>{selected?.label}</span>
         <span style={{
@@ -137,6 +137,32 @@ function Toggle({ checked, onChange, label, color = C.accent }) {
         }} />
       </div>
       {label && <span style={{ fontSize: 13, color: C.textSub }}>{label}</span>}
+    </div>
+  );
+}
+
+function Tooltip({ text, children }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}
+      onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      {children}
+      {show && (
+        <div style={{
+          position: "absolute", left: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)",
+          background: "#2a2a3d", border: `1px solid ${C.border}`,
+          color: C.textSub, fontSize: 12, borderRadius: 8, padding: "6px 10px",
+          whiteSpace: "nowrap", zIndex: 999, pointerEvents: "none",
+          boxShadow: "0 4px 16px rgba(0,0,0,.5)",
+          maxWidth: 220, whiteSpaceCollapse: "normal", lineHeight: 1.4,
+        }}>
+          {text}
+          <div style={{
+            position: "absolute", right: "100%", top: "50%", transform: "translateY(-50%)",
+            border: "5px solid transparent", borderRightColor: "#2a2a3d",
+          }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -368,36 +394,41 @@ function ImagePicker({ value, onChange }) {
   const handleRemove = () => { setPrev(null); onChange(""); };
 
   return (
-    <div>
+    <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
       {/* Preview */}
-      {prev ? (
-        <div style={{ position: "relative", width: 120, height: 120, marginBottom: 12 }}>
-          <img src={prev} alt="portada"
-            style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 12, border: `2px solid ${C.border}` }} />
-          <button onClick={handleRemove}
-            style={{
-              position: "absolute", top: -8, right: -8,
-              width: 24, height: 24, borderRadius: "50%",
-              background: C.red, border: "2px solid #1c1c2e",
-              color: "#fff", fontSize: 14, lineHeight: 1,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            }}>×</button>
-          <p style={{ fontSize: 10, color: C.textMut, marginTop: 4 }}>Imagen guardada en 300×300 px</p>
-        </div>
-      ) : (
-        <div style={{ width: 120, height: 120, borderRadius: 12, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, color: C.textMut, fontSize: 32 }}>
-          🖼️
-        </div>
-      )}
+      <div style={{ flexShrink: 0 }}>
+        {prev ? (
+          <div style={{ position: "relative", width: 110, height: 110 }}>
+            <img src={prev} alt="portada"
+              style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 12, border: `2px solid ${C.border}` }} />
+            <button onClick={handleRemove}
+              style={{
+                position: "absolute", top: -8, right: -8,
+                width: 24, height: 24, borderRadius: "50%",
+                background: C.red, border: "2px solid #1c1c2e",
+                color: "#fff", fontSize: 14, lineHeight: 1,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>×</button>
+            <p style={{ fontSize: 10, color: C.textMut, marginTop: 4, textAlign: "center" }}>300×300 px</p>
+          </div>
+        ) : (
+          <div style={{ width: 110, height: 110, borderRadius: 12, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textMut, fontSize: 32 }}>
+            🖼️
+          </div>
+        )}
+      </div>
 
-      {/* Botones */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300 }}>
+      {/* Botones al lado */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, justifyContent: "center", paddingTop: 4 }}>
+        <p style={{ fontSize: 11, color: C.textMut, margin: "0 0 4px" }}>
+          Sube una imagen cuadrada para destacar este plan. Se recortará a 300×300 px automáticamente.
+        </p>
         {/* Galería */}
         <label style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+          padding: "9px 14px", borderRadius: 10, cursor: "pointer",
           border: `1px solid ${C.border}`, background: "rgba(255,255,255,.05)",
-          color: C.text, fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+          color: C.text, fontSize: 13, fontWeight: 600, fontFamily: "inherit",
         }}>
           🖼️ &nbsp;Elegir de galería
           <input ref={e => fileRef[1](e)} type="file" accept="image/*"
@@ -407,9 +438,9 @@ function ImagePicker({ value, onChange }) {
         {/* Cámara */}
         <label style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+          padding: "9px 14px", borderRadius: 10, cursor: "pointer",
           background: `linear-gradient(135deg, ${C.accent}, ${C.accent2})`,
-          color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+          color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
           border: "none", boxShadow: `0 4px 14px ${C.accent}50`,
         }}>
           📷 &nbsp;Tomar foto
@@ -575,9 +606,15 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
           </Field>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
-            <Toggle checked={fPol.cobro_automatico}       onChange={v => upPol("cobro_automatico", v)}       label="Cobro automático al renovar" />
-            <Toggle checked={fPol.permitir_congelamiento} onChange={v => upPol("permitir_congelamiento", v)} label="Permitir congelar membresía" color={C.green} />
-            <Toggle checked={fPol.requiere_contrato}      onChange={v => upPol("requiere_contrato", v)}      label="Requiere firma de contrato" color={C.yellow} />
+            <Tooltip text="Al vencer el ciclo, se genera automáticamente un cargo al método de pago registrado del alumno.">
+              <Toggle checked={fPol.cobro_automatico}       onChange={v => upPol("cobro_automatico", v)}       label="Cobro automático al renovar" />
+            </Tooltip>
+            <Tooltip text="El alumno podrá pausar su membresía por el número máximo de días definido arriba, sin perder su período.">
+              <Toggle checked={fPol.permitir_congelamiento} onChange={v => upPol("permitir_congelamiento", v)} label="Permitir congelar membresía" color={C.green} />
+            </Tooltip>
+            <Tooltip text="El alumno deberá firmar digitalmente un contrato antes de activar este plan.">
+              <Toggle checked={fPol.requiere_contrato}      onChange={v => upPol("requiere_contrato", v)}      label="Requiere firma de contrato" color={C.yellow} />
+            </Tooltip>
           </div>
 
           <Field label="Notas internas de la política">
