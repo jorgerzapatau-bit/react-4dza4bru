@@ -100,11 +100,13 @@ function DiaChip({ label, activo, onClick }) {
 }
 
 // ── Sub-componente: Tarjeta de clase ─────────────────────────────
-function ClaseCard({ clase, horarios, inscripciones, onSelect }) {
+function ClaseCard({ clase, horarios, inscripciones, planes, onSelect }) {
   const horariosClase = horarios.filter(h => h.clase_id === clase.id && h.activo);
   const inscritos = inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa").length;
   const pct = clase.cupo_max > 0 ? Math.round((inscritos / clase.cupo_max) * 100) : 0;
   const cupoColor = pct >= 90 ? "#f87171" : pct >= 70 ? "#f59e0b" : "#4ade80";
+  // Planes que incluyen esta clase
+  const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).includes(String(clase.id)));
 
   return (
     <div
@@ -202,6 +204,24 @@ function ClaseCard({ clase, horarios, inscripciones, onSelect }) {
           background: cupoColor, borderRadius: 2, transition: "width .4s ease",
         }} />
       </div>
+
+      {/* Planes vinculados */}
+      {planesVinculados.length > 0 && (
+        <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+          <p style={{ color: "var(--text-tertiary)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .6, marginBottom: 5 }}>Planes con acceso</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {planesVinculados.map(p => (
+              <span key={p.id} style={{
+                fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5,
+                background: "rgba(108,99,255,.12)", color: "#a78bfa",
+                border: "1px solid rgba(108,99,255,.2)",
+              }}>
+                💳 {p.nombre}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -730,13 +750,14 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
 // ══════════════════════════════════════════════════════════════════
 //  MODAL: Detalle de clase — lista de alumnos + horarios
 // ══════════════════════════════════════════════════════════════════
-function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner, onEditClase, onAgregarHorario, onEditHorario, onEliminarHorario, onInscribir, onDarBaja, onClose }) {
+function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner, planes, onEditClase, onAgregarHorario, onEditHorario, onEliminarHorario, onInscribir, onDarBaja, onClose }) {
   const horariosClase = horarios.filter(h => h.clase_id === clase.id);
   const inscritosClase = inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa");
   const inscritos = inscritosClase.map(ins => ({
     ...ins,
     miembro: miembros.find(m => String(m.id) === String(ins.miembro_id)),
   })).filter(i => i.miembro);
+  const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).includes(String(clase.id)));
 
   const [tabActiva, setTabActiva] = useState("alumnos");
 
@@ -763,7 +784,11 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {[{ k: "alumnos", l: `Alumnos (${inscritos.length})` }, { k: "horarios", l: `Horarios (${horariosClase.length})` }].map(t => (
+        {[
+          { k: "alumnos", l: `Alumnos (${inscritos.length})` },
+          { k: "horarios", l: `Horarios (${horariosClase.length})` },
+          { k: "membresias", l: `Membresías (${planesVinculados.length})` },
+        ].map(t => (
           <button key={t.k} onClick={() => setTabActiva(t.k)}
             style={{
               flex: 1, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer",
@@ -897,6 +922,45 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
         </>
       )}
 
+      {/* Tab: Membresías */}
+      {tabActiva === "membresias" && (
+        <>
+          <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
+            <p style={{ color: "#a78bfa", fontSize: 12, margin: 0 }}>💳 Planes de membresía que incluyen acceso a esta clase.</p>
+          </div>
+          {planesVinculados.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "28px 0" }}>
+              <p style={{ fontSize: 28, marginBottom: 8 }}>💳</p>
+              <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Ningún plan vinculado aún.</p>
+              <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 4 }}>Vincúlala desde <strong>Membresías → editar plan → tab Clases</strong>.</p>
+            </div>
+          ) : planesVinculados.map(p => (
+            <div key={p.id} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "11px 13px", borderRadius: 12, marginBottom: 8,
+              background: "var(--bg-elevated)", border: "1px solid var(--border)",
+            }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: "linear-gradient(135deg,rgba(108,99,255,.25),rgba(224,64,251,.2))",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+              }}>💳</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{p.nombre}</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, margin: "2px 0 0" }}>
+                  ${Number(p.precio_publico).toLocaleString()} · {p.ciclo_renovacion}
+                </p>
+              </div>
+              <span style={{
+                fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+                background: p.activo ? "rgba(74,222,128,.12)" : "rgba(248,113,113,.1)",
+                color: p.activo ? "#4ade80" : "#f87171",
+              }}>{p.activo ? "Activo" : "Inactivo"}</span>
+            </div>
+          ))}
+        </>
+      )}
+
       {/* Botón editar clase */}
       {isOwner && (
         <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
@@ -919,12 +983,13 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
 // ══════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════
-export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner }) {
+export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner, planes: planesProp }) {
 
   // ── Estado de datos ──────────────────────────────────────────────
   const [clases, setClases]               = useState([]);
   const [horarios, setHorarios]           = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
+  const [planes, setPlanes]               = useState(planesProp || []);
   const [loading, setLoading]             = useState(true);
 
   // ── Estado de UI ─────────────────────────────────────────────────
@@ -943,19 +1008,22 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
   const loadDatos = useCallback(async () => {
     setLoading(true);
     try {
-      const [dbC, dbH, dbI] = await Promise.all([
+      const [dbC, dbH, dbI, dbP] = await Promise.all([
         supabase.from("clases"),
         supabase.from("horarios"),
         supabase.from("inscripciones"),
+        supabase.from("planes_membresia"),
       ]);
-      const [cData, hData, iData] = await Promise.all([
+      const [cData, hData, iData, pData] = await Promise.all([
         dbC.select(gymId),
         dbH.select(gymId),
         dbI.select(gymId),
+        dbP.select(gymId),
       ]);
       setClases(cData || []);
       setHorarios(hData || []);
       setInscripciones(iData || []);
+      setPlanes(pData || []);
     } catch (e) {
       console.error("Error cargando horarios:", e);
     }
@@ -1208,6 +1276,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                   clase={c}
                   horarios={horarios}
                   inscripciones={inscripciones}
+                  planes={planes}
                   onSelect={setModalDetalle}
                 />
               ))}
@@ -1224,6 +1293,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           clase={modalClase === "nueva" ? null : modalClase}
           gymId={gymId}
           miembros={miembros}
+          planes={planes}
           onSave={handleGuardarClase}
           onClose={() => setModalClase(null)}
         />
@@ -1238,6 +1308,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           miembros={miembros}
           gymId={gymId}
           isOwner={isOwner}
+          planes={planes}
           onEditClase={() => { setModalClase(modalDetalle); setModalDetalle(null); }}
           onAgregarHorario={() => setModalHorario({ clase: modalDetalle, horario: null })}
           onEditHorario={h => setModalHorario({ clase: modalDetalle, horario: h })}

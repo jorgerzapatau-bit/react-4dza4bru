@@ -237,9 +237,10 @@ function CicloBadge({ ciclo }) {
 }
 
 // ── Card de plan ───────────────────────────────────────────────────
-function PlanCard({ plan, politica, onEdit, onDelete, gymConfig }) {
+function PlanCard({ plan, politica, onEdit, onDelete, gymConfig, clases }) {
   const [confirmDel, setConfirmDel] = useState(false);
   const imgUrl = plan.imagen_url;
+  const clasesVinculadas = (plan.clases_vinculadas || []).map(id => clases?.find(c => String(c.id) === String(id))).filter(Boolean);
 
   return (
     <div style={{
@@ -324,6 +325,26 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig }) {
             <span style={{ fontSize: 13, fontWeight: 600, color: "#22c55e" }}>
               ${Number(plan.costo_operativo).toLocaleString()}
             </span>
+          </div>
+        )}
+
+        {/* Clases vinculadas */}
+        {clasesVinculadas.length > 0 && (
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
+            <p style={{ fontSize: 10, color: C.textMut, textTransform: "uppercase", letterSpacing: ".05em", margin: "0 0 6px", fontWeight: 700 }}>Clases incluidas</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              {clasesVinculadas.map(c => (
+                <span key={c.id} style={{
+                  fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 6,
+                  background: `${c.color || "#6c63ff"}18`, color: c.color || "#6c63ff",
+                  border: `1px solid ${c.color || "#6c63ff"}30`,
+                  display: "flex", alignItems: "center", gap: 4,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.color || "#6c63ff", flexShrink: 0 }} />
+                  {c.nombre}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 
@@ -479,9 +500,10 @@ const POL_VACIO = {
   requiere_contrato: false, notas: "",
 };
 
-function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
+function PlanForm({ plan, politica, gymId, sucursales, clases, onSave, onClose }) {
   const [fP, setFP] = useState({ ...PLAN_VACIO, ...plan });
   const [fPol, setFPol] = useState({ ...POL_VACIO, ...politica });
+  const [clasesVinculadas, setClasesVinculadas] = useState(() => plan?.clases_vinculadas || []);
   const [tab, setTab] = useState(0);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -501,6 +523,7 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
           costo_operativo:  Number(fP.costo_operativo || 0),
           limite_clases:    fP.limite_clases === "" ? 0 : Number(fP.limite_clases),
           gym_id:           gymId,
+          clases_vinculadas: clasesVinculadas,
         },
         {
           ...fPol,
@@ -532,6 +555,7 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
       <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,.05)", borderRadius: 10, padding: 4, marginBottom: 20 }}>
         <button style={tabStyle(0)} onClick={() => setTab(0)}>{IC.card} &nbsp;Plan</button>
         <button style={tabStyle(1)} onClick={() => setTab(1)}>{IC.shield} &nbsp;Políticas</button>
+        <button style={tabStyle(2)} onClick={() => setTab(2)}>📅 &nbsp;Clases</button>
       </div>
 
       {/* ─── TAB 0: Datos del plan ─── */}
@@ -627,6 +651,77 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
         </>
       )}
 
+      {/* ─── TAB 2: Clases incluidas ─── */}
+      {tab === 2 && (
+        <>
+          <div style={{ background: `${C.accent}10`, border: `1px solid ${C.accent}20`, borderRadius: 12, padding: "10px 14px", marginBottom: 18 }}>
+            <p style={{ color: C.textSub, fontSize: 12, margin: 0 }}>📅 Selecciona las clases a las que da acceso este plan de membresía.</p>
+          </div>
+
+          {(!clases || clases.length === 0) ? (
+            <div style={{ textAlign: "center", padding: "32px 0", color: C.textMut }}>
+              <p style={{ fontSize: 28, marginBottom: 8 }}>📭</p>
+              <p style={{ fontSize: 13 }}>No hay clases creadas aún.</p>
+              <p style={{ fontSize: 11, marginTop: 4 }}>Crea clases en la sección <strong>Horarios</strong> para vincularlas aquí.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {clases.map(c => {
+                const vinculada = clasesVinculadas.includes(String(c.id));
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => setClasesVinculadas(prev =>
+                      vinculada ? prev.filter(id => id !== String(c.id)) : [...prev, String(c.id)]
+                    )}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "12px 14px", borderRadius: 12, cursor: "pointer",
+                      border: `1.5px solid ${vinculada ? C.accent : C.border}`,
+                      background: vinculada ? `${C.accent}12` : "rgba(255,255,255,.03)",
+                      transition: "all .15s",
+                    }}
+                  >
+                    <div style={{
+                      width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
+                      background: c.color || C.accent,
+                      boxShadow: `0 0 6px ${c.color || C.accent}`,
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ color: C.text, fontSize: 13, fontWeight: 600, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                        {c.nombre}
+                      </p>
+                      {c.instructor_nombre && (
+                        <p style={{ color: C.textMut, fontSize: 11, margin: "2px 0 0" }}>
+                          👤 {c.instructor_nombre}
+                        </p>
+                      )}
+                    </div>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                      border: `2px solid ${vinculada ? C.accent : C.border}`,
+                      background: vinculada ? C.accent : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "all .15s",
+                    }}>
+                      {vinculada && <span style={{ color: "#fff", fontSize: 12, lineHeight: 1 }}>✓</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {clasesVinculadas.length > 0 && (
+            <div style={{ marginTop: 14, padding: "8px 12px", borderRadius: 10, background: `${C.accent}15`, border: `1px solid ${C.accent}30` }}>
+              <p style={{ color: C.accent, fontSize: 12, margin: 0, fontWeight: 600 }}>
+                ✓ {clasesVinculadas.length} clase{clasesVinculadas.length > 1 ? "s" : ""} vinculada{clasesVinculadas.length > 1 ? "s" : ""}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
       {err && (
         <div style={{ background: `${C.red}15`, border: `1px solid ${C.red}30`, borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
           <p style={{ color: C.red, fontSize: 13, margin: 0 }}>{err}</p>
@@ -649,6 +744,7 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
 export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOwner }) {
   const [planes,    setPlanes]    = useState([]);
   const [politicas, setPoliticas] = useState([]);
+  const [clases,    setClases]    = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [modal,     setModal]     = useState(null);  // null | "nuevo" | "editar"
   const [selPlan,   setSelPlan]   = useState(null);
@@ -668,6 +764,10 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
       const dbPol  = await supabase.from("politicas_membresia");
       const rawPol = await dbPol.select(gymId);
       setPoliticas(rawPol || []);
+
+      const dbC   = await supabase.from("clases");
+      const rawC  = await dbC.select(gymId);
+      setClases(rawC || []);
     } catch(e) {
       console.error("Error cargando membresías:", e);
     }
@@ -877,6 +977,7 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
               plan={plan}
               politica={polDePlan(plan.id)}
               gymConfig={gymConfig}
+              clases={clases}
               onEdit={p => { setSelPlan(p); setModal("editar"); }}
               onDelete={handleDelete}
             />
@@ -896,6 +997,7 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
             politica={selPlan ? polDePlan(selPlan.id) : null}
             gymId={gymId}
             sucursales={sucursales}
+            clases={clases}
             onSave={handleSave}
             onClose={() => { setModal(null); setSelPlan(null); }}
           />
