@@ -17,6 +17,8 @@ import EditTxModal from "../modals/EditTxModal";
 import CalendarioEventos from "../modals/CalendarioEventos";
 import MensajesScreen from "../screens/MensajesScreen";
 import TiendaScreen from "../screens/TiendaScreen";
+// Al tope con los otros imports
+import HorariosScreen from "../screens/HorariosScreen";
 
 // Screens
 import DashboardScreen from "../screens/AdminDashboardScreen";
@@ -419,6 +421,18 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         {/* ═══ MENSAJES ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
           <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} gymId={GYM_ID} onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
+        )}
+
+        // Junto a los otros bloques screen === "..."
+        {!loading && !configScreen && screen === "horarios" && (
+          <HorariosScreen
+            gymId={GYM_ID}
+            miembros={miembros}
+            txs={txs}
+            gymConfig={gymConfig}
+            onAddTx={addPago}
+            isOwner={isOwner}
+          />
         )}
 
         {/* ═══ LOADING ═══ */}
