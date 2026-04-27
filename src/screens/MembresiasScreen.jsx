@@ -83,7 +83,7 @@ function Select({ value, onChange, options }) {
         style={{
           padding: "9px 36px 9px 12px", borderRadius: 10,
           border: `1px solid ${open ? C.accent : C.border}`,
-          background: "#1c1c2e", color: C.text, fontSize: 14,
+          background: C.bgCard2, color: C.text, fontSize: 14,
           fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box",
           display: "flex", alignItems: "center", position: "relative",
           width: "100%", transition: "border-color .15s",
@@ -98,7 +98,7 @@ function Select({ value, onChange, options }) {
       {open && (
         <div style={{
           position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 700,
-          background: "#1c1c2e", border: `1px solid ${C.accent}`,
+          background: C.bgCard2, border: `1px solid ${C.accent}`,
           borderRadius: 10, overflow: "hidden",
           boxShadow: "0 8px 32px rgba(0,0,0,.7)",
         }}>
@@ -149,17 +149,17 @@ function Tooltip({ text, children }) {
       {children}
       {show && (
         <div style={{
-          position: "absolute", left: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)",
+          position: "absolute", bottom: "calc(100% + 8px)", left: 0,
           background: "#2a2a3d", border: `1px solid ${C.border}`,
-          color: C.textSub, fontSize: 12, borderRadius: 8, padding: "6px 10px",
-          whiteSpace: "nowrap", zIndex: 999, pointerEvents: "none",
+          color: C.textSub, fontSize: 12, borderRadius: 8, padding: "7px 11px",
+          zIndex: 999, pointerEvents: "none",
           boxShadow: "0 4px 16px rgba(0,0,0,.5)",
-          maxWidth: 220, whiteSpaceCollapse: "normal", lineHeight: 1.4,
+          width: 220, lineHeight: 1.5,
         }}>
           {text}
           <div style={{
-            position: "absolute", right: "100%", top: "50%", transform: "translateY(-50%)",
-            border: "5px solid transparent", borderRightColor: "#2a2a3d",
+            position: "absolute", top: "100%", left: 18,
+            border: "5px solid transparent", borderTopColor: "#2a2a3d",
           }} />
         </div>
       )}
@@ -554,7 +554,7 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
             <Select value={fP.ciclo_renovacion} onChange={v => upP("ciclo_renovacion", v)} options={CICLOS} />
           </Field>
 
-          <Field label="Límite de clases" hint="0 = ilimitado">
+          <Field label="Límite de clases">
             <Input type="number" value={fP.limite_clases} onChange={v => upP("limite_clases", v)} placeholder="0 = ilimitado" min="0" />
           </Field>
 
