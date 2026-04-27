@@ -1,910 +1,872 @@
-// ─────────────────────────────────────────────
-//  screens/MensajesScreen.jsx  —  REFACTORIZADO
-//  Centro de Comunicación: 4 tabs
-//    1. Vencimientos   (usa plantillas del sistema)
-//    2. Individual     (+ sección Plantillas del sistema)
-//    3. Masivo         (sin cambios de UX)
-//    4. Mensajes del sistema  ← NUEVO
+// ══════════════════════════════════════════════════════════════════
+// src/screens/MembresiasScreen.jsx
+// RUTA: src/screens/MembresiasScreen.jsx
 //
-//  Props: (mismas que antes, + gymId)
-//    miembros, txs, gymConfig, gymId
-//    onBack, onUpdatePlantillas
-//    miembroInicial, modoInicial
-//    recordatoriosEnviados, onMarcarRecordatorio
-// ─────────────────────────────────────────────
+// Gestor de Membresías — CRUD completo de planes + políticas de cobro
+// Se conecta a las tablas: planes_membresia, politicas_membresia
+// Usa el mismo patrón de supabase.js que el resto del proyecto
+// ══════════════════════════════════════════════════════════════════
 
-import { useState, useMemo, useCallback } from "react";
-import {
-  getMembershipInfo,
-  diasParaVencer,
-  buildWAUrl,           // helper original — se mantiene para compatibilidad
-} from "../utils/constants";
-import {
-  replaceTemplateVars,
-  resolveRecipient,
-  buildWhatsappLink,
-  copyToClipboard,
-  buildVarsFromMember,
-  mapDiasToTemplateKey,
-  SYSTEM_TEMPLATE_KEYS,
-} from "../utils/communicationHelpers";
-import { useCommunication } from "../hooks/useCommunication";
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "../supabase";
 
-// ─────────────────────────────────────────────
-//  Sub-componente: GuardarEnSlot  (sin cambios)
-// ─────────────────────────────────────────────
-function GuardarEnSlot({ tplsCustom, onGuardar }) {
-  const [open, setOpen] = useState(false);
+// ── Helpers de color del tema ──────────────────────────────────────
+const C = {
+  accent:   "#6c63ff",
+  accent2:  "#e040fb",
+  green:    "#22d3ee",
+  red:      "#f43f5e",
+  yellow:   "#fbbf24",
+  bg:       "var(--bg-main, #0d1117)",
+  bgCard:   "var(--bg-card, #161b22)",
+  bgCard2:  "var(--bg-nav, #13131f)",
+  border:   "var(--border, rgba(255,255,255,.08))",
+  text:     "var(--text-primary, #e2e8f0)",
+  textSub:  "var(--text-secondary, #8b949e)",
+  textMut:  "var(--text-tertiary, #4b4b6a)",
+};
+
+// ── Íconos SVG inline ──────────────────────────────────────────────
+const IC = {
+  plus:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  edit:    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  trash:   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>,
+  card:    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+  shield:  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  close:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  infinite:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 12c-2-2.5-4-4-6-4a4 4 0 000 8c2 0 4-1.5 6-4zm0 0c2 2.5 4 4 6 4a4 4 0 000-8c-2 0-4 1.5-6 4z"/></svg>,
+  img:     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  check:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  warn:    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+};
+
+// ── Componentes UI reutilizables ───────────────────────────────────
+function Field({ label, children, hint }) {
   return (
-    <div style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen(p => !p)}
-        title="Guardar en mis mensajes"
-        style={{
-          width: 36, height: 36,
-          border: "1px solid rgba(108,99,255,.3)", borderRadius: 10,
-          background: open ? "rgba(108,99,255,.2)" : "transparent",
-          cursor: "pointer", color: "#a78bfa", fontSize: 15,
-          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        }}
-      >💾</button>
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: C.textSub, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>
+        {label}
+      </label>
+      {children}
+      {hint && <p style={{ fontSize: 11, color: C.textMut, marginTop: 4 }}>{hint}</p>}
+    </div>
+  );
+}
 
+function Input({ value, onChange, type = "text", placeholder, min, step, disabled }) {
+  return (
+    <input
+      type={type} value={value ?? ""} onChange={e => onChange(e.target.value)}
+      placeholder={placeholder} min={min} step={step} disabled={disabled}
+      style={{
+        width: "100%", padding: "9px 12px", borderRadius: 10, border: `1px solid ${C.border}`,
+        background: "rgba(255,255,255,.04)", color: C.text, fontSize: 14,
+        fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+        opacity: disabled ? .5 : 1,
+        transition: "border-color .15s",
+      }}
+      onFocus={e => { e.target.style.borderColor = C.accent; }}
+      onBlur={e => { e.target.style.borderColor = "rgba(255,255,255,.08)"; }}
+    />
+  );
+}
+
+function Select({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.value === value) || options[0];
+  return (
+    <div style={{ position: "relative", userSelect: "none" }}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false); }}
+      tabIndex={-1}
+    >
+      <div onClick={() => setOpen(o => !o)}
+        style={{
+          padding: "9px 36px 9px 12px", borderRadius: 10,
+          border: `1px solid ${open ? C.accent : C.border}`,
+          background: "#1c1c2e", color: C.text, fontSize: 14,
+          fontFamily: "inherit", cursor: "pointer", boxSizing: "border-box",
+          display: "flex", alignItems: "center", position: "relative",
+          transition: "border-color .15s",
+        }}>
+        <span>{selected?.label}</span>
+        <span style={{
+          position: "absolute", right: 12, top: "50%",
+          transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`,
+          transition: "transform .2s", color: C.textSub, fontSize: 11, pointerEvents: "none",
+        }}>▾</span>
+      </div>
       {open && (
         <div style={{
-          position: "absolute", right: 0, top: 42, zIndex: 50,
-          background: "#1e1e30", border: "1px solid rgba(108,99,255,.3)",
-          borderRadius: 14, padding: 10, width: 220,
-          boxShadow: "0 8px 32px rgba(0,0,0,.5)",
+          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 700,
+          background: "#1c1c2e", border: `1px solid ${C.accent}`,
+          borderRadius: 10, overflow: "hidden",
+          boxShadow: "0 8px 32px rgba(0,0,0,.7)",
         }}>
-          <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 8 }}>
-            Guardar en...
-          </p>
-          {tplsCustom.map((slot, i) => {
-            const ocupado = slot.label.trim() || slot.msg.trim();
-            return (
-              <button key={i} onClick={() => { onGuardar(i); setOpen(false); }}
-                style={{ width: "100%", padding: "9px 12px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", textAlign: "left", background: "transparent", display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 14 }}>{ocupado ? "⭐" : "○"}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: ocupado ? "#fff" : "#8b949e", fontSize: 12, fontWeight: ocupado ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {ocupado ? slot.label || `Mensaje ${i + 1}` : `Slot ${i + 1} — vacío`}
-                  </p>
-                  {ocupado && <p style={{ color: "#f59e0b", fontSize: 10, marginTop: 1 }}>⚠️ se sobreescribirá</p>}
-                </div>
-              </button>
-            );
-          })}
-          <button onClick={() => setOpen(false)} style={{ width: "100%", padding: "7px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "#1c2128", color: "#8b949e", marginTop: 4 }}>
-            Cancelar
-          </button>
+          {options.map(o => (
+            <div key={o.value}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{
+                padding: "10px 14px", fontSize: 14, cursor: "pointer",
+                color: o.value === value ? "#fff" : C.textSub,
+                background: o.value === value ? C.accent : "transparent",
+                transition: "background .12s",
+              }}
+              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = "rgba(108,99,255,.18)"; }}
+              onMouseLeave={e => { if (o.value !== value) e.currentTarget.style.background = "transparent"; }}
+            >{o.label}</div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-//  Sub-componente: PlantillaCustom  (sin cambios)
-// ─────────────────────────────────────────────
-function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar }) {
-  const [editando,  setEditando]  = useState(false);
-  const [form,      setForm]      = useState({ label: tpl.label, msg: tpl.msg });
-  const [guardando, setGuardando] = useState(false);
-
-  const tieneContenido = tpl.label.trim() || tpl.msg.trim();
-  const msgFinal = (form.msg || "").replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro);
-
-  const handleGuardar = async () => {
-    setGuardando(true);
-    await onGuardar({ icon: "⭐", label: form.label, msg: form.msg });
-    setGuardando(false);
-    setEditando(false);
-  };
-
-  if (editando) {
-    return (
-      <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: 14 }}>
-        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Mensaje {index + 1}</p>
-        <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Nombre del mensaje" style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 8 }} />
-        <textarea value={form.msg} onChange={e => setForm(p => ({ ...p, msg: e.target.value }))} placeholder={`Escribe el mensaje. Usa {student_name} para el nombre. — ${gymNom}`} rows={4}
-          style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 8 }} />
-        {form.msg.trim() && (
-          <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
-            <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
-          </div>
-        )}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
-            style={{ flex: 1, padding: "10px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-            Cancelar
-          </button>
-          <button onClick={handleGuardar} disabled={!form.label.trim() || !form.msg.trim() || guardando}
-            style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: form.label.trim() && form.msg.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d", color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e" }}>
-            {guardando ? "Guardando…" : "💾 Guardar"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (tieneContenido) {
-    return (
-      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 18 }}>⭐</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
-          <p style={{ color: "#8b949e", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
-        </div>
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro), tpl.label)}
-            style={{ padding: "6px 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff" }}>
-            Usar
-          </button>
-          <button onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
-            style={{ padding: "6px 10px", border: "1px solid var(--border-strong)", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-            ✏️
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+function Toggle({ checked, onChange, label, color = C.accent }) {
   return (
-    <button onClick={() => { setForm({ label: "", msg: "" }); setEditando(true); }}
-      style={{ width: "100%", padding: "12px 14px", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", background: "transparent", display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 16, color: "#6c63ff" }}>＋</span>
-      <span style={{ color: "#8b949e", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
-    </button>
+    <div onClick={() => onChange(!checked)}
+      style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+      <div style={{
+        width: 38, height: 22, borderRadius: 11, position: "relative",
+        background: checked ? color : "rgba(255,255,255,.1)",
+        transition: "background .2s", flexShrink: 0,
+      }}>
+        <div style={{
+          position: "absolute", top: 3, left: checked ? 19 : 3,
+          width: 16, height: 16, borderRadius: "50%", background: "#fff",
+          transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.4)",
+        }} />
+      </div>
+      {label && <span style={{ fontSize: 13, color: C.textSub }}>{label}</span>}
+    </div>
   );
 }
 
-// ─────────────────────────────────────────────
-//  Sub-componente: SystemMessageCard
-//  Tarjeta individual en el tab "Mensajes del sistema"
-// ─────────────────────────────────────────────
-function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChange, onSave, onReset }) {
-  const [editing,   setEditing]  = useState(false);
-  const [editText,  setEditText] = useState("");
-  const [saving,    setSaving]   = useState(false);
-  const [resetting, setResetting] = useState(false);
+function Btn({ children, onClick, color = C.accent, variant = "fill", size = "md", disabled, full }) {
+  const pad = size === "sm" ? "6px 12px" : "10px 20px";
+  const fs  = size === "sm" ? 12 : 14;
+  const bg  = variant === "fill" ? color : "transparent";
+  const bd  = variant === "outline" ? `1px solid ${color}` : "none";
+  const cl  = variant === "fill" ? "#fff" : color;
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{
+        padding: pad, fontSize: fs, fontWeight: 600, fontFamily: "inherit",
+        borderRadius: 10, border: bd, background: bg, color: cl,
+        cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? .5 : 1,
+        display: "flex", alignItems: "center", gap: 6, justifyContent: "center",
+        width: full ? "100%" : "auto",
+        boxShadow: variant === "fill" ? `0 4px 14px ${color}40` : "none",
+        transition: "opacity .15s, transform .1s",
+      }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.opacity = ".85"; }}
+      onMouseLeave={e => { if (!disabled) e.currentTarget.style.opacity = "1"; }}
+    >{children}</button>
+  );
+}
 
-  const isActive    = automation?.is_active ?? false;
-  const offsetDays  = automation?.trigger_offset_days ?? 1;
-  const bodyText    = template?.body_text || "";
-  const preview     = bodyText.length > 90 ? bodyText.slice(0, 90) + "…" : bodyText;
+// ── Modal wrapper ──────────────────────────────────────────────────
+function Modal({ title, onClose, children, width = 520 }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 500,
+      background: "rgba(0,0,0,.7)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+    }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{
+        background: C.bgCard2, borderRadius: 20, border: `1px solid ${C.border}`,
+        width: "100%", maxWidth: width, maxHeight: "92vh", overflowY: "auto",
+        padding: 28, boxShadow: "0 24px 80px rgba(0,0,0,.6)",
+        animation: "fadeUp .25s ease both",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+          <h2 style={{ color: C.text, fontSize: 17, fontWeight: 700, margin: 0 }}>{title}</h2>
+          <button onClick={onClose}
+            style={{ border: "none", background: "rgba(255,255,255,.07)", borderRadius: 8, width: 32, height: 32, color: C.textSub, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {IC.close}
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
-  const handleEdit = () => {
-    setEditText(bodyText);
-    setEditing(true);
+// ── Badge de ciclo ────────────────────────────────────────────────
+function CicloBadge({ ciclo }) {
+  const map = {
+    mensual: { label: "Mensual", color: "#6c63ff" },
+    trimestral: { label: "Trimestral", color: "#22d3ee" },
+    semestral: { label: "Semestral", color: "#f59e0b" },
+    anual: { label: "Anual", color: "#22c55e" },
+    ilimitado: { label: "Ilimitado", color: "#e040fb" },
   };
+  const cfg = map[ciclo] || { label: ciclo, color: "#6b7280" };
+  return (
+    <span style={{
+      fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em",
+      color: cfg.color, background: `${cfg.color}20`,
+      padding: "3px 8px", borderRadius: 6,
+    }}>{cfg.label}</span>
+  );
+}
 
-  const handleSave = async () => {
-    setSaving(true);
-    await onSave(template?.id, editText);
-    setSaving(false);
-    setEditing(false);
-  };
-
-  const handleReset = async () => {
-    setResetting(true);
-    await onReset(meta.key);
-    setResetting(false);
-    setEditing(false);
-  };
+// ── Card de plan ───────────────────────────────────────────────────
+function PlanCard({ plan, politica, onEdit, onDelete, gymConfig }) {
+  const [confirmDel, setConfirmDel] = useState(false);
+  const imgUrl = plan.imagen_url;
 
   return (
     <div style={{
-      background: "var(--bg-card)",
-      border: `1px solid ${isActive ? "rgba(108,99,255,.3)" : "var(--border)"}`,
-      borderRadius: 16, padding: 14, marginBottom: 10,
-      transition: "border .2s",
+      background: C.bgCard, borderRadius: 18, border: `1px solid ${C.border}`,
+      overflow: "hidden", display: "flex", flexDirection: "column",
+      animation: "fadeUp .3s ease both",
     }}>
-      {/* Header: icono + nombre + switch */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-        <span style={{ fontSize: 22, flexShrink: 0 }}>{meta.icon}</span>
-        <div style={{ flex: 1 }}>
-          <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>{meta.name}</p>
-          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>{meta.when}</p>
+      {/* Imagen / banner */}
+      <div style={{
+        height: 140, background: `linear-gradient(135deg, ${C.accent}33, ${C.accent2}33)`,
+        position: "relative", overflow: "hidden", flexShrink: 0,
+      }}>
+        {imgUrl
+          ? <img src={imgUrl} alt={plan.nombre}
+              style={{ width: "100%", height: "100%", objectFit: "cover", opacity: .85 }} />
+          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,.15)", fontSize: 48 }}>🏋️</div>
+        }
+        {/* overlay con ciclo */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.75) 40%, transparent)" }} />
+        <div style={{ position: "absolute", bottom: 10, left: 12 }}>
+          <CicloBadge ciclo={plan.ciclo_renovacion} />
+          <p style={{ color: "#fff", fontWeight: 800, fontSize: 17, margin: "4px 0 0", textShadow: "0 2px 8px rgba(0,0,0,.7)" }}>{plan.nombre}</p>
         </div>
-        {/* Switch activo/inactivo */}
-        <div
-          onClick={() => onToggle(meta.key, !isActive)}
-          style={{
-            width: 44, height: 24, borderRadius: 12, flexShrink: 0,
-            background: isActive ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)",
-            cursor: "pointer", position: "relative", transition: "background .2s",
-          }}
-        >
-          <div style={{
-            position: "absolute", top: 3, left: isActive ? 23 : 3,
-            width: 18, height: 18, borderRadius: "50%",
-            background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.3)",
-          }} />
+        <div style={{ position: "absolute", top: 10, right: 12, textAlign: "right" }}>
+          <p style={{ color: "rgba(255,255,255,.6)", fontSize: 10, margin: 0, textTransform: "uppercase", letterSpacing: ".06em" }}>Inversión Plan</p>
+          <p style={{ color: "#fff", fontWeight: 800, fontSize: 20, margin: 0 }}>$ {Number(plan.precio_publico).toLocaleString()}</p>
         </div>
+        {/* estado activo/inactivo */}
+        <div style={{
+          position: "absolute", top: 10, left: 12,
+          width: 8, height: 8, borderRadius: "50%",
+          background: plan.activo ? "#22c55e" : "#f43f5e",
+          boxShadow: `0 0 6px ${plan.activo ? "#22c55e" : "#f43f5e"}`,
+        }} />
       </div>
 
-      {/* Días antes (solo si hasOffset y activo) */}
-      {meta.hasOffset && isActive && !editing && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px" }}>
-          <p style={{ color: "#8b949e", fontSize: 11, flex: 1 }}>
-            {offsetDays >= 0
-              ? `Enviar ${offsetDays} día${offsetDays !== 1 ? "s" : ""} antes del vencimiento`
-              : `Enviar ${Math.abs(offsetDays)} día${Math.abs(offsetDays) !== 1 ? "s" : ""} después del vencimiento`
-            }
-          </p>
-          <div style={{ display: "flex", gap: 4 }}>
-            {[1, 2, 3, 5, 7].map(d => (
-              <button
-                key={d}
-                onClick={() => onOffsetChange(meta.key, d)}
-                style={{
-                  padding: "4px 8px", border: "none", borderRadius: 7,
-                  cursor: "pointer", fontFamily: "inherit",
-                  fontSize: 11, fontWeight: 600,
-                  background: offsetDays === d ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-card)",
-                  color: offsetDays === d ? "#fff" : "#8b949e",
-                }}
-              >
-                {d}d
-              </button>
-            ))}
+      {/* Info */}
+      <div style={{ padding: "14px 16px 16px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* Sucursal */}
+        {plan.sucursal && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{ fontSize: 12 }}>📍</span>
+            <span style={{ fontSize: 12, color: C.textSub }}>{plan.sucursal}</span>
+          </div>
+        )}
+
+        {/* Métricas */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
+            <p style={{ fontSize: 10, color: C.textMut, textTransform: "uppercase", letterSpacing: ".05em", margin: 0 }}>Cupo Clases</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: C.text, margin: "2px 0 0" }}>
+              {plan.limite_clases === 0 || plan.limite_clases === null ? "Ilimitado" : plan.limite_clases}
+            </p>
+          </div>
+          <div style={{ background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
+            <p style={{ fontSize: 10, color: C.textMut, textTransform: "uppercase", letterSpacing: ".05em", margin: 0 }}>Días Gracia</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: politica?.dias_gracia > 0 ? C.green : C.textSub, margin: "2px 0 0" }}>
+              {politica?.dias_gracia ?? 0} días
+            </p>
           </div>
         </div>
-      )}
 
-      {/* Vista previa del mensaje */}
-      {!editing && (
-        <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>
-            Mensaje
-          </p>
-          <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>{preview}</p>
-        </div>
-      )}
-
-      {/* Editor inline */}
-      {editing && (
-        <div style={{ marginBottom: 10 }}>
-          <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>
-            Editando mensaje
-          </p>
-          <textarea
-            value={editText}
-            onChange={e => setEditText(e.target.value)}
-            rows={6}
-            style={{
-              width: "100%", background: "var(--bg-elevated)",
-              border: "1px solid rgba(108,99,255,.4)", borderRadius: 10,
-              padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
-              fontFamily: "inherit", outline: "none", resize: "vertical",
-              lineHeight: 1.6, marginBottom: 6,
-            }}
-          />
-          <p style={{ color: "#8b949e", fontSize: 10, lineHeight: 1.5 }}>
-            Variables: {"{student_name}"} · {"{due_date}"} · {"{concept}"} · {"{amount}"} · {"{clabe}"} · {"{bank}"} · {"{propietario}"}
-          </p>
-        </div>
-      )}
-
-      {/* Botones de acción */}
-      <div style={{ display: "flex", gap: 8 }}>
-        {!editing ? (
-          <>
-            <button onClick={handleEdit}
-              style={{ flex: 2, padding: "8px", border: "1px solid rgba(108,99,255,.3)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#a78bfa" }}>
-              ✏️ Editar mensaje
-            </button>
-            <button onClick={handleReset} disabled={resetting}
-              style={{ flex: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
-              {resetting ? "…" : "↺ Restaurar"}
-            </button>
-          </>
-        ) : (
-          <>
-            <button onClick={() => setEditing(false)}
-              style={{ flex: 1, padding: "8px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-              Cancelar
-            </button>
-            <button onClick={handleReset} disabled={resetting}
-              style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
-              {resetting ? "…" : "↺ Default"}
-            </button>
-            <button onClick={handleSave} disabled={saving || !editText.trim()}
-              style={{ flex: 2, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: editText.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d", color: editText.trim() ? "#fff" : "#8b949e" }}>
-              {saving ? "Guardando…" : "💾 Guardar"}
-            </button>
-          </>
+        {/* Política de mora */}
+        {politica && (
+          <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}20`, borderRadius: 10, padding: "8px 10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+              <span style={{ color: C.red, display: "flex" }}>{IC.warn}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.red, textTransform: "uppercase", letterSpacing: ".05em" }}>Penalidad Mora</span>
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: C.red, margin: 0 }}>
+              {politica.tipo_penalidad === "porcentaje"
+                ? `${politica.penalidad_mora}% del precio`
+                : `$${Number(politica.penalidad_mora).toLocaleString()} fijo`}
+            </p>
+          </div>
         )}
+
+        {/* Costo operativo */}
+        {plan.costo_operativo > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 12, color: C.textMut }}>Costo operativo</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#22c55e" }}>
+              ${Number(plan.costo_operativo).toLocaleString()}
+            </span>
+          </div>
+        )}
+
+        {/* Acciones */}
+        <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 8 }}>
+          <Btn onClick={() => onEdit(plan)} full>
+            {IC.edit} Editar
+          </Btn>
+          {!confirmDel
+            ? <button onClick={() => setConfirmDel(true)}
+                style={{ border: "none", background: "rgba(244,63,94,.12)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", color: C.red, display: "flex", alignItems: "center" }}>
+                {IC.trash}
+              </button>
+            : <button onClick={() => onDelete(plan.id)}
+                style={{ border: "none", background: C.red, borderRadius: 10, padding: "8px 12px", cursor: "pointer", color: "#fff", fontSize: 12, fontWeight: 700 }}>
+                ¿Borrar?
+              </button>
+          }
+        </div>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-//  MensajesScreen  —  Export principal
-// ─────────────────────────────────────────────
-export default function MensajesScreen({
-  miembros,
-  txs,
-  gymConfig,
-  gymId,          // ← NUEVO: ID del gimnasio para Supabase
-  onBack,
-  onUpdatePlantillas,
-  miembroInicial,
-  modoInicial,
-  recordatoriosEnviados = {},
-  onMarcarRecordatorio,
-}) {
-  const [modo,       setModo]      = useState(modoInicial || (miembroInicial ? "individual" : "vencimientos"));
-  const [enviados,   setEnviados]  = useState({});
-  const [selMiembro, setSelMiembro] = useState(miembroInicial || null);
-  const [busqueda,   setBusqueda]  = useState("");
-  const [msgTexto,   setMsgTexto]  = useState("");
-  const [msgOrigen,  setMsgOrigen] = useState(null); // eslint-disable-line no-unused-vars
-  const [copiadoMsg, setCopiadoMsg] = useState(false);
-  const [copiadoNums, setCopiadoNums] = useState(false);
+// ── ImagePicker: cámara + galería + resize 300×300 ─────────────────
+function ImagePicker({ value, onChange }) {
+  const fileRef  = useState(null);
+  const camRef   = useState(null);
+  const [prev, setPrev] = useState(value || null);
 
-  // ── Hook de comunicación ──
-  const {
-    templates,
-    automations,
-    loading: commLoading,
-    dbAvailable,
-    getTemplate,
-    getSystemTemplates,
-    getQuickTemplates,
-    saveTemplate,
-    resetTemplate,
-    toggleAutomation,
-    updateOffset,
-  } = useCommunication(gymId);
-
-  const gymNom     = gymConfig?.nombre || "GymFit Pro";
-  const tplsCustom = gymConfig?.plantillas_wa || [
-    { icon: "⭐", label: "", msg: "" },
-    { icon: "⭐", label: "", msg: "" },
-    { icon: "⭐", label: "", msg: "" },
-  ];
-
-  // Plantillas rápidas: primero desde DB, fallback a hardcoded
-  const tplsRapidas = useMemo(() => {
-    const fromDB = getQuickTemplates();
-    if (fromDB.length > 0) return fromDB;
-    return [
-      { id: "q1", icon: "🚫", name: "Clase cancelada",  body_text: "¡Hola {student_name}! La clase de hoy ha sido cancelada. Disculpa los inconvenientes 🙏" },
-      { id: "q2", icon: "⏰", name: "Cambio de horario", body_text: "¡Hola {student_name}! Aviso: hubo un cambio de horario. El nuevo horario es a las 7:00pm 📅" },
-      { id: "q3", icon: "🏋️", name: "Evento especial",  body_text: `¡Hola {student_name}! 🔥 Te invitamos a nuestro evento especial este sábado. ¡Esperamos verte! — ${gymNom}` },
-      { id: "q4", icon: "🛑", name: "Cierre temporal",  body_text: `¡Hola {student_name}! El gym estará cerrado mañana por mantenimiento 🛑 — ${gymNom}` },
-    ];
-  }, [getQuickTemplates, gymNom]);
-
-  // ── Construir mensaje de vencimiento desde plantilla ──
-  const buildVencimientoMsg = useCallback((miembro, diasReales, memInfo) => {
-    const templateKey = mapDiasToTemplateKey(diasReales);
-    const tpl = getTemplate(templateKey);
-
-    // Si no hay template en DB, usar buildWAMsg original como fallback
-    if (!tpl) {
-      // Fallback: lógica anterior
-      const nombre   = miembro.nombre.split(" ")[0];
-      const vence    = memInfo?.vence || "";
-      const plan     = memInfo?.plan || "";
-      const gym      = gymNom;
-      const planStr  = plan ? ` *${plan}*` : "";
-      if (diasReales === 0) return `¡Hola ${nombre}! 🚨 Tu membresía${planStr} en *${gym}* vence *HOY*. Renueva ahora para no perder tu acceso 💪`;
-      if (diasReales <= 3)  return `¡Hola ${nombre}! ⏰ Tu membresía${planStr} vence en *${diasReales} días* (${vence}). No pierdas tu acceso al gym 🔥`;
-
-      // Template largo (1 día): usar recordatorio_tpl de gymConfig
-      const recordatorioTpl = gymConfig?.recordatorio_tpl || tpl?.body_text || "";
-      return recordatorioTpl
-        .replace(/\{nombre\}/gi,             nombre)
-        .replace(/\{student_name\}/gi,       nombre)
-        .replace(/\{fecha\}/gi,              vence)
-        .replace(/\{due_date\}/gi,           vence)
-        .replace(/\{clabe\}/gi,              gymConfig?.transferencia_clabe || "")
-        .replace(/\{titular\}/gi,            gymConfig?.transferencia_titular || "")
-        .replace(/\{banco\}/gi,              gymConfig?.transferencia_banco || "")
-        .replace(/\{bank\}/gi,               gymConfig?.transferencia_banco || "")
-        .replace(/\{propietario\}/gi,        gymConfig?.propietario_nombre || gym)
-        .replace(/\{propietario_titulo\}/gi, gymConfig?.propietario_titulo || "")
-        .replace(/\{gym\}/gi,                gym)
-        .replace(/\{plan\}/gi,               plan)
-        .replace(/\{concept\}/gi,            plan);
-    }
-
-    // Con template de DB
-    const vars = buildVarsFromMember(miembro, memInfo, gymConfig);
-    return replaceTemplateVars(tpl.body_text, vars);
-  }, [getTemplate, gymConfig, gymNom]);
-
-  // ── Alertas: miembros activos que vencen en ≤5 días ──
-  const alertas = useMemo(() => {
-    const result = [];
-    miembros
-      .filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo")
-      .forEach(m => {
-        const info       = getMembershipInfo(m.id, txs, m);
-        const diasReales = diasParaVencer(info.vence);
-        if (diasReales === null || diasReales < 0 || diasReales > 5) return;
-        result.push({ miembro: m, diasReales, memInfo: info });
-      });
-    result.sort((a, b) => a.diasReales - b.diasReales);
-    return result;
-  }, [miembros, txs]);
-
-  const pendientes = alertas.filter(({ miembro }) => !enviados[miembro.id]).length;
-
-  const urgColor = (d) => d <= 1 ? "#f43f5e" : d <= 3 ? "#f59e0b" : "#22d3ee";
-  const urgLabel = (d) => d === 0 ? "HOY 🚨" : d === 1 ? "MAÑANA" : `${d}d`;
-
-  // ── Envío WA ──
-  const enviarWA = (tel, msg, miembroId) => {
-    window.open(buildWAUrl(tel, msg), "_blank");
-    if (miembroId) {
-      setEnviados(p => ({ ...p, [miembroId]: true }));
-      if (onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
-    }
-  };
-  const enviarWAIndividual = (tel, msg, miembroId) => {
-    window.open(buildWAUrl(tel, msg), "_blank");
-    if (miembroId && onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
-  };
-
-  const selNombre1 = selMiembro?.nombre?.split(" ")[0] || "";
-  const destMasivo = miembros.filter(mb => getMembershipInfo(mb.id, txs, mb).estado === "Activo" && mb.tel);
-
-  const cambiarModo = (nuevoModo) => {
-    setModo(nuevoModo);
-    setMsgTexto("");
-    setMsgOrigen(null);
-    setCopiadoMsg(false);
-    setCopiadoNums(false);
-  };
-
-  // ── Tabs: 4 modos ──
-  const modos = [
-    { k: "vencimientos",       icon: "⏰", label: "Vencimientos" },
-    { k: "individual",         icon: "👤", label: "Individual"   },
-    { k: "masivo",             icon: "📢", label: "Masivo"       },
-    { k: "mensajes_sistema",   icon: "⚙️", label: "Sistema"      },
-  ];
-
-  const btnModoBase = (activo) => ({
-    flex: 1, padding: "9px 4px",
-    border: "none", borderRadius: 11,
-    cursor: "pointer", fontFamily: "inherit",
-    background: activo ? "linear-gradient(135deg,#25d366,#128c7e)" : "transparent",
-    color: activo ? "#fff" : "#8b949e",
-    fontSize: 10, fontWeight: activo ? 700 : 500,
-    boxShadow: activo ? "0 2px 12px rgba(37,211,102,.3)" : "none",
-    transition: "all .2s",
+  // Resize a 300×300 con canvas
+  const resizeToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width  = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext("2d");
+        // Recorte centrado (object-fit: cover)
+        const ratio  = Math.max(300 / img.width, 300 / img.height);
+        const newW   = img.width  * ratio;
+        const newH   = img.height * ratio;
+        const offX   = (300 - newW) / 2;
+        const offY   = (300 - newH) / 2;
+        ctx.drawImage(img, offX, offY, newW, newH);
+        resolve(canvas.toDataURL("image/jpeg", 0.88));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 
-  const textareaStyle = {
-    width: "100%", background: "var(--bg-elevated)",
-    border: "1px solid var(--border-strong)", borderRadius: 14,
-    padding: "14px", color: "var(--text-primary)", fontSize: 13,
-    fontFamily: "inherit", outline: "none", resize: "none",
-    lineHeight: 1.6, marginBottom: 6,
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const b64 = await resizeToBase64(file);
+      setPrev(b64);
+      onChange(b64);
+    } catch { /* ignorar errores de lectura */ }
+    e.target.value = "";
   };
 
-  // ─────────────────────────────────────────────
+  const handleRemove = () => { setPrev(null); onChange(""); };
+
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div>
+      {/* Preview */}
+      {prev ? (
+        <div style={{ position: "relative", width: 120, height: 120, marginBottom: 12 }}>
+          <img src={prev} alt="portada"
+            style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 12, border: `2px solid ${C.border}` }} />
+          <button onClick={handleRemove}
+            style={{
+              position: "absolute", top: -8, right: -8,
+              width: 24, height: 24, borderRadius: "50%",
+              background: C.red, border: "2px solid #1c1c2e",
+              color: "#fff", fontSize: 14, lineHeight: 1,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            }}>×</button>
+          <p style={{ fontSize: 10, color: C.textMut, marginTop: 4 }}>Imagen guardada en 300×300 px</p>
+        </div>
+      ) : (
+        <div style={{ width: 120, height: 120, borderRadius: 12, border: `2px dashed ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, color: C.textMut, fontSize: 32 }}>
+          🖼️
+        </div>
+      )}
 
-      {/* ── Header fijo ── */}
-      <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <button onClick={onBack} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
-              <p style={{ color: "#8b949e", fontSize: 11 }}>Centro de comunicación WhatsApp</p>
+      {/* Botones */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300 }}>
+        {/* Galería */}
+        <label style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+          border: `1px solid ${C.border}`, background: "rgba(255,255,255,.05)",
+          color: C.text, fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+        }}>
+          🖼️ &nbsp;Elegir de galería
+          <input ref={e => fileRef[1](e)} type="file" accept="image/*"
+            style={{ display: "none" }} onChange={handleFile} />
+        </label>
+
+        {/* Cámara */}
+        <label style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "10px 16px", borderRadius: 10, cursor: "pointer",
+          background: `linear-gradient(135deg, ${C.accent}, ${C.accent2})`,
+          color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+          border: "none", boxShadow: `0 4px 14px ${C.accent}50`,
+        }}>
+          📷 &nbsp;Tomar foto
+          <input type="file" accept="image/*" capture="environment"
+            style={{ display: "none" }} onChange={handleFile} />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FORM DE PLAN (crear / editar)
+// ══════════════════════════════════════════════════════════════════
+const CICLOS = [
+  { value: "mensual",    label: "Mensual"     },
+  { value: "trimestral", label: "Trimestral"  },
+  { value: "semestral",  label: "Semestral"   },
+  { value: "anual",      label: "Anual"       },
+  { value: "ilimitado",  label: "Sin vencimiento (ilimitado)" },
+];
+
+const TIPOS_PENALIDAD = [
+  { value: "fijo",       label: "Monto fijo ($)" },
+  { value: "porcentaje", label: "Porcentaje del precio (%)" },
+];
+
+const PLAN_VACIO = {
+  nombre: "", precio_publico: "", costo_operativo: "",
+  ciclo_renovacion: "mensual", limite_clases: "",
+  imagen_url: "", sucursal: "", activo: true,
+};
+const POL_VACIO = {
+  dias_gracia: "5", penalidad_mora: "20", tipo_penalidad: "fijo",
+  cobro_automatico: false, permitir_congelamiento: true, dias_max_congelamiento: "30",
+  requiere_contrato: false, notas: "",
+};
+
+function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
+  const [fP, setFP] = useState({ ...PLAN_VACIO, ...plan });
+  const [fPol, setFPol] = useState({ ...POL_VACIO, ...politica });
+  const [tab, setTab] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const isEdit = !!plan?.id;
+
+  const handleSave = async () => {
+    if (!fP.nombre.trim()) { setErr("El nombre del plan es obligatorio."); return; }
+    if (!fP.precio_publico || isNaN(Number(fP.precio_publico))) { setErr("Ingresa un precio público válido."); return; }
+    setErr("");
+    setSaving(true);
+    try {
+      await onSave(
+        {
+          ...fP,
+          precio_publico:   Number(fP.precio_publico),
+          costo_operativo:  Number(fP.costo_operativo || 0),
+          limite_clases:    fP.limite_clases === "" ? 0 : Number(fP.limite_clases),
+          gym_id:           gymId,
+        },
+        {
+          ...fPol,
+          dias_gracia:           Number(fPol.dias_gracia || 0),
+          penalidad_mora:        Number(fPol.penalidad_mora || 0),
+          dias_max_congelamiento: Number(fPol.dias_max_congelamiento || 0),
+          gym_id:                gymId,
+        }
+      );
+    } catch (e) {
+      setErr("Error al guardar. Intenta de nuevo.");
+    }
+    setSaving(false);
+  };
+
+  const upP   = (k, v) => setFP(p => ({ ...p, [k]: v }));
+  const upPol = (k, v) => setFPol(p => ({ ...p, [k]: v }));
+
+  const tabStyle = (i) => ({
+    flex: 1, padding: "8px 0", fontSize: 13, fontWeight: 600,
+    border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+    background: tab === i ? C.accent : "transparent",
+    color: tab === i ? "#fff" : C.textSub,
+  });
+
+  return (
+    <>
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,.05)", borderRadius: 10, padding: 4, marginBottom: 20 }}>
+        <button style={tabStyle(0)} onClick={() => setTab(0)}>{IC.card} &nbsp;Plan</button>
+        <button style={tabStyle(1)} onClick={() => setTab(1)}>{IC.shield} &nbsp;Políticas</button>
+      </div>
+
+      {/* ─── TAB 0: Datos del plan ─── */}
+      {tab === 0 && (
+        <>
+          <Field label="Nombre del plan *">
+            <Input value={fP.nombre} onChange={v => upP("nombre", v)} placeholder="Ej: Mensualidad Karate Infantil" />
+          </Field>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Precio público (venta) *">
+              <Input type="number" value={fP.precio_publico} onChange={v => upP("precio_publico", v)} placeholder="0" min="0" step="0.01" />
+            </Field>
+            <Field label="Costo operativo (interno)" hint="No visible al alumno">
+              <Input type="number" value={fP.costo_operativo} onChange={v => upP("costo_operativo", v)} placeholder="0" min="0" step="0.01" />
+            </Field>
+          </div>
+
+          <Field label="Ciclo de renovación">
+            <Select value={fP.ciclo_renovacion} onChange={v => upP("ciclo_renovacion", v)} options={CICLOS} />
+          </Field>
+
+          <Field label="Límite de clases" hint="0 = ilimitado">
+            <Input type="number" value={fP.limite_clases} onChange={v => upP("limite_clases", v)} placeholder="0 = ilimitado" min="0" />
+          </Field>
+
+          <Field label="Imagen de portada">
+            <ImagePicker value={fP.imagen_url} onChange={v => upP("imagen_url", v)} />
+          </Field>
+
+          <Toggle checked={fP.activo} onChange={v => upP("activo", v)} label="Plan activo (visible y asignable)" />
+        </>
+      )}
+
+      {/* ─── TAB 1: Políticas de cobro ─── */}
+      {tab === 1 && (
+        <>
+          <div style={{ background: `${C.accent}10`, border: `1px solid ${C.accent}20`, borderRadius: 12, padding: "10px 14px", marginBottom: 18 }}>
+            <p style={{ color: C.textSub, fontSize: 12, margin: 0 }}>⚙️ Las políticas definen las reglas de cobro, morosidad y congelamiento para este plan.</p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 4 }}>
+            <Field label="Días de gracia" hint="Días después del vencimiento antes de aplicar mora">
+              <Input type="number" value={fPol.dias_gracia} onChange={v => upPol("dias_gracia", v)} min="0" placeholder="5" />
+            </Field>
+            <Field label="Penalidad por mora">
+              <Input type="number" value={fPol.penalidad_mora} onChange={v => upPol("penalidad_mora", v)} min="0" placeholder="20" />
+            </Field>
+          </div>
+
+          <Field label="Tipo de penalidad">
+            <Select value={fPol.tipo_penalidad} onChange={v => upPol("tipo_penalidad", v)} options={TIPOS_PENALIDAD} />
+          </Field>
+
+          {/* Preview de mora */}
+          {fPol.penalidad_mora > 0 && fP.precio_publico > 0 && (
+            <div style={{ background: `${C.red}10`, border: `1px solid ${C.red}20`, borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
+              <p style={{ color: C.red, fontSize: 12, margin: 0, fontWeight: 600 }}>
+                {IC.warn}&nbsp; Mora aplicada:{" "}
+                {fPol.tipo_penalidad === "porcentaje"
+                  ? `$${(Number(fP.precio_publico) * Number(fPol.penalidad_mora) / 100).toFixed(2)}`
+                  : `$${Number(fPol.penalidad_mora).toLocaleString()}`}
+                &nbsp;sobre precio de ${Number(fP.precio_publico).toLocaleString()}
+              </p>
             </div>
-            {pendientes > 0 && (
-              <span style={{ background: "#f43f5e", color: "#fff", borderRadius: 10, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>
-                {pendientes}
-              </span>
-            )}
+          )}
+
+          <div style={{ height: 1, background: C.border, margin: "14px 0" }} />
+
+          <Field label="Días máx. de congelamiento">
+            <Input type="number" value={fPol.dias_max_congelamiento} onChange={v => upPol("dias_max_congelamiento", v)} min="0" placeholder="30" />
+          </Field>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
+            <Toggle checked={fPol.cobro_automatico}       onChange={v => upPol("cobro_automatico", v)}       label="Cobro automático al renovar" />
+            <Toggle checked={fPol.permitir_congelamiento} onChange={v => upPol("permitir_congelamiento", v)} label="Permitir congelar membresía" color={C.green} />
+            <Toggle checked={fPol.requiere_contrato}      onChange={v => upPol("requiere_contrato", v)}      label="Requiere firma de contrato" color={C.yellow} />
           </div>
 
-          {/* Selector de 4 modos */}
-          <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
-            {modos.map(m => (
-              <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
-                {m.icon} {m.label}
-              </button>
-            ))}
+          <Field label="Notas internas de la política">
+            <textarea value={fPol.notas} onChange={e => upPol("notas", e.target.value)}
+              placeholder="Ej: Solo aplica a alumnos nuevos, etc."
+              rows={3}
+              style={{
+                width: "100%", padding: "9px 12px", borderRadius: 10, border: `1px solid ${C.border}`,
+                background: "rgba(255,255,255,.04)", color: C.text, fontSize: 13,
+                fontFamily: "inherit", outline: "none", resize: "vertical", boxSizing: "border-box",
+              }} />
+          </Field>
+        </>
+      )}
+
+      {err && (
+        <div style={{ background: `${C.red}15`, border: `1px solid ${C.red}30`, borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
+          <p style={{ color: C.red, fontSize: 13, margin: 0 }}>{err}</p>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+        <Btn onClick={onClose} variant="outline" color={C.textSub} full>Cancelar</Btn>
+        <Btn onClick={handleSave} disabled={saving} full>
+          {saving ? "Guardando…" : isEdit ? "Guardar cambios" : "Crear plan"}{!saving && " ✓"}
+        </Btn>
+      </div>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PANTALLA PRINCIPAL
+// ══════════════════════════════════════════════════════════════════
+export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOwner }) {
+  const [planes,    setPlanes]    = useState([]);
+  const [politicas, setPoliticas] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [modal,     setModal]     = useState(null);  // null | "nuevo" | "editar"
+  const [selPlan,   setSelPlan]   = useState(null);
+  const [busqueda,  setBusqueda]  = useState("");
+  const [filtroActivo, setFiltroActivo] = useState("todos"); // "todos" | "activos" | "inactivos"
+  const [filtroCiclo,  setFiltroCiclo]  = useState("todos");
+  const [toast,    setToast]    = useState(null);
+
+  // ── Cargar datos ──────────────────────────────────────────────
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const dbP   = await supabase.from("planes_membresia");
+      const rawP  = await dbP.select(gymId);
+      setPlanes(rawP || []);
+
+      const dbPol  = await supabase.from("politicas_membresia");
+      const rawPol = await dbPol.select(gymId);
+      setPoliticas(rawPol || []);
+    } catch(e) {
+      console.error("Error cargando membresías:", e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [gymId]); // eslint-disable-line
+
+  const showToast = (msg, type = "ok") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // ── CRUD ─────────────────────────────────────────────────────
+  const handleSave = async (planData, politicaData) => {
+    const isEdit = !!selPlan?.id;
+
+    if (isEdit) {
+      // UPDATE plan
+      const dbP = await supabase.from("planes_membresia");
+      await dbP.update(selPlan.id, {
+        nombre: planData.nombre, precio_publico: planData.precio_publico,
+        costo_operativo: planData.costo_operativo, ciclo_renovacion: planData.ciclo_renovacion,
+        limite_clases: planData.limite_clases, imagen_url: planData.imagen_url,
+        sucursal: planData.sucursal, activo: planData.activo,
+      });
+      setPlanes(prev => prev.map(p => p.id === selPlan.id ? { ...p, ...planData } : p));
+
+      // UPDATE / INSERT política
+      const polExistente = politicas.find(p => p.plan_id === selPlan.id);
+      const dbPol = await supabase.from("politicas_membresia");
+      if (polExistente) {
+        await dbPol.update(polExistente.id, { ...politicaData, plan_id: selPlan.id });
+        setPoliticas(prev => prev.map(p => p.id === polExistente.id ? { ...p, ...politicaData, plan_id: selPlan.id } : p));
+      } else {
+        const saved = await dbPol.insert({ ...politicaData, plan_id: selPlan.id });
+        if (saved) setPoliticas(prev => [...prev, { ...politicaData, plan_id: selPlan.id, id: saved.id }]);
+      }
+      showToast("Plan actualizado correctamente");
+    } else {
+      // INSERT plan
+      const dbP  = await supabase.from("planes_membresia");
+      const saved = await dbP.insert(planData);
+      if (saved) {
+        setPlanes(prev => [...prev, { ...planData, id: saved.id }]);
+        // INSERT política ligada al nuevo plan
+        const dbPol = await supabase.from("politicas_membresia");
+        const savedPol = await dbPol.insert({ ...politicaData, plan_id: saved.id });
+        if (savedPol) setPoliticas(prev => [...prev, { ...politicaData, plan_id: saved.id, id: savedPol.id }]);
+      }
+      showToast("Plan creado exitosamente");
+    }
+    setModal(null);
+    setSelPlan(null);
+  };
+
+  const handleDelete = async (planId) => {
+    // Borrar política primero (si existe)
+    const pol = politicas.find(p => p.plan_id === planId);
+    if (pol) {
+      const dbPol = await supabase.from("politicas_membresia");
+      await dbPol.delete(pol.id);
+      setPoliticas(prev => prev.filter(p => p.id !== pol.id));
+    }
+    const dbP = await supabase.from("planes_membresia");
+    await dbP.delete(planId);
+    setPlanes(prev => prev.filter(p => p.id !== planId));
+    showToast("Plan eliminado", "warn");
+  };
+
+  // ── Filtros ───────────────────────────────────────────────────
+  const planesFiltrados = useMemo(() => {
+    let arr = [...planes];
+    if (busqueda)             arr = arr.filter(p => p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.sucursal?.toLowerCase().includes(busqueda.toLowerCase()));
+    if (filtroActivo === "activos")   arr = arr.filter(p => p.activo !== false);
+    if (filtroActivo === "inactivos") arr = arr.filter(p => p.activo === false);
+    if (filtroCiclo !== "todos")      arr = arr.filter(p => p.ciclo_renovacion === filtroCiclo);
+    return arr;
+  }, [planes, busqueda, filtroActivo, filtroCiclo]);
+
+  // ── Métricas ──────────────────────────────────────────────────
+  const planesActivos = planes.filter(p => p.activo !== false).length;
+  const costoPromedio = planes.length > 0
+    ? Math.round(planes.reduce((s, p) => s + Number(p.precio_publico || 0), 0) / planes.length)
+    : 0;
+  const sucursales    = [...new Set(planes.map(p => p.sucursal).filter(Boolean))];
+  const planesIlimitados = planes.filter(p => p.ciclo_renovacion === "ilimitado").length;
+
+  // ── Pol de plan seleccionado ───────────────────────────────────
+  const polDePlan = (planId) => politicas.find(p => p.plan_id === planId) || null;
+
+  // ── Chips de filtro ───────────────────────────────────────────
+  const chipStyle = (active, color = C.accent) => ({
+    padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 600,
+    border: `1px solid ${active ? color : C.border}`,
+    background: active ? `${color}20` : "transparent",
+    color: active ? color : C.textSub,
+    cursor: "pointer", fontFamily: "inherit",
+  });
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px 60px", minHeight: 0, position: "relative" }}>
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+        input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+        textarea{resize:vertical;}
+      `}</style>
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div style={{
+          position: "fixed", bottom: 30, right: 30, zIndex: 999,
+          background: toast.type === "warn" ? C.yellow : "#22c55e",
+          color: "#000", padding: "10px 20px", borderRadius: 12,
+          fontWeight: 700, fontSize: 14, boxShadow: "0 8px 32px rgba(0,0,0,.4)",
+          animation: "slideIn .3s ease",
+        }}>{toast.type === "warn" ? "⚠️" : "✅"} {toast.msg}</div>
+      )}
+
+      {/* ── Header ── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, ${C.accent}, ${C.accent2})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💳</div>
+            <div>
+              <h1 style={{ color: C.text, fontSize: 22, fontWeight: 800, margin: 0 }}>
+                Gestor de <span style={{ color: C.accent }}>Membresías</span>
+              </h1>
+              <p style={{ color: C.textMut, fontSize: 12, margin: 0, textTransform: "uppercase", letterSpacing: ".07em" }}>Gestión de Planes &amp; Beneficios</p>
+            </div>
           </div>
+        </div>
+        <Btn onClick={() => { setSelPlan(null); setModal("nuevo"); }}>
+          {IC.plus} Nuevo Plan
+        </Btn>
+      </div>
+
+      {/* ── Métricas ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
+        {[
+          { label: "Planes Activos",    value: planesActivos,   icon: IC.card,    color: C.accent },
+          { label: "Costo Promedio",    value: `$${costoPromedio.toLocaleString()}`, icon: "💲", color: "#22d3ee" },
+          { label: "Sucursales",        value: sucursales.length || 1,             icon: "📍", color: "#22c55e" },
+          { label: "Planes Ilimitados", value: planesIlimitados,                   icon: IC.infinite, color: C.accent2 },
+        ].map((m, i) => (
+          <div key={i} style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ color: m.color, fontSize: 22, display: "flex" }}>{m.icon}</span>
+            <div>
+              <p style={{ color: C.textMut, fontSize: 10, textTransform: "uppercase", letterSpacing: ".07em", margin: 0 }}>{m.label}</p>
+              <p style={{ color: m.color, fontSize: 20, fontWeight: 800, margin: "2px 0 0" }}>{m.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Buscador y filtros ── */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ position: "relative", flex: "1 1 220px", minWidth: 180 }}>
+          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: C.textMut, fontSize: 16 }}>🔍</span>
+          <input value={busqueda} onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar por nombre de plan o sucursal..."
+            style={{ width: "100%", padding: "9px 12px 9px 36px", borderRadius: 10, border: `1px solid ${C.border}`, background: "rgba(255,255,255,.04)", color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+        </div>
+
+        {/* Chips estado */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[["todos", "Todos"], ["activos", "Activos"], ["inactivos", "Inactivos"]].map(([v, l]) => (
+            <button key={v} style={chipStyle(filtroActivo === v)} onClick={() => setFiltroActivo(v)}>{l}</button>
+          ))}
+        </div>
+
+        {/* Chips ciclo */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {[["todos", "Todos ciclos"], ...CICLOS.map(c => [c.value, c.label])].map(([v, l]) => (
+            <button key={v} style={chipStyle(filtroCiclo === v, "#22d3ee")} onClick={() => setFiltroCiclo(v)}>{l}</button>
+          ))}
         </div>
       </div>
 
-      {/* ── Contenido scrollable ── */}
-      <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 20px 0" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
-
-          {/* ════ MODO: VENCIMIENTOS ════ */}
-          {modo === "vencimientos" && (
-            <>
-              {alertas.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "50px 0" }}>
-                  <p style={{ fontSize: 40, marginBottom: 12 }}>🎉</p>
-                  <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>¡Sin vencimientos próximos!</p>
-                  <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
-                </div>
-              ) : (
-                alertas.map(({ miembro, diasReales, memInfo }) => {
-                  const col     = urgColor(diasReales);
-                  const enviado = !!enviados[miembro.id];
-                  // ← CAMBIO: usar plantilla del sistema en lugar de buildWAMsg
-                  const msg     = buildVencimientoMsg(miembro, diasReales, memInfo);
-                  return (
-                    <div
-                      key={miembro.id}
-                      style={{
-                        background: enviado ? "var(--bg-card)" : `${col}10`,
-                        border: `1px solid ${enviado ? "var(--border)" : col + "35"}`,
-                        borderRadius: 18, padding: 14, marginBottom: 12,
-                        opacity: enviado ? 0.65 : 1, transition: "all .3s",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <div style={{ width: 42, height: 42, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: `${col}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, color: col, border: `2px solid ${col}50` }}>
-                          {miembro.foto
-                            ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            : miembro.nombre.charAt(0)
-                          }
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
-                          <p style={{ color: "#8b949e", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
-                        </div>
-                        <span style={{ background: enviado ? "rgba(74,222,128,.15)" : `${col}25`, color: enviado ? "#4ade80" : col, borderRadius: 8, padding: "4px 9px", fontSize: 11, fontWeight: 700 }}>
-                          {enviado ? "✓" : urgLabel(diasReales)}
-                        </span>
-                      </div>
-
-                      <textarea
-                        value={enviado ? msg : (enviados["msg_" + miembro.id] ?? msg)}
-                        onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
-                        rows={3}
-                        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.5, marginBottom: 8 }}
-                      />
-
-                      <button
-                        onClick={() => enviarWA(miembro.tel, enviados["msg_" + miembro.id] ?? msg, miembro.id)}
-                        disabled={!miembro.tel}
-                        style={{
-                          width: "100%", padding: "11px", border: "none", borderRadius: 12,
-                          cursor: miembro.tel ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                          background: enviado ? "rgba(74,222,128,.12)" : miembro.tel ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
-                          color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#8b949e",
-                          boxShadow: !enviado && miembro.tel ? "0 4px 14px rgba(37,211,102,.3)" : "none",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                        }}
-                      >
-                        {enviado ? "✓ Enviado" : miembro.tel ? "💬 Enviar por WhatsApp" : "Sin número registrado"}
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </>
-          )}
-
-          {/* ════ MODO: INDIVIDUAL ════ */}
-          {modo === "individual" && (
-            <>
-              {/* Vista A: Selección de miembro */}
-              {!selMiembro && (
-                <>
-                  <div style={{ position: "relative", marginBottom: 10 }}>
-                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#8b949e", pointerEvents: "none" }}>🔍</span>
-                    <input
-                      value={busqueda}
-                      onChange={e => setBusqueda(e.target.value)}
-                      placeholder="Buscar miembro..."
-                      style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }}
-                    />
-                    {busqueda && (
-                      <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer", padding: 2 }}>✕</button>
-                    )}
-                  </div>
-
-                  {(() => {
-                    const conTel    = miembros.filter(m => m.tel);
-                    const filtrados = busqueda.trim()
-                      ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
-                      : conTel;
-                    const sinTel    = miembros.filter(m => !m.tel).length;
-                    return (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-                        {filtrados.length === 0 && <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>}
-                        {filtrados.map(m => (
-                          <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
-                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                              {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
-                            </div>
-                            <div style={{ flex: 1, textAlign: "left" }}>
-                              <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                              <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
-                            </div>
-                            <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
-                          </button>
-                        ))}
-                        {sinTel > 0 && !busqueda && <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>{sinTel} miembro{sinTel > 1 ? "s" : ""} sin número no aparecen</p>}
-                      </div>
-                    );
-                  })()}
-                </>
-              )}
-
-              {/* Vista B: Composición de mensaje */}
-              {selMiembro && (
-                <>
-                  {/* Header destinatario */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 12 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff" }}>
-                      {selMiembro.foto ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selMiembro.nombre.charAt(0)}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
-                      <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {selMiembro.tel}</p>
-                    </div>
-                    <button onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
-                      style={{ background: "#21262d", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "#8b949e", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
-                      Cambiar ✕
-                    </button>
-                  </div>
-
-                  {/* Textarea */}
-                  <textarea
-                    value={msgTexto}
-                    onChange={e => setMsgTexto(e.target.value)}
-                    placeholder={`Hola ${selNombre1}, escribe o elige una plantilla abajo...`}
-                    rows={4} autoFocus
-                    style={textareaStyle}
-                  />
-                  <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
-
-                  {/* Botón enviar */}
-                  <button
-                    onClick={() => enviarWAIndividual(selMiembro.tel, msgTexto.trim(), selMiembro.id)}
-                    disabled={!msgTexto.trim()}
-                    style={{
-                      width: "100%", padding: "14px", border: "none", borderRadius: 14,
-                      cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                      background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
-                      color: msgTexto.trim() ? "#fff" : "#8b949e",
-                      boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20,
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>💬</span>
-                    {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
-                  </button>
-
-                  {/* Mis mensajes guardados */}
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💾 Mis mensajes guardados</p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-                    {[0, 1, 2, 3].map(i => {
-                      const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
-                      return (
-                        <PlantillaCustom
-                          key={i} index={i} tpl={slot}
-                          nombreMiembro={selNombre1} gymNom={gymNom}
-                          onUsar={(msg) => setMsgTexto(msg)}
-                          onGuardar={async (nueva) => {
-                            const nuevas = [...tplsCustom];
-                            while (nuevas.length <= i) nuevas.push({ icon: "⭐", label: "", msg: "" });
-                            nuevas[i] = nueva;
-                            await onUpdatePlantillas(nuevas);
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-
-                  {/* ← NUEVO: Plantillas del sistema */}
-                  {getSystemTemplates().length > 0 && (
-                    <details style={{ marginBottom: 14 }}>
-                      <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
-                        <span>⚙️ Plantillas del sistema</span>
-                        <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
-                      </summary>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-                        {getSystemTemplates().map(tpl => {
-                          const memInfo = getMembershipInfo(selMiembro.id, txs, selMiembro);
-                          const vars    = buildVarsFromMember(selMiembro, memInfo, gymConfig);
-                          const msgFinal = replaceTemplateVars(tpl.body_text, vars);
-                          return (
-                            <button key={tpl.id} onClick={() => setMsgTexto(msgFinal)}
-                              style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
-                              <span style={{ fontSize: 16 }}>⚙️</span>
-                              <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name}</span>
-                              {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </details>
-                  )}
-
-                  {/* Plantillas rápidas */}
-                  <details style={{ marginBottom: 14 }}>
-                    <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
-                      <span>⚡ Plantillas rápidas</span>
-                      <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
-                    </summary>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-                      {tplsRapidas.map((tpl, i) => {
-                        const vars     = { student_name: selNombre1 };
-                        const msgFinal = replaceTemplateVars(tpl.body_text || tpl.msg || "", vars);
-                        return (
-                          <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
-                            style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
-                            <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                            <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
-                            {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </details>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ════ MODO: MASIVO ════ (sin cambios de UX) */}
-          {modo === "masivo" && (
-            <>
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Mensaje para todos</p>
-              <textarea
-                value={msgTexto}
-                onChange={e => setMsgTexto(e.target.value)}
-                placeholder={`Ej: Hola, la clase de hoy fue cancelada. Disculpen 🙏 — ${gymNom}`}
-                rows={5} style={textareaStyle}
-              />
-              <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
-
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Plantillas rápidas</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-                {tplsRapidas.map((tpl, i) => {
-                  const msgFinal = tpl.body_text || tpl.msg || "";
-                  return (
-                    <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
-                      style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "var(--border)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
-                      <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                      <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
-                      {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {msgTexto.trim() && (
-                <>
-                  <div style={{ background: "rgba(37,211,102,.06)", border: "1px solid rgba(37,211,102,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
-                    <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>Destinatarios ({destMasivo.length})</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {destMasivo.map(mb => (
-                        <div key={mb.id} style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--bg-elevated)", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
-                          <div style={{ width: 22, height: 22, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
-                            {mb.foto ? <img src={mb.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mb.nombre.charAt(0)}
-                          </div>
-                          <span style={{ color: "#8b949e", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {[
-                    { num: 1, label: "Copia el mensaje", copiado: copiadoMsg,  action: () => { copyToClipboard(msgTexto); setCopiadoMsg(true); } },
-                    { num: 2, label: "Copia los números", sub: `${destMasivo.length} contactos`, copiado: copiadoNums, action: () => { copyToClipboard(destMasivo.map(mb => mb.tel.replace(/\D/g, "")).join("\n")); setCopiadoNums(true); } },
-                  ].map(step => (
-                    <div key={step.num} style={{ background: "var(--bg-card)", border: step.copiado ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)", borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ background: step.copiado ? "rgba(37,211,102,.2)" : "var(--bg-elevated)", color: step.copiado ? "#4ade80" : "var(--text-primary)", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
-                            {step.copiado ? "✓" : step.num}
-                          </span>
-                          <div>
-                            <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{step.label}</p>
-                            {step.sub && <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{step.sub}</p>}
-                          </div>
-                        </div>
-                        <button onClick={step.action} style={{ padding: "6px 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: step.copiado ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)", color: step.copiado ? "#4ade80" : "#fff" }}>
-                          {step.copiado ? "✓ Copiado" : "📋 Copiar"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
-                    <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
-                    <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.</p>
-                  </div>
-
-                  <button onClick={() => window.open("https://wa.me", "_blank")}
-                    style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff", boxShadow: "0 4px 18px rgba(37,211,102,.35)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>💬</span> Abrir WhatsApp
-                  </button>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ════ MODO: MENSAJES DEL SISTEMA ════ */}
-          {modo === "mensajes_sistema" && (
-            <>
-              {/* Intro */}
-              <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
-                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚙️ Centro de automatización</p>
-                <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>
-                  Aquí configuras los mensajes que el sistema envía automáticamente. Actívalos, personaliza el texto y ajusta cuántos días antes se envían.
-                </p>
-              </div>
-
-              {commLoading && (
-                <div style={{ textAlign: "center", padding: "30px 0" }}>
-                  <p style={{ color: "#8b949e", fontSize: 13 }}>Cargando mensajes…</p>
-                </div>
-              )}
-
-              {!commLoading && (
-                <>
-                  {/* Tarjetas de mensajes del sistema */}
-                  {SYSTEM_TEMPLATE_KEYS.map(meta => {
-                    const template   = getTemplate(meta.key);
-                    const automation = automations.find(a => a.event_key === meta.key);
-                    return (
-                      <SystemMessageCard
-                        key={meta.key}
-                        meta={meta}
-                        template={template}
-                        automation={automation}
-                        onToggle={toggleAutomation}
-                        onOffsetChange={updateOffset}
-                        onSave={saveTemplate}
-                        onReset={resetTemplate}
-                      />
-                    );
-                  })}
-
-                  {/* Banner solo si hay gymId pero la DB no está inicializada */}
-                  {!dbAvailable && !gymId && (
-                    <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-                      <p style={{ color: "#f43f5e", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-                        ⚠️ Error de configuración — gymId no disponible
-                      </p>
-                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
-                        No se pudo determinar el ID del gimnasio. Verifica que hayas iniciado sesión correctamente y recarga la página.
-                      </p>
-                    </div>
-                  )}
-                  {!dbAvailable && gymId && (
-                    <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-                      <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-                        📋 Modo vista previa — los cambios no se guardarán
-                      </p>
-                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
-                        Las tablas de comunicación aún no están inicializadas. Para activar el guardado, ejecuta en Supabase SQL Editor:
-                      </p>
-                      <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", wordBreak: "break-all" }}>
-                        {`SELECT seed_communication_templates('${gymId}');`}
-                      </code>
-                    </div>
-                  )}
-                </>
-              )}
-            </>
-          )}
-
+      {/* ── Grid de planes ── */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 80, color: C.textMut }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg,${C.accent},${C.accent2})`, margin: "0 auto 12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💳</div>
+          <p style={{ fontSize: 14 }}>Cargando planes...</p>
         </div>
-      </div>
+      ) : planesFiltrados.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 80, color: C.textMut, border: `2px dashed ${C.border}`, borderRadius: 20 }}>
+          <p style={{ fontSize: 40, marginBottom: 12 }}>📋</p>
+          <p style={{ fontSize: 16, fontWeight: 700, color: C.textSub }}>
+            {planes.length === 0 ? "Sin planes de membresía" : "No hay planes con esos filtros"}
+          </p>
+          <p style={{ fontSize: 13, marginBottom: 20 }}>
+            {planes.length === 0 ? "Crea tu primer plan para comenzar a gestionar membresías." : "Intenta cambiar los filtros."}
+          </p>
+          {planes.length === 0 && (
+            <Btn onClick={() => { setSelPlan(null); setModal("nuevo"); }}>
+              {IC.plus} Crear primer plan
+            </Btn>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18 }}>
+          {planesFiltrados.map(plan => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              politica={polDePlan(plan.id)}
+              gymConfig={gymConfig}
+              onEdit={p => { setSelPlan(p); setModal("editar"); }}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Modal Nuevo / Editar ── */}
+      {(modal === "nuevo" || modal === "editar") && (
+        <Modal
+          title={modal === "editar" ? `✏️ Editar plan — ${selPlan?.nombre}` : "✨ Nuevo Plan de Membresía"}
+          onClose={() => { setModal(null); setSelPlan(null); }}
+          width={540}
+        >
+          <PlanForm
+            plan={selPlan}
+            politica={selPlan ? polDePlan(selPlan.id) : null}
+            gymId={gymId}
+            sucursales={sucursales}
+            onSave={handleSave}
+            onClose={() => { setModal(null); setSelPlan(null); }}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
