@@ -150,16 +150,16 @@ function Tooltip({ text, children }) {
       {show && (
         <div style={{
           position: "absolute", bottom: "calc(100% + 8px)", left: 0,
-          background: "#2a2a3d", border: `1px solid ${C.border}`,
-          color: C.textSub, fontSize: 12, borderRadius: 8, padding: "7px 11px",
+          background: "#1e1e2e", border: "1px solid rgba(108,99,255,.4)",
+          color: "#e2e8f0", fontSize: 12, borderRadius: 8, padding: "8px 12px",
           zIndex: 999, pointerEvents: "none",
-          boxShadow: "0 4px 16px rgba(0,0,0,.5)",
-          width: 220, lineHeight: 1.5,
+          boxShadow: "0 6px 24px rgba(0,0,0,.7)",
+          width: 230, lineHeight: 1.6, fontWeight: 400,
         }}>
           {text}
           <div style={{
             position: "absolute", top: "100%", left: 18,
-            border: "5px solid transparent", borderTopColor: "#2a2a3d",
+            border: "6px solid transparent", borderTopColor: "#1e1e2e",
           }} />
         </div>
       )}
@@ -554,9 +554,6 @@ function PlanForm({ plan, politica, gymId, sucursales, onSave, onClose }) {
             <Select value={fP.ciclo_renovacion} onChange={v => upP("ciclo_renovacion", v)} options={CICLOS} />
           </Field>
 
-          <Field label="Límite de clases">
-            <Input type="number" value={fP.limite_clases} onChange={v => upP("limite_clases", v)} placeholder="0 = ilimitado" min="0" />
-          </Field>
 
           <Field label="Imagen de portada">
             <ImagePicker value={fP.imagen_url} onChange={v => upP("imagen_url", v)} />
