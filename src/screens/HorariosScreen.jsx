@@ -18,6 +18,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../supabase";
 import { todayISO, fmtDate, calcEdad } from "../utils/dateUtils";
 import { Modal, Btn, Inp } from "../components/UI";
+import NuevaClaseWizard from "../modals/NuevaClaseWizard";
 
 // ── Constantes ────────────────────────────────────────────────────
 const DIAS = [
@@ -1320,14 +1321,31 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
 
       {/* ═══ MODALES ═══ */}
 
-      {/* Nueva / Editar clase */}
+      {/* Nueva / Editar clase — Wizard 3 pasos */}
       {modalClase && (
-        <ModalClase
+        <NuevaClaseWizard
           clase={modalClase === "nueva" ? null : modalClase}
           gymId={gymId}
           miembros={miembros}
           planes={planes}
-          onSave={handleGuardarClase}
+          horariosExistentes={
+            modalClase !== "nueva"
+              ? horarios.filter(h => h.clase_id === modalClase.id)
+              : []
+          }
+          onSave={(saved, esEdicion, horariosGuardados) => {
+            if (esEdicion) {
+              setClases(p => p.map(c => c.id === saved.id ? saved : c));
+              if (modalDetalle?.id === saved.id) setModalDetalle(saved);
+            } else {
+              setClases(p => [...p, saved]);
+            }
+            // Agregar horarios nuevos al estado local
+            if (horariosGuardados && horariosGuardados.length > 0) {
+              setHorarios(p => [...p, ...horariosGuardados]);
+            }
+            setModalClase(null);
+          }}
           onClose={() => setModalClase(null)}
         />
       )}
