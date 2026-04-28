@@ -49,6 +49,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [tab, setTab] = useState(0);
   const [miembros, setMiembros] = useState([]);
   const [txs, setTxs] = useState([]);
+  const [planesMembresia, setPlanesMembresia] = useState([]);
   const [modal, setModal] = useState(null);
   const [selM, setSelM] = useState(null);
   const [editTx, setEditTx] = useState(null);
@@ -151,7 +152,13 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const txDb = await supabase.from("transacciones");
         const txData = await txDb.select(GYM_ID);
         setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null })));
-        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null })));
+        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, beca: m.beca || false })));
+        // Cargar planes de membresía (para selector y validación de edad)
+        try {
+          const dbPM = await supabase.from("planes_membresia");
+          const pmData = await dbPM.select(GYM_ID);
+          if (pmData) setPlanesMembresia(pmData.filter(p => p.activo !== false));
+        } catch(e) { /* tabla puede no existir aún */ }
       } catch(e) {
         console.error("Error loading data:", e);
       }
@@ -271,6 +278,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
       sexo: fM.sexo || null,
       fecha_nacimiento: fM.fecha_nacimiento || null,
       notas: fM.notas || null,
+      beca: fM.beca || false,
       // ── Tutor (Fase 1) — solo se persiste si el miembro es menor ──
       tutor_nombre:     fMEsMenor ? (fM.tutor_nombre || null)     : null,
       tutor_telefono:   fMEsMenor ? (fM.tutor_telefono || null)   : null,
@@ -285,6 +293,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         fecha_incorporacion: fM.fecha_incorporacion || todayISO(),
         sexo: fM.sexo || null,
         fecha_nacimiento: fM.fecha_nacimiento || null,
+        beca: fM.beca || false,
         tutor_nombre:     fMEsMenor ? (fM.tutor_nombre || null) : null,
         tutor_telefono:   fMEsMenor ? (fM.tutor_telefono || null) : null,
         tutor_parentesco: fMEsMenor ? (fM.tutor_parentesco || null) : null,
@@ -295,10 +304,21 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const savedT = await tDb.insert({ gym_id: GYM_ID, tipo: "ingreso", categoria: "Otro", descripcion: `Clase prueba - ${fM.nombre}`, monto: 0, fecha: fechaPrueba, miembro_id: savedM.id });
         if (savedT) setTxs(p => [{ id: savedT.id, tipo: "ingreso", categoria: "Otro", desc: `Clase prueba - ${fM.nombre}`, descripcion: `Clase prueba - ${fM.nombre}`, monto: 0, fecha: fechaPrueba, miembroId: savedM.id }, ...p]);
       }
+      // ── Enviar QR de bienvenida por WhatsApp ──
+      if (fM.tel) {
+        const telDest = fMEsMenor && fM.tutor_telefono ? fM.tutor_telefono : fM.tel;
+        const clean = (telDest || "").replace(/\D/g, "");
+        const phone = clean.startsWith("52") ? clean : `52${clean}`;
+        const gym = gymConfig?.nombre || "el gimnasio";
+        const msg = `¡Bienvenido/a ${fM.nombre} a ${gym}! 🎉\n\nTu QR de acceso estará disponible en tu perfil dentro de la app.\n\n¡Nos da mucho gusto tenerte con nosotros! 💪`;
+        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        window.open(waUrl, "_blank");
+      }
     }
     setFM({
       nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "",
       fecha_incorporacion: "", notas: "", clasePrueba: false, fechaPrueba: todayISO(),
+      beca: false,
       tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "",
     });
     setFMTutorErrores({});
@@ -330,7 +350,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     setMiembros(p => p.map(m => m.id === updated.id ? updated : m));
     setSelM(updated);
     const db = await supabase.from("miembros");
-    await db.update(updated.id, { nombre: updated.nombre, tel: updated.tel, foto: updated.foto || null, fecha_incorporacion: updated.fecha_incorporacion, sexo: updated.sexo || null, fecha_nacimiento: updated.fecha_nacimiento || null, notas: updated.notas || null, congelado: updated.congelado || false, fecha_descongelar: updated.fecha_descongelar || null, dias_congelados: updated.dias_congelados || 0, tutor_nombre: updated.tutor_nombre || null, tutor_telefono: updated.tutor_telefono || null, tutor_parentesco: updated.tutor_parentesco || null });
+    await db.update(updated.id, { nombre: updated.nombre, tel: updated.tel, foto: updated.foto || null, fecha_incorporacion: updated.fecha_incorporacion, sexo: updated.sexo || null, fecha_nacimiento: updated.fecha_nacimiento || null, notas: updated.notas || null, congelado: updated.congelado || false, fecha_descongelar: updated.fecha_descongelar || null, dias_congelados: updated.dias_congelados || 0, tutor_nombre: updated.tutor_nombre || null, tutor_telefono: updated.tutor_telefono || null, tutor_parentesco: updated.tutor_parentesco || null, beca: updated.beca || false });
   };
 
   const saveExtraCfg = (patch) => {
@@ -531,6 +551,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             setScreen={setScreen}
             activePlanes={activePlanes}
             setFM={setFM}
+            gymConfig={gymConfig}
           />
         )}
 
@@ -623,7 +644,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         {modal === "gasto" && <Modal title="💸 Nuevo Gasto" onClose={() => setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v => setFG(p => ({ ...p, cat: v }))} options={CAT_GAS} /><Inp label="Descripción" value={fG.desc} onChange={v => setFG(p => ({ ...p, desc: v }))} placeholder="Ej: Pago de nómina" /><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v => setFG(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fG.fecha} onChange={v => setFG(p => ({ ...p, fecha: v }))} /><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
 
         {modal === "miembro" && (
-          <Modal title="👤 Nuevo Miembro" onClose={() => setModal(null)}>
+          <Modal title={`👤 Nuevo ${(gymConfig?.termino_miembros || "Miembros").replace(/s$/, "")}`} onClose={() => setModal(null)}>
             {showFotoModal && <PhotoModal onClose={() => setShowFotoModal(false)} onCapture={dataUrl => setFM(p => ({ ...p, foto: dataUrl }))} />}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 16 }}>
               <div onClick={() => setShowFotoModal(true)} style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff44,#e040fb44)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", marginBottom: 6, border: "2px dashed rgba(167,139,250,.4)" }}>
@@ -653,12 +674,28 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             )}
             <Inp label="Fecha de incorporación" value={fM.fecha_incorporacion} onChange={v => setFM(p => ({ ...p, fecha_incorporacion: v }))} type="date" />
             <Inp label="Notas" value={fM.notas} onChange={v => setFM(p => ({ ...p, notas: v }))} placeholder="Ej: lesión de rodilla, objetivo: perder peso" />
+            {/* Clase de prueba */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 12, border: "1px solid rgba(255,255,255,.08)", cursor: "pointer" }} onClick={() => setFM(p => ({ ...p, clasePrueba: !p.clasePrueba }))}>
               <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${fM.clasePrueba ? "#6c63ff" : "rgba(255,255,255,.2)"}`, background: fM.clasePrueba ? "#6c63ff" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{fM.clasePrueba && <span style={{ color: "#fff", fontSize: 12 }}>✓</span>}</div>
               <span style={{ color: "#d1d5db", fontSize: 13 }}>Viene a clase de prueba</span>
             </div>
             {fM.clasePrueba && <Inp label="Fecha de prueba" value={fM.fechaPrueba} onChange={v => setFM(p => ({ ...p, fechaPrueba: v }))} type="date" />}
-            <Btn full onClick={addM}>Agregar miembro ✓</Btn>
+            {/* Beca */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "10px 14px", background: fM.beca ? "rgba(251,191,36,.08)" : "rgba(255,255,255,.04)", borderRadius: 12, border: `1.5px solid ${fM.beca ? "rgba(251,191,36,.4)" : "rgba(255,255,255,.08)"}`, cursor: "pointer", transition: "all .2s" }} onClick={() => setFM(p => ({ ...p, beca: !p.beca }))}>
+              <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${fM.beca ? "#fbbf24" : "rgba(255,255,255,.2)"}`, background: fM.beca ? "#fbbf24" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{fM.beca && <span style={{ color: "#1a1a2e", fontSize: 12, fontWeight: 700 }}>✓</span>}</div>
+              <div>
+                <p style={{ color: fM.beca ? "#fbbf24" : "#d1d5db", fontSize: 13, fontWeight: 600 }}>🎓 Beca — Membresía sin costo</p>
+                <p style={{ color: "#8b949e", fontSize: 11 }}>Las renovaciones se registrarán en $0</p>
+              </div>
+            </div>
+            {/* Enviar QR por WA al crear */}
+            {fM.tel && (
+              <div style={{ background: "rgba(37,211,102,.06)", border: "1px solid rgba(37,211,102,.2)", borderRadius: 10, padding: "8px 14px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14 }}>📲</span>
+                <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 600 }}>Al guardar se abrirá WhatsApp para enviar el QR de bienvenida</p>
+              </div>
+            )}
+            <Btn full onClick={addM}>Agregar {(gymConfig?.termino_miembros || "Miembros").replace(/s$/, "").toLowerCase()} ✓</Btn>
           </Modal>
         )}
 
@@ -674,6 +711,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onGoToMensajes={(m) => { setMensajesMiembro(m); setModoMensajes("mensajes"); setScreen("mensajes"); setModal(null); }}
             gymId={GYM_ID}
             onMemberUpdate={(updated) => setMiembros(prev => prev.map(x => x.id === updated.id ? updated : x))}
+            planesMembresia={planesMembresia}
           />
         )}
 

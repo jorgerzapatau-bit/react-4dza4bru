@@ -524,6 +524,7 @@ model gimnasios {
   created_at          DateTime?             @default(now()) @db.Timestamptz(6)
   zona_horaria        String?               @default("America/Merida")
   logo                String?
+  termino_miembros    String?               @default("Miembros")
   accesos             accesos[]
   miembros            miembros[]
   planes_membresia    planes_membresia[]
@@ -568,6 +569,7 @@ model miembros {
   tutor_telefono       String?
   tutor_parentesco     String?
   clase_id             String?                @db.Uuid
+  beca                 Boolean?               @default(false)
   accesos              accesos[]
   gimnasios            gimnasios?             @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_reservations product_reservations[]
@@ -816,6 +818,9 @@ model planes_membresia {
   activo              Boolean              @default(true)
   created_at          DateTime             @default(now()) @db.Timestamptz(6)
   updated_at          DateTime             @default(now()) @db.Timestamptz(6)
+  clases_vinculadas   String[]             @default([])
+  edad_min            Int?                 @default(0)
+  edad_max            Int?                 @default(99)
   gimnasios           gimnasios            @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   politicas_membresia politicas_membresia?
 

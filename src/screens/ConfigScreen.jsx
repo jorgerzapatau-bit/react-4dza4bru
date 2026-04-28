@@ -1,13 +1,10 @@
 // ─────────────────────────────────────────────
-//  screens/ConfigScreen.jsx  —  LIMPIA
+//  screens/ConfigScreen.jsx
 //
-//  CAMBIOS vs versión anterior:
-//    ❌ Eliminado: textarea "Mensaje de Recordatorio"
-//    ❌ Eliminado: sección "Recordatorios automáticos" (botón notificaciones push)
-//    ✅ Mantenido: datos del gimnasio, propietario, transferencia, planes
-//
-//  Los mensajes ahora viven en:
-//    → Módulo Mensajes → tab "Mensajes del sistema"
+//  CAMBIOS:
+//    ✅ Nuevo campo "Término para Miembros" (termino_miembros)
+//       Permite personalizar cómo se llaman los miembros:
+//       Miembro, Alumno, Cliente, Socio, Atleta, etc.
 // ─────────────────────────────────────────────
 
 import { DEFAULT_PLANES } from "../utils/constants";
@@ -82,6 +79,50 @@ export default function ConfigScreen({
       <Inp label="Teléfono" value={formCfg.telefono || ""} onChange={v => setFormCfg(p => ({ ...p, telefono: v }))} placeholder="999 000 0000" type="tel" />
       <Inp label="Dirección" value={formCfg.direccion || ""} onChange={v => setFormCfg(p => ({ ...p, direccion: v }))} placeholder="Ej: Calle 60 #123, Mérida" />
       <Inp label="Zona horaria" value={formCfg.zona_horaria || "America/Merida"} onChange={v => setFormCfg(p => ({ ...p, zona_horaria: v }))} options={["America/Merida","America/Mexico_City","America/Cancun","America/Monterrey","America/Tijuana","America/New_York","America/Chicago","America/Los_Angeles","Europe/Madrid","America/Bogota","America/Lima","America/Santiago","America/Buenos_Aires","America/Caracas"]} />
+
+      {/* ── Parámetros generales ── */}
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 6px" }}>
+        Parámetros generales
+      </p>
+      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 4 }}>
+        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+          👥 Término para "{formCfg.termino_miembros || "Miembros"}"
+        </p>
+        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
+          ¿Cómo se llaman las personas inscritas en tu establecimiento?
+          Este término aparecerá en toda la aplicación.
+        </p>
+        {/* Quick-select chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {["Miembros", "Alumnos", "Clientes", "Socios", "Atletas", "Estudiantes"].map(t => {
+            const active = (formCfg.termino_miembros || "Miembros") === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setFormCfg(p => ({ ...p, termino_miembros: t }))}
+                style={{
+                  padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${active ? "#6c63ff" : "rgba(255,255,255,.1)"}`,
+                  background: active ? "rgba(108,99,255,.2)" : "var(--bg-elevated)",
+                  color: active ? "#a78bfa" : "#8b949e",
+                  fontSize: 12, fontWeight: active ? 700 : 500,
+                  cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+                }}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
+        <Inp
+          label="O escribe uno personalizado"
+          value={formCfg.termino_miembros || ""}
+          onChange={v => setFormCfg(p => ({ ...p, termino_miembros: v }))}
+          placeholder="Ej: Participantes, Pacientes, Deportistas..."
+        />
+      </div>
+      <p style={{ color: "#4b4b6a", fontSize: 11, marginBottom: 16, paddingLeft: 2 }}>
+        💡 Vista previa: "Nuevo {formCfg.termino_miembros || "Miembro"}", "Lista de {formCfg.termino_miembros || "Miembros"}"
+      </p>
 
       {/* ── Propietario ── */}
       <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Propietario / Firmante</p>
