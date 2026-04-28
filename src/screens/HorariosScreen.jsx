@@ -512,41 +512,58 @@ function ModalHorario({ horario, claseId, gymId, onSave, onClose }) {
 // ══════════════════════════════════════════════════════════════════
 //  MODAL: Inscribir miembro a clase
 // ══════════════════════════════════════════════════════════════════
-function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose }) {
+function ModalInscribir({ clase, gymId, miembros, inscripciones, planes, onSave, onClose }) {
   const [busqueda, setBusqueda] = useState("");
   const [selMiembro, setSelMiembro] = useState(null);
-  const [fechaPago, setFechaPago] = useState(todayISO());
-  const [formaPago, setFormaPago] = useState("Efectivo");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [advertenciaEdad, setAdvertenciaEdad] = useState("");
+  const [showTodos, setShowTodos] = useState(false);
 
   const inscritos = inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa");
   const cupoDisponible = clase.cupo_max - inscritos.length;
   const yaInscritos = new Set(inscritos.map(i => String(i.miembro_id)));
 
+  // Planes vinculados a esta clase
+  const planesVinculados = (planes || []).filter(p =>
+    (p.clases_vinculadas || []).map(String).includes(String(clase.id)) && p.activo
+  );
+  const planesIds = new Set(planesVinculados.map(p => String(p.id)));
+
+  // Clasifica cada miembro
+  const clasificarMiembro = (m) => {
+    if (yaInscritos.has(String(m.id))) return "inscrito";
+    // Verificar edad
+    let bloqueadoEdad = false;
+    if (m.fecha_nacimiento) {
+      const edad = calcEdad(m.fecha_nacimiento);
+      if (edad !== null && (edad < clase.edad_min || edad > clase.edad_max)) bloqueadoEdad = true;
+    }
+    // Verificar membresía activa vinculada: el miembro tiene un plan activo que cubre esta clase
+    // Se infiere desde txs/inscripciones — simplificado: si el miembro tiene plan_id en su perfil
+    const tienePlan = planesIds.size === 0 || (m.plan_id && planesIds.has(String(m.plan_id)));
+    return { bloqueadoEdad, tienePlan };
+  };
+
   const miembrosFiltrados = useMemo(() => {
     const q = busqueda.toLowerCase();
-    return miembros.filter(m =>
-      !yaInscritos.has(String(m.id)) &&
-      (!q || m.nombre.toLowerCase().includes(q) || (m.tel || "").includes(q))
-    ).slice(0, 8);
+    return miembros
+      .filter(m => !yaInscritos.has(String(m.id)))
+      .filter(m => !q || m.nombre.toLowerCase().includes(q) || (m.tel || "").includes(q))
+      .slice(0, 10);
   }, [miembros, busqueda, yaInscritos]); // eslint-disable-line
 
   const handleSeleccionar = (m) => {
     setSelMiembro(m);
     setBusqueda(m.nombre);
-    // Validar edad
     if (m.fecha_nacimiento) {
       const edad = calcEdad(m.fecha_nacimiento);
       if (edad !== null) {
-        if (edad < clase.edad_min) setAdvertenciaEdad(`⚠️ ${m.nombre.split(" ")[0]} tiene ${edad} años, menor al mínimo de ${clase.edad_min}.`);
-        else if (edad > clase.edad_max) setAdvertenciaEdad(`⚠️ ${m.nombre.split(" ")[0]} tiene ${edad} años, mayor al máximo de ${clase.edad_max}.`);
+        if (edad < clase.edad_min) setAdvertenciaEdad(`⚠️ ${m.nombre.split(" ")[0]} tiene ${edad} años — mínimo requerido: ${clase.edad_min}.`);
+        else if (edad > clase.edad_max) setAdvertenciaEdad(`⚠️ ${m.nombre.split(" ")[0]} tiene ${edad} años — máximo permitido: ${clase.edad_max}.`);
         else setAdvertenciaEdad("");
-      }
-    } else {
-      setAdvertenciaEdad("");
-    }
+      } else setAdvertenciaEdad("");
+    } else setAdvertenciaEdad("");
   };
 
   const handleInscribir = async () => {
@@ -555,50 +572,27 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
     setSaving(true);
     setError("");
 
-    const durMeses = clase.duracion_meses || 1;
-    const fechaVence = calcVenceInscripcion(fechaPago, durMeses);
-    const planLabel = DURACIONES.find(d => d.meses === durMeses)?.label || "Mensual";
-
-    // 1. Crear transacción de pago
-    const txDb = await supabase.from("transacciones");
-    const descTx = `Membresía ${planLabel} - ${clase.nombre} [${formaPago}](vence:${fechaVence})`;
-    const txSaved = await txDb.insert({
-      gym_id: gymId,
-      tipo: "ingreso",
-      categoria: "Membresías",
-      descripcion: descTx,
-      monto: Number(clase.costo),
-      fecha: fechaPago,
-      miembro_id: selMiembro.id,
-    });
-
-    // 2. Crear inscripción
     const insDb = await supabase.from("inscripciones");
     const insSaved = await insDb.insert({
       gym_id: gymId,
       miembro_id: selMiembro.id,
       clase_id: clase.id,
-      fecha_inscripcion: fechaPago,
+      fecha_inscripcion: todayISO(),
       estado: "activa",
-      tx_id: txSaved?.id || null,
-      fecha_vencimiento: fechaVence,
     });
 
     setSaving(false);
-    if (insSaved) {
-      onSave(insSaved, txSaved);
-    } else {
-      setError("Error al inscribir. Intenta de nuevo.");
-    }
+    if (insSaved) onSave(insSaved, null);
+    else setError("Error al inscribir. Intenta de nuevo.");
   };
 
   return (
     <Modal title={`Inscribir a ${clase.nombre}`} onClose={onClose}>
-      {/* Info clase */}
+      {/* Info cupo */}
       <div style={{
         background: `${clase.color || "#6c63ff"}14`,
         border: `1px solid ${clase.color || "#6c63ff"}30`,
-        borderRadius: 12, padding: "10px 14px", marginBottom: 16,
+        borderRadius: 12, padding: "10px 16px", marginBottom: 16,
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <div>
@@ -607,17 +601,31 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
             {cupoDisponible} / {clase.cupo_max}
           </p>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Costo</p>
-          <p style={{ color: clase.color || "#6c63ff", fontSize: 18, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
-            {fmt$(clase.costo)}
-          </p>
-        </div>
+        {(clase.edad_min > 0 || clase.edad_max < 99) && (
+          <div style={{ textAlign: "right" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Rango de edad</p>
+            <p style={{ color: clase.color || "#6c63ff", fontSize: 16, fontWeight: 700 }}>
+              {clase.edad_min}–{clase.edad_max} años
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Info membresía requerida */}
+      {planesVinculados.length > 0 && (
+        <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
+          <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 600, margin: "0 0 4px" }}>💳 Requiere membresía activa:</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {planesVinculados.map(p => (
+              <span key={p.id} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 5, background: "rgba(108,99,255,.15)", color: "#c4b5fd" }}>{p.nombre}</span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {cupoDisponible <= 0 && (
         <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f87171", fontSize: 12, textAlign: "center" }}>
-          🚫 Esta clase está llena. No hay cupo disponible.
+          🚫 Esta clase está llena.
         </div>
       )}
 
@@ -629,13 +637,13 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
 
       {advertenciaEdad && (
         <div style={{ background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f59e0b", fontSize: 12 }}>
-          {advertenciaEdad} El admin puede inscribir igual.
+          {advertenciaEdad}
         </div>
       )}
 
-      {/* Buscador de miembro */}
-      <div style={{ marginBottom: 12, position: "relative" }}>
-        <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Buscar miembro *</p>
+      {/* Buscador */}
+      <div style={{ marginBottom: 16, position: "relative" }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Buscar miembro</p>
         <input
           type="text" value={busqueda}
           onChange={e => { setBusqueda(e.target.value); setSelMiembro(null); setAdvertenciaEdad(""); }}
@@ -650,15 +658,16 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
           }}>
             {miembrosFiltrados.map(m => {
               const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
+              const edadOk = edad === null || (edad >= clase.edad_min && edad <= clase.edad_max);
+              const tienePlan = planesIds.size === 0 || (m.plan_id && planesIds.has(String(m.plan_id)));
               return (
-                <button
-                  key={m.id}
-                  onClick={() => handleSeleccionar(m)}
+                <button key={m.id} onClick={() => handleSeleccionar(m)}
                   style={{
                     width: "100%", display: "flex", alignItems: "center", gap: 10,
                     padding: "10px 14px", border: "none", background: "transparent",
                     cursor: "pointer", fontFamily: "inherit", textAlign: "left",
                     borderBottom: "1px solid var(--border)",
+                    opacity: (!edadOk || !tienePlan) ? .5 : 1,
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = "var(--bg-elevated)"}
                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -671,10 +680,12 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
                   }}>
                     {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : avatarIniciales(m.nombre)}
                   </div>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                     <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>
-                      {edad !== null ? `${edad} años · ` : ""}{m.tel || ""}
+                      {edad !== null ? `${edad} años` : "Sin edad"}
+                      {!edadOk && <span style={{ color: "#f87171" }}> · Edad fuera de rango</span>}
+                      {edadOk && !tienePlan && planesIds.size > 0 && <span style={{ color: "#f59e0b" }}> · Sin membresía</span>}
                     </p>
                   </div>
                 </button>
@@ -687,61 +698,27 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, onSave, onClose
         )}
       </div>
 
-      {/* Fecha y forma de pago */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 4 }}>
-        <div>
-          <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Fecha de pago</p>
-          <input
-            type="date" value={fechaPago}
-            onChange={e => setFechaPago(e.target.value)}
-            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 12 }}
-          />
-        </div>
-        <div>
-          <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Forma de pago</p>
-          <select
-            value={formaPago} onChange={e => setFormaPago(e.target.value)}
-            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 12 }}
-          >
-            <option>Efectivo</option>
-            <option>Transferencia</option>
-            <option>Tarjeta</option>
-          </select>
-        </div>
-      </div>
-
       {/* Resumen */}
       {selMiembro && (
         <div style={{ background: "var(--bg-elevated)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
-          <p style={{ color: "var(--text-secondary)", fontSize: 11, marginBottom: 6 }}>Resumen de inscripción</p>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, marginBottom: 8 }}>Resumen de inscripción</p>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
             <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Miembro</span>
             <span style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{selMiembro.nombre}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
             <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Clase</span>
             <span style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{clase.nombre}</span>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Plan</span>
-            <span style={{ color: "var(--text-primary)", fontSize: 12 }}>{DURACIONES.find(d => d.meses === (clase.duracion_meses || 1))?.label}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-            <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Vence</span>
-            <span style={{ color: "var(--text-primary)", fontSize: 12 }}>{fmtDate(calcVenceInscripcion(fechaPago, clase.duracion_meses || 1))}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 8, marginTop: 6 }}>
-            <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 700 }}>Total a cobrar</span>
-            <span style={{ color: "#4ade80", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt$(clase.costo)}</span>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Fecha</span>
+            <span style={{ color: "var(--text-primary)", fontSize: 12 }}>{fmtDate(todayISO())}</span>
           </div>
         </div>
       )}
 
-      <Btn
-        full onClick={handleInscribir}
-        style={{ opacity: (saving || cupoDisponible <= 0) ? .5 : 1 }}
-      >
-        {saving ? "Inscribiendo..." : `Inscribir y cobrar ${fmt$(clase.costo)}`}
+      <Btn full onClick={handleInscribir} style={{ opacity: (saving || cupoDisponible <= 0) ? .5 : 1 }}>
+        {saving ? "Inscribiendo..." : "Inscribir alumno"}
       </Btn>
     </Modal>
   );
@@ -1162,10 +1139,10 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           {/* ── Métricas ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
             {[
-              { label: "Horarios semanales", val: stats.clasesActivas, icon: "📚", color: "var(--text-primary)" },
-              { label: "Titulares activos",  val: new Set(clases.filter(c => c.instructor_id).map(c => c.instructor_id)).size, icon: "👤", color: "#4ade80" },
-              { label: "Capacidad total",    val: stats.totalCupo,     icon: "👥", color: "#f59e0b" },
-              { label: "Clase más popular",  val: stats.masPopular?.nombre || "N/A", icon: "🏆", color: "#f87171", small: true },
+              { label: "Clases activas",    val: stats.clasesActivas, icon: "📚", color: "var(--text-primary)" },
+              { label: "Instructores",      val: new Set(clases.filter(c => c.instructor_id).map(c => c.instructor_id)).size, icon: "👤", color: "#4ade80" },
+              { label: "Alumnos inscritos", val: stats.totalInscritos, icon: "👥", color: "#f59e0b" },
+              { label: "Clase más popular", val: stats.masPopular?.nombre || "N/A", icon: "🏆", color: "#f87171", small: true },
             ].map((s, i) => (
               <div key={i} style={{
                 background: "var(--bg-card)", border: "1px solid var(--border)",
@@ -1337,6 +1314,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           gymId={gymId}
           miembros={miembros}
           inscripciones={inscripciones}
+          planes={planes}
           onSave={handleInscribir}
           onClose={() => setModalInscribir(null)}
         />
