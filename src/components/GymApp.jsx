@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
 import { fmt, fmtDate, today, todayISO, parseDate, calcEdad } from "../utils/dateUtils";
-import { getMembershipInfo } from "../utils/membershipUtils";
+import { getMembershipInfo, calcVence } from "../utils/membershipUtils";
 import { diasParaVencer } from "../utils/dateUtils";
 import { diasParaCumple } from "../utils/dateUtils";
 import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS } from "../utils/constants";
@@ -295,6 +295,24 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         tutor_telefono:   fMEsMenor ? (fM.tutor_telefono || null) : null,
         tutor_parentesco: fMEsMenor ? (fM.tutor_parentesco || null) : null,
       }, ...p]);
+      // ── Registrar membresía inicial si se eligió un plan ──
+      if (fM.plan) {
+        const fechaInicio = fM.fecha_incorporacion || todayISO();
+        const venceISO = calcVence(fechaInicio, fM.plan);
+        const monto = Number(fM.monto) || 0;
+        const descTx = `Renovación ${fM.plan} - ${fM.nombre} [Efectivo]${venceISO ? ` (vence:${venceISO})` : ""}`;
+        const tDb2 = await supabase.from("transacciones");
+        const savedTx = await tDb2.insert({
+          gym_id: GYM_ID, tipo: "ingreso", categoria: "Membresías",
+          descripcion: descTx, monto, fecha: fechaInicio,
+          miembro_id: savedM.id, vence_manual: venceISO || null,
+        });
+        if (savedTx) setTxs(p => [{
+          id: savedTx.id, tipo: "ingreso", categoria: "Membresías",
+          desc: descTx, descripcion: descTx, monto,
+          fecha: fechaInicio, miembroId: savedM.id, vence_manual: venceISO || null,
+        }, ...p]);
+      }
       if (fM.clasePrueba) {
         const tDb = await supabase.from("transacciones");
         const fechaPrueba = fM.fechaPrueba || todayISO();
@@ -680,6 +698,69 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             )}
             <Inp label="Fecha de incorporación" value={fM.fecha_incorporacion} onChange={v => setFM(p => ({ ...p, fecha_incorporacion: v }))} type="date" />
             <Inp label="Notas" value={fM.notas} onChange={v => setFM(p => ({ ...p, notas: v }))} placeholder="Ej: lesión de rodilla, objetivo: perder peso" />
+
+            {/* ── Membresía inicial (opcional) ── */}
+            {(planesMembresia.length > 0 ? planesMembresia : activePlanes).length > 0 && (() => {
+              const planes = planesMembresia.length > 0 ? planesMembresia : activePlanes;
+              const usaMembresias = planesMembresia.length > 0;
+              return (
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+                    Membresía inicial <span style={{ color: "#4b4b6a", fontWeight: 400, textTransform: "none", fontSize: 10 }}>(opcional)</span>
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* Opción "Sin membresía por ahora" */}
+                    <button
+                      onClick={() => setFM(p => ({ ...p, plan: null, monto: null }))}
+                      style={{
+                        width: "100%", padding: "10px 14px",
+                        border: !fM.plan ? "2px solid rgba(255,255,255,.25)" : "1.5px solid rgba(255,255,255,.08)",
+                        borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+                        background: !fM.plan ? "rgba(255,255,255,.06)" : "var(--bg-elevated)",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                        transition: "all .2s",
+                      }}
+                    >
+                      <span style={{ color: !fM.plan ? "var(--text-primary)" : "#8b949e", fontSize: 12, fontWeight: !fM.plan ? 600 : 400 }}>
+                        Sin membresía por ahora
+                      </span>
+                      {!fM.plan && <span style={{ color: "#8b949e", fontSize: 11 }}>—</span>}
+                    </button>
+                    {planes.map((p) => {
+                      const nombre = p.nombre;
+                      const precio = usaMembresias ? p.precio_publico : p.precio;
+                      const isSelected = fM.plan === nombre;
+                      return (
+                        <button
+                          key={nombre}
+                          onClick={() => setFM(prev => ({ ...prev, plan: nombre, monto: String(precio || "") }))}
+                          style={{
+                            width: "100%", padding: "10px 14px",
+                            border: isSelected ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
+                            borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+                            background: isSelected ? "rgba(108,99,255,.1)" : "var(--bg-elevated)",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            transition: "all .2s",
+                          }}
+                        >
+                          <span style={{ color: isSelected ? "#c4b5fd" : "var(--text-primary)", fontSize: 12, fontWeight: isSelected ? 700 : 500 }}>
+                            🏷️ {nombre}
+                          </span>
+                          <span style={{
+                            background: isSelected ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.07)",
+                            color: isSelected ? "#c4b5fd" : "#8b949e",
+                            borderRadius: 8, padding: "2px 10px", fontSize: 11, fontWeight: 700,
+                            fontFamily: "'DM Mono', monospace",
+                          }}>
+                            ${Number(precio || 0).toLocaleString("es-MX")}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderRadius: 12, border: "1px solid rgba(255,255,255,.08)", cursor: "pointer" }} onClick={() => setFM(p => ({ ...p, clasePrueba: !p.clasePrueba }))}>
               <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${fM.clasePrueba ? "#6c63ff" : "rgba(255,255,255,.2)"}`, background: fM.clasePrueba ? "#6c63ff" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{fM.clasePrueba && <span style={{ color: "#fff", fontSize: 12 }}>✓</span>}</div>
               <span style={{ color: "#d1d5db", fontSize: 13 }}>Viene a clase de prueba</span>

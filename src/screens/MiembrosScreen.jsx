@@ -47,10 +47,9 @@ export default function MiembrosScreen({
               >📢</button>
               <button
                 onClick={() => {
-                  const firstPlan = activePlanes[0] || DEFAULT_PLANES[0];
                   setFM({
-                    nombre: "", tel: "", plan: firstPlan.nombre,
-                    monto: String(firstPlan.precio), foto: null,
+                    nombre: "", tel: "", plan: null,
+                    monto: "", foto: null,
                   });
                   setModal("miembro");
                 }}

@@ -686,21 +686,81 @@ export default function MemberDetailModal({
                 </div>
               )}
 
-              <Inp
-                label="Plan"
-                value={renovar.plan}
-                onChange={(v) =>
-                  setRenovar((p) => ({
-                    ...p,
-                    plan: v,
-                    monto: String(
-                      (planPrecioActivo || {})[v] || p.monto
-                    ),
-                    vence: p.venceManual ? p.vence : calcVence(p.inicio, v),
-                  }))
+              {/* ── Selector de plan: usa planesMembresia si existen, si no planesActivos ── */}
+              {(() => {
+                const tieneMembresias = planesMembresia && planesMembresia.length > 0;
+
+                if (tieneMembresias) {
+                  return (
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+                        Plan
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {planesMembresia.map((pm) => {
+                          const isSelected = renovar.plan === pm.nombre;
+                          return (
+                            <button
+                              key={pm.id || pm.nombre}
+                              onClick={() => {
+                                const precio = String(pm.precio_publico || "");
+                                setRenovar((p) => ({
+                                  ...p,
+                                  plan: pm.nombre,
+                                  monto: precio,
+                                  vence: p.venceManual ? p.vence : calcVence(p.inicio, pm.nombre),
+                                }));
+                              }}
+                              style={{
+                                width: "100%",
+                                padding: "12px 14px",
+                                border: isSelected ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                                borderRadius: 14,
+                                cursor: "pointer",
+                                fontFamily: "inherit",
+                                background: isSelected ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                transition: "all .2s",
+                                textAlign: "left",
+                              }}
+                            >
+                              <span style={{ color: isSelected ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSelected ? 700 : 500 }}>
+                                🏷️ {pm.nombre}
+                              </span>
+                              <span style={{
+                                background: isSelected ? "rgba(34,211,238,.2)" : "rgba(255,255,255,.07)",
+                                color: isSelected ? "#22d3ee" : "#8b949e",
+                                borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700,
+                                fontFamily: "'DM Mono', monospace",
+                              }}>
+                                ${Number(pm.precio_publico || 0).toLocaleString("es-MX")}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
                 }
-                options={planesActivos}
-              />
+
+                return (
+                  <Inp
+                    label="Plan"
+                    value={renovar.plan}
+                    onChange={(v) =>
+                      setRenovar((p) => ({
+                        ...p,
+                        plan: v,
+                        monto: String((planPrecioActivo || {})[v] || p.monto),
+                        vence: p.venceManual ? p.vence : calcVence(p.inicio, v),
+                      }))
+                    }
+                    options={planesActivos}
+                  />
+                );
+              })()}
               <Inp
                 label="Monto ($)"
                 type="number"
