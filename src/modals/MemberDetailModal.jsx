@@ -142,7 +142,6 @@ function CongelarModal({ m, onClose, onConfirm }) {
           </Btn>
         </div>
       </div>
-      </div>{/* /main body scroll */}
     </div>
   );
 }
@@ -207,7 +206,6 @@ function ConfirmDeleteInput({ nombre, onConfirm, onCancel }) {
           🗑️ Eliminar definitivamente
         </button>
       </div>
-      </div>{/* /main body scroll */}
     </div>
   );
 }
