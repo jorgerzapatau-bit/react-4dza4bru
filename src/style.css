@@ -111,7 +111,7 @@ h1, p, span, button, input, select, textarea {
   }
 }
 
-.gym-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gym-content { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; overflow: clip; }
 
 /* .gym-nav solo aplica cuando NO es desktop-nav ni mobile-bottom-nav */
 .gym-nav:not(.desktop-nav):not(.mobile-bottom-nav) { display: contents; }

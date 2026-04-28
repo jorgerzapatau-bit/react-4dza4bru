@@ -180,7 +180,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
   const [modo, setModo] = useState("manual");
   const [fechaDesc, setFechaDesc] = useState("");
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
       <div style={{ background: "var(--bg-card)", borderRadius: 24, padding: 24, width: "100%", maxWidth: 340, border: "1px solid rgba(96,165,250,.3)" }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <p style={{ fontSize: 40, marginBottom: 8 }}>🧊</p>
@@ -390,14 +390,17 @@ export default function MemberDetailModal({
     { val: "libre", icon: "✏️", label: "Personalizado", cat: "Otro", placeholder: "Describe el cobro..." },
   ];
 
-  /* ─── WRAPPER: pantalla completa en desktop, modal en móvil ─── */
+  /* ─── WRAPPER: ocupa solo gym-content en desktop, modal en móvil ─── */
   const Wrapper = ({ children }) => {
     if (isDesktop) {
       return (
         <div style={{
-          position: "fixed", inset: 0, zIndex: 400,
+          // Absoluto respecto a .gym-content (que tiene position relativo implícito),
+          // NO fixed, para no tapar el sidebar
+          position: "absolute", inset: 0, zIndex: 10,
           background: "var(--bg-main)", display: "flex", flexDirection: "column",
           animation: "fadeUp .2s ease both",
+          // gym-content ya tiene overflow, esto se queda dentro
         }}>
           {/* Header barra top */}
           <div style={{
@@ -756,7 +759,7 @@ export default function MemberDetailModal({
             </div>
           )}
           {pagoModal && (
-            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: 200, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 24 : 0 }}>
+            <div style={{ position: isDesktop ? "absolute" : "fixed", inset: 0, background: "rgba(0,0,0,.82)", backdropFilter: "blur(8px)", zIndex: isDesktop ? 20 : 300, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 24 : 0 }}>
               <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "var(--bg-card)", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", maxHeight: "85vh", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                   <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
@@ -785,7 +788,7 @@ export default function MemberDetailModal({
     const esMesPasado = renovar.inicio && renovar.inicio < todayISO().slice(0, 7);
 
     return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)", zIndex: 500, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 24 : 0 }}>
+      <div style={{ position: isDesktop ? "absolute" : "fixed", inset: 0, background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)", zIndex: isDesktop ? 20 : 300, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 24 : 0 }}>
         <div style={{ width: "100%", maxWidth: isDesktop ? 560 : "100%", background: "var(--bg-card)", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", maxHeight: isDesktop ? "92vh" : "95%", overflowY: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>🔄 {esPrimeraMembresía ? "Registrar membresía" : "Renovar membresía"}</h2>
@@ -927,7 +930,7 @@ export default function MemberDetailModal({
       setCobrarModal(false);
     };
     return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)", zIndex: 500, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 24 : 0 }}>
+      <div style={{ position: isDesktop ? "absolute" : "fixed", inset: 0, background: "rgba(0,0,0,.88)", backdropFilter: "blur(10px)", zIndex: isDesktop ? 20 : 300, display: "flex", alignItems: isDesktop ? "center" : "flex-end", justifyContent: "center", padding: isDesktop ? 24 : 0 }}>
         <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "var(--bg-card)", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>💰 Cobrar a {m.nombre.split(" ")[0]}</h2>
