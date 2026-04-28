@@ -7,9 +7,9 @@
 
 import { useState, useRef, useCallback } from "react";
 import TutorFields from "../components/TutorFields";
-import { todayISO, calcVence, calcEdad, fmtDate } from "../utils/dateUtils";
+import { todayISO, calcEdad, fmtDate } from "../utils/dateUtils";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
-import { DEFAULT_PLANES } from "../utils/constants";
+import { DEFAULT_PLANES, calcVence } from "../utils/constants";
 
 // ── Helpers ──────────────────────────────────────────────────────
 function fmt$(n) {
