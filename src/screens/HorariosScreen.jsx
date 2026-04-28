@@ -47,7 +47,8 @@ const DURACIONES = [
 const FORM_CLASE_INICIAL = {
   nombre: "", descripcion: "", instructor_id: "",
   instructor_nombre: "", edad_min: "0", edad_max: "99",
-  cupo_max: "20", costo: "", duracion_meses: "1", color: "#6c63ff", activo: true,
+  cupo_max: "20", color: "#6c63ff", activo: true,
+  planes_ids: [], // IDs de planes_membresia vinculados
 };
 
 const FORM_HORARIO_INICIAL = {
@@ -229,7 +230,7 @@ function ClaseCard({ clase, horarios, inscripciones, planes, onSelect }) {
 // ══════════════════════════════════════════════════════════════════
 //  MODAL: Crear / Editar Clase
 // ══════════════════════════════════════════════════════════════════
-function ModalClase({ clase, gymId, miembros, onSave, onClose }) {
+function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
   const esEdicion = !!clase;
   const [form, setForm] = useState(() =>
     clase
@@ -238,9 +239,12 @@ function ModalClase({ clase, gymId, miembros, onSave, onClose }) {
           instructor_id: clase.instructor_id || "",
           instructor_nombre: clase.instructor_nombre || "",
           edad_min: String(clase.edad_min ?? 0), edad_max: String(clase.edad_max ?? 99),
-          cupo_max: String(clase.cupo_max ?? 20), costo: String(clase.costo ?? ""),
-          duracion_meses: String(clase.duracion_meses ?? 1),
+          cupo_max: String(clase.cupo_max ?? 20),
           color: clase.color || "#6c63ff", activo: clase.activo !== false,
+          // Inferir planes vinculados desde planes.clases_vinculadas
+          planes_ids: (planes || [])
+            .filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)))
+            .map(p => String(p.id)),
         }
       : { ...FORM_CLASE_INICIAL }
   );
@@ -257,7 +261,6 @@ function ModalClase({ clase, gymId, miembros, onSave, onClose }) {
 
   const handleGuardar = async () => {
     if (!form.nombre.trim()) { setError("El nombre es obligatorio."); return; }
-    if (!form.costo || isNaN(Number(form.costo))) { setError("El costo debe ser un número."); return; }
     setSaving(true);
     setError("");
     const payload = {
@@ -269,8 +272,6 @@ function ModalClase({ clase, gymId, miembros, onSave, onClose }) {
       edad_min: Number(form.edad_min) || 0,
       edad_max: Number(form.edad_max) || 99,
       cupo_max: Number(form.cupo_max) || 20,
-      costo: Number(form.costo),
-      duracion_meses: Number(form.duracion_meses) || 1,
       color: form.color,
       activo: form.activo,
     };
@@ -281,6 +282,22 @@ function ModalClase({ clase, gymId, miembros, onSave, onClose }) {
       saved = { ...clase, ...payload };
     } else {
       saved = await db.insert(payload);
+    }
+    // Sincronizar planes vinculados: actualizar clases_vinculadas en cada plan
+    if (saved && planes && planes.length > 0) {
+      const claseId = String(saved.id || clase?.id);
+      for (const plan of planes) {
+        const vinculados = (plan.clases_vinculadas || []).map(String);
+        const estaVinculado = vinculados.includes(claseId);
+        const debeVincular = form.planes_ids.includes(String(plan.id));
+        if (debeVincular && !estaVinculado) {
+          const dbP = await supabase.from("planes_membresia");
+          await dbP.update(plan.id, { clases_vinculadas: [...vinculados, claseId] });
+        } else if (!debeVincular && estaVinculado) {
+          const dbP = await supabase.from("planes_membresia");
+          await dbP.update(plan.id, { clases_vinculadas: vinculados.filter(id => id !== claseId) });
+        }
+      }
     }
     setSaving(false);
     if (saved) onSave(saved, esEdicion);
@@ -319,35 +336,71 @@ function ModalClase({ clase, gymId, miembros, onSave, onClose }) {
         <Inp label="Edad máxima" value={form.edad_max} onChange={v => set("edad_max", v)} type="number" placeholder="99" />
       </div>
 
-      {/* Cupo y duración */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Inp label="Cupo máximo *" value={form.cupo_max} onChange={v => set("cupo_max", v)} type="number" placeholder="20" />
-        <div>
-          <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Duración membresía</p>
-          <select
-            value={form.duracion_meses}
-            onChange={e => set("duracion_meses", e.target.value)}
-            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 12 }}
-          >
-            {DURACIONES.map(d => (
-              <option key={d.meses} value={String(d.meses)}>{d.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Cupo */}
+      <Inp label="Cupo máximo *" value={form.cupo_max} onChange={v => set("cupo_max", v)} type="number" placeholder="20" />
 
-      {/* Costo */}
-      <div>
-        <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>Costo de membresía *</p>
-        <div style={{ position: "relative", marginBottom: 12 }}>
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary)", fontSize: 14 }}>$</span>
-          <input
-            type="number" min="0" value={form.costo}
-            onChange={e => set("costo", e.target.value)}
-            placeholder="0.00"
-            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px 12px 28px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit", outline: "none" }}
-          />
-        </div>
+      {/* Selector de planes de membresía */}
+      <div style={{ marginBottom: 14 }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 5, textTransform: "uppercase", letterSpacing: .5 }}>
+          Planes con acceso
+        </p>
+        {(!planes || planes.length === 0) ? (
+          <div style={{ background: "rgba(108,99,255,.08)", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ color: "#a78bfa", fontSize: 12, textAlign: "center" }}>
+              💳 Primero crea planes en <strong>Membresías</strong> y luego vincúlalos aquí.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {planes.map(p => {
+              const seleccionado = form.planes_ids.includes(String(p.id));
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => set("planes_ids", seleccionado
+                    ? form.planes_ids.filter(id => id !== String(p.id))
+                    : [...form.planes_ids, String(p.id)]
+                  )}
+                  style={{
+                    width: "100%", padding: "11px 14px",
+                    border: seleccionado ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
+                    borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+                    background: seleccionado ? "rgba(108,99,255,.12)" : "var(--bg-elevated)",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    transition: "all .18s",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                      border: `2px solid ${seleccionado ? "#6c63ff" : "rgba(255,255,255,.2)"}`,
+                      background: seleccionado ? "#6c63ff" : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {seleccionado && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <span style={{ color: seleccionado ? "#c4b5fd" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionado ? 700 : 500 }}>
+                      {p.nombre}
+                    </span>
+                  </div>
+                  <span style={{
+                    background: seleccionado ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.06)",
+                    color: seleccionado ? "#c4b5fd" : "var(--text-secondary)",
+                    borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 700,
+                    fontFamily: "'DM Mono', monospace",
+                  }}>
+                    ${Number(p.precio_publico || 0).toLocaleString("es-MX")}
+                  </span>
+                </button>
+              );
+            })}
+            {form.planes_ids.length === 0 && (
+              <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 2 }}>
+                ⚠️ Sin plan vinculado — cualquier miembro podrá inscribirse sin restricción de membresía.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Color etiqueta */}
@@ -750,7 +803,10 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
           {inscritosClase.length} / {clase.cupo_max} alumnos
         </span>
         <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
-          {fmt$(clase.costo)} / {DURACIONES.find(d => d.meses === (clase.duracion_meses || 1))?.label || "mes"}
+          {planesVinculados.length > 0
+            ? `💳 ${planesVinculados.length} plan${planesVinculados.length !== 1 ? "es" : ""}`
+            : "Sin plan vinculado"
+          }
         </span>
         {clase.edad_min > 0 || clase.edad_max < 99 ? (
           <span style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 10px", fontSize: 11 }}>
@@ -909,7 +965,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
             <div style={{ textAlign: "center", padding: "28px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>💳</p>
               <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Ningún plan vinculado aún.</p>
-              <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 4 }}>Vincúlala desde <strong>Membresías → editar plan → tab Clases</strong>.</p>
+              <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 4 }}>Usa el botón <strong>✏️ Editar clase</strong> para vincular planes de membresía.</p>
             </div>
           ) : planesVinculados.map(p => (
             <div key={p.id} style={{
