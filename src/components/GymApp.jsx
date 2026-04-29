@@ -712,7 +712,39 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
               setFM(wizardFM);
               await addM(wizardFM);
               setModal(null); // Close modal immediately after saving
-              // Save WA message to queue if there is one
+              // Always add QR welcome message; add membership WA if present
+              {
+                const gym_nombreQ = (gymConfig?.nombre || "el gym");
+                const nombre1Q = (receiptInfo?.nombreMiembro || wizardFM.nombre || "").split(" ")[0];
+                const msgQRonly = `¡Hola ${nombre1Q}! 🎫 Bienvenido/a a *${gym_nombreQ}*.
+
+Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu asistencia.
+
+¡Nos alegra tenerte con nosotros! 💪`;
+                const isMenorQ = wizardFM.fecha_nacimiento && (() => {
+                  const n = new Date(wizardFM.fecha_nacimiento + "T00:00:00");
+                  const h = new Date();
+                  let eq = h.getFullYear() - n.getFullYear();
+                  if (h.getMonth() - n.getMonth() < 0 || (h.getMonth() - n.getMonth() === 0 && h.getDate() < n.getDate())) eq--;
+                  return eq < 18;
+                })();
+                const telQ = (isMenorQ && wizardFM.tutor_telefono) ? wizardFM.tutor_telefono : (wizardFM.tel || "");
+                const entryQRonly = {
+                  id: Date.now().toString(),
+                  fechaCreacion: new Date().toISOString(),
+                  nombreMiembro: receiptInfo?.nombreMiembro || wizardFM.nombre,
+                  tel: telQ,
+                  msg: msgQRonly,
+                  tipo: "qr_bienvenida",
+                  enviado: false,
+                };
+                setWaQueue(prev => {
+                  const next = [entryQRonly, ...prev];
+                  try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
+                  return next;
+                });
+              }
+
               if (receiptInfo?.waMsg && receiptInfo?.tel) {
                 const entry = {
                   id: Date.now().toString(),
@@ -728,8 +760,34 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
                   enviado: false,
                   tipo: "nuevo_miembro",
                 };
+                // Also add QR welcome message
+                const gym_nombre2 = (gymConfig?.nombre || "el gym");
+                const nombre1_2 = (receiptInfo.nombreMiembro || wizardFM.nombre || "").split(" ")[0];
+                const msgQR = `¡Hola ${nombre1_2}! 🎫 Bienvenido/a a *${gym_nombre2}*.
+
+Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu asistencia.
+
+¡Nos alegra tenerte con nosotros! 💪`;
+                const telQR = (wizardFM.fecha_nacimiento && (() => {
+                  const n = new Date(wizardFM.fecha_nacimiento + "T00:00:00");
+                  const h = new Date();
+                  let e2 = h.getFullYear() - n.getFullYear();
+                  if (h.getMonth() - n.getMonth() < 0 || (h.getMonth() - n.getMonth() === 0 && h.getDate() < n.getDate())) e2--;
+                  return e2 < 18;
+                })() && wizardFM.tutor_telefono) ? wizardFM.tutor_telefono : (wizardFM.tel || "");
+
+                const entryQR = {
+                  id: (Date.now() + 1).toString(),
+                  fechaCreacion: new Date().toISOString(),
+                  nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
+                  tel: telQR,
+                  msg: msgQR,
+                  tipo: "qr_bienvenida",
+                  enviado: false,
+                };
+
                 setWaQueue(prev => {
-                  const next = [entry, ...prev];
+                  const next = [entryQR, entry, ...prev];
                   try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
                   return next;
                 });
