@@ -136,7 +136,7 @@ export default function FinanzasScreen({
                   {/* Miembros activos */}
                   {(() => {
                     const mesHoy = new Date().toISOString().slice(0, 7);
-                    const nuevosEsteMes = miembros.filter(m => (m.fecha_incorporacion || "").startsWith(mesHoy));
+                    const nuevosEsteMes = miembros.filter(m => (m.fecha_incorporacion || "").startsWith(mesHoy)).sort((a, b) => (b.fecha_incorporacion || "").localeCompare(a.fecha_incorporacion || ""));
                     return (
                       <div className="card" style={{ background: "var(--bg-card)", borderRadius: 18, padding: 18, border: "1px solid var(--border)", marginBottom: 14 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: nuevosEsteMes.length > 0 ? 12 : 0 }}>
@@ -282,7 +282,7 @@ export default function FinanzasScreen({
                       <button onClick={() => setTab(3)} style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Ver todos</button>
                     </div>
                     {txsMes.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Sin movimientos este mes</p>}
-                    {txsMes.slice(-5).reverse().map(t => (
+                    {[...txsMes].sort((a, b) => { const da = parseDate(a.fecha); const db2 = parseDate(b.fecha); if (da && db2) return db2 - da; return (b.fecha || "").localeCompare(a.fecha || ""); }).slice(0, 5).map(t => (
                       <div key={t.id} className="rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           {(() => {
