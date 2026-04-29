@@ -44,6 +44,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null);
   const [modoMensajes, setModoMensajes] = useState(null);
+  const [waQueue, setWaQueue] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("gymfit_wa_queue") || "[]"); } catch(e) { return []; }
+  });
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
@@ -303,7 +306,20 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
       // ── Registrar membresía inicial si se eligió un plan ──
       if (data.plan) {
         const fechaInicio = data.fecha_incorporacion || todayISO();
-        const venceISO = calcVence(fechaInicio, data.plan);
+        // Support both DEFAULT_PLANES (by name) and planesMembresia (by ciclo_renovacion)
+        const CICLO_MESES_GM = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+        const planObj3 = data.planData;
+        let venceISO = null;
+        if (planObj3) {
+          const meses3 = planObj3.meses != null ? planObj3.meses : CICLO_MESES_GM[planObj3.ciclo_renovacion];
+          if (meses3) {
+            const [y3, mo3, d3] = fechaInicio.split("-").map(Number);
+            const v3 = new Date(y3, mo3 - 1 + meses3, d3);
+            venceISO = `${v3.getFullYear()}-${String(v3.getMonth()+1).padStart(2,"0")}-${String(v3.getDate()).padStart(2,"0")}`;
+          }
+        } else {
+          try { venceISO = calcVence(fechaInicio, data.plan); } catch(e) {}
+        }
         const monto = Number(data.monto) || 0;
         const formaPago = data.formaPago || "Efectivo";
         const descTx = `Renovación ${data.plan} - ${data.nombre} [${formaPago}]${venceISO ? ` (vence:${venceISO})` : ""}`;
@@ -451,7 +467,16 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
 
         {/* ═══ MENSAJES ═══ */}
         {!loading && !configScreen && screen === "mensajes" && (
-          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} gymId={GYM_ID} onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }} onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes} recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio} />
+          <MensajesScreen miembros={miembros} txs={txs} gymConfig={gymConfig} gymId={GYM_ID}
+            onBack={() => { setMensajesMiembro(null); setModoMensajes(null); setScreen("dashboard"); }}
+            onUpdatePlantillas={updatePlantillas} miembroInicial={mensajesMiembro} modoInicial={modoMensajes}
+            recordatoriosEnviados={recordatoriosEnviados} onMarcarRecordatorio={marcarRecordatorio}
+            waQueue={waQueue}
+            onUpdateWaQueue={(newQueue) => {
+              setWaQueue(newQueue);
+              try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(newQueue)); } catch(e) {}
+            }}
+          />
         )}
 
         {!loading && !configScreen && screen === "horarios" && (
@@ -683,9 +708,37 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         {modal === "miembro" && (
           <NuevoMiembroWizard
             onClose={() => { setModal(null); setFM({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: todayISO(), notas: "", tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "", plan: null, monto: null, formaPago: null }); }}
-            onAdd={async (wizardFM) => {
+            onAdd={async (wizardFM, receiptInfo) => {
               setFM(wizardFM);
               await addM(wizardFM);
+              // Save WA message to queue if there is one
+              if (receiptInfo?.waMsg && receiptInfo?.tel) {
+                const entry = {
+                  id: Date.now().toString(),
+                  fechaCreacion: new Date().toISOString(),
+                  nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
+                  tel: receiptInfo.tel,
+                  msg: receiptInfo.waMsg,
+                  plan: receiptInfo.plan,
+                  monto: receiptInfo.monto,
+                  formaPago: receiptInfo.formaPago,
+                  venceISO: receiptInfo.venceISO,
+                  comprobantePNG: receiptInfo.comprobantePNG || null,
+                  enviado: false,
+                  tipo: "nuevo_miembro",
+                };
+                setWaQueue(prev => {
+                  const next = [entry, ...prev];
+                  try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
+                  return next;
+                });
+                // Go to mensajes screen to show the queue
+                setTimeout(() => {
+                  setModal(null);
+                  setModoMensajes("pendientes");
+                  setScreen("mensajes");
+                }, 400);
+              }
             }}
             gymConfig={gymConfig}
             activePlanes={activePlanes}

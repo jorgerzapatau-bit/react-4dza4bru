@@ -328,15 +328,17 @@ export default function MensajesScreen({
   miembros,
   txs,
   gymConfig,
-  gymId,          // ← NUEVO: ID del gimnasio para Supabase
+  gymId,
   onBack,
   onUpdatePlantillas,
   miembroInicial,
   modoInicial,
   recordatoriosEnviados = {},
   onMarcarRecordatorio,
+  waQueue = [],
+  onUpdateWaQueue,
 }) {
-  const [modo,       setModo]      = useState(modoInicial || (miembroInicial ? "individual" : "vencimientos"));
+  const [modo,       setModo]      = useState(modoInicial || (miembroInicial ? "individual" : ((waQueue||[]).filter(m=>!m.enviado).length > 0 ? "pendientes" : "vencimientos")));
   const [enviados,   setEnviados]  = useState({});
   const [selMiembro, setSelMiembro] = useState(miembroInicial || null);
   const [busqueda,   setBusqueda]  = useState("");
@@ -434,6 +436,8 @@ export default function MensajesScreen({
   }, [miembros, txs]);
 
   const pendientes = alertas.filter(({ miembro }) => !enviados[miembro.id]).length;
+  const pendientesWA = (waQueue || []).filter(m => !m.enviado).length;
+  const totalBadge = pendientes + pendientesWA;
 
   const urgColor = (d) => d <= 1 ? "#f43f5e" : d <= 3 ? "#f59e0b" : "#22d3ee";
   const urgLabel = (d) => d === 0 ? "HOY 🚨" : d === 1 ? "MAÑANA" : `${d}d`;
@@ -464,6 +468,7 @@ export default function MensajesScreen({
 
   // ── Tabs: 4 modos ──
   const modos = [
+    { k: "pendientes",         icon: "📬", label: "Pendientes",  badge: pendientesWA },
     { k: "vencimientos",       icon: "⏰", label: "Vencimientos" },
     { k: "individual",         icon: "👤", label: "Individual"   },
     { k: "masivo",             icon: "📢", label: "Masivo"       },
@@ -502,18 +507,27 @@ export default function MensajesScreen({
               <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
               <p style={{ color: "#8b949e", fontSize: 11 }}>Centro de comunicación WhatsApp</p>
             </div>
-            {pendientes > 0 && (
+            {totalBadge > 0 && (
               <span style={{ background: "#f43f5e", color: "#fff", borderRadius: 10, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>
-                {pendientes}
+                {totalBadge}
               </span>
             )}
           </div>
 
-          {/* Selector de 4 modos */}
-          <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14 }}>
+          {/* Selector de modos */}
+          <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14, overflowX: "auto" }}>
             {modos.map(m => (
-              <button key={m.k} onClick={() => cambiarModo(m.k)} style={btnModoBase(modo === m.k)}>
+              <button key={m.k} onClick={() => cambiarModo(m.k)} style={{ ...btnModoBase(modo === m.k), position: "relative", flexShrink: 0 }}>
                 {m.icon} {m.label}
+                {m.badge > 0 && (
+                  <span style={{
+                    position: "absolute", top: 2, right: 2,
+                    background: "#f43f5e", color: "#fff",
+                    borderRadius: "50%", width: 14, height: 14,
+                    fontSize: 9, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>{m.badge}</span>
+                )}
               </button>
             ))}
           </div>
@@ -523,6 +537,159 @@ export default function MensajesScreen({
       {/* ── Contenido scrollable ── */}
       <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 20px 0" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
+
+          {/* ════ MODO: PENDIENTES (WA Queue) ════ */}
+          {modo === "pendientes" && (() => {
+            const queue = waQueue || [];
+            const marcarEnviado = (id) => {
+              const updated = queue.map(m => m.id === id ? { ...m, enviado: true } : m);
+              if (onUpdateWaQueue) onUpdateWaQueue(updated);
+            };
+            const eliminar = (id) => {
+              const updated = queue.filter(m => m.id !== id);
+              if (onUpdateWaQueue) onUpdateWaQueue(updated);
+            };
+            const fmtShort = (iso) => {
+              if (!iso) return "—";
+              const [y, mo, d] = iso.split("-");
+              const M = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+              return `${parseInt(d)} ${M[parseInt(mo)-1]} ${y}`;
+            };
+            return (
+              <>
+                {queue.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "50px 0" }}>
+                    <p style={{ fontSize: 40, marginBottom: 12 }}>📬</p>
+                    <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>Sin mensajes pendientes</p>
+                    <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Los mensajes de bienvenida aparecerán aquí al agregar miembros</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
+                      <p style={{ color: "#a78bfa", fontSize: 12 }}>
+                        📬 {queue.filter(m => !m.enviado).length} pendiente{queue.filter(m => !m.enviado).length !== 1 ? "s" : ""} de enviar · {queue.filter(m => m.enviado).length} enviado{queue.filter(m => m.enviado).length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    {queue.map(entry => {
+                      const col = entry.enviado ? "var(--border)" : "#6c63ff";
+                      return (
+                        <div key={entry.id} style={{
+                          background: entry.enviado ? "var(--bg-card)" : "rgba(108,99,255,.06)",
+                          border: `1px solid ${entry.enviado ? "var(--border)" : "rgba(108,99,255,.3)"}`,
+                          borderRadius: 18, padding: 14, marginBottom: 12,
+                          opacity: entry.enviado ? 0.65 : 1, transition: "all .3s",
+                        }}>
+                          {/* Header */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                            <div style={{
+                              width: 42, height: 42, borderRadius: "50%", flexShrink: 0,
+                              background: "linear-gradient(135deg,#6c63ff33,#e040fb33)",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 17, fontWeight: 700, color: "#a78bfa",
+                            }}>
+                              {(entry.nombreMiembro || "?").charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{entry.nombreMiembro}</p>
+                              <p style={{ color: "#8b949e", fontSize: 11 }}>
+                                {entry.plan || "Sin plan"} · {entry.tel || "Sin número"}
+                              </p>
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              {entry.enviado ? (
+                                <span style={{ background: "rgba(74,222,128,.15)", color: "#4ade80", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>✓ Enviado</span>
+                              ) : (
+                                <span style={{ background: "rgba(108,99,255,.2)", color: "#a78bfa", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>📬 Pendiente</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Detalles membresía */}
+                          {entry.plan && (
+                            <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                              {[
+                                ["Plan", entry.plan],
+                                ["Monto", "$" + Number(entry.monto || 0).toLocaleString("es-MX")],
+                                ["Pago", entry.formaPago || "—"],
+                                ["Vence", fmtShort(entry.venceISO)],
+                              ].map(([l, v]) => (
+                                <div key={l}>
+                                  <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>{l}</p>
+                                  <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{v}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Comprobante si existe */}
+                          {entry.comprobantePNG && (
+                            <div style={{ marginBottom: 10 }}>
+                              <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>🧾 Comprobante</p>
+                              <img src={entry.comprobantePNG} alt="Comprobante" style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)" }} />
+                            </div>
+                          )}
+
+                          {/* Mensaje WA editable */}
+                          <textarea
+                            value={entry._editMsg !== undefined ? entry._editMsg : entry.msg}
+                            onChange={e => {
+                              const updated = queue.map(m => m.id === entry.id ? { ...m, _editMsg: e.target.value } : m);
+                              if (onUpdateWaQueue) onUpdateWaQueue(updated);
+                            }}
+                            rows={4}
+                            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.5, marginBottom: 8 }}
+                          />
+
+                          {/* Botones */}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            {!entry.enviado && entry.tel && (
+                              <button
+                                onClick={() => {
+                                  const msg = entry._editMsg !== undefined ? entry._editMsg : entry.msg;
+                                  const clean = (entry.tel || "").replace(/\D/g, "");
+                                  const phone = clean.startsWith("52") ? clean : `52${clean}`;
+                                  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                                  marcarEnviado(entry.id);
+                                }}
+                                style={{
+                                  flex: 2, padding: "11px", border: "none", borderRadius: 12,
+                                  cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
+                                  background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff",
+                                  boxShadow: "0 4px 14px rgba(37,211,102,.3)",
+                                  display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                                }}
+                              >
+                                <span style={{ fontSize: 16 }}>💬</span> Enviar por WhatsApp
+                              </button>
+                            )}
+                            {entry.enviado && (
+                              <button
+                                onClick={() => {
+                                  const msg = entry._editMsg !== undefined ? entry._editMsg : entry.msg;
+                                  const clean = (entry.tel || "").replace(/\D/g, "");
+                                  const phone = clean.startsWith("52") ? clean : `52${clean}`;
+                                  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+                                }}
+                                style={{ flex: 2, padding: "11px", border: "1px solid rgba(37,211,102,.3)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, background: "rgba(37,211,102,.08)", color: "#4ade80", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}
+                              >
+                                <span>🔁</span> Reenviar
+                              </button>
+                            )}
+                            <button
+                              onClick={() => eliminar(entry.id)}
+                              style={{ flex: 1, padding: "11px", border: "1px solid rgba(248,113,113,.25)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "rgba(248,113,113,.08)", color: "#f87171" }}
+                            >
+                              🗑️ Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
+              </>
+            );
+          })()}
 
           {/* ════ MODO: VENCIMIENTOS ════ */}
           {modo === "vencimientos" && (

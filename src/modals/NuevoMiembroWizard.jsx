@@ -379,27 +379,17 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
   const esMenor = esMenorDeEdad(fM.fecha_nacimiento);
   const edad = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
 
-  const inp = (label, field, type = "text", placeholder = "", options = null) => (
+  const inp = (label, field, type = "text", placeholder = "") => (
     <div style={S.field}>
       <label style={S.label}>{label}</label>
-      {options ? (
-        <select
-          value={fM[field] || ""}
-          onChange={e => setFM(p => ({ ...p, [field]: e.target.value }))}
-          style={{ ...S.inp }}
-        >
-          {options.map(o => <option key={o} value={o}>{o || "—"}</option>)}
-        </select>
-      ) : (
-        <input
-          type={type}
-          value={fM[field] || ""}
-          onChange={e => setFM(p => ({ ...p, [field]: e.target.value }))}
-          placeholder={placeholder}
-          style={S.inp}
-          inputMode={type === "tel" ? "numeric" : undefined}
-        />
-      )}
+      <input
+        type={type}
+        value={fM[field] || ""}
+        onChange={e => setFM(p => ({ ...p, [field]: e.target.value }))}
+        placeholder={placeholder}
+        style={S.inp}
+        inputMode={type === "tel" ? "numeric" : undefined}
+      />
     </div>
   );
 
@@ -436,7 +426,35 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
 
       {inp("Nombre completo *", "nombre", "text", "Ej: María García")}
       {inp("Teléfono WhatsApp", "tel", "tel", "999 000 0000")}
-      {inp("Sexo", "sexo", "text", "", ["", "Masculino", "Femenino"])}
+      {/* Sexo — pill buttons, sin <select> nativo */}
+      <div style={S.field}>
+        <label style={S.label}>Sexo</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          {["", "Masculino", "Femenino"].map(op => {
+            const sel = (fM.sexo || "") === op;
+            const icons = { "": "—", "Masculino": "♂", "Femenino": "♀" };
+            return (
+              <button
+                key={op}
+                onClick={() => setFM(p => ({ ...p, sexo: op }))}
+                style={{
+                  flex: 1, padding: "11px 8px",
+                  border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                  borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+                  background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                  color: sel ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+                  fontSize: 13, fontWeight: sel ? 700 : 400,
+                  transition: "all .15s",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>{icons[op]}</span>
+                <span style={{ fontSize: 11 }}>{op || "Sin especificar"}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div style={S.field}>
         <label style={S.label}>Fecha de nacimiento</label>
@@ -544,13 +562,16 @@ function Step2({ fM, setFM, planes }) {
       {planesInfo.map((p) => {
         const precio = p.precio_publico !== undefined ? p.precio_publico : p.precio;
         const isSelected = fM.plan === p.nombre;
-        const mesesLabel = p.meses === 1 ? "1 mes" : `${p.meses} meses`;
-        const clasesLabel = p.clases_incluidas ? `${p.clases_incluidas} clases` : "Clases ilimitadas";
+        // ciclo_renovacion puede ser "mensual","trimestral","semestral","anual" o un número via .meses
+        const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12, ilimitado: null };
+        const mesesNum = p.meses != null ? p.meses : CICLO_MESES[p.ciclo_renovacion];
+        const mesesLabel = mesesNum == null ? "Sin vencimiento" : mesesNum === 1 ? "1 mes" : `${mesesNum} meses`;
+        const clasesLabel = p.limite_clases ? `${p.limite_clases} clases incluidas` : "Acceso ilimitado";
 
         return (
           <button
             key={p.nombre}
-            onClick={() => setFM(prev => ({ ...prev, plan: p.nombre, monto: String(precio || "") }))}
+            onClick={() => setFM(prev => ({ ...prev, plan: p.nombre, monto: String(precio || ""), planData: p }))}
             style={{
               width: "100%", padding: "14px 16px", marginBottom: 8,
               border: isSelected ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
@@ -625,7 +646,24 @@ function Step3({ fM, setFM, gymConfig, comprobantePNG, setComprobantePNG, genera
 
   const gym = gymConfig || {};
   const fechaInicio = fM.fecha_incorporacion || todayISO();
-  const venceISO = fM.plan ? calcVence(fechaInicio, fM.plan) : null;
+  // Calcular vencimiento: soporta tanto planes DEFAULT (nombre→meses) como planesMembresia (ciclo_renovacion)
+  const venceISO = (() => {
+    if (!fM.plan) return null;
+    // fM.planData contiene el objeto completo del plan si fue seleccionado del wizard
+    const planObj = fM.planData;
+    const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+    let meses = null;
+    if (planObj) {
+      meses = planObj.meses != null ? planObj.meses : CICLO_MESES[planObj.ciclo_renovacion];
+    } else {
+      // fallback calcVence por nombre
+      try { return calcVence(fechaInicio, fM.plan); } catch(e) { return null; }
+    }
+    if (!meses) return null; // ilimitado
+    const [y, mo, d] = fechaInicio.split("-").map(Number);
+    const v = new Date(y, mo - 1 + meses, d);
+    return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
+  })();
 
   const generar = async () => {
     setGenerandoComp(true);
@@ -832,7 +870,68 @@ export default function NuevoMiembroWizard({
     if (saving) return;
     setSaving(true);
     try {
-      await onAdd(fM);
+      // Build WA message for the queue
+      const gym = gymConfig || {};
+      const nombre1 = (fM.nombre || "").split(" ")[0];
+      const gymNombre = gym.nombre || "el gym";
+      const fechaInicioPago = fM.fecha_incorporacion || todayISO();
+      // compute vence again here for the message
+      const CICLO_MESES_ADD = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+      const planObj2 = fM.planData;
+      let meses2 = null;
+      if (planObj2) meses2 = planObj2.meses != null ? planObj2.meses : CICLO_MESES_ADD[planObj2.ciclo_renovacion];
+      let venceISOAdd = null;
+      if (fM.plan && meses2) {
+        const [y2, mo2, d2] = fechaInicioPago.split("-").map(Number);
+        const v2 = new Date(y2, mo2 - 1 + meses2, d2);
+        venceISOAdd = `${v2.getFullYear()}-${String(v2.getMonth()+1).padStart(2,"0")}-${String(v2.getDate()).padStart(2,"0")}`;
+      } else if (fM.plan && !planObj2) {
+        try { venceISOAdd = calcVence(fechaInicioPago, fM.plan); } catch(e) {}
+      }
+      const fmtShortLocal = (iso) => {
+        if (!iso) return "—";
+        const [y,m,d] = iso.split("-");
+        const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        return `${parseInt(d)} ${MESES[parseInt(m)-1]} ${y}`;
+      };
+      // Determine recipient phone: tutor if minor, else member
+      const esMenorLocal = fM.fecha_nacimiento ? (() => {
+        const n = new Date(fM.fecha_nacimiento + "T00:00:00");
+        const h = new Date();
+        let e = h.getFullYear() - n.getFullYear();
+        const mo = h.getMonth() - n.getMonth();
+        if (mo < 0 || (mo === 0 && h.getDate() < n.getDate())) e--;
+        return e < 18;
+      })() : false;
+      const telDestino = esMenorLocal && fM.tutor_telefono ? fM.tutor_telefono : fM.tel;
+
+      let waMsg = null;
+      if (fM.plan) {
+        waMsg = `¡Hola ${nombre1}! 🥋 Tu membresía *${fM.plan}* en *${gymNombre}* ha sido registrada.
+
+` +
+          `📅 Inicio: ${fmtShortLocal(fechaInicioPago)}
+` +
+          (venceISOAdd ? `📅 Vencimiento: ${fmtShortLocal(venceISOAdd)}
+` : "") +
+          `💰 Monto: $${Number(fM.monto || 0).toLocaleString("es-MX")}
+` +
+          `💳 Forma de pago: ${fM.formaPago || "Efectivo"}
+
+` +
+          `¡Gracias por unirte! Cualquier duda estamos a tus órdenes. 💪`;
+      }
+
+      await onAdd(fM, {
+        comprobantePNG,
+        waMsg,
+        tel: telDestino,
+        nombreMiembro: fM.nombre,
+        venceISO: venceISOAdd,
+        plan: fM.plan,
+        formaPago: fM.formaPago,
+        monto: fM.monto,
+      });
     } finally {
       setSaving(false);
     }
