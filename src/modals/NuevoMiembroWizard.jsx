@@ -501,6 +501,32 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
           style={{ ...S.inp, resize: "vertical", minHeight: 72 }}
         />
       </div>
+
+      {/* Toggle Becario */}
+      <button
+        onClick={() => setFM(p => ({ ...p, beca: !p.beca }))}
+        style={{
+          display: "flex", alignItems: "center", gap: 12,
+          width: "100%", padding: "13px 14px", marginBottom: 6,
+          background: fM.beca ? "rgba(251,191,36,.08)" : "rgba(255,255,255,.04)",
+          border: `1.5px solid ${fM.beca ? "rgba(251,191,36,.4)" : "rgba(255,255,255,.08)"}`,
+          borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+          transition: "all .2s", textAlign: "left",
+        }}
+      >
+        <div style={{
+          width: 22, height: 22, borderRadius: 7, flexShrink: 0,
+          border: `2px solid ${fM.beca ? "#fbbf24" : "rgba(255,255,255,.2)"}`,
+          background: fM.beca ? "#fbbf24" : "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          {fM.beca && <span style={{ color: "#1a1a2e", fontSize: 13, fontWeight: 700 }}>✓</span>}
+        </div>
+        <div>
+          <p style={{ color: fM.beca ? "#fbbf24" : "#d1d5db", fontSize: 13, fontWeight: 600 }}>🎓 Becario — Membresía sin costo</p>
+          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>El pago se registrará como $0 y se saltará el paso de cobro</p>
+        </div>
+      </button>
     </div>
   );
 }
@@ -574,7 +600,7 @@ function Step2({ fM, setFM, planes, clases, horarios }) {
         return (
           <button
             key={p.nombre}
-            onClick={() => setFM(prev => ({ ...prev, plan: p.nombre, monto: String(precio || ""), planData: p }))}
+            onClick={() => setFM(prev => ({ ...prev, plan: p.nombre, monto: prev.beca ? "0" : String(precio || ""), planData: p }))}
             style={{
               width: "100%", padding: "14px 16px", marginBottom: 8,
               border: isSelected ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
@@ -641,15 +667,30 @@ function Step2({ fM, setFM, planes, clases, horarios }) {
                 fontSize: 13, fontWeight: 700,
                 fontFamily: "'DM Mono', monospace",
               }}>
-                {fmt$(precio)}
+                {fM.beca ? <span style={{ color: "#4ade80" }}>$0</span> : fmt$(precio)}
               </p>
+              {fM.beca && (
+                <p style={{ color: "#fbbf24", fontSize: 9, fontWeight: 700, marginTop: 2, textDecoration: "line-through", opacity: 0.5 }}>
+                  {fmt$(precio)}
+                </p>
+              )}
             </div>
           </button>
         );
       })}
 
-      {/* Monto personalizado */}
-      {fM.plan && (
+      {/* Aviso beca */}
+      {fM.beca && (
+        <div style={{ marginTop: 8, padding: "10px 14px", background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 12, display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 16 }}>🎓</span>
+          <p style={{ color: "#fbbf24", fontSize: 11 }}>
+            Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago al confirmar.
+          </p>
+        </div>
+      )}
+
+      {/* Monto personalizado — oculto si es becario */}
+      {fM.plan && !fM.beca && (
         <div style={{ marginTop: 12, padding: "14px", background: "rgba(108,99,255,.07)", borderRadius: 14, border: "1px solid rgba(108,99,255,.2)" }}>
           <label style={{ ...S.label, color: "#a78bfa" }}>Monto a cobrar (editable)</label>
           <input
@@ -903,6 +944,7 @@ export default function NuevoMiembroWizard({
     sexo: "", fecha_nacimiento: "",
     fecha_incorporacion: todayISO(),
     notas: "",
+    beca: false,
     tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "",
     plan: null, monto: null,
     formaPago: null,
@@ -939,7 +981,12 @@ export default function NuevoMiembroWizard({
   const goNext = () => {
     if (step === 1 && !canNext1) return;
     if (step === 2 && !hasPlan) {
-      // skip pago
+      // skip pago — sin membresía
+      handleAdd();
+      return;
+    }
+    if (step === 2 && hasPlan && fM.beca) {
+      // skip pago — becario no paga
       handleAdd();
       return;
     }
@@ -1029,12 +1076,14 @@ export default function NuevoMiembroWizard({
 
   const stepLabels = ["Datos", "Membresía", "Pago"];
 
-  // Determine if step 2 "next" should say "Sin membresía" or "Siguiente"
+  // Determine if step 2 "next" should say "Sin membresía", "Beca" or "Siguiente"
   const nextLabel = step === 2 && !hasPlan
     ? "✓ Agregar sin membresía"
-    : step === 3
-      ? saving ? "Guardando..." : "✓ Agregar miembro"
-      : "Siguiente →";
+    : step === 2 && hasPlan && fM.beca
+      ? saving ? "Guardando..." : "🎓 Agregar (Beca — $0)"
+      : step === 3
+        ? saving ? "Guardando..." : "✓ Agregar miembro"
+        : "Siguiente →";
 
   return (
     <div style={S.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>

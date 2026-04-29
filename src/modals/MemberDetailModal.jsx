@@ -384,10 +384,11 @@ export default function MemberDetailModal({
 
   const handleRenovar = async () => {
     if (!renovar.inicio) return;
-    const montoPagado = Number(renovar.monto) || 0;
+    const montoPagado = m.beca ? 0 : (Number(renovar.monto) || 0);
     const fechaISO = renovar.inicio;
     const venceISO = renovar.vence;
-    const descText = `Renovación ${renovar.plan} - ${m.nombre} [${renovar.formaPago || "Efectivo"}]${venceISO ? ` (vence:${venceISO})` : ""}`;
+    const becaTag = m.beca ? " [BECA]" : "";
+    const descText = `Renovación ${renovar.plan} - ${m.nombre} [${renovar.formaPago || "Efectivo"}]${becaTag}${venceISO ? ` (vence:${venceISO})` : ""}`;
     await onAddPago({
       id: uid(),
       tipo: "ingreso",
@@ -703,7 +704,7 @@ export default function MemberDetailModal({
                             <button
                               key={pm.id || pm.nombre}
                               onClick={() => {
-                                const precio = String(pm.precio_publico || "");
+                                const precio = m.beca ? "0" : String(pm.precio_publico || "");
                                 setRenovar((p) => ({
                                   ...p,
                                   plan: pm.nombre,
@@ -761,13 +762,26 @@ export default function MemberDetailModal({
                   />
                 );
               })()}
-              <Inp
-                label="Monto ($)"
-                type="number"
-                value={renovar.monto}
-                onChange={(v) => setRenovar((p) => ({ ...p, monto: v }))}
-                placeholder="0.00"
-              />
+              {/* Monto — bloqueado en $0 si es becario */}
+              {m.beca ? (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Monto ($)</p>
+                  <div style={{ background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 12, padding: "10px 14px", display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 16 }}>🎓</span>
+                    <p style={{ color: "#fbbf24", fontSize: 12 }}>
+                      Miembro becario — monto forzado a <strong>$0</strong>. No se registra cobro.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Inp
+                  label="Monto ($)"
+                  type="number"
+                  value={renovar.monto}
+                  onChange={(v) => setRenovar((p) => ({ ...p, monto: v }))}
+                  placeholder="0.00"
+                />
+              )}
 
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Forma de pago
@@ -866,13 +880,19 @@ export default function MemberDetailModal({
                 style={{
                   width: "100%", padding: "14px", border: "none", borderRadius: 14,
                   cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                  background: "linear-gradient(135deg,#22d3ee,#06b6d4)",
-                  color: "#fff", boxShadow: "0 4px 18px rgba(34,211,238,.35)",
+                  background: m.beca
+                    ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
+                    : "linear-gradient(135deg,#22d3ee,#06b6d4)",
+                  color: m.beca ? "#1a1a2e" : "#fff",
+                  boxShadow: m.beca ? "0 4px 18px rgba(251,191,36,.35)" : "0 4px 18px rgba(34,211,238,.35)",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                 }}
               >
-                <span style={{ fontSize: 18 }}>🔄</span>{" "}
-                {esPrimeraMembresía ? "Registrar membresía" : "Confirmar renovación"}
+                <span style={{ fontSize: 18 }}>{m.beca ? "🎓" : "🔄"}</span>{" "}
+                {m.beca
+                  ? esPrimeraMembresía ? "Registrar membresía (Beca)" : "Renovar (Beca — $0)"
+                  : esPrimeraMembresía ? "Registrar membresía" : "Confirmar renovación"
+                }
               </button>
             </div>
           </div>
