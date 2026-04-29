@@ -796,10 +796,10 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
                   return next;
                 });
               }
-              // Navigate after all state updates (txs, miembros, queue) have been scheduled
+              // Navigate to dashboard so "Últimos movimientos" shows immediately with the new tx
               setTimeout(() => {
-                setModoMensajes("pendientes");
-                setScreen("mensajes");
+                setScreen("dashboard");
+                setTab(0);
               }, 100);
             }}
             gymConfig={gymConfig}
