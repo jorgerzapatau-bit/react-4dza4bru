@@ -17,6 +17,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../supabase";
 import { todayISO, fmtDate, calcEdad } from "../utils/dateUtils";
+import { getMembershipInfo } from "../utils/membershipUtils";
 import { Modal, Btn, Inp } from "../components/UI";
 import NuevaClaseWizard from "../modals/NuevaClaseWizard";
 
@@ -566,7 +567,7 @@ function ModalHorario({ horario, claseId, gymId, onSave, onClose }) {
 // ══════════════════════════════════════════════════════════════════
 //  MODAL: Inscribir miembro a clase
 // ══════════════════════════════════════════════════════════════════
-function ModalInscribir({ clase, gymId, miembros, inscripciones, planes, onSave, onClose }) {
+function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, onSave, onClose }) {
   const [busqueda, setBusqueda] = useState("");
   const [selMiembro, setSelMiembro] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -584,18 +585,28 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, planes, onSave,
   );
   const planesIds = new Set(planesVinculados.map(p => String(p.id)));
 
+  // Verifica si un miembro tiene membresía activa que cubra un plan vinculado
+  const miembroTienePlan = (m) => {
+    if (planesIds.size === 0) return true; // sin restricción de plan
+    const info = getMembershipInfo(m.id, txs || [], m);
+    if (info.estado !== "Activo") return false;
+    // Buscar si alguno de los planes vinculados coincide por nombre o por ciclo
+    return planesVinculados.some(p => {
+      const nombrePlan = (p.nombre || "").toLowerCase();
+      const planInfo   = (info.plan  || "").toLowerCase();
+      return nombrePlan === planInfo || nombrePlan.includes(planInfo) || planInfo.includes(nombrePlan);
+    });
+  };
+
   // Clasifica cada miembro
   const clasificarMiembro = (m) => {
     if (yaInscritos.has(String(m.id))) return "inscrito";
-    // Verificar edad
     let bloqueadoEdad = false;
     if (m.fecha_nacimiento) {
       const edad = calcEdad(m.fecha_nacimiento);
       if (edad !== null && (edad < clase.edad_min || edad > clase.edad_max)) bloqueadoEdad = true;
     }
-    // Verificar membresía activa vinculada: el miembro tiene un plan activo que cubre esta clase
-    // Se infiere desde txs/inscripciones — simplificado: si el miembro tiene plan_id en su perfil
-    const tienePlan = planesIds.size === 0 || (m.plan_id && planesIds.has(String(m.plan_id)));
+    const tienePlan = miembroTienePlan(m);
     return { bloqueadoEdad, tienePlan };
   };
 
@@ -713,7 +724,7 @@ function ModalInscribir({ clase, gymId, miembros, inscripciones, planes, onSave,
             {miembrosFiltrados.map(m => {
               const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
               const edadOk = edad === null || (edad >= clase.edad_min && edad <= clase.edad_max);
-              const tienePlan = planesIds.size === 0 || (m.plan_id && planesIds.has(String(m.plan_id)));
+              const tienePlan = miembroTienePlan(m);
               return (
                 <button key={m.id} onClick={() => handleSeleccionar(m)}
                   style={{
@@ -1392,6 +1403,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           clase={modalInscribir}
           gymId={gymId}
           miembros={miembros}
+          txs={txs}
           inscripciones={inscripciones}
           planes={planes}
           onSave={handleInscribir}
