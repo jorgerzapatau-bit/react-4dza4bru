@@ -20,6 +20,7 @@ import MensajesScreen from "../screens/MensajesScreen";
 import TiendaScreen from "../screens/TiendaScreen";
 // Al tope con los otros imports
 import HorariosScreen from "../screens/HorariosScreen";
+import InstructoresScreen from "../screens/InstructoresScreen";
 
 // Screens
 import DashboardScreen from "../screens/AdminDashboardScreen";
@@ -460,6 +461,13 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             txs={txs}
             gymConfig={gymConfig}
             onAddTx={addPago}
+            isOwner={isOwner}
+          />
+        )}
+
+        {!loading && !configScreen && screen === "instructores" && (
+          <InstructoresScreen
+            gymId={GYM_ID}
             isOwner={isOwner}
           />
         )}

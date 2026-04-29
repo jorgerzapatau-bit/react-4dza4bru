@@ -1024,6 +1024,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
   const [horarios, setHorarios]           = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
   const [planes, setPlanes]               = useState(planesProp || []);
+  const [instructores, setInstructores]   = useState([]);
   const [loading, setLoading]             = useState(true);
 
   // ── Estado de UI ─────────────────────────────────────────────────
@@ -1042,22 +1043,25 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
   const loadDatos = useCallback(async () => {
     setLoading(true);
     try {
-      const [dbC, dbH, dbI, dbP] = await Promise.all([
+      const [dbC, dbH, dbI, dbP, dbInst] = await Promise.all([
         supabase.from("clases"),
         supabase.from("horarios"),
         supabase.from("inscripciones"),
         supabase.from("planes_membresia"),
+        supabase.from("instructores"),
       ]);
-      const [cData, hData, iData, pData] = await Promise.all([
+      const [cData, hData, iData, pData, instData] = await Promise.all([
         dbC.select(gymId),
         dbH.select(gymId),
         dbI.select(gymId),
         dbP.select(gymId),
+        dbInst.select(gymId),
       ]);
       setClases(cData || []);
       setHorarios(hData || []);
       setInscripciones(iData || []);
       setPlanes(pData || []);
+      setInstructores((instData || []).filter(i => i.activo !== false));
     } catch (e) {
       console.error("Error cargando horarios:", e);
     }
@@ -1197,7 +1201,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
             {[
               { label: "Clases activas",    val: stats.clasesActivas, icon: "📚", color: "var(--text-primary)" },
-              { label: "Instructores",      val: new Set(clases.filter(c => c.instructor_id).map(c => c.instructor_id)).size, icon: "👤", color: "#4ade80" },
+              { label: "Instructores",      val: instructores.length, icon: "👤", color: "#4ade80" },
               { label: "Alumnos inscritos", val: stats.totalInscritos, icon: "👥", color: "#f59e0b" },
               { label: "Clase más popular", val: stats.masPopular?.nombre || "N/A", icon: "🏆", color: "#f87171", small: true },
             ].map((s, i) => (
@@ -1327,6 +1331,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           clase={modalClase === "nueva" ? null : modalClase}
           gymId={gymId}
           miembros={miembros}
+          instructores={instructores}
           planes={planes}
           horariosExistentes={
             modalClase !== "nueva"

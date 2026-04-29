@@ -855,6 +855,23 @@ model politicas_membresia {
   @@schema("public")
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model instructores {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id       String
+  nombre       String
+  especialidad String?
+  telefono     String?
+  email        String?
+  notas        String?
+  foto         String?
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([gym_id], map: "idx_instructores_gym_id")
+  @@schema("public")
+}
+
 enum aal_level {
   aal1
   aal2

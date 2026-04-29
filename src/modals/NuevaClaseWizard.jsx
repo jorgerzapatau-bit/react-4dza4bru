@@ -16,6 +16,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { todayISO, fmtDate } from "../utils/dateUtils";
+import InstructorSelect from "../components/InstructorSelect";
 
 // ── Constantes ────────────────────────────────────────────────────
 const DIAS = [
@@ -184,7 +185,7 @@ function DiaChip({ label, activo, onClick }) {
 // ══════════════════════════════════════════════════════════════════
 //  PASO 1 — Datos de la clase
 // ══════════════════════════════════════════════════════════════════
-function Step1Datos({ form, set, miembros, esEdicion }) {
+function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
   return (
     <div>
       {/* Nombre */}
@@ -212,20 +213,15 @@ function Step1Datos({ form, set, miembros, esEdicion }) {
       {/* Instructor */}
       <div style={S.field}>
         <label style={S.label}>Instructor encargado</label>
-        <select
+        <InstructorSelect
+          instructores={instructores && instructores.length > 0 ? instructores : miembros.map(m => ({ id: m.id, nombre: m.nombre, foto: m.foto || null, especialidad: null }))}
           value={form.instructor_id}
-          onChange={e => {
-            const m = miembros.find(mb => String(mb.id) === e.target.value);
-            set("instructor_id", e.target.value);
-            set("instructor_nombre", m ? m.nombre : "");
+          onChange={(id, nombre) => {
+            set("instructor_id", id);
+            set("instructor_nombre", nombre);
           }}
-          style={{ ...S.inp }}
-        >
-          <option value="">— Sin instructor —</option>
-          {miembros.map(m => (
-            <option key={m.id} value={String(m.id)}>{m.nombre}</option>
-          ))}
-        </select>
+          color={form.color || "#6c63ff"}
+        />
       </div>
 
       {/* Edades */}
@@ -710,6 +706,7 @@ export default function NuevaClaseWizard({
   clase,
   gymId,
   miembros,
+  instructores,         // lista de instructores de tabla instructores
   planes,
   horariosExistentes,   // horarios ya guardados en BD (modo edición)
   onSave,
@@ -912,6 +909,7 @@ export default function NuevaClaseWizard({
             <Step1Datos
               form={form} set={set}
               miembros={miembros}
+              instructores={instructores}
               esEdicion={esEdicion}
             />
           )}

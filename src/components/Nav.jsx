@@ -63,6 +63,12 @@ const BASE_NAV_ITEMS = [
   { label: "Caja",        icon: IC.cash,     s: "caja"       },
   { label: "Tienda",      icon: IC.store,    s: "tienda"     },
   { label: "Horarios",    icon: IC.calendar, s: "horarios"   },
+  { label: "Instructores", icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/>
+      </svg>
+    ), s: "instructores" },
 ];
 
 const OWNER_EXTRA_ITEMS = [
@@ -392,25 +398,3 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             onClick={() => { setScreen(item.s); if (item.s === "dashboard") setTab(0); }}
           >
             <span style={{ color: screen === item.s ? "#a78bfa" : "#6e7681", display: "flex" }}>{item.icon}</span>
-            <span className={"gym-nav-label" + (screen === item.s ? " active" : "")}>{item.label}</span>
-            {item.hasBadge && totalRecordatorios > 0 && (
-              <span className="wa-pulse" style={{ position: "absolute", top: 4, right: "50%", marginRight: -18, width: 7, height: 7, background: "#f43f5e", borderRadius: "50%", border: "2px solid #0d1117" }} />
-            )}
-          </button>
-        ))}
-        <button className="gym-nav-btn mobile-only" onClick={() => setScreen("scanner")}>
-          <span style={{ color: screen === "scanner" ? "#22c55e" : "#6e7681", display: "flex" }}>{IC.qr}</span>
-          <span className={"gym-nav-label" + (screen === "scanner" ? " active" : "")} style={{ color: screen === "scanner" ? "#22c55e" : undefined }}>Acceso</span>
-        </button>
-        <button className="gym-nav-btn mobile-only" onClick={() => setModal("quickAdd")}>
-          <div style={{
-            width: 46, height: 46, borderRadius: 15, marginTop: -16,
-            background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 18px rgba(108,99,255,.4)",
-          }}>{IC.plus}</div>
-        </button>
-      </nav>
-    </>
-  );
-}
