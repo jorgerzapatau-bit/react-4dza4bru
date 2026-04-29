@@ -44,8 +44,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [screen, setScreen] = useState("dashboard");
   const [mensajesMiembro, setMensajesMiembro] = useState(null);
   const [modoMensajes, setModoMensajes] = useState(null);
+  const WA_QUEUE_KEY = `gymfit_wa_queue_${GYM_ID}`;
   const [waQueue, setWaQueue] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("gymfit_wa_queue") || "[]"); } catch(e) { return []; }
+    try { return JSON.parse(localStorage.getItem(`gymfit_wa_queue_${GYM_ID}`) || "[]"); } catch(e) { return []; }
   });
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
@@ -499,7 +500,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             waQueue={waQueue}
             onUpdateWaQueue={(newQueue) => {
               setWaQueue(newQueue);
-              try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(newQueue)); } catch(e) {}
+              try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(newQueue)); } catch(e) {}
             }}
           />
         )}
@@ -767,7 +768,7 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
                 };
                 setWaQueue(prev => {
                   const next = [entryQRonly, ...prev];
-                  try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
+                  try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
                   return next;
                 });
               }
@@ -815,7 +816,7 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
 
                 setWaQueue(prev => {
                   const next = [entryQR, entry, ...prev];
-                  try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
+                  try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
                   return next;
                 });
               }
