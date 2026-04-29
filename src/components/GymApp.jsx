@@ -327,12 +327,12 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const savedTx = await tDb2.insert({
           gym_id: GYM_ID, tipo: "ingreso", categoria: "Membresías",
           descripcion: descTx, monto, fecha: fechaInicio,
-          miembro_id: savedM.id, vence_manual: venceISO || null,
+          miembro_id: savedM.id,
         });
         if (savedTx) setTxs(p => [{
           id: savedTx.id, tipo: "ingreso", categoria: "Membresías",
           desc: descTx, descripcion: descTx, monto,
-          fecha: fechaInicio, miembroId: savedM.id, vence_manual: venceISO || null,
+          fecha: fechaInicio, miembroId: savedM.id,
         }, ...p]);
       }
       if (data.clasePrueba) {

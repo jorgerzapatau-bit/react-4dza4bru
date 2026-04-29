@@ -623,7 +623,6 @@ export default function MensajesScreen({
 
                           {/* Comprobante si existe */}
                           {entry.comprobantePNG && (() => {
-                            const [expanded, setExpanded] = window._compState = window._compState || {};
                             return (
                               <div style={{ marginBottom: 10 }}>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
