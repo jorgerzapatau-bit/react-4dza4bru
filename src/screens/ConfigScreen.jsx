@@ -11,6 +11,13 @@ import { DEFAULT_PLANES } from "../utils/constants";
 import { Modal, Btn, Inp, Badge } from "../components/UI";
 import { supabase } from "../supabase";
 
+const chipStyle = (active, color = "#6c63ff") => ({
+  flex: 1, padding: "12px 8px", borderRadius: 14, cursor: "pointer",
+  fontFamily: "inherit", textAlign: "center", transition: "all .2s",
+  border: active ? `2px solid ${color}` : "1.5px solid rgba(255,255,255,.08)",
+  background: active ? `rgba(108,99,255,.15)` : "var(--bg-elevated)",
+});
+
 export default function ConfigScreen({
   gymConfig,
   gymConfigRef: GYM_ID,
@@ -84,6 +91,42 @@ export default function ConfigScreen({
       <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 6px" }}>
         Parámetros generales
       </p>
+
+      {/* ── Tipo de negocio ── */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 12 }}>
+        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+          🏢 Tipo de establecimiento
+        </p>
+        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
+          Adapta el sistema al vocabulario y flujo de tu negocio.
+        </p>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[
+            { val: "gimnasio", label: "💪 Gimnasio", desc: "Miembros, membresías, clases" },
+            { val: "dojo",     label: "🥋 Dojo / Karate", desc: "Alumnos, cinturones, exámenes" },
+          ].map(op => {
+            const active = (formCfg.tipo_negocio || "gimnasio") === op.val;
+            return (
+              <button
+                key={op.val}
+                onClick={() => setFormCfg(p => ({ ...p, tipo_negocio: op.val }))}
+                style={chipStyle(active)}
+              >
+                <p style={{ color: active ? "#a78bfa" : "#8b949e", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{op.label}</p>
+                <p style={{ color: active ? "#c4b5fd" : "#6b7280", fontSize: 10, lineHeight: 1.4 }}>{op.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+        {(formCfg.tipo_negocio || "gimnasio") === "dojo" && (
+          <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(168,85,247,.08)", border: "1px solid rgba(168,85,247,.25)", borderRadius: 10 }}>
+            <p style={{ color: "#c084fc", fontSize: 11, lineHeight: 1.6 }}>
+              🥋 <strong>Modo Dojo activo</strong> — El sistema usará vocabulario de karate: Alumnos, Mensualidades,
+              Exámenes de cinturón, y mostrará campos de grado (Kyu/Dan) en cada perfil.
+            </p>
+          </div>
+        )}
+      </div>
       <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 4 }}>
         <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
           👥 Término para "{formCfg.termino_miembros || "Miembros"}"

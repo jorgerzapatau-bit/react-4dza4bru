@@ -1,14 +1,14 @@
 // src/modals/EditTxModal.jsx
 import { useState } from "react";
 import { Modal, Btn, Inp } from "../components/UI";
-import { CAT_GAS, CAT_ING } from "../utils/constants";
+import { CAT_GAS, CAT_ING, getCatIng, getCatGas } from "../utils/constants";
 import { parseDate, displayToISO, fmtDate } from "../utils/dateUtils";
 
 /* ─── EDIT TRANSACTION MODAL ─── */
-export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = [] }) {
+export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = [], gymConfig }) {
   const isGasto = tx.tipo === "gasto";
-  const isMembresía = tx.categoria === "Membresías";
-  const cats = isGasto ? CAT_GAS : CAT_ING;
+  const isMembresía = tx.categoria === "Membresías" || tx.categoria === "Mensualidades";
+  const cats = isGasto ? getCatGas(gymConfig) : getCatIng(gymConfig);
   const color = isGasto ? "#f43f5e" : "#22d3ee";
   const desc = tx.desc || tx.descripcion || "";
 

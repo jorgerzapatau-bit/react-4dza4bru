@@ -68,8 +68,13 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
   const [resetMode, setResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
 
-  const logo   = gymConfig?.logo;
-  const nombre = gymConfig?.nombre || gymId;
+  const logo    = gymConfig?.logo;
+  const nombre  = gymConfig?.nombre || gymId;
+  const isDojo  = gymConfig?.tipo_negocio === "dojo";
+  const iconFallback = isDojo ? "🥋" : "💪";
+  const gradientColors = isDojo
+    ? "linear-gradient(135deg,#1e1b4b,#4c1d95)"
+    : "linear-gradient(135deg,#6c63ff,#e040fb)";
 
   // ── Login ────────────────────────────────────
   const handleLogin = async (e) => {
@@ -163,13 +168,13 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
               <div style={{
                 width: 72, height: 72,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                background: gradientColors,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 32,
                 marginBottom: 12,
-                boxShadow: "0 4px 20px rgba(108,99,255,.4)",
+                boxShadow: isDojo ? "0 4px 20px rgba(76,29,149,.5)" : "0 4px 20px rgba(108,99,255,.4)",
               }}>
-                💪
+                {iconFallback}
               </div>
             )
           }

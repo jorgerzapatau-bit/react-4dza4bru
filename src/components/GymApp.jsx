@@ -4,7 +4,7 @@ import { fmt, fmtDate, today, todayISO, parseDate, calcEdad } from "../utils/dat
 import { getMembershipInfo, calcVence } from "../utils/membershipUtils";
 import { diasParaVencer } from "../utils/dateUtils";
 import { diasParaCumple } from "../utils/dateUtils";
-import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS } from "../utils/constants";
+import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS, getCatIng, getCatGas, getCatIcon, getIsDojo } from "../utils/constants";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
 import TutorFields from "./TutorFields";
 
@@ -50,7 +50,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [loading, setLoading] = useState(true);
   const [gymConfig, setGymConfig] = useState(null);
   const [configScreen, setConfigScreen] = useState(false);
-  const [formCfg, setFormCfg] = useState({ nombre: "", slogan: "", telefono: "", direccion: "", planes: DEFAULT_PLANES, propietario_nombre: "", propietario_titulo: "", transferencia_clabe: "", transferencia_titular: "", transferencia_banco: "", recordatorio_tpl: DEFAULT_RECORDATORIO_TPL });
+  const [formCfg, setFormCfg] = useState({ nombre: "", slogan: "", telefono: "", direccion: "", planes: DEFAULT_PLANES, propietario_nombre: "", propietario_titulo: "", transferencia_clabe: "", transferencia_titular: "", transferencia_banco: "", recordatorio_tpl: DEFAULT_RECORDATORIO_TPL, tipo_negocio: "gimnasio", termino_miembros: "" });
   const [tab, setTab] = useState(0);
   const [miembros, setMiembros] = useState([]);
   const [txs, setTxs] = useState([]);
@@ -107,6 +107,14 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const PLANES_ACTIVOS = activePlanes.map(p => p.nombre);
   const PLAN_PRECIO_ACTIVO = Object.fromEntries(activePlanes.map(p => [p.nombre, p.precio]));
 
+  // ── Modo Dojo ──
+  const isDojo = getIsDojo(gymConfig);
+  const CAT_ING_ACTIVO = getCatIng(gymConfig);
+  const CAT_GAS_ACTIVO = getCatGas(gymConfig);
+  const CAT_ICON_ACTIVO = getCatIcon(gymConfig);
+  // Término singular configurable (Alumno / Miembro)
+  const terminoSingular = (gymConfig?.termino_miembros || (isDojo ? "Alumnos" : "Miembros")).replace(/s$/, "");
+
   const nowForCurr = new Date();
   const isCurrentMonth = selMes.year === nowForCurr.getFullYear() && selMes.month === nowForCurr.getMonth();
 
@@ -146,7 +154,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           let lsData = {};
           try { lsData = JSON.parse(localStorage.getItem(lsKey) || "{}"); } catch(e) {}
           setGymConfig({ ...gym, ...lsData });
-          setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES, propietario_nombre: gym.propietario_nombre || "", propietario_titulo: gym.propietario_titulo || "", transferencia_clabe: gym.transferencia_clabe || "", transferencia_titular: gym.transferencia_titular || "", transferencia_banco: gym.transferencia_banco || "", recordatorio_tpl: gym.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL });
+          setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES, propietario_nombre: gym.propietario_nombre || "", propietario_titulo: gym.propietario_titulo || "", transferencia_clabe: gym.transferencia_clabe || "", transferencia_titular: gym.transferencia_titular || "", transferencia_banco: gym.transferencia_banco || "", recordatorio_tpl: gym.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL, tipo_negocio: gym.tipo_negocio || "gimnasio", termino_miembros: gym.termino_miembros || "" });
         } else {
           setLoading(false);
           setConfigScreen(true);
@@ -622,6 +630,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             gymId={GYM_ID}
             onMemberUpdate={(updated) => setMiembros(prev => prev.map(x => x.id === updated.id ? updated : x))}
             planesMembresia={planesMembresia}
+            isDojo={isDojo}
           />
         )}
 
@@ -709,9 +718,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         {/* ═══ MODALS ═══ */}
         {modal === "quickAdd" && <Modal title="¿Qué deseas agregar?" onClose={() => setModal(null)}><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>{[{ label: "Ingreso", icon: "💰", color: "#22d3ee", action: () => setModal("ingreso") }, { label: "Gasto", icon: "💸", color: "#f43f5e", action: () => setModal("gasto") }, { label: "Miembro", icon: "👤", color: "#a78bfa", action: () => { const firstPlan = activePlanes[0] || DEFAULT_PLANES[0]; setFM({ nombre: "", tel: "", plan: firstPlan.nombre, monto: String(firstPlan.precio), foto: null }); setModal("miembro"); } }].map((opt, i) => <button key={i} onClick={opt.action} style={{ background: `${opt.color}15`, border: `1px solid ${opt.color}30`, borderRadius: 18, padding: "20px 0", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}><span style={{ fontSize: 28 }}>{opt.icon}</span><span style={{ color: opt.color, fontSize: 13, fontWeight: 700 }}>{opt.label}</span></button>)}</div></Modal>}
 
-        {modal === "ingreso" && <Modal title="💰 Nuevo Ingreso" onClose={() => setModal(null)}><Inp label="Categoría" value={fI.cat} onChange={v => setFI(p => ({ ...p, cat: v }))} options={CAT_ING} /><Inp label="Descripción" value={fI.desc} onChange={v => setFI(p => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." /><Inp label="Monto ($)" type="number" value={fI.monto} onChange={v => setFI(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fI.fecha} onChange={v => setFI(p => ({ ...p, fecha: v }))} /><Btn full onClick={addIng} color="#22d3ee">Guardar ingreso ✓</Btn></Modal>}
+        {modal === "ingreso" && <Modal title="💰 Nuevo Ingreso" onClose={() => setModal(null)}><Inp label="Categoría" value={fI.cat} onChange={v => setFI(p => ({ ...p, cat: v }))} options={CAT_ING_ACTIVO} /><Inp label="Descripción" value={fI.desc} onChange={v => setFI(p => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." /><Inp label="Monto ($)" type="number" value={fI.monto} onChange={v => setFI(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fI.fecha} onChange={v => setFI(p => ({ ...p, fecha: v }))} /><Btn full onClick={addIng} color="#22d3ee">Guardar ingreso ✓</Btn></Modal>}
 
-        {modal === "gasto" && <Modal title="💸 Nuevo Gasto" onClose={() => setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v => setFG(p => ({ ...p, cat: v }))} options={CAT_GAS} /><Inp label="Descripción" value={fG.desc} onChange={v => setFG(p => ({ ...p, desc: v }))} placeholder="Ej: Pago de nómina" /><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v => setFG(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fG.fecha} onChange={v => setFG(p => ({ ...p, fecha: v }))} /><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
+        {modal === "gasto" && <Modal title="💸 Nuevo Gasto" onClose={() => setModal(null)}><Inp label="Categoría" value={fG.cat} onChange={v => setFG(p => ({ ...p, cat: v }))} options={CAT_GAS_ACTIVO} /><Inp label="Descripción" value={fG.desc} onChange={v => setFG(p => ({ ...p, desc: v }))} placeholder="Ej: Pago de nómina" /><Inp label="Monto ($)" type="number" value={fG.monto} onChange={v => setFG(p => ({ ...p, monto: v }))} placeholder="0.00" /><Inp label="Fecha" type="date" value={fG.fecha} onChange={v => setFG(p => ({ ...p, fecha: v }))} /><Btn full onClick={addGas} color="#f43f5e">Guardar gasto ✓</Btn></Modal>}
 
         {modal === "miembro" && (
           <NuevoMiembroWizard
@@ -812,12 +821,13 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
             activePlanes={activePlanes}
             planesMembresia={planesMembresia}
             PhotoModal={PhotoModal}
+            isDojo={isDojo}
           />
         )}
 
 
                 {modal === "editTx" && editTx && (
-          <EditTxModal tx={editTx} miembros={miembros} onClose={() => { setEditTx(null); setModal(null); }} onSave={saveEditTx} onDelete={deleteEditTx} />
+          <EditTxModal tx={editTx} miembros={miembros} onClose={() => { setEditTx(null); setModal(null); }} onSave={saveEditTx} onDelete={deleteEditTx} gymConfig={gymConfig} />
         )}
       </div>
 

@@ -275,3 +275,84 @@ export function buildWAUrl(tel, msg) {
   const phone = clean.startsWith("52") ? clean : `52${clean}`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
+
+// ─────────────────────────────────────────────
+//  MODO DOJO — Categorías y helpers
+// ─────────────────────────────────────────────
+
+export const CAT_ING_DOJO = [
+  "Mensualidades",
+  "Exámenes de cinturón",
+  "Torneos",
+  "Equipamiento",
+  "Clases especiales",
+  "Otro",
+];
+
+export const CAT_GAS_DOJO = [
+  "Nómina",
+  "Renta",
+  "Servicios",
+  "Mantenimiento",
+  "Insumos",
+  "Equipamiento",
+  "Otro",
+];
+
+export const CAT_ICON_DOJO = {
+  "Mensualidades":        "🥋",
+  "Exámenes de cinturón": "🏅",
+  "Torneos":              "🏆",
+  "Equipamiento":         "👊",
+  "Clases especiales":    "⭐",
+  "Nómina":               "👔",
+  "Renta":                "🏢",
+  "Servicios":            "⚡",
+  "Mantenimiento":        "🔧",
+  "Insumos":              "📦",
+  "Otro":                 "📝",
+};
+
+// Grados del karate (orden ascendente de blanco a negro)
+export const GRADOS_KARATE = [
+  { nombre: "Blanco",           kyu: 9,  color: "#ffffff", emoji: "⬜" },
+  { nombre: "Amarillo",         kyu: 8,  color: "#fbbf24", emoji: "🟨" },
+  { nombre: "Naranja",          kyu: 7,  color: "#f97316", emoji: "🟧" },
+  { nombre: "Verde",            kyu: 6,  color: "#22c55e", emoji: "🟩" },
+  { nombre: "Azul",             kyu: 5,  color: "#3b82f6", emoji: "🟦" },
+  { nombre: "Morado",           kyu: 4,  color: "#a855f7", emoji: "🟪" },
+  { nombre: "Café (3er kyu)",   kyu: 3,  color: "#92400e", emoji: "🟫" },
+  { nombre: "Café (2do kyu)",   kyu: 2,  color: "#78350f", emoji: "🟫" },
+  { nombre: "Café (1er kyu)",   kyu: 1,  color: "#6b2200", emoji: "🟫" },
+  { nombre: "Negro (1er dan)",  kyu: -1, color: "#111827", emoji: "⬛" },
+  { nombre: "Negro (2do dan)",  kyu: -2, color: "#111827", emoji: "⬛" },
+  { nombre: "Negro (3er dan)",  kyu: -3, color: "#111827", emoji: "⬛" },
+  { nombre: "Negro (4to dan)",  kyu: -4, color: "#111827", emoji: "⬛" },
+  { nombre: "Negro (5to dan)",  kyu: -5, color: "#111827", emoji: "⬛" },
+];
+
+export const GRADOS_NOMBRES = GRADOS_KARATE.map(g => g.nombre);
+
+export function getGradoInfo(gradoNombre) {
+  return GRADOS_KARATE.find(g => g.nombre === gradoNombre) || GRADOS_KARATE[0];
+}
+
+// Helper para saber si el negocio es un DOJO
+export function getIsDojo(gymConfig) {
+  return gymConfig?.tipo_negocio === "dojo";
+}
+
+// Retorna las categorías correctas según el tipo de negocio
+export function getCatIng(gymConfig) {
+  return getIsDojo(gymConfig) ? CAT_ING_DOJO : CAT_ING;
+}
+export function getCatGas(gymConfig) {
+  return getIsDojo(gymConfig) ? CAT_GAS_DOJO : CAT_GAS;
+}
+export function getCatIcon(gymConfig) {
+  return getIsDojo(gymConfig) ? CAT_ICON_DOJO : CAT_ICON;
+}
+
+// Template de recordatorio para DOJO
+export const DEFAULT_RECORDATORIO_DOJO_TPL =
+`Estimado/a {nombre}:\nEspero que estés bien. Te informamos que tu membresía en el Dojo *{gym}*, con vencimiento: {fecha}, está disponible para pago.\nPodrás pagar directamente en el Dojo o mediante transferencia ({clabe}, {titular}, {banco}).\nSeguir entrenando sin interrupciones es importante para tu progreso en el camino del Karate 🥋\nSi tienes alguna duda, responde a este mensaje.\n{propietario_titulo} {propietario}`;

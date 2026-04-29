@@ -10,7 +10,7 @@ import { supabase } from "../supabase";
 import TutorFields from "../components/TutorFields";
 import { todayISO, calcEdad, fmtDate } from "../utils/dateUtils";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
-import { DEFAULT_PLANES, calcVence } from "../utils/constants";
+import { DEFAULT_PLANES, calcVence, GRADOS_KARATE, GRADOS_NOMBRES } from "../utils/constants";
 
 // ── Helpers ──────────────────────────────────────────────────────
 function fmt$(n) {
@@ -376,7 +376,7 @@ function ProgressBar({ step, total = 3, labels }) {
 }
 
 // ── PASO 1: Datos personales ─────────────────────────────────
-function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal }) {
+function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal, isDojo }) {
   const esMenor = esMenorDeEdad(fM.fecha_nacimiento);
   const edad = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
 
@@ -501,6 +501,40 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
           style={{ ...S.inp, resize: "vertical", minHeight: 72 }}
         />
       </div>
+
+      {/* ── DOJO: Grado inicial (solo si es dojo) ── */}
+      {isDojo && (
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            🥋 Cinturón inicial
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            {GRADOS_KARATE.map(g => {
+              const active = fM.grado_actual === g.nombre;
+              return (
+                <button
+                  key={g.nombre}
+                  onClick={() => setFM(p => ({ ...p, grado_actual: active ? "" : g.nombre }))}
+                  style={{
+                    padding: "8px 4px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                    border: active ? `2px solid ${g.kyu < 0 ? "#a78bfa" : g.color}` : "1.5px solid rgba(255,255,255,.08)",
+                    background: active ? `${g.color}22` : "var(--bg-elevated)",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>{g.emoji}</span>
+                  <span style={{ fontSize: 9, color: active ? "#e5e7eb" : "#6b7280", fontWeight: active ? 700 : 400, textAlign: "center", lineHeight: 1.3 }}>
+                    {g.nombre.split(" ")[0]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {!fM.grado_actual && (
+            <p style={{ color: "#6b7280", fontSize: 10, marginTop: 6 }}>Opcional — puedes asignarlo después desde el perfil</p>
+          )}
+        </div>
+      )}
 
       {/* Toggle Becario */}
       <button
@@ -937,6 +971,7 @@ export default function NuevoMiembroWizard({
   activePlanes,
   planesMembresia,
   PhotoModal,
+  isDojo,
 }) {
   const [step, setStep] = useState(1);
   const [fM, setFM] = useState({
@@ -948,6 +983,10 @@ export default function NuevoMiembroWizard({
     tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "",
     plan: null, monto: null,
     formaPago: null,
+    // ── DOJO ──
+    grado_actual: "",
+    fecha_ultimo_examen: "",
+    proximo_objetivo: "",
   });
   const [showFotoModal, setShowFotoModal] = useState(false);
   const [comprobantePNG, setComprobantePNG] = useState(null);
@@ -1111,6 +1150,7 @@ export default function NuevoMiembroWizard({
               showFotoModal={showFotoModal}
               setShowFotoModal={setShowFotoModal}
               PhotoModal={PhotoModal}
+              isDojo={isDojo}
             />
           )}
           {step === 2 && (

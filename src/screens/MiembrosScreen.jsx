@@ -4,10 +4,11 @@
 //   ✅ Usa gymConfig.termino_miembros ("Alumnos", "Miembros", etc.)
 //   ✅ Muestra badge 🎓 Beca en la lista
 //   ✅ Nuevo botón usa el término configurable
+//   ✅ Modo DOJO: badge de cinturón en tarjeta de alumno
 // ══════════════════════════════════════════════
 import { fmt, fmtDate, diasParaVencer, todayISO } from "../utils/dateUtils";
 import { getMembershipInfo } from "../utils/membershipUtils";
-import { DEFAULT_PLANES } from "../utils/constants";
+import { DEFAULT_PLANES, getIsDojo, getGradoInfo } from "../utils/constants";
 
 export default function MiembrosScreen({
   miembros,
@@ -28,6 +29,7 @@ export default function MiembrosScreen({
   // Término configurable: "Miembros", "Alumnos", "Clientes", etc.
   const termino = gymConfig?.termino_miembros || "Miembros";
   const terminoSingular = termino.replace(/s$/, ""); // "Alumnos" → "Alumno"
+  const isDojo = getIsDojo(gymConfig);
 
   return (
     <>
@@ -169,6 +171,22 @@ export default function MiembrosScreen({
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 600 }}>{m.nombre}</p>
                           {m.beca && <span style={{ fontSize: 13 }} title="Beca activa">🎓</span>}
+                          {isDojo && m.grado_actual && (() => {
+                            const g = getGradoInfo(m.grado_actual);
+                            return (
+                              <span
+                                title={m.grado_actual}
+                                style={{
+                                  fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 6,
+                                  background: g.kyu < 0 ? "rgba(168,85,247,.2)" : `${g.color}22`,
+                                  color: g.kyu < 0 ? "#c084fc" : g.color === "#ffffff" ? "#d1d5db" : g.color,
+                                  border: `1px solid ${g.kyu < 0 ? "rgba(168,85,247,.4)" : g.color === "#ffffff" ? "rgba(255,255,255,.3)" : `${g.color}55`}`,
+                                }}
+                              >
+                                {g.emoji} {m.grado_actual.split(" ")[0]}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 2 }}>
                           {mi.plan ? `Plan ${mi.plan}` : "Sin plan"} · 📱 {m.tel || "—"}

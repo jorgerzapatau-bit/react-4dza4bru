@@ -161,8 +161,10 @@ function ThemeToggle({ darkMode, setDarkMode, collapsed }) {
 }
 
 export default function Nav({ screen, setScreen, setTab, setModal, totalRecordatorios, gymConfig, setConfigScreen, onLogout, darkMode, setDarkMode, isOwner = false }) {
-  const gymNombre = gymConfig?.nombre || "GymFit Pro";
-  const gymLogo   = gymConfig?.logo   || null;
+  const gymNombre   = gymConfig?.nombre || "GymFit Pro";
+  const gymLogo     = gymConfig?.logo   || null;
+  const isDojo      = gymConfig?.tipo_negocio === "dojo";
+  const gymIcon     = isDojo ? "🥋" : gymIcon;
 
   // ── Estado del sidebar ──
   const [collapsed, setCollapsed] = useState(false);       // desktop: colapsado a iconos
@@ -226,7 +228,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
               }}>
                 {gymLogo
                   ? <img src={gymLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                  : "💪"
+                  : gymIcon
                 }
               </div>
               <div style={{ minWidth: 0 }}>
@@ -354,7 +356,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 14, overflow: "hidden", flexShrink: 0,
         }}>
-          {gymLogo ? <img src={gymLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : "💪"}
+          {gymLogo ? <img src={gymLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : gymIcon}
         </div>
         <span style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e2e8f0" : "#111827" }}>{gymNombre}</span>
       </div>

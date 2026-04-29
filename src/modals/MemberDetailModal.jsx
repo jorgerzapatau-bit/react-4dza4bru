@@ -13,6 +13,7 @@ const useIsDesktop = () => {
 import { Modal, Btn, Inp } from "../components/UI";
 import PhotoModal from "../components/PhotoModal";
 import { CAT_ICON } from "../utils/constants";
+import { GRADOS_KARATE, GRADOS_NOMBRES, getGradoInfo } from "../utils/constants";
 import {
   getMembershipInfo,
   calcVence,
@@ -231,6 +232,7 @@ export default function MemberDetailModal({
   gymId,
   onMemberUpdate,
   planesMembresia,
+  isDojo,
 }) {
   const isDesktop = useIsDesktop();
   const [detTab, setDetTab] = useState("perfil");
@@ -248,6 +250,10 @@ export default function MemberDetailModal({
     tutor_nombre:     m.tutor_nombre     || "",
     tutor_telefono:   m.tutor_telefono   || "",
     tutor_parentesco: m.tutor_parentesco || "",
+    // ── DOJO: Grado y cinturón ──
+    grado_actual:        m.grado_actual        || "",
+    fecha_ultimo_examen: m.fecha_ultimo_examen || "",
+    proximo_objetivo:    m.proximo_objetivo    || "",
   });
   const [tutorErrores, setTutorErrores] = useState({});
   const [pagoModal, setPagoModal] = useState(false);
@@ -321,7 +327,10 @@ export default function MemberDetailModal({
     form.tutor_nombre     !== (m.tutor_nombre     || "") ||
     form.tutor_telefono   !== (m.tutor_telefono   || "") ||
     form.tutor_parentesco !== (m.tutor_parentesco || "") ||
-    form.beca !== (m.beca || false);
+    form.beca !== (m.beca || false) ||
+    form.grado_actual        !== (m.grado_actual        || "") ||
+    form.fecha_ultimo_examen !== (m.fecha_ultimo_examen || "") ||
+    form.proximo_objetivo    !== (m.proximo_objetivo    || "");
 
   const handleSave = () => {
     if (!hasChanges) return;
@@ -354,6 +363,10 @@ export default function MemberDetailModal({
       fecha_nacimiento:    form.fecha_nacimiento,
       notas:               form.notas,
       beca:                form.beca,
+      // ── DOJO ──
+      grado_actual:        form.grado_actual,
+      fecha_ultimo_examen: form.fecha_ultimo_examen,
+      proximo_objetivo:    form.proximo_objetivo,
       ...tutorData,
     });
     setEditing(false);
@@ -1143,6 +1156,52 @@ export default function MemberDetailModal({
                 </div>
               </div>
 
+              {/* ── DOJO: Grado / Cinturón (solo en modo dojo) ── */}
+              {isDojo && (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    🥋 Grado y cinturón
+                  </p>
+                  {/* Selector visual de grado */}
+                  <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 8 }}>Cinturón actual</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
+                    {GRADOS_KARATE.map(g => {
+                      const active = form.grado_actual === g.nombre;
+                      return (
+                        <button
+                          key={g.nombre}
+                          onClick={() => setForm(p => ({ ...p, grado_actual: g.nombre }))}
+                          style={{
+                            padding: "8px 4px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                            border: active ? `2px solid ${g.kyu < 0 ? "#a78bfa" : g.color}` : "1.5px solid rgba(255,255,255,.08)",
+                            background: active ? `${g.color}22` : "var(--bg-elevated)",
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                          }}
+                        >
+                          <span style={{ fontSize: 14 }}>{g.emoji}</span>
+                          <span style={{ fontSize: 9, color: active ? "#e5e7eb" : "#6b7280", fontWeight: active ? 700 : 400, textAlign: "center", lineHeight: 1.3 }}>
+                            {g.nombre.replace(" (", "\n(")}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Inp
+                    label="Fecha del último examen"
+                    type="date"
+                    value={form.fecha_ultimo_examen || ""}
+                    onChange={v => setForm(p => ({ ...p, fecha_ultimo_examen: v }))}
+                  />
+                  <Inp
+                    label="Próximo objetivo (cinturón)"
+                    value={form.proximo_objetivo || ""}
+                    onChange={v => setForm(p => ({ ...p, proximo_objetivo: v }))}
+                    options={GRADOS_NOMBRES}
+                    placeholder="Ej: Verde"
+                  />
+                </div>
+              )}
+
               <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 📝 Notas internas{" "}
                 <span style={{ color: "#8b949e", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span>
@@ -1424,6 +1483,75 @@ export default function MemberDetailModal({
                   </div>
                 )}
               </div>
+
+              {/* ── DOJO: Tarjeta de Grado (solo en modo dojo) ── */}
+              {isDojo && (
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+                    🥋 Grado y cinturón
+                  </p>
+                  {m.grado_actual ? (() => {
+                    const gInfo = getGradoInfo(m.grado_actual);
+                    const esNegro = m.grado_actual.includes("Negro");
+                    return (
+                      <div style={{
+                        background: esNegro ? "rgba(168,85,247,.08)" : "rgba(255,255,255,.04)",
+                        border: `1px solid ${esNegro ? "rgba(168,85,247,.3)" : "rgba(255,255,255,.1)"}`,
+                        borderRadius: 14, padding: "14px 16px",
+                      }}>
+                        {/* Cinturón actual */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                          {/* Visualización del cinturón */}
+                          <div style={{
+                            width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                            background: gInfo.kyu < 0 ? "linear-gradient(135deg,#1a1a2e,#2d1b69)" : `${gInfo.color}22`,
+                            border: `2px solid ${gInfo.kyu < 0 ? "#a855f7" : gInfo.color}`,
+                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+                          }}>
+                            {gInfo.emoji}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ color: "#e5e7eb", fontSize: 14, fontWeight: 700 }}>{m.grado_actual}</p>
+                            <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>
+                              {gInfo.kyu > 0 ? `${gInfo.kyu}° Kyu` : `${Math.abs(gInfo.kyu)}er Dan`}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setEditing(true)}
+                            style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 10, padding: "6px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                          >
+                            Editar
+                          </button>
+                        </div>
+                        {/* Datos adicionales */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                          {m.fecha_ultimo_examen && (
+                            <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
+                              <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Último examen</p>
+                              <p style={{ color: "#e5e7eb", fontSize: 12, fontWeight: 600, marginTop: 2 }}>{fmtDate(m.fecha_ultimo_examen)}</p>
+                            </div>
+                          )}
+                          {m.proximo_objetivo && (
+                            <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
+                              <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Próximo objetivo</p>
+                              <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 600, marginTop: 2 }}>→ {m.proximo_objetivo}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })() : (
+                    <div
+                      onClick={() => setEditing(true)}
+                      style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(167,139,250,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
+                    >
+                      <p style={{ fontSize: 28, marginBottom: 6 }}>🥋</p>
+                      <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 600 }}>Sin grado asignado</p>
+                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>Toca para asignar cinturón</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── Resumen financiero ── */}
               {(() => {
