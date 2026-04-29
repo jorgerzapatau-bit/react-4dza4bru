@@ -155,6 +155,12 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           try { lsData = JSON.parse(localStorage.getItem(lsKey) || "{}"); } catch(e) {}
           setGymConfig({ ...gym, ...lsData });
           setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES, propietario_nombre: gym.propietario_nombre || "", propietario_titulo: gym.propietario_titulo || "", transferencia_clabe: gym.transferencia_clabe || "", transferencia_titular: gym.transferencia_titular || "", transferencia_banco: gym.transferencia_banco || "", recordatorio_tpl: gym.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL, tipo_negocio: gym.tipo_negocio || "gimnasio", termino_miembros: gym.termino_miembros || "" });
+          // Si el gym no tiene nombre configurado todavía → mostrar pantalla de configuración
+          if (!gym.nombre) {
+            setLoading(false);
+            setConfigScreen(true);
+            return;
+          }
         } else {
           setLoading(false);
           setConfigScreen(true);
@@ -165,7 +171,10 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const txDb = await supabase.from("transacciones");
         const txData = await txDb.select(GYM_ID);
         setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null })));
-        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, beca: m.beca || false })));
+        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, beca: m.beca || false,
+          // ── DOJO ──
+          grado_actual: m.grado_actual || null, fecha_ultimo_examen: m.fecha_ultimo_examen || null, proximo_objetivo: m.proximo_objetivo || null,
+        })));
         try {
           const dbPM = await supabase.from("planes_membresia");
           const pmData = await dbPM.select(GYM_ID);
@@ -516,8 +525,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         {/* ═══ LOADING ═══ */}
         {loading && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-            <div style={{ width: 60, height: 60, borderRadius: 20, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, boxShadow: "0 8px 32px rgba(108,99,255,.4)" }}>💪</div>
-            <p style={{ color: "#a78bfa", fontSize: 14, fontWeight: 600 }}>Cargando GymFit Pro...</p>
+            <div style={{ width: 60, height: 60, borderRadius: 20, background: isDojo ? "linear-gradient(135deg,#1e1b4b,#4c1d95)" : "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, boxShadow: isDojo ? "0 8px 32px rgba(76,29,149,.5)" : "0 8px 32px rgba(108,99,255,.4)" }}>{isDojo ? "🥋" : "💪"}</div>
+            <p style={{ color: "#a78bfa", fontSize: 14, fontWeight: 600 }}>{isDojo ? `Cargando ${gymConfig?.nombre || "Dojo"}...` : "Cargando GymFit Pro..."}</p>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,.1)", overflow: "hidden" }}>
               <div style={{ height: "100%", background: "linear-gradient(90deg,#6c63ff,#e040fb)", animation: "slideRight 1s infinite", borderRadius: 2 }} />
             </div>
