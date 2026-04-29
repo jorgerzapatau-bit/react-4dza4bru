@@ -103,13 +103,28 @@ function DiaChip({ label, activo, onClick }) {
 }
 
 // ── Sub-componente: Tarjeta de clase ─────────────────────────────
-function ClaseCard({ clase, horarios, inscripciones, planes, onSelect }) {
+function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSelect }) {
   const horariosClase = horarios.filter(h => h.clase_id === clase.id && h.activo);
-  const inscritos = inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa").length;
-  const pct = clase.cupo_max > 0 ? Math.round((inscritos / clase.cupo_max) * 100) : 0;
-  const cupoColor = pct >= 90 ? "#f87171" : pct >= 70 ? "#f59e0b" : "#4ade80";
   // Planes que incluyen esta clase
   const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)));
+  const planesIds = new Set(planesVinculados.map(p => String(p.id)));
+
+  // Contar alumnos: si hay planes vinculados → miembros con membresía activa de esos planes
+  //                 si no → inscripciones manuales (fallback)
+  const inscritos = planesIds.size > 0
+    ? (miembros || []).filter(m => {
+        const info = getMembershipInfo(m.id, txs || [], m);
+        if (info.estado !== "Activo") return false;
+        const planNombre = (info.plan || "").toLowerCase().trim();
+        return planesVinculados.some(p => {
+          const pNombre = (p.nombre || "").toLowerCase().trim();
+          return pNombre === planNombre || pNombre.includes(planNombre) || planNombre.includes(pNombre);
+        });
+      }).length
+    : inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa").length;
+
+  const pct = clase.cupo_max > 0 ? Math.round((inscritos / clase.cupo_max) * 100) : 0;
+  const cupoColor = pct >= 90 ? "#f87171" : pct >= 70 ? "#f59e0b" : "#4ade80";
 
   return (
     <div
@@ -792,16 +807,56 @@ function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, on
 // ══════════════════════════════════════════════════════════════════
 //  MODAL: Detalle de clase — lista de alumnos + horarios
 // ══════════════════════════════════════════════════════════════════
-function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner, planes, onEditClase, onAgregarHorario, onEditHorario, onEliminarHorario, onInscribir, onDarBaja, onClose }) {
+function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, isOwner, planes, onEditClase, onAgregarHorario, onEditHorario, onEliminarHorario, onDarBaja, onClose }) {
   const horariosClase = horarios.filter(h => h.clase_id === clase.id);
-  const inscritosClase = inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa");
-  const inscritos = inscritosClase.map(ins => ({
-    ...ins,
-    miembro: miembros.find(m => String(m.id) === String(ins.miembro_id)),
-  })).filter(i => i.miembro);
   const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)));
+  const planesIds = new Set(planesVinculados.map(p => String(p.id)));
 
   const [tabActiva, setTabActiva] = useState("alumnos");
+  const [busqueda, setBusqueda] = useState("");
+
+  // ── Lógica central: miembros con membresía activa vinculada a esta clase ──
+  // Si la clase tiene planes vinculados → mostrar miembros con membresía activa de esos planes
+  // Si la clase NO tiene planes → mostrar miembros con inscripción manual (fallback legacy)
+  const alumnosConMembresia = useMemo(() => {
+    if (planesIds.size === 0) {
+      // Sin restricción de plan: usa inscripciones manuales como antes
+      return inscripciones
+        .filter(i => i.clase_id === clase.id && i.estado === "activa")
+        .map(ins => {
+          const m = miembros.find(m => String(m.id) === String(ins.miembro_id));
+          if (!m) return null;
+          const info = getMembershipInfo(m.id, txs || [], m);
+          return { miembro: m, info, fuente: "inscripcion", ins };
+        })
+        .filter(Boolean);
+    }
+
+    // Con planes vinculados: buscar todos los miembros que tienen membresía activa de un plan vinculado
+    return miembros
+      .map(m => {
+        const info = getMembershipInfo(m.id, txs || [], m);
+        if (info.estado !== "Activo") return null;
+        // Verificar si su plan actual está entre los planes vinculados
+        const planNombre = (info.plan || "").toLowerCase().trim();
+        const planMatch = planesVinculados.some(p => {
+          const pNombre = (p.nombre || "").toLowerCase().trim();
+          return pNombre === planNombre || pNombre.includes(planNombre) || planNombre.includes(pNombre);
+        });
+        if (!planMatch) return null;
+        return { miembro: m, info, fuente: "membresia" };
+      })
+      .filter(Boolean);
+  }, [miembros, txs, inscripciones, clase.id, planesIds]); // eslint-disable-line
+
+  const alumnosFiltrados = useMemo(() => {
+    if (!busqueda.trim()) return alumnosConMembresia;
+    const q = busqueda.toLowerCase();
+    return alumnosConMembresia.filter(a =>
+      a.miembro.nombre.toLowerCase().includes(q) ||
+      (a.miembro.tel || "").includes(q)
+    );
+  }, [alumnosConMembresia, busqueda]);
 
   return (
     <Modal title={clase.nombre} onClose={onClose}>
@@ -812,7 +867,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
           color: clase.color || "#6c63ff",
           borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700,
         }}>
-          {inscritosClase.length} / {clase.cupo_max} alumnos
+          {alumnosConMembresia.length} / {clase.cupo_max} alumnos
         </span>
         <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
           {planesVinculados.length > 0
@@ -830,7 +885,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
       {/* Tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {[
-          { k: "alumnos", l: `Alumnos (${inscritos.length})` },
+          { k: "alumnos", l: `Alumnos (${alumnosConMembresia.length})` },
           { k: "horarios", l: `Horarios (${horariosClase.length})` },
           { k: "membresias", l: `Membresías (${planesVinculados.length})` },
         ].map(t => (
@@ -848,34 +903,76 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
       {/* Tab: Alumnos */}
       {tabActiva === "alumnos" && (
         <>
-          {isOwner && (
-            <button
-              onClick={onInscribir}
-              style={{
-                width: "100%", marginBottom: 12, padding: "11px", border: "none", borderRadius: 12,
-                cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
-                boxShadow: "0 3px 14px rgba(108,99,255,.35)",
-              }}
-            >
-              + Inscribir miembro
-            </button>
+          {/* Aviso informativo cuando hay planes vinculados */}
+          {planesIds.size > 0 && (
+            <div style={{
+              background: "rgba(108,99,255,.08)",
+              border: "1px solid rgba(108,99,255,.2)",
+              borderRadius: 12, padding: "9px 13px", marginBottom: 12,
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <span style={{ fontSize: 14 }}>💳</span>
+              <p style={{ color: "#a78bfa", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
+                Se muestran automáticamente los miembros con membresía activa vinculada a esta clase.
+              </p>
+            </div>
           )}
-          {inscritos.length === 0 ? (
+
+          {/* Buscador — solo si hay alumnos */}
+          {alumnosConMembresia.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="text"
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar alumno..."
+                style={{
+                  width: "100%", background: "var(--bg-elevated)",
+                  border: "1px solid var(--border-strong)", borderRadius: 10,
+                  padding: "9px 13px", color: "var(--text-primary)",
+                  fontSize: 13, fontFamily: "inherit", outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          )}
+
+          {alumnosFiltrados.length === 0 ? (
             <div style={{ textAlign: "center", padding: "24px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>🎓</p>
-              <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Sin alumnos inscritos</p>
+              <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>
+                {busqueda ? "Sin resultados para esa búsqueda." :
+                  planesIds.size > 0
+                    ? "Ningún miembro con membresía activa de esta clase."
+                    : "Sin alumnos inscritos"
+                }
+              </p>
+              {!busqueda && planesIds.size > 0 && (
+                <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 6 }}>
+                  Los alumnos aparecerán aquí automáticamente cuando paguen su membresía.
+                </p>
+              )}
             </div>
-          ) : inscritos.map(ins => {
-            const m = ins.miembro;
+          ) : alumnosFiltrados.map(({ miembro: m, info }) => {
             const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
-            const venceProx = ins.fecha_vencimiento ? fmtDate(ins.fecha_vencimiento) : "—";
+            const diasRestantes = info.vence ? (() => {
+              const hoy = new Date();
+              const v = new Date(info.vence + "T00:00:00");
+              return Math.ceil((v - hoy) / 86400000);
+            })() : null;
+            const venceTexto = info.vence ? fmtDate(info.vence) : "—";
+            const urgente = diasRestantes !== null && diasRestantes <= 7;
+
             return (
-              <div key={ins.id} style={{
+              <div key={m.id} style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "10px 12px", borderRadius: 14, marginBottom: 8,
-                background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                background: "var(--bg-elevated)",
+                border: urgente
+                  ? "1px solid rgba(245,158,11,.35)"
+                  : "1px solid var(--border)",
               }}>
+                {/* Avatar */}
                 <div style={{
                   width: 38, height: 38, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
                   background: `${clase.color || "#6c63ff"}22`,
@@ -883,22 +980,34 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, gymId, isOwner
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 13, fontWeight: 700,
                 }}>
-                  {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : avatarIniciales(m.nombre)}
+                  {m.foto
+                    ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : avatarIniciales(m.nombre)
+                  }
                 </div>
+
+                {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{m.nombre}</p>
-                  <p style={{ color: "var(--text-tertiary)", fontSize: 11 }}>
-                    {edad !== null ? `${edad} años · ` : ""}Vence: {venceProx}
+                  <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                    {m.nombre}
+                  </p>
+                  <p style={{ color: urgente ? "#f59e0b" : "var(--text-tertiary)", fontSize: 11 }}>
+                    {edad !== null ? `${edad} años · ` : ""}
+                    {urgente
+                      ? `⚠️ Vence en ${diasRestantes}d (${venceTexto})`
+                      : `Vence: ${venceTexto}`
+                    }
                   </p>
                 </div>
-                {isOwner && (
-                  <button
-                    onClick={() => onDarBaja(ins)}
-                    style={{ border: "none", background: "rgba(248,113,113,.12)", color: "#f87171", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 11, fontWeight: 700, flexShrink: 0 }}
-                  >
-                    Dar baja
-                  </button>
-                )}
+
+                {/* Badge plan */}
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
+                  background: "rgba(74,222,128,.12)", color: "#4ade80",
+                  flexShrink: 0,
+                }}>
+                  ✓ Activo
+                </span>
               </div>
             );
           })}
@@ -1325,6 +1434,8 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                   clase={c}
                   horarios={horarios}
                   inscripciones={inscripciones}
+                  miembros={miembros}
+                  txs={txs}
                   planes={planes}
                   onSelect={setModalDetalle}
                 />
@@ -1373,6 +1484,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           horarios={horarios}
           inscripciones={inscripciones}
           miembros={miembros}
+          txs={txs}
           gymId={gymId}
           isOwner={isOwner}
           planes={planes}
@@ -1380,8 +1492,6 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           onAgregarHorario={() => setModalHorario({ clase: modalDetalle, horario: null })}
           onEditHorario={h => setModalHorario({ clase: modalDetalle, horario: h })}
           onEliminarHorario={handleEliminarHorario}
-          onInscribir={() => setModalInscribir(modalDetalle)}
-          onDarBaja={ins => setConfirmDarBaja(ins)}
           onClose={() => setModalDetalle(null)}
         />
       )}
