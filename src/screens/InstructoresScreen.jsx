@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
+import PhotoModal from "../components/PhotoModal";
 import { todayISO } from "../utils/dateUtils";
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
   );
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
+  const [showPhoto, setShowPhoto] = useState(false);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -147,6 +149,32 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
             }}>{error}</div>
           )}
 
+          {/* Foto */}
+          {showPhoto && (
+            <PhotoModal
+              onClose={() => setShowPhoto(false)}
+              onCapture={dataUrl => { set("foto", dataUrl); setShowPhoto(false); }}
+            />
+          )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
+            <div onClick={() => setShowPhoto(true)} style={{
+              width: 76, height: 76, borderRadius: "50%",
+              background: form.foto ? "transparent" : "linear-gradient(135deg,#6c63ff33,#e040fb33)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", overflow: "hidden", marginBottom: 6,
+              border: form.foto ? "2.5px solid #6c63ff" : "2px dashed rgba(167,139,250,.4)",
+              flexShrink: 0,
+            }}>
+              {form.foto
+                ? <img src={form.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: 28 }}>📷</span>
+              }
+            </div>
+            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11 }}>
+              {form.foto ? "Toca para cambiar foto" : "Toca para agregar foto"}
+            </p>
+          </div>
+
           {/* Nombre */}
           <div style={S.field}>
             <label style={S.label}>Nombre completo *</label>
@@ -154,14 +182,25 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
               placeholder="Ej. Carlos Ramírez" style={S.inp} />
           </div>
 
-          {/* Especialidad */}
+          {/* Especialidad — pills */}
           <div style={S.field}>
             <label style={S.label}>Especialidad</label>
-            <select value={form.especialidad || ""} onChange={e => set("especialidad", e.target.value)} style={S.inp}>
-              {ESPECIALIDADES.map(e => (
-                <option key={e} value={e}>{e || "— Sin especialidad —"}</option>
-              ))}
-            </select>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {ESPECIALIDADES.filter(e => e !== "").map(esp => {
+                const sel = form.especialidad === esp;
+                return (
+                  <button key={esp} onClick={() => set("especialidad", sel ? "" : esp)} style={{
+                    padding: "7px 13px", border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                    borderRadius: 20, cursor: "pointer", fontFamily: "inherit",
+                    background: sel ? "rgba(108,99,255,.15)" : "var(--bg-elevated,#1e1e2e)",
+                    color: sel ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+                    fontSize: 12, fontWeight: sel ? 700 : 400, transition: "all .15s",
+                  }}>
+                    {esp}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Teléfono */}

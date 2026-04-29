@@ -622,12 +622,25 @@ export default function MensajesScreen({
                           )}
 
                           {/* Comprobante si existe */}
-                          {entry.comprobantePNG && (
-                            <div style={{ marginBottom: 10 }}>
-                              <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>🧾 Comprobante</p>
-                              <img src={entry.comprobantePNG} alt="Comprobante" style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)" }} />
-                            </div>
-                          )}
+                          {entry.comprobantePNG && (() => {
+                            const [expanded, setExpanded] = window._compState = window._compState || {};
+                            return (
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                                  <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>🧾 Comprobante</p>
+                                  <a href={entry.comprobantePNG} download={`recibo-${(entry.nombreMiembro||"").replace(/\s+/g,"-")}.png`}
+                                    style={{ color: "#6c63ff", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>📥 Descargar</a>
+                                </div>
+                                <div style={{ maxHeight: 180, overflow: "hidden", borderRadius: 10, border: "1px solid var(--border)", position: "relative", cursor: "pointer" }}
+                                  onClick={e => { const el = e.currentTarget; el.style.maxHeight = el.style.maxHeight === "none" ? "180px" : "none"; }}>
+                                  <img src={entry.comprobantePNG} alt="Comprobante" style={{ width: "100%", display: "block" }} />
+                                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 40, background: "linear-gradient(transparent, rgba(0,0,0,.5))", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 6, pointerEvents: "none" }}>
+                                    <span style={{ color: "#fff", fontSize: 10, fontWeight: 700 }}>Toca para ver completo</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {/* Mensaje WA editable */}
                           <textarea

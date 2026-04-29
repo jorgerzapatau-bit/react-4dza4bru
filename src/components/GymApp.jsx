@@ -711,6 +711,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onAdd={async (wizardFM, receiptInfo) => {
               setFM(wizardFM);
               await addM(wizardFM);
+              setModal(null); // Close modal immediately after saving
               // Save WA message to queue if there is one
               if (receiptInfo?.waMsg && receiptInfo?.tel) {
                 const entry = {
@@ -732,12 +733,11 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
                   try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
                   return next;
                 });
-                // Go to mensajes screen to show the queue
+                // Go to mensajes screen to show the queue (after state updates settle)
                 setTimeout(() => {
-                  setModal(null);
                   setModoMensajes("pendientes");
                   setScreen("mensajes");
-                }, 400);
+                }, 200);
               }
             }}
             gymConfig={gymConfig}
