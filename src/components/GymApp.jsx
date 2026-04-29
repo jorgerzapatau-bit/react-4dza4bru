@@ -348,10 +348,13 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
       tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "",
     });
     setFMTutorErrores({});
-    setModal(null);
-    if (savedM) {
-      setSelM({ id: savedM.id, nombre: data.nombre, tel: data.tel || "", foto: data.foto || null, fecha_incorporacion: data.fecha_incorporacion || todayISO(), sexo: data.sexo || null, fecha_nacimiento: data.fecha_nacimiento || null });
-      setModal("detalle");
+    // Only open detalle if called from legacy flow (not from wizard)
+    if (!wizardFM) {
+      setModal(null);
+      if (savedM) {
+        setSelM({ id: savedM.id, nombre: data.nombre, tel: data.tel || "", foto: data.foto || null, fecha_incorporacion: data.fecha_incorporacion || todayISO(), sexo: data.sexo || null, fecha_nacimiento: data.fecha_nacimiento || null });
+        setModal("detalle");
+      }
     }
   };
 
@@ -711,7 +714,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onAdd={async (wizardFM, receiptInfo) => {
               setFM(wizardFM);
               await addM(wizardFM);
-              setModal(null); // Close modal immediately after saving
+              setModal(null);
               // Always add QR welcome message; add membership WA if present
               {
                 const gym_nombreQ = (gymConfig?.nombre || "el gym");
@@ -792,12 +795,12 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
                   try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
                   return next;
                 });
-                // Go to mensajes screen — wait for React to flush txs state first
-                setTimeout(() => {
-                  setModoMensajes("pendientes");
-                  setScreen("mensajes");
-                }, 600);
               }
+              // Navigate after all state updates (txs, miembros, queue) have been scheduled
+              setTimeout(() => {
+                setModoMensajes("pendientes");
+                setScreen("mensajes");
+              }, 100);
             }}
             gymConfig={gymConfig}
             gymId={GYM_ID}
