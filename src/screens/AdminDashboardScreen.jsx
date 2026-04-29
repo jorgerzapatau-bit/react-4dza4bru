@@ -3,7 +3,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { getMembershipInfo } from "../utils/membershipUtils";
-import { diasParaVencer, diasParaCumple } from "../utils/dateUtils";
+import { diasParaVencer, diasParaCumple, fmtDate, parseDate } from "../utils/dateUtils";
 import { supabase } from "../supabase";
 
 /* ─── helpers ─────────────────────────────────────────────────── */
@@ -460,7 +460,7 @@ export default function AdminDashboardScreen({
                         <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{m.nombre}</span>
                         {info.vence && (
                           <span style={{ color: "#f43f5e", fontSize: 11, fontFamily: "'DM Mono',monospace" }}>
-                            {new Date(info.vence + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                            {(() => { const d = parseDate(info.vence); return d && !isNaN(d) ? d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : fmtDate(info.vence); })()}
                           </span>
                         )}
                       </div>

@@ -61,9 +61,9 @@ const IC = {
   ),
 };
 
-const BASE_NAV_ITEMS = [
+const BASE_NAV_ITEMS = (isDojo, termino) => [
   { label: "Inicio",      icon: IC.home,     s: "dashboard"  },
-  { label: "Miembros",    icon: IC.members,  s: "miembros"   },
+  { label: termino || (isDojo ? "Alumnos" : "Miembros"), icon: IC.members, s: "miembros" },
   { label: "Membresías",  icon: IC.card,     s: "membresias" },
   { label: "Mensajes",    icon: IC.chat,     s: "mensajes",  hasBadge: true },
   { label: "Caja",        icon: IC.cash,     s: "caja"       },
@@ -164,6 +164,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
   const gymNombre   = gymConfig?.nombre || "GymFit Pro";
   const gymLogo     = gymConfig?.logo   || null;
   const isDojo      = gymConfig?.tipo_negocio === "dojo";
+  const terminoNav  = gymConfig?.termino_miembros || null;
   const gymIcon     = isDojo ? "🥋" : "💪";
 
   // ── Estado del sidebar ──
@@ -246,7 +247,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         {/* ── Menú principal ── */}
         {!isCollapsed && <span style={sectionStyle}>Menú</span>}
 
-        {[...BASE_NAV_ITEMS, ...(isOwner ? OWNER_EXTRA_ITEMS : [])].map((item, i) => (
+        {[...BASE_NAV_ITEMS(isDojo, terminoNav), ...(isOwner ? OWNER_EXTRA_ITEMS : [])].map((item, i) => (
           <NavBtn
             key={i}
             label={item.label}
@@ -394,7 +395,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
 
       {/* ══ MOBILE BOTTOM NAV ══ */}
       <nav className="gym-nav mobile-bottom-nav">
-        {[...BASE_NAV_ITEMS, ...(isOwner ? OWNER_EXTRA_ITEMS : [])].map((item, i) => (
+        {[...BASE_NAV_ITEMS(isDojo, terminoNav), ...(isOwner ? OWNER_EXTRA_ITEMS : [])].map((item, i) => (
           <button
             key={"m"+i}
             className="gym-nav-btn mobile-only"

@@ -26,10 +26,10 @@ export default function MiembrosScreen({
   setFM,
   gymConfig,
 }) {
-  // Término configurable: "Miembros", "Alumnos", "Clientes", etc.
-  const termino = gymConfig?.termino_miembros || "Miembros";
-  const terminoSingular = termino.replace(/s$/, ""); // "Alumnos" → "Alumno"
   const isDojo = getIsDojo(gymConfig);
+  // Término configurable: "Miembros", "Alumnos", "Clientes", etc.
+  const termino = gymConfig?.termino_miembros || (isDojo ? "Alumnos" : "Miembros");
+  const terminoSingular = termino.replace(/s$/, ""); // "Alumnos" → "Alumno"
 
   return (
     <>
