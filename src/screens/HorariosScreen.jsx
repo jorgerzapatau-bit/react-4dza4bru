@@ -33,7 +33,13 @@ const DIAS = [
 ];
 
 const DIAS_FULL  = { lun: "Lunes", mar: "Martes", mie: "Miércoles", jue: "Jueves", vie: "Viernes", sab: "Sábado", dom: "Domingo" };
-const DIAS_SHORT = { lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom" };
+const DIAS_SHORT = {
+  lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom",
+  lunes: "Lun", martes: "Mar", miercoles: "Mié", miércoles: "Mié",
+  jueves: "Jue", viernes: "Vie", sábado: "Sáb", sabado: "Sáb", domingo: "Dom",
+  monday: "Lun", tuesday: "Mar", wednesday: "Mié", thursday: "Jue",
+  friday: "Vie", saturday: "Sáb", sunday: "Dom",
+};
 
 const COLORES_PRESET = [
   "#6c63ff", "#e040fb", "#f43f5e", "#f59e0b",
@@ -181,7 +187,7 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
                   background: "var(--bg-elevated)", color: "var(--text-secondary)",
                   borderRadius: 5, padding: "2px 6px", fontSize: 9, fontWeight: 700, letterSpacing: .4,
                 }}>
-                  {DIAS_SHORT[d] || d.toUpperCase()}
+                  {DIAS_SHORT[d?.toLowerCase()] || d}
                 </span>
               ))}
             </div>
@@ -1049,7 +1055,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 4 }}>
                     {(h.dias_semana || []).map(d => (
                       <span key={d} style={{ background: `${clase.color || "#6c63ff"}18`, color: clase.color || "#6c63ff", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
-                        {DIAS_SHORT[d] || d.toUpperCase()}
+                        {DIAS_SHORT[d?.toLowerCase()] || d}
                       </span>
                     ))}
                   </div>
@@ -1575,7 +1581,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center", marginBottom: 16 }}>
                 {(h.dias_semana || []).map(d => (
                   <span key={d} style={{ background: `${color}18`, color, borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700 }}>
-                    {DIAS_SHORT[d] || d.toUpperCase()}
+                    {DIAS_SHORT[d?.toLowerCase()] || d}
                   </span>
                 ))}
               </div>
