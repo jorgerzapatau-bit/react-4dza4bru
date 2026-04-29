@@ -563,10 +563,12 @@ function Step2({ fM, setFM, planes }) {
         const precio = p.precio_publico !== undefined ? p.precio_publico : p.precio;
         const isSelected = fM.plan === p.nombre;
         // ciclo_renovacion puede ser "mensual","trimestral","semestral","anual" o un número via .meses
+        const CICLO_LABEL = { mensual: "Mensual", trimestral: "Trimestral", semestral: "Semestral", anual: "Anual", ilimitado: "Sin vencimiento" };
         const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12, ilimitado: null };
         const mesesNum = p.meses != null ? p.meses : CICLO_MESES[p.ciclo_renovacion];
-        const mesesLabel = mesesNum == null ? "Sin vencimiento" : mesesNum === 1 ? "1 mes" : `${mesesNum} meses`;
-        const clasesLabel = p.limite_clases ? `${p.limite_clases} clases incluidas` : "Acceso ilimitado";
+        const cicloLabel = p.ciclo_renovacion ? (CICLO_LABEL[p.ciclo_renovacion] || p.ciclo_renovacion) : (mesesNum === 1 ? "Mensual" : mesesNum === 3 ? "Trimestral" : mesesNum === 6 ? "Semestral" : mesesNum === 12 ? "Anual" : "");
+        const mesesLabel = mesesNum == null ? "Sin vencimiento" : mesesNum === 1 ? "Renovación mensual" : `Renovación cada ${mesesNum} meses`;
+        const clasesLabel = p.limite_clases ? `· Máx. ${p.limite_clases} clases` : "";
 
         return (
           <button
@@ -594,7 +596,7 @@ function Step2({ fM, setFM, planes }) {
                 {p.nombre}
               </p>
               <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
-                {mesesLabel} · {clasesLabel}
+                {mesesLabel}{clasesLabel}
               </p>
               {p.warning && (
                 <p style={{ color: "#fbbf24", fontSize: 11, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
