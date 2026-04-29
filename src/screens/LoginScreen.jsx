@@ -91,7 +91,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
     }
 
     // Verificar que el usuario tenga acceso a este gym
-    const userGymId = await getUserGymId(user.id);
+    const userGymId = await getUserGymId(user.id, gymId);
     if (!userGymId || userGymId !== gymId) {
       await auth.signOut();
       setError("No tenés acceso a este gimnasio");
@@ -100,7 +100,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
     }
 
     // Obtener rol del usuario para este gym
-    const userRole = await getUserRole(user.id);
+    const userRole = await getUserRole(user.id, gymId);
 
     setLoading(false);
     onLogin(user, userRole || "admin");

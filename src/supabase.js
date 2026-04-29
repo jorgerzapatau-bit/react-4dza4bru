@@ -118,9 +118,13 @@ function _clearSession() {
 // ══════════════════════════════════════════════
 // GYM_USERS — asociación usuario <-> gym
 // ══════════════════════════════════════════════
-export async function getUserGymId(userId) {
+export async function getUserGymId(userId, gymId) {
+  // Si se pasa gymId, verificar acceso específico a ese gym
+  const filter = gymId
+    ? `user_id=eq.${userId}&gym_id=eq.${gymId}&select=gym_id&limit=1`
+    : `user_id=eq.${userId}&select=gym_id&limit=1`;
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/gym_users?user_id=eq.${userId}&select=gym_id&limit=1`,
+    `${SUPABASE_URL}/rest/v1/gym_users?${filter}`,
     { headers: getAuthHeaders() }
   );
   if (!r.ok) return null;
@@ -129,9 +133,12 @@ export async function getUserGymId(userId) {
 }
 
 // ── Obtener rol del usuario (owner | admin) ──────────────────────
-export async function getUserRole(userId) {
+export async function getUserRole(userId, gymId) {
+  const filter = gymId
+    ? `user_id=eq.${userId}&gym_id=eq.${gymId}&select=role&limit=1`
+    : `user_id=eq.${userId}&select=role&limit=1`;
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/gym_users?user_id=eq.${userId}&select=role&limit=1`,
+    `${SUPABASE_URL}/rest/v1/gym_users?${filter}`,
     { headers: getAuthHeaders() }
   );
   if (!r.ok) return null;

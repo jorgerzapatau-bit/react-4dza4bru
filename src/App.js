@@ -29,10 +29,10 @@ export default function App() {
 
       const session = await auth.getSession();
       if (session?.user) {
-        const userGymId = await getUserGymId(session.user.id);
+        const userGymId = await getUserGymId(session.user.id, GYM_ID_URL);
         if (userGymId === GYM_ID_URL) {
           setCurrentUser(session.user);
-          const role = await getUserRole(session.user.id);
+          const role = await getUserRole(session.user.id, GYM_ID_URL);
           setUserRole(role || "admin");
           setAuthState("app");
           return;
