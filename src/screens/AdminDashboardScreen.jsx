@@ -258,7 +258,12 @@ export default function AdminDashboardScreen({
                 <div style={{ background: "rgba(34,197,94,.08)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(34,197,94,.2)" }}>
                   <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>✨ {nuevosEsteMes.length} nuevo{nuevosEsteMes.length > 1 ? "s" : ""} este mes</p>
                   {nuevosEsteMes.slice(0, 3).map(m => (
-                    <p key={m.id} style={{ color: "var(--text-secondary)", fontSize: 12 }}>• {m.nombre}</p>
+                    <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#6c63ff44,#e040fb44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                      </div>
+                      <span style={{ color: "var(--text-secondary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{m.nombre}</span>
+                    </div>
                   ))}
                   {nuevosEsteMes.length > 3 && <p style={{ color: "var(--text-tertiary)", fontSize: 11 }}>+{nuevosEsteMes.length - 3} más</p>}
                 </div>
@@ -280,13 +285,16 @@ export default function AdminDashboardScreen({
               {vencimientosSemana.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {vencimientosSemana.slice(0, 4).map(m => (
-                    <div key={m.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
+                    <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#f59e0b44,#f43f5e44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+                      </div>
                       <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nombre}</span>
                       <span style={{
                         fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
                         background: m.diasVence === 0 ? "rgba(244,63,94,.2)" : m.diasVence <= 2 ? "rgba(245,158,11,.2)" : "rgba(167,139,250,.15)",
                         color: m.diasVence === 0 ? "#f43f5e" : m.diasVence <= 2 ? "#f59e0b" : "#a78bfa",
-                        flexShrink: 0, marginLeft: 8,
+                        flexShrink: 0,
                       }}>
                         {m.diasVence === 0 ? "Hoy" : m.diasVence === 1 ? "Mañana" : `${m.diasVence}d`}
                       </span>
@@ -314,12 +322,19 @@ export default function AdminDashboardScreen({
                   {txs
                     .filter(t => t.tipo === "ingreso" && (t.fecha || "").startsWith(hoy))
                     .slice(0, 3)
-                    .map((t, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ color: "var(--text-secondary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || t.categoria}</span>
-                        <span style={{ color: "#22d3ee", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginLeft: 8 }}>{fmt(t.monto)}</span>
-                      </div>
-                    ))}
+                    .map((t, i) => {
+                      const mid = t.miembroId || t.miembro_id;
+                      const miembro = mid ? miembros.find(m => m.id === mid) : null;
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#22d3ee44,#6c63ff44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                            {miembro?.foto ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "💰"}
+                          </div>
+                          <span style={{ color: "var(--text-secondary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || t.categoria}</span>
+                          <span style={{ color: "#22d3ee", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginLeft: 8 }}>{fmt(t.monto)}</span>
+                        </div>
+                      );
+                    })}
                 </div>
               )}
             </StatCard>
@@ -364,7 +379,9 @@ export default function AdminDashboardScreen({
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {cumplesSemana.map(m => (
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 14 }}>{m.diasCumple === 0 ? "🎉" : "🎂"}</span>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#e040fb44,#f43f5e44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                        {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.diasCumple === 0 ? "🎉" : "🎂")}
+                      </div>
                       <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1 }}>{m.nombre}</span>
                       <span style={{
                         fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
