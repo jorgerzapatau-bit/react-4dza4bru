@@ -220,13 +220,21 @@ export const supabase = {
   },
 
   async saveGym(gym) {
+    // Intentar PATCH primero (actualizar existente)
     const url = `${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${gym.id}`;
     const r = await fetch(url, {
       method: "PATCH",
       headers: getAuthHeaders(),
       body: JSON.stringify(gym),
     });
-    return r.ok;
+    if (r.ok) return true;
+    // Fallback: upsert via POST con merge-duplicates
+    const r2 = await fetch(`${SUPABASE_URL}/rest/v1/gimnasios`, {
+      method: "POST",
+      headers: { ...getAuthHeaders(), "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify(gym),
+    });
+    return r2.ok;
   },
 };
 

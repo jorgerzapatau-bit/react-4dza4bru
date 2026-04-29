@@ -28,19 +28,32 @@ export default function ConfigScreen({
 }) {
   const handleSaveCfg = async () => {
     if (!formCfg.nombre) return;
-    const url = `${supabase.url}/rest/v1/gimnasios`;
-    await fetch(url, {
-      method: "POST",
-      headers: {
-        "apikey": supabase.key,
-        "Authorization": `Bearer ${supabase.key}`,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates",
-      },
-      body: JSON.stringify({ ...formCfg, id: GYM_ID }),
-    });
-    setGymConfig(formCfg);
-    setConfigScreen(false);
+    // Usar saveGym del cliente supabase que ya maneja el token de sesión correctamente
+    const payload = { ...formCfg, id: GYM_ID };
+    const ok = await supabase.saveGym(payload);
+    if (ok) {
+      setGymConfig({ ...formCfg, id: GYM_ID });
+      setConfigScreen(false);
+    } else {
+      // Fallback: intentar con fetch directo
+      const url = `${supabase.url}/rest/v1/gimnasios`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: {
+          "apikey": supabase.key,
+          "Authorization": `Bearer ${supabase.key}`,
+          "Content-Type": "application/json",
+          "Prefer": "resolution=merge-duplicates",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (r.ok) {
+        setGymConfig({ ...formCfg, id: GYM_ID });
+        setConfigScreen(false);
+      } else {
+        alert("Error al guardar. Verifica tu conexión e intenta de nuevo.");
+      }
+    }
   };
 
   return (
