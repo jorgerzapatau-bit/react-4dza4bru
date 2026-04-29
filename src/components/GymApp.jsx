@@ -741,6 +741,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
               }
             }}
             gymConfig={gymConfig}
+            gymId={GYM_ID}
             activePlanes={activePlanes}
             planesMembresia={planesMembresia}
             PhotoModal={PhotoModal}

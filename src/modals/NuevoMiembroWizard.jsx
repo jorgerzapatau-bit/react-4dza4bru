@@ -5,7 +5,8 @@
 //  Con barra de progreso, navegación ← / → y generación de comprobante.
 // ══════════════════════════════════════════════════════════════════
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { supabase } from "../supabase";
 import TutorFields from "../components/TutorFields";
 import { todayISO, calcEdad, fmtDate } from "../utils/dateUtils";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
@@ -505,7 +506,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
 }
 
 // ── PASO 2: Membresía ─────────────────────────────────────────
-function Step2({ fM, setFM, planes }) {
+function Step2({ fM, setFM, planes, clases, horarios }) {
   const edad = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
 
   const planesInfo = planes.map(p => {
@@ -598,6 +599,34 @@ function Step2({ fM, setFM, planes }) {
               <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
                 {mesesLabel}{clasesLabel}
               </p>
+              {/* Clases y horarios vinculados */}
+              {(() => {
+                const vinculadas = (clases || []).filter(c =>
+                  (p.clases_vinculadas || []).map(String).includes(String(c.id))
+                );
+                if (vinculadas.length === 0) return null;
+                const DIAS_SHORT = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D" };
+                return (
+                  <div style={{ marginTop: 5 }}>
+                    {vinculadas.map(c => {
+                      const hClase = (horarios || []).filter(h => h.clase_id === c.id && h.activo !== false);
+                      return (
+                        <div key={c.id} style={{ display: "flex", alignItems: "flex-start", gap: 5, marginTop: 3 }}>
+                          <span style={{ fontSize: 10, marginTop: 1 }}>📅</span>
+                          <div>
+                            <span style={{ color: c.color || "#6c63ff", fontSize: 11, fontWeight: 700 }}>{c.nombre}</span>
+                            {hClase.map((h, hi) => (
+                              <span key={hi} style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginLeft: 4 }}>
+                                {(h.dias_semana || []).map(d => DIAS_SHORT[d] || d).join("-")} {h.hora_inicio ? h.hora_inicio.slice(0,5) : ""}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
               {p.warning && (
                 <p style={{ color: "#fbbf24", fontSize: 11, marginTop: 3, display: "flex", alignItems: "center", gap: 4 }}>
                   {p.warning}
@@ -830,6 +859,7 @@ export default function NuevoMiembroWizard({
   onClose,
   onAdd,
   gymConfig,
+  gymId,
   activePlanes,
   planesMembresia,
   PhotoModal,
@@ -850,6 +880,17 @@ export default function NuevoMiembroWizard({
   const [saving, setSaving] = useState(false);
 
   const planes = planesMembresia?.length > 0 ? planesMembresia : (activePlanes || DEFAULT_PLANES);
+  const [clases, setClases] = useState([]);
+  const [horarios, setHorarios] = useState([]);
+  useEffect(() => {
+    if (!gymId) return;
+    Promise.all([supabase.from("clases"), supabase.from("horarios")]).then(([dbC, dbH]) =>
+      Promise.all([dbC.select(gymId), dbH.select(gymId)])
+    ).then(([cData, hData]) => {
+      setClases((cData || []).filter(c => c.activo !== false));
+      setHorarios(hData || []);
+    }).catch(() => {});
+  }, [gymId]);
 
   const canNext1 = !!fM.nombre.trim();
   const hasPlan = !!fM.plan;
@@ -977,7 +1018,7 @@ export default function NuevoMiembroWizard({
             />
           )}
           {step === 2 && (
-            <Step2 fM={fM} setFM={setFM} planes={planes} />
+            <Step2 fM={fM} setFM={setFM} planes={planes} clases={clases} horarios={horarios} />
           )}
           {step === 3 && (
             <Step3
