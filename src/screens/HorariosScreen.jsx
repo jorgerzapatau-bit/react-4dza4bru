@@ -807,7 +807,7 @@ function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, on
 // ══════════════════════════════════════════════════════════════════
 //  MODAL: Detalle de clase — lista de alumnos + horarios
 // ══════════════════════════════════════════════════════════════════
-function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, isOwner, planes, onEditClase, onAgregarHorario, onEditHorario, onEliminarHorario, onDarBaja, onClose }) {
+function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, isOwner, canManage, planes, onEditClase, onAgregarHorario, onEditHorario, onEliminarHorario, onDarBaja, onClose }) {
   const horariosClase = horarios.filter(h => h.clase_id === clase.id);
   const planesVinculados = (planes || []).filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)));
   const planesIds = new Set(planesVinculados.map(p => String(p.id)));
@@ -1017,7 +1017,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
       {/* Tab: Horarios */}
       {tabActiva === "horarios" && (
         <>
-          {isOwner && (
+          {(canManage) && (
             <button
               onClick={onAgregarHorario}
               style={{
@@ -1058,7 +1058,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                     </p>
                   )}
                 </div>
-                {isOwner && (
+                {(canManage) && (
                   <div style={{ display: "flex", gap: 6 }}>
                     <button onClick={() => onEditHorario(h)}
                       style={{ border: "none", background: "var(--bg-elevated)", color: "var(--text-secondary)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12 }}>
@@ -1137,7 +1137,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
 // ══════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════
-export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner, planes: planesProp }) {
+export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner, canManage = isOwner, planes: planesProp }) {
 
   // ── Estado de datos ──────────────────────────────────────────────
   const [clases, setClases]               = useState([]);
@@ -1211,14 +1211,14 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
   const clasesFiltradas = useMemo(() => {
     const q = busqueda.toLowerCase();
     return clases.filter(c => {
-      if (!c.activo && !isOwner) return false;
+      if (!c.activo && !canManage) return false;
       const matchQ = !q || c.nombre.toLowerCase().includes(q) || (c.instructor_nombre || "").toLowerCase().includes(q);
       if (!matchQ) return false;
       if (filtroDia === "todos") return true;
       // Tiene algún horario en ese día
       return horarios.some(h => h.clase_id === c.id && h.activo && (h.dias_semana || []).includes(filtroDia));
     });
-  }, [clases, horarios, busqueda, filtroDia, isOwner]);
+  }, [clases, horarios, busqueda, filtroDia, canManage]);
 
   // ── Handlers de guardado ─────────────────────────────────────────
 
@@ -1487,7 +1487,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           txs={txs}
           gymId={gymId}
           isOwner={isOwner}
-          planes={planes}
+          canManage={canManage}
           onEditClase={() => { setModalClase(modalDetalle); setModalDetalle(null); }}
           onAgregarHorario={() => setModalHorario({ clase: modalDetalle, horario: null })}
           onEditHorario={h => setModalHorario({ clase: modalDetalle, horario: h })}

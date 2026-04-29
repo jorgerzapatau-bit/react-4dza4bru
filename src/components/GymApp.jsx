@@ -513,6 +513,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             gymConfig={gymConfig}
             onAddTx={addPago}
             isOwner={isOwner}
+            canManage={isOwner || userRole === "admin"}
           />
         )}
 
