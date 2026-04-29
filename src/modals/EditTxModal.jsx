@@ -5,12 +5,23 @@ import { CAT_GAS, CAT_ING } from "../utils/constants";
 import { parseDate, displayToISO, fmtDate } from "../utils/dateUtils";
 
 /* ─── EDIT TRANSACTION MODAL ─── */
-export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
+export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = [] }) {
   const isGasto = tx.tipo === "gasto";
   const isMembresía = tx.categoria === "Membresías";
   const cats = isGasto ? CAT_GAS : CAT_ING;
   const color = isGasto ? "#f43f5e" : "#22d3ee";
   const desc = tx.desc || tx.descripcion || "";
+
+  // Extraer info del miembro vinculado
+  const miembro = (tx.miembroId || tx.miembro_id)
+    ? miembros.find(mb => String(mb.id) === String(tx.miembroId || tx.miembro_id))
+    : null;
+
+  // Extraer plan y forma de pago de la descripción
+  const planMatch = desc.match(/Renovaci[oó]n (.+?) - /);
+  const fpagoMatch = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+  const planNombre = planMatch ? planMatch[1] : null;
+  const formaPago = fpagoMatch ? fpagoMatch[1] : null;
 
   // Extraer vencimiento — SOLO si es una membresía real (tiene plan o vence explícito)
   const tienePlanEnDesc = /(Mensual|Trimestral|Semestral|Anual)/i.test(desc);
@@ -315,6 +326,19 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
             </p>
           </div>
 
+          {/* Member header */}
+          {miembro && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--bg-elevated)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#6c63ff33,#e040fb33)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a78bfa", fontWeight: 700, fontSize: 16 }}>
+                {miembro.foto ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : miembro.nombre.charAt(0)}
+              </div>
+              <div>
+                <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
+                {miembro.tel && <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 2 }}>📱 {miembro.tel}</p>}
+              </div>
+            </div>
+          )}
+
           <div
             style={{
               background: "var(--bg-elevated)",
@@ -322,6 +346,8 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete }) {
               padding: "0 14px",
             }}
           >
+            {planNombre && <Row label="Plan" value={planNombre} />}
+            {formaPago && <Row label="Forma de pago" value={`${formaPago === "Efectivo" ? "💵" : formaPago === "Transferencia" ? "🏦" : "💳"} ${formaPago}`} />}
             <Row label="Categoría" value={tx.categoria} />
             <Row label={esMembresíaReal ? "Inicio" : "Fecha"} value={fmtDate(tx.fecha)} />
             {venceManualDelDesc && (

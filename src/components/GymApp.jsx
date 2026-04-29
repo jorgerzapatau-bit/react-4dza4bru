@@ -750,7 +750,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
 
 
                 {modal === "editTx" && editTx && (
-          <EditTxModal tx={editTx} onClose={() => { setEditTx(null); setModal(null); }} onSave={saveEditTx} onDelete={deleteEditTx} />
+          <EditTxModal tx={editTx} miembros={miembros} onClose={() => { setEditTx(null); setModal(null); }} onSave={saveEditTx} onDelete={deleteEditTx} />
         )}
       </div>
 

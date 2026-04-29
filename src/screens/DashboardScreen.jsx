@@ -283,23 +283,33 @@ export default function DashboardScreen({
                     </div>
                     {txsMes.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Sin movimientos este mes</p>}
                     {txsMes.slice(-5).reverse().map(t => (
-                      <div key={t.id} className="rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          {(() => {
-                            const mFoto = t.tipo === "ingreso" && (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
-                            return (
+                      {(() => {
+                        const miembro = (t.miembroId || t.miembro_id) ? miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id)) : null;
+                        const mFoto = miembro?.foto || null;
+                        const mNombre = miembro?.nombre || null;
+                        // Extract clean label: if membresía, show "Plan · Miembro"; else show desc
+                        const desc = t.desc || t.descripcion || "";
+                        const planMatch = desc.match(/Renovaci[oó]n (.+?) - /);
+                        const fpagoMatch = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+                        const planLabel = planMatch ? planMatch[1] : (t.categoria || "");
+                        const fpago = fpagoMatch ? fpagoMatch[1] : null;
+                        const label1 = mNombre || planLabel;
+                        const label2 = mNombre ? planLabel : t.categoria;
+                        return (
+                          <div key={t.id} className="rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)", cursor: "pointer" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
                               <div style={{ width: 34, height: 34, borderRadius: "50%", fontSize: 14, background: t.tipo === "ingreso" ? "rgba(34,211,238,.12)" : "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto ? "2px solid rgba(34,211,238,.3)" : "none" }}>
-                                {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || "📝"}
+                                {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mNombre ? <span style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontWeight: 700, fontSize: 12 }}>{mNombre.charAt(0)}</span> : (CAT_ICON[t.categoria] || "📝")}
                               </div>
-                            );
-                          })()}
-                          <div>
-                            <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 500, maxWidth: 200, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
-                            <p style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{fmtDate(t.fecha)}</p>
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{label1}</p>
+                                <p style={{ color: "var(--text-tertiary)", fontSize: 10, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{label2}{fpago ? ` · ${fpago}` : ""} · {fmtDate(t.fecha)}</p>
+                              </div>
+                            </div>
+                            <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
                           </div>
-                        </div>
-                        <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
-                      </div>
+                        );
+                      })()}
                     ))}
                   </div>
 
