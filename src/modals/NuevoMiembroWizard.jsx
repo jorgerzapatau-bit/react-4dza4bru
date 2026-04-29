@@ -854,6 +854,39 @@ function Step3({ fM, setFM, gymConfig, comprobantePNG, setComprobantePNG, genera
   );
 }
 
+// ── Genera QR PNG usando qrcodejs CDN ────────────────────────────
+async function generarQRPNG(text) {
+  return new Promise((resolve) => {
+    try {
+      // Load qrcodejs if needed
+      const cargar = () => new Promise((res) => {
+        if (window.QRCode) { res(); return; }
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+        s.onload = res; s.onerror = res;
+        document.head.appendChild(s);
+      });
+      cargar().then(() => {
+        if (!window.QRCode) { resolve(null); return; }
+        const div = document.createElement("div");
+        div.style.cssText = "position:fixed;left:-9999px;top:-9999px;width:200px;height:200px;";
+        document.body.appendChild(div);
+        new window.QRCode(div, {
+          text, width: 200, height: 200,
+          colorDark: "#1a1a2e", colorLight: "#ffffff",
+          correctLevel: window.QRCode.CorrectLevel.H,
+        });
+        setTimeout(() => {
+          const canvas = div.querySelector("canvas");
+          const png = canvas ? canvas.toDataURL("image/png") : null;
+          document.body.removeChild(div);
+          resolve(png);
+        }, 300);
+      });
+    } catch(e) { resolve(null); }
+  });
+}
+
 // ── Componente principal ────────────────────────────────────────
 export default function NuevoMiembroWizard({
   onClose,
@@ -892,7 +925,13 @@ export default function NuevoMiembroWizard({
     }).catch(() => {});
   }, [gymId]);
 
-  const canNext1 = !!fM.nombre.trim();
+  const esMenorWizard = esMenorDeEdad(fM.fecha_nacimiento);
+  const tutorValido = !esMenorWizard || (
+    !!(fM.tutor_nombre || "").trim() &&
+    !!(fM.tutor_telefono || "").trim()
+  );
+  const canNext1 = !!fM.nombre.trim() && tutorValido;
+  const tutorError = esMenorWizard && !tutorValido && fM.nombre.trim();
   const hasPlan = !!fM.plan;
   // Step 3 only if plan was chosen
   const totalSteps = hasPlan || step === 2 ? 3 : 3; // always 3 but step 3 is optional
@@ -965,8 +1004,16 @@ export default function NuevoMiembroWizard({
           `¡Gracias por unirte! Cualquier duda estamos a tus órdenes. 💪`;
       }
 
+      // Generate QR PNG for the welcome message
+      let qrPNG = null;
+      try {
+        const qrText = `gymfit:member:${(fM.nombre || "").replace(/\s+/g, "_")}:${Date.now()}`;
+        qrPNG = await generarQRPNG(qrText);
+      } catch(e) {}
+
       await onAdd(fM, {
         comprobantePNG,
+        qrPNG,
         waMsg,
         tel: telDestino,
         nombreMiembro: fM.nombre,
@@ -1034,6 +1081,11 @@ export default function NuevoMiembroWizard({
 
         {/* Footer nav */}
         <div style={S.footer}>
+          {step === 1 && tutorError && (
+            <div style={{ background: "rgba(251,191,36,.1)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+              <p style={{ color: "#fbbf24", fontSize: 12, fontWeight: 600 }}>⚠️ El miembro es menor de edad — debes completar los datos del tutor para continuar.</p>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10 }}>
             {step > 1 ? (
               <button onClick={goPrev} style={{ ...S.btnSecondary, flex: "0 0 auto", padding: "14px 20px" }}>

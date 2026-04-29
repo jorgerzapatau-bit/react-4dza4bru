@@ -401,6 +401,23 @@ function EntradaPendiente({ entry, onMarcarEnviado, onEliminar, onEdit }) {
         </div>
       )}
 
+      {/* QR PNG si existe */}
+      {entry.qrPNG && (
+        <div style={{ marginBottom: 10 }}>
+          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>🎫 Código QR</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img src={entry.qrPNG} alt="QR" style={{ width: 80, height: 80, borderRadius: 10, border: "1px solid var(--border)", flexShrink: 0 }} />
+            <div>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12, marginBottom: 6 }}>Código QR de acceso del miembro</p>
+              <a href={entry.qrPNG} download={`qr-${(entry.nombreMiembro||"").replace(/\s+/g,"-")}.png`}
+                style={{ color: "#6c63ff", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                📥 Descargar QR
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Comprobante — thumbnail con toggle */}
       {entry.comprobantePNG && (
         <div style={{ marginBottom: 10 }}>
@@ -691,7 +708,7 @@ export default function MensajesScreen({
 
   // ─────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
       {/* ── Header fijo ── */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>

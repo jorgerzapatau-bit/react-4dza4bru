@@ -737,6 +737,7 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
                   msg: msgQRonly,
                   tipo: "qr_bienvenida",
                   enviado: false,
+                  qrPNG: receiptInfo?.qrPNG || null,
                 };
                 setWaQueue(prev => {
                   const next = [entryQRonly, ...prev];
@@ -791,11 +792,11 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
                   try { localStorage.setItem("gymfit_wa_queue", JSON.stringify(next)); } catch(e) {}
                   return next;
                 });
-                // Go to mensajes screen to show the queue (after state updates settle)
+                // Go to mensajes screen — wait for React to flush txs state first
                 setTimeout(() => {
                   setModoMensajes("pendientes");
                   setScreen("mensajes");
-                }, 200);
+                }, 600);
               }
             }}
             gymConfig={gymConfig}
