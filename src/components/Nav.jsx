@@ -164,7 +164,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
   const gymNombre   = gymConfig?.nombre || "GymFit Pro";
   const gymLogo     = gymConfig?.logo   || null;
   const isDojo      = gymConfig?.tipo_negocio === "dojo";
-  const gymIcon     = isDojo ? "🥋" : gymIcon;
+  const gymIcon     = isDojo ? "🥋" : "💪";
 
   // ── Estado del sidebar ──
   const [collapsed, setCollapsed] = useState(false);       // desktop: colapsado a iconos
