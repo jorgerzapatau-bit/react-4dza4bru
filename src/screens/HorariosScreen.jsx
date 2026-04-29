@@ -32,7 +32,8 @@ const DIAS = [
   { key: "dom", label: "DOM" },
 ];
 
-const DIAS_FULL = { lun: "Lunes", mar: "Martes", mie: "Miércoles", jue: "Jueves", vie: "Viernes", sab: "Sábado", dom: "Domingo" };
+const DIAS_FULL  = { lun: "Lunes", mar: "Martes", mie: "Miércoles", jue: "Jueves", vie: "Viernes", sab: "Sábado", dom: "Domingo" };
+const DIAS_SHORT = { lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom" };
 
 const COLORES_PRESET = [
   "#6c63ff", "#e040fb", "#f43f5e", "#f59e0b",
@@ -180,7 +181,7 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
                   background: "var(--bg-elevated)", color: "var(--text-secondary)",
                   borderRadius: 5, padding: "2px 6px", fontSize: 9, fontWeight: 700, letterSpacing: .4,
                 }}>
-                  {d.toUpperCase()}
+                  {DIAS_SHORT[d] || d.toUpperCase()}
                 </span>
               ))}
             </div>
@@ -1048,7 +1049,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 4 }}>
                     {(h.dias_semana || []).map(d => (
                       <span key={d} style={{ background: `${clase.color || "#6c63ff"}18`, color: clase.color || "#6c63ff", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
-                        {DIAS_FULL[d] || d}
+                        {DIAS_SHORT[d] || d.toUpperCase()}
                       </span>
                     ))}
                   </div>
@@ -1158,6 +1159,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
   const [modalDetalle, setModalDetalle]             = useState(null);  // null | clase
   const [modalInscribir, setModalInscribir]         = useState(null);  // null | clase
   const [confirmDarBaja, setConfirmDarBaja]         = useState(null);  // null | inscripcion
+  const [confirmEliminarHorario, setConfirmEliminarHorario] = useState(null); // null | horario
 
   // ── Cargar datos ─────────────────────────────────────────────────
   const loadDatos = useCallback(async () => {
@@ -1242,10 +1244,15 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
   };
 
   const handleEliminarHorario = async (horario) => {
-    if (!window.confirm("¿Eliminar este horario? Esta acción no se puede deshacer.")) return;
+    setConfirmEliminarHorario(horario);
+  };
+
+  const doEliminarHorario = async () => {
+    if (!confirmEliminarHorario) return;
     const db = await supabase.from("horarios");
-    await db.delete(horario.id);
-    setHorarios(p => p.filter(h => h.id !== horario.id));
+    await db.delete(confirmEliminarHorario.id);
+    setHorarios(p => p.filter(h => h.id !== confirmEliminarHorario.id));
+    setConfirmEliminarHorario(null);
   };
 
   const handleInscribir = async (inscripcion, tx) => {
@@ -1543,6 +1550,44 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                 <button onClick={() => handleDarBaja(confirmDarBaja)}
                   style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   Dar de baja
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Confirmación eliminar horario */}
+      {confirmEliminarHorario && (() => {
+        const h = confirmEliminarHorario;
+        const color = modalDetalle?.color || "#6c63ff";
+        return (
+          <div style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)",
+            zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+          }}>
+            <div style={{ background: "var(--bg-card)", borderRadius: 20, padding: "28px 24px", maxWidth: 340, width: "100%", textAlign: "center", boxShadow: "0 24px 60px rgba(0,0,0,.4)" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(244,63,94,.12)", border: "2px solid rgba(244,63,94,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 16px" }}>🗑️</div>
+              <h3 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700, marginBottom: 6 }}>¿Eliminar horario?</h3>
+              <p style={{ color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginBottom: 6 }}>
+                {fmtHora(h.hora_inicio)} — {fmtHora(h.hora_fin)}
+              </p>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center", marginBottom: 16 }}>
+                {(h.dias_semana || []).map(d => (
+                  <span key={d} style={{ background: `${color}18`, color, borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700 }}>
+                    {DIAS_SHORT[d] || d.toUpperCase()}
+                  </span>
+                ))}
+              </div>
+              <p style={{ color: "var(--text-tertiary)", fontSize: 12, marginBottom: 20 }}>Esta acción no se puede deshacer.</p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setConfirmEliminarHorario(null)}
+                  style={{ flex: 1, padding: "11px", border: "1px solid var(--border)", borderRadius: 12, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, fontSize: 13 }}>
+                  Cancelar
+                </button>
+                <button onClick={doEliminarHorario}
+                  style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13 }}>
+                  Eliminar
                 </button>
               </div>
             </div>
