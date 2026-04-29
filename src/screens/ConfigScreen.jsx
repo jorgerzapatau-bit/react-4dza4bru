@@ -7,6 +7,7 @@
 //       Miembro, Alumno, Cliente, Socio, Atleta, etc.
 // ─────────────────────────────────────────────
 
+import { useState } from "react";
 import { DEFAULT_PLANES } from "../utils/constants";
 import { Modal, Btn, Inp, Badge } from "../components/UI";
 import { supabase } from "../supabase";
@@ -18,6 +19,30 @@ const chipStyle = (active, color = "#6c63ff") => ({
   background: active ? `rgba(108,99,255,.15)` : "var(--bg-elevated)",
 });
 
+/** Redimensiona y comprime una imagen a base64 (máx 200×200, calidad 0.7) */
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else       { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function ConfigScreen({
   gymConfig,
   gymConfigRef: GYM_ID,
@@ -26,33 +51,45 @@ export default function ConfigScreen({
   setGymConfig,
   setConfigScreen,
 }) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveOk, setSaveOk] = useState(false);
+
   const handleSaveCfg = async () => {
     if (!formCfg.nombre) return;
-    // Usar saveGym del cliente supabase que ya maneja el token de sesión correctamente
+    setSaving(true);
+    setSaveError(null);
+    setSaveOk(false);
     const payload = { ...formCfg, id: GYM_ID };
     const ok = await supabase.saveGym(payload);
     if (ok) {
       setGymConfig({ ...formCfg, id: GYM_ID });
-      setConfigScreen(false);
+      setSaving(false);
+      setSaveOk(true);
+      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
+      return;
+    }
+    // Fallback: fetch directo
+    const url = `${supabase.url}/rest/v1/gimnasios`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {
+        "apikey": supabase.key,
+        "Authorization": `Bearer ${supabase.key}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates",
+      },
+      body: JSON.stringify(payload),
+    });
+    setSaving(false);
+    if (r.ok) {
+      setGymConfig({ ...formCfg, id: GYM_ID });
+      setSaveOk(true);
+      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
     } else {
-      // Fallback: intentar con fetch directo
-      const url = `${supabase.url}/rest/v1/gimnasios`;
-      const r = await fetch(url, {
-        method: "POST",
-        headers: {
-          "apikey": supabase.key,
-          "Authorization": `Bearer ${supabase.key}`,
-          "Content-Type": "application/json",
-          "Prefer": "resolution=merge-duplicates",
-        },
-        body: JSON.stringify(payload),
-      });
-      if (r.ok) {
-        setGymConfig({ ...formCfg, id: GYM_ID });
-        setConfigScreen(false);
-      } else {
-        alert("Error al guardar. Verifica tu conexión e intenta de nuevo.");
-      }
+      let detail = "";
+      try { const j = await r.json(); detail = j?.message || j?.error || ""; } catch {}
+      setSaveError(detail || "Error al guardar. Verifica tu conexión e intenta de nuevo.");
     }
   };
 
@@ -82,11 +119,10 @@ export default function ConfigScreen({
           }
           <label style={{ position: "absolute", bottom: 0, right: 0, width: 28, height: 28, borderRadius: "50%", background: "rgba(30,30,46,.95)", border: "2px solid rgba(167,139,250,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, cursor: "pointer" }}>
             📷
-            <input type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
+            <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
               const file = e.target.files[0]; if (!file) return;
-              const reader = new FileReader();
-              reader.onload = ev => setFormCfg(p => ({ ...p, logo: ev.target.result }));
-              reader.readAsDataURL(file);
+              const compressed = await compressImage(file);
+              setFormCfg(p => ({ ...p, logo: compressed }));
             }} />
           </label>
         </div>
@@ -225,8 +261,38 @@ export default function ConfigScreen({
         </p>
       </div>
 
+      {/* Toast de error */}
+      {saveError && (
+        <div style={{
+          background: "rgba(244,63,94,.12)", border: "1px solid rgba(244,63,94,.35)",
+          borderRadius: 12, padding: "12px 16px", marginBottom: 12,
+          display: "flex", alignItems: "flex-start", gap: 10,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ color: "#f87171", fontSize: 13, fontWeight: 700, margin: "0 0 2px" }}>Error al guardar</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 12, margin: 0 }}>{saveError}</p>
+          </div>
+          <button onClick={() => setSaveError(null)} style={{ background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", fontSize: 16, padding: 0 }}>✕</button>
+        </div>
+      )}
+
+      {/* Toast de éxito */}
+      {saveOk && (
+        <div style={{
+          background: "rgba(74,222,128,.12)", border: "1px solid rgba(74,222,128,.3)",
+          borderRadius: 12, padding: "12px 16px", marginBottom: 12,
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <span style={{ fontSize: 18 }}>✅</span>
+          <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 700, margin: 0 }}>¡Configuración guardada!</p>
+        </div>
+      )}
+
       <div style={{ height: 8 }} />
-      <Btn full onClick={handleSaveCfg}>{gymConfig ? "Guardar cambios ✓" : "Guardar y comenzar ✓"}</Btn>
+      <Btn full onClick={handleSaveCfg} disabled={saving}>
+        {saving ? "Guardando..." : saveOk ? "¡Guardado! ✓" : gymConfig ? "Guardar cambios ✓" : "Guardar y comenzar ✓"}
+      </Btn>
     </div>
   );
 }
