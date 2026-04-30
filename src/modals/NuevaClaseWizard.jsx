@@ -561,9 +561,14 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     if (!validar()) return;
     setSaving(true); setError("");
     try {
-      // ── Payload tabla clases ────────────────────────────────────
-      // Nota: gym_id NO se incluye en UPDATE (RLS de Supabase lo rechaza)
-      const clasePayloadBase = {
+      const claseId = clase?.id;
+      const precioNum = Number(form.precio_membresia || 0);
+      const diasGracia = (form.dias_gracia !== undefined && form.dias_gracia !== "")
+        ? Number(form.dias_gracia) : 5;
+
+      // ══ 1. GUARDAR CLASE (solo columnas reales de la tabla clases) ══
+      // dias_semana/hora_inicio/hora_fin NO existen en clases — van en tabla horarios
+      const clasePayload = {
         nombre: form.nombre.trim(),
         descripcion: form.descripcion.trim() || null,
         instructor_id: form.instructor_id || null,
@@ -572,33 +577,48 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
         edad_max: Number(form.edad_max) || 99,
         cupo_max: Number(form.cupo_max) || 20,
         activo: form.activo !== false,
-        dias_semana: form.dias_semana,
-        hora_inicio: form.hora_inicio,
-        hora_fin: form.hora_fin,
-        fecha_inicio: form.fecha_inicio || todayISO(),
-        fecha_fin: form.fecha_fin || null,
       };
 
-      const dbC = await supabase.from("clases");
       let savedClase;
+      const dbC = await supabase.from("clases");
+
       if (esEdicion) {
-        // No enviamos gym_id en el PATCH — evita rechazo por RLS
-        await dbC.update(clase.id, clasePayloadBase);
-        savedClase = { ...clase, ...clasePayloadBase };
+        await dbC.update(claseId, clasePayload);
+        savedClase = { ...clase, ...clasePayload };
       } else {
-        // En INSERT sí incluimos gym_id
-        savedClase = await dbC.insert({ gym_id: gymId, ...clasePayloadBase });
-        if (!savedClase) { setError("Error al guardar la clase."); setSaving(false); return; }
+        savedClase = await dbC.insert({ gym_id: gymId, ...clasePayload });
+        if (!savedClase) { setError("Error al crear la clase."); setSaving(false); return; }
       }
 
-      const claseId = savedClase.id || clase?.id;
-      const precioNum = Number(form.precio_membresia || 0);
-      const diasGracia = (form.dias_gracia !== undefined && form.dias_gracia !== "")
-        ? Number(form.dias_gracia) : 5;
+      const finalClaseId = savedClase?.id || claseId;
 
-      // ── Payload tabla planes_membresia ───────────────────────────
-      // gym_id solo en INSERT, no en UPDATE (RLS)
-      const planPayloadBase = {
+      // ══ 1b. GUARDAR HORARIO (tabla separada) ════════════════════
+      if (form.dias_semana?.length > 0 && form.hora_inicio && form.hora_fin) {
+        const horarioPayload = {
+          clase_id: finalClaseId,
+          hora_inicio: form.hora_inicio,
+          hora_fin: form.hora_fin,
+          dias_semana: form.dias_semana,
+          fecha_inicio: form.fecha_inicio || todayISO(),
+          fecha_fin: form.fecha_fin || null,
+          activo: true,
+        };
+        const dbH = await supabase.from("horarios");
+        const horarioExistente = clase?.horario_id || null;
+        if (horarioExistente) {
+          await dbH.update(horarioExistente, horarioPayload);
+          savedClase = { ...savedClase, horario_id: horarioExistente, ...horarioPayload };
+        } else {
+          const savedH = await dbH.insert({ gym_id: gymId, ...horarioPayload });
+          if (savedH?.id) {
+            savedClase = { ...savedClase, horario_id: savedH.id, ...horarioPayload };
+          }
+        }
+      }
+
+      // ══ 2. GUARDAR PLAN DE MEMBRESÍA ════════════════════════════
+      // cupo_clases NO existe en la DB — columna eliminada
+      const planPayload = {
         nombre: form.nombre.trim(),
         precio_publico: precioNum,
         ciclo_renovacion: form.ciclo_renovacion || "mensual",
@@ -606,28 +626,55 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
         mora_tipo: form.mora_tipo || "ninguna",
         mora_monto: Number(form.mora_monto) || 0,
         activo: form.activo !== false,
-        clases_vinculadas: [String(claseId)],
-        cupo_clases: null,
+        clases_vinculadas: [String(finalClaseId)],
       };
 
-      // ── Resolver plan_id: plan_id en form > planVinculado > clase.plan_id ──
+      // Buscar plan_id con todos los métodos disponibles
       const resolvedPlanId =
         form.plan_id ||
         planVinculado?.id ||
         clase?.plan_id ||
         null;
 
+      console.log("🔍 resolvedPlanId:", resolvedPlanId, "| form.plan_id:", form.plan_id, "| planVinculado?.id:", planVinculado?.id, "| clase?.plan_id:", clase?.plan_id);
+
       const dbP = await supabase.from("planes_membresia");
+
       if (resolvedPlanId) {
-        // No enviamos gym_id en PATCH del plan
-        await dbP.update(resolvedPlanId, planPayloadBase);
+        // Actualizar plan existente (sin gym_id — RLS lo rechaza en PATCH)
+        const okP = await dbP.update(resolvedPlanId, planPayload);
+        console.log("✅ Plan actualizado:", resolvedPlanId, "ok:", okP);
+        savedClase = { ...savedClase, plan_id: resolvedPlanId };
       } else {
-        // Crear plan nuevo con gym_id incluido
-        const savedPlan = await dbP.insert({ gym_id: gymId, ...planPayloadBase });
-        if (savedPlan?.id) {
+        // No hay plan vinculado — buscar si existe uno por nombre antes de crear
+        console.log("⚠️ No se encontró plan vinculado, buscando por nombre...");
+        const dbSearch = await supabase.from("planes_membresia");
+        const allPlanes = await dbSearch.select(gymId);
+        const planByName = (allPlanes || []).find(p =>
+          p.nombre?.toLowerCase().trim() === form.nombre.toLowerCase().trim()
+        );
+
+        if (planByName?.id) {
+          // Existe un plan con ese nombre — actualizarlo y vincularlo
+          console.log("🔗 Plan encontrado por nombre, vinculando:", planByName.id);
+          await dbP.update(planByName.id, {
+            ...planPayload,
+            clases_vinculadas: [String(finalClaseId)],
+          });
+          // Guardar plan_id en la clase para futuras ediciones
           const dbC2 = await supabase.from("clases");
-          await dbC2.update(claseId, { plan_id: savedPlan.id });
-          savedClase = { ...savedClase, plan_id: savedPlan.id };
+          await dbC2.update(finalClaseId, { plan_id: planByName.id });
+          savedClase = { ...savedClase, plan_id: planByName.id };
+        } else {
+          // Crear plan nuevo
+          console.log("🆕 Creando plan nuevo...");
+          const savedPlan = await dbP.insert({ gym_id: gymId, ...planPayload });
+          if (savedPlan?.id) {
+            const dbC2 = await supabase.from("clases");
+            await dbC2.update(finalClaseId, { plan_id: savedPlan.id });
+            savedClase = { ...savedClase, plan_id: savedPlan.id };
+            console.log("✅ Plan creado y vinculado:", savedPlan.id);
+          }
         }
       }
 

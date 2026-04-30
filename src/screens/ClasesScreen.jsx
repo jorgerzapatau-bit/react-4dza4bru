@@ -577,14 +577,31 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
   const loadDatos = useCallback(async () => {
     setLoading(true);
     try {
-      const [dbC, dbI, dbP, dbInst] = await Promise.all([
-        supabase.from("clases"), supabase.from("inscripciones"),
-        supabase.from("planes_membresia"), supabase.from("instructores"),
+      const [dbC, dbH, dbI, dbP, dbInst] = await Promise.all([
+        supabase.from("clases"), supabase.from("horarios"),
+        supabase.from("inscripciones"), supabase.from("planes_membresia"),
+        supabase.from("instructores"),
       ]);
-      const [cData, iData, pData, instData] = await Promise.all([
-        dbC.select(gymId), dbI.select(gymId), dbP.select(gymId), dbInst.select(gymId),
+      const [cData, hData, iData, pData, instData] = await Promise.all([
+        dbC.select(gymId), dbH.select(gymId), dbI.select(gymId),
+        dbP.select(gymId), dbInst.select(gymId),
       ]);
-      setClases(cData || []);
+      // Mergear horario activo en cada clase para que el wizard tenga los datos
+      const horarios = hData || [];
+      const clasesConHorario = (cData || []).map(c => {
+        const h = horarios.find(h => String(h.clase_id) === String(c.id) && h.activo !== false);
+        if (!h) return c;
+        return {
+          ...c,
+          horario_id:   h.id,
+          hora_inicio:  h.hora_inicio,
+          hora_fin:     h.hora_fin,
+          dias_semana:  h.dias_semana,
+          fecha_inicio: h.fecha_inicio,
+          fecha_fin:    h.fecha_fin,
+        };
+      });
+      setClases(clasesConHorario);
       setInscripciones(iData || []);
       setPlanes(pData || []);
       setInstructores((instData || []).filter(i => i.activo !== false));
