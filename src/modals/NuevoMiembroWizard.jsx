@@ -861,27 +861,407 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
   );
 }
 
-function Step3({ fM, setFM, gymConfig, comprobantePNG, setComprobantePNG, generandoComp, setGenerandoComp }) {
-  const [qrPNG, setQrPNG] = useState(null);
-  const [generandoQR, setGenerandoQR] = useState(false);
+// ══════════════════════════════════════════════════════════════════
+// ── Generador 1: Identificación Digital (canvas) ─────────────────
+// ══════════════════════════════════════════════════════════════════
+async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
+  const gym  = gymConfig || {};
+  const W = 400, PAD = 24;
 
-  const metodos = [
-    { id: "Efectivo", icon: "💵", label: "Efectivo" },
-    { id: "Transferencia", icon: "🏦", label: "Transferencia" },
-    { id: "Tarjeta", icon: "💳", label: "Tarjeta" },
+  // ── Cargar QR primero ──
+  const qrText = `gymfit:member:${(miembro.nombre || "").replace(/\s+/g,"_")}:${codigoAcceso}`;
+  let qrDataUrl = null;
+  try { qrDataUrl = await generarQRPNG(qrText); } catch(e) {}
+
+  const QR_SIZE = 260;
+  const HEADER_H = 56;
+  const QR_PAD   = 20;
+  const FOOTER_H = 90;
+  const H = HEADER_H + QR_PAD + QR_SIZE + QR_PAD + FOOTER_H;
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // Fondo blanco
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+
+  // Header degradado suave morado
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, "#f3f0ff");
+  grad.addColorStop(1, "#ede9fe");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, HEADER_H);
+
+  // Línea inferior del header
+  ctx.fillStyle = "#c4b5fd";
+  ctx.fillRect(0, HEADER_H - 2, W, 2);
+
+  // Emoji dojo + texto header
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#5b21b6";
+  ctx.font = "bold 13px Arial";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("🥋  IDENTIFICACIÓN DIGITAL", W / 2, HEADER_H / 2 + 5);
+
+  // Área QR con borde redondeado (simulado)
+  const qrX = (W - QR_SIZE) / 2;
+  const qrY = HEADER_H + QR_PAD;
+  ctx.fillStyle = "#f8f8f8";
+  ctx.strokeStyle = "#e5e7eb";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(qrX - 10, qrY - 10, QR_SIZE + 20, QR_SIZE + 20, 14);
+  ctx.fill(); ctx.stroke();
+
+  // QR image
+  if (qrDataUrl) {
+    await new Promise(res => {
+      const img = new Image();
+      img.onload = () => { ctx.drawImage(img, qrX, qrY, QR_SIZE, QR_SIZE); res(); };
+      img.onerror = res;
+      img.src = qrDataUrl;
+    });
+  } else {
+    ctx.fillStyle = "#d1d5db";
+    ctx.fillRect(qrX, qrY, QR_SIZE, QR_SIZE);
+    ctx.fillStyle = "#6b7280"; ctx.font = "14px Arial"; ctx.textAlign = "center";
+    ctx.fillText("QR no disponible", W/2, qrY + QR_SIZE/2);
+  }
+
+  // Footer: nombre, código acceso
+  const footerY = qrY + QR_SIZE + QR_PAD + 14;
+  ctx.fillStyle = "#111827";
+  ctx.font = "bold 18px Georgia, serif";
+  ctx.textAlign = "center";
+  ctx.fillText(miembro.nombre || "—", W / 2, footerY);
+
+  ctx.fillStyle = "#9ca3af";
+  ctx.font = "10px Arial";
+  ctx.letterSpacing = "1.5px";
+  ctx.fillText("CÓDIGO DE ACCESO", W / 2, footerY + 22);
+
+  // Badge código
+  const codigo = codigoAcceso || "—";
+  ctx.fillStyle = "#10b981";
+  ctx.font = "bold 16px 'Courier New', monospace";
+  ctx.letterSpacing = "2px";
+  ctx.fillText("● " + codigo, W / 2, footerY + 46);
+
+  return canvas.toDataURL("image/png");
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── Generador 2: Comprobante de Pago (mejorado) ───────────────────
+// ══════════════════════════════════════════════════════════════════
+async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, formaPago, venceISO, propietarioRecibio }) {
+  const gym = gymConfig || {};
+  const W = 560;
+
+  const hoyD = new Date();
+  const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const fechaHoy  = `${DIAS[hoyD.getDay()]}, ${MESES[hoyD.getMonth()]} ${hoyD.getDate()}, ${hoyD.getFullYear()}`;
+  const venceLong = venceISO
+    ? (() => { const d = new Date(venceISO+"T00:00:00"); return `${DIAS[d.getDay()]}, ${MESES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; })()
+    : "—";
+
+  const planLabel = `Plan ${plan || "—"}`;
+  const rows = [
+    { label: "Fecha:",        value: fechaHoy,                    bold: true },
+    { type: "alumno",         nombre: (miembro.nombre || "—").toUpperCase(), plan: planLabel },
+    { label: "Modo de Pago:", value: (formaPago || "—").toUpperCase(), bold: true },
+    { label: "Cantidad:",     value: "$" + Number(monto||0).toLocaleString("es-MX"), bold: true },
+    { label: "Vencimiento:",  value: venceLong,                   bold: true },
+    { label: "Recibió:",      value: propietarioRecibio || gym.propietario_nombre || "—", bold: false },
   ];
 
-  const gym = gymConfig || {};
-  const fechaInicio = fM.fecha_incorporacion || todayISO();
+  const HEADER_H  = 140;
+  const ROW_H     = 36;
+  const CLABE_H   = gym.transferencia_clabe ? 90 : 0;
+  const FOOTER_H  = 60;
+  const STAMP_H   = 50;
+  const H = HEADER_H + rows.length * ROW_H + CLABE_H + FOOTER_H + STAMP_H + 8;
 
-  // Calcular vencimiento
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // Fondo
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+  // Header bg
+  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, HEADER_H); ctx.lineTo(W, HEADER_H); ctx.stroke();
+
+  // Logo
+  const LOGO_SZ = 80, LX = 20, LY = 18;
+  if (gym.logo) {
+    await new Promise(res => {
+      const img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = () => {
+        ctx.save(); ctx.beginPath();
+        ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10);
+        ctx.clip(); ctx.drawImage(img, LX, LY, LOGO_SZ, LOGO_SZ); ctx.restore(); res();
+      };
+      img.onerror = res; img.src = gym.logo;
+    });
+  } else {
+    ctx.fillStyle = "#1e1b4b";
+    ctx.beginPath(); ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 28px serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("🥋", LX + LOGO_SZ/2, LY + LOGO_SZ/2);
+    ctx.textBaseline = "alphabetic";
+  }
+
+  // Gym nombre / slogan / tel
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111827"; ctx.font = "bold 17px Georgia,serif";
+  ctx.fillText((gym.nombre || "NOMBRE DEL GYM").toUpperCase(), W/2, 38);
+  ctx.fillStyle = "#6b7280"; ctx.font = "13px Georgia,serif";
+  ctx.fillText(gym.slogan || "Slogan del gimnasio", W/2, 58);
+  if (gym.telefono) {
+    ctx.fillStyle = "#374151"; ctx.font = "12px Arial";
+    ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78);
+  }
+  if (gym.facebook) {
+    ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial";
+    ctx.fillText(`Facebook: ${gym.facebook}`, W/2, 96);
+  }
+
+  // Separator
+  ctx.strokeStyle = "#d1d5db"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(20, 110); ctx.lineTo(W-20, 110); ctx.stroke();
+  // "COMPROBANTE DE PAGO RECIBIDO" small stamp arriba derecha
+  ctx.fillStyle = "#ef4444"; ctx.font = "bold 9px Arial";
+  ctx.textAlign = "right"; ctx.letterSpacing = "0.5px";
+  ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W - 16, 128);
+  ctx.textAlign = "left";
+
+  // Rows
+  let y = HEADER_H + 2;
+  rows.forEach((row, i) => {
+    const bg = i % 2 === 0 ? "#ffffff" : "#f9fafb";
+    ctx.fillStyle = bg; ctx.fillRect(0, y, W, ROW_H);
+    ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y + ROW_H - 0.5); ctx.lineTo(W, y + ROW_H - 0.5); ctx.stroke();
+
+    if (row.type === "alumno") {
+      // Nombre alumno centrado grande
+      ctx.fillStyle = "#111827"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
+      ctx.fillText(row.nombre, W/2, y + 20);
+      ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial";
+      ctx.fillText(row.plan, W/2, y + ROW_H - 6);
+      ctx.textAlign = "left";
+    } else {
+      ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial";
+      ctx.fillText(row.label, 24, y + ROW_H - 12);
+      ctx.fillStyle = "#111827"; ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
+      ctx.textAlign = "right";
+      ctx.fillText(row.value, W - 24, y + ROW_H - 12);
+      ctx.textAlign = "left";
+    }
+    y += ROW_H;
+  });
+
+  // CLABE section
+  if (gym.transferencia_clabe) {
+    ctx.fillStyle = "#f3f4f6"; ctx.fillRect(0, y, W, CLABE_H);
+    ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.fillStyle = "#111827"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
+    ctx.fillText("PARA TRANSFERENCIAS:", 24, y + 22);
+    ctx.font = "12px Arial"; ctx.fillStyle = "#374151";
+    ctx.fillText(`CLABE:  ${gym.transferencia_clabe}`, 24, y + 42);
+    ctx.fillText(`Beneficiario:  ${gym.transferencia_titular || "—"}`, 24, y + 60);
+    if (gym.transferencia_banco) ctx.fillText(`Banco:  ${gym.transferencia_banco}`, 24, y + 78);
+    y += CLABE_H;
+  }
+
+  // Footer instrucción
+  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, y, W, FOOTER_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial"; ctx.textAlign = "center";
+  ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y + 22);
+  ctx.fillText("Whatsapp que aparece en la parte superior de este recibo.", W/2, y + 40);
+  y += FOOTER_H;
+
+  // STAMP grande al fondo
+  ctx.fillStyle = "#111827"; ctx.font = "bold 20px Arial"; ctx.textAlign = "center";
+  ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W/2, y + 34);
+
+  return canvas.toDataURL("image/png");
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── Generador 3: Información para Transferencia (canvas) ──────────
+// ══════════════════════════════════════════════════════════════════
+async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, venceISO }) {
+  const gym = gymConfig || {};
+  const W = 560;
+
+  const hoyD = new Date();
+  const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const fechaHoy  = `${DIAS[hoyD.getDay()]}, ${MESES[hoyD.getMonth()]} ${hoyD.getDate()}, ${hoyD.getFullYear()}`;
+  const venceLong = venceISO
+    ? (() => { const d = new Date(venceISO+"T00:00:00"); return `${DIAS[d.getDay()]}, ${MESES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; })()
+    : "—";
+
+  const tableRows = [
+    ...(gym.facebook ? [{ label: "Facebook:", value: gym.facebook, span: true }] : []),
+    { label: "Fecha:",        value: fechaHoy },
+    { label: "ALUMNO",        value: (miembro.nombre || "—").toUpperCase(), bold: true },
+    { label: "",              value: (MESES[hoyD.getMonth()]).toUpperCase() },
+    { label: "Modo de Pago:", value: "TRANSFERENCIA" },
+    { label: "Cantidad:",     value: "$" + Number(monto||0).toLocaleString("es-MX"), big: true },
+    { label: "Vencimiento:",  value: venceLong, bold: true },
+    { label: "Recibió:",      value: gym.propietario_nombre || gym.transferencia_titular || "—" },
+  ];
+
+  const HEADER_H  = 140;
+  const ROW_H     = 36;
+  const CLABE_H   = 100;
+  const FOOTER_H  = 56;
+  const H = HEADER_H + tableRows.length * ROW_H + CLABE_H + FOOTER_H + 8;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, HEADER_H); ctx.lineTo(W, HEADER_H); ctx.stroke();
+
+  // Logo
+  const LOGO_SZ = 80, LX = 20, LY = 18;
+  if (gym.logo) {
+    await new Promise(res => {
+      const img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = () => {
+        ctx.save(); ctx.beginPath();
+        ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10);
+        ctx.clip(); ctx.drawImage(img, LX, LY, LOGO_SZ, LOGO_SZ); ctx.restore(); res();
+      };
+      img.onerror = res; img.src = gym.logo;
+    });
+  } else {
+    ctx.fillStyle = "#1e1b4b"; ctx.beginPath(); ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 28px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("🥋", LX + LOGO_SZ/2, LY + LOGO_SZ/2); ctx.textBaseline = "alphabetic";
+  }
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111827"; ctx.font = "bold 17px Georgia,serif";
+  ctx.fillText((gym.nombre || "NOMBRE DEL GYM").toUpperCase(), W/2, 38);
+  ctx.fillStyle = "#6b7280"; ctx.font = "13px Georgia,serif";
+  ctx.fillText(gym.slogan || "Slogan del gimnasio", W/2, 58);
+  if (gym.telefono) {
+    ctx.fillStyle = "#374151"; ctx.font = "12px Arial";
+    ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78);
+  }
+
+  let y = HEADER_H + 2;
+  tableRows.forEach((row, i) => {
+    const bg = i % 2 === 0 ? "#fff" : "#f9fafb";
+    ctx.fillStyle = bg; ctx.fillRect(0, y, W, ROW_H);
+    ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y + ROW_H - 0.5); ctx.lineTo(W, y + ROW_H - 0.5); ctx.stroke();
+
+    if (row.span) {
+      ctx.fillStyle = "#374151"; ctx.font = "12px Arial"; ctx.textAlign = "center";
+      ctx.fillText(`${row.label}  ${row.value}`, W/2, y + ROW_H - 10); ctx.textAlign = "left";
+    } else if (row.big) {
+      ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial"; ctx.textAlign = "left";
+      ctx.fillText(row.label, 24, y + ROW_H - 10);
+      ctx.fillStyle = "#111827"; ctx.font = "bold 16px Arial"; ctx.textAlign = "right";
+      ctx.fillText(row.value, W - 24, y + ROW_H - 10); ctx.textAlign = "left";
+    } else {
+      ctx.fillStyle = "#6b7280"; ctx.font = row.bold ? "bold 12px Arial" : "12px Arial";
+      ctx.fillText(row.label, 24, y + ROW_H - 10);
+      ctx.fillStyle = "#111827"; ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
+      ctx.textAlign = "right"; ctx.fillText(row.value, W - 24, y + ROW_H - 10);
+      ctx.textAlign = "left";
+    }
+    y += ROW_H;
+  });
+
+  // CLABE section
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, y, W, CLABE_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+
+  const CLABE = gym.transferencia_clabe || "—";
+  const titular = gym.transferencia_titular || "—";
+  const banco   = gym.transferencia_banco   || "";
+  ctx.fillStyle = "#111827"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
+  ctx.fillText("PARA TRANSFERENCIAS:", 24, y + 22);
+  ctx.font = "12px Arial"; ctx.fillStyle = "#374151";
+  ctx.fillText(`CLABE:   ${CLABE}`, 24, y + 42);
+  ctx.fillText(`Beneficiario:   ${titular}`, 24, y + 60);
+  if (banco) ctx.fillText(`Banco:   ${banco}`, 24, y + 78);
+  y += CLABE_H;
+
+  // Footer
+  ctx.fillStyle = "#f3f4f6"; ctx.fillRect(0, y, W, FOOTER_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  ctx.fillStyle = "#374151"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+  ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y + 20);
+  ctx.fillText("Whasthsapp que aparece en la parte superior de este recibo.", W/2, y + 38);
+
+  return canvas.toDataURL("image/png");
+}
+
+// ── Copiar imagen PNG al portapapeles ──────────────────────────────
+async function copiarImagenAlPortapapeles(dataUrl) {
+  try {
+    const blob = await (await fetch(dataUrl)).blob();
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+    return true;
+  } catch(e) {
+    // Fallback: abrir en nueva pestaña para que el usuario copie manualmente
+    const win = window.open();
+    if (win) { win.document.write(`<img src="${dataUrl}" style="max-width:100%">`); }
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── PASO 3: Pago + Documentos ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+function Step3({ fM, setFM, gymConfig, comprobantePNG, setComprobantePNG, generandoComp, setGenerandoComp }) {
+  const [qrPNG,         setQrPNG]         = useState(null);
+  const [idDigitalPNG,  setIdDigitalPNG]  = useState(null);
+  const [infoBancoPNG,  setInfoBancoPNG]  = useState(null);
+  const [generandoQR,   setGenerandoQR]   = useState(false);
+  const [generandoID,   setGenerandoID]   = useState(false);
+  const [generandoInfo, setGenerandoInfo] = useState(false);
+  const [copiado,       setCopiado]       = useState(null); // which card was copied
+
+  const gym         = gymConfig || {};
+  const fechaInicio = fM.fecha_incorporacion || todayISO();
+  const metodos     = [
+    { id: "Efectivo",      icon: "💵", label: "Efectivo" },
+    { id: "Transferencia", icon: "🏦", label: "Transferencia" },
+    { id: "Tarjeta",       icon: "💳", label: "Tarjeta" },
+  ];
+
+  // ── Calcular vencimiento ──
   const venceISO = (() => {
     if (!fM.plan) return null;
     const planObj = fM.planData;
-    const CICLO_MESES = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+    const CM = { mensual:1, trimestral:3, semestral:6, anual:12 };
     let meses = null;
     if (planObj) {
-      meses = planObj.meses != null ? planObj.meses : CICLO_MESES[planObj.ciclo_renovacion];
+      meses = planObj.meses != null ? planObj.meses : CM[planObj.ciclo_renovacion];
     } else {
       try { return calcVence(fechaInicio, fM.plan); } catch(e) { return null; }
     }
@@ -891,141 +1271,209 @@ function Step3({ fM, setFM, gymConfig, comprobantePNG, setComprobantePNG, genera
     return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
   })();
 
-  const generar = async () => {
+  // ── Handlers de generación ──
+  const genComprobante = async () => {
     setGenerandoComp(true);
     try {
-      const png = await generarComprobantePNG({
-        gymConfig,
-        miembro: { nombre: fM.nombre || "—" },
-        plan: fM.plan,
-        monto: fM.monto,
-        formaPago: fM.formaPago,
-        venceISO,
+      const png = await generarComprobantePagoPNG({
+        gymConfig, miembro: { nombre: fM.nombre },
+        plan: fM.plan, monto: fM.monto, formaPago: fM.formaPago, venceISO,
       });
       setComprobantePNG(png);
-    } catch (e) {
-      console.error(e);
-      alert("No se pudo generar el comprobante.");
-    } finally {
-      setGenerandoComp(false);
-    }
+    } catch(e) { alert("No se pudo generar el comprobante."); }
+    finally { setGenerandoComp(false); }
   };
 
-  // ── Genera QR del alumno con su nombre + fecha incorporación ──
-  const generarQR = async () => {
+  const genIDDigital = async () => {
+    setGenerandoID(true);
+    try {
+      const codigo = "DZ-" + Math.random().toString(36).toUpperCase().slice(2, 6);
+      const png = await generarIDDigitalPNG({
+        miembro: { nombre: fM.nombre }, gymConfig, codigoAcceso: codigo,
+      });
+      setIdDigitalPNG(png);
+    } catch(e) { alert("No se pudo generar la identificación."); }
+    finally { setGenerandoID(false); }
+  };
+
+  const genQR = async () => {
     setGenerandoQR(true);
     try {
-      const qrText = `gymfit:member:${(fM.nombre || "").replace(/\s+/g, "_")}:${fechaInicio}`;
-      const png = await generarQRPNG(qrText);
-      setQrPNG(png);
-    } catch(e) {
-      alert("No se pudo generar el QR.");
-    } finally {
-      setGenerandoQR(false);
-    }
+      const qrText = `gymfit:member:${(fM.nombre||"").replace(/\s+/g,"_")}:${fechaInicio}`;
+      setQrPNG(await generarQRPNG(qrText));
+    } catch(e) { alert("No se pudo generar el QR."); }
+    finally { setGenerandoQR(false); }
   };
 
-  const descargarComp = () => {
-    if (!comprobantePNG) return;
+  const genInfoBanco = async () => {
+    setGenerandoInfo(true);
+    try {
+      const png = await generarInfoTransferenciaPNG({
+        gymConfig, miembro: { nombre: fM.nombre },
+        plan: fM.plan, monto: fM.monto, venceISO,
+      });
+      setInfoBancoPNG(png);
+    } catch(e) { alert("No se pudo generar la información de transferencia."); }
+    finally { setGenerandoInfo(false); }
+  };
+
+  // ── Descarga genérica ──
+  const descargar = (dataUrl, nombre) => {
     const a = document.createElement("a");
-    a.href = comprobantePNG;
-    a.download = `comprobante-${(fM.nombre || "alumno").replace(/\s+/g, "-").toLowerCase()}.png`;
+    a.href = dataUrl;
+    a.download = `${nombre}-${(fM.nombre||"alumno").replace(/\s+/g,"-").toLowerCase()}.png`;
     a.click();
   };
 
-  const descargarQR = () => {
-    if (!qrPNG) return;
-    // Canvas QR estándar es pequeño → generar versión con nombre incrustado
-    const canvas = document.createElement("canvas");
-    const SIZE = 300;
-    const LABEL_H = 52;
-    canvas.width = SIZE;
-    canvas.height = SIZE + LABEL_H;
-    const ctx = canvas.getContext("2d");
-
-    // Fondo blanco
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, SIZE, SIZE + LABEL_H);
-
-    // Dibujar QR
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, SIZE, SIZE);
-
-      // Nombre del alumno debajo
-      ctx.fillStyle = "#1a1a2e";
-      ctx.font = "bold 16px Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText((fM.nombre || "Alumno").toUpperCase(), SIZE / 2, SIZE + 26);
-
-      ctx.fillStyle = "#666";
-      ctx.font = "12px Arial, sans-serif";
-      ctx.fillText(gym.nombre || "Dojo / Gym", SIZE / 2, SIZE + 44);
-
-      const final = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = final;
-      a.download = `QR-${(fM.nombre || "alumno").replace(/\s+/g, "-").toLowerCase()}.png`;
-      a.click();
-    };
-    img.src = qrPNG;
+  // ── Copiar al portapapeles ──
+  const copiar = async (dataUrl, key) => {
+    const ok = await copiarImagenAlPortapapeles(dataUrl);
+    setCopiado(key);
+    setTimeout(() => setCopiado(null), 2000);
   };
 
-  const compartirWhatsApp = () => {
-    const tel = fM.tel || "";
-    const gym_nombre = gym.nombre || "el gym";
-    const msg = `¡Hola ${fM.nombre?.split(" ")[0] || ""}! 🥋 Tu membresía *${fM.plan}* en *${gym_nombre}* ha sido registrada.\n\n` +
-      `📅 Inicio: ${fmtDateShort(fechaInicio)}\n` +
-      `📅 Vencimiento: ${fmtDateShort(venceISO)}\n` +
-      `💰 Monto: ${fmt$(fM.monto)}\n` +
-      `💳 Forma de pago: ${fM.formaPago || "—"}\n\n` +
-      `¡Gracias por unirte! Cualquier duda estamos a tus órdenes. 💪`;
-    const clean = tel.replace(/\D/g, "");
-    const phone = clean.startsWith("52") ? clean : `52${clean}`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-  };
+  // ── Botones de acción bajo cada imagen ──
+  const AccionButtons = ({ dataUrl, filePrefix, copyKey, waMsg }) => (
+    <div style={{ display: "flex", gap: 7, marginTop: 8, flexWrap: "wrap" }}>
+      <button
+        onClick={() => descargar(dataUrl, filePrefix)}
+        style={{ ...S.btnSecondary, flex: 1, minWidth: 90, display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontSize:12, padding:"10px 8px" }}
+      >
+        📥 Descargar
+      </button>
+      <button
+        onClick={() => copiar(dataUrl, copyKey)}
+        style={{
+          flex: 1, minWidth: 90, padding: "10px 8px", borderRadius: 14,
+          background: copiado === copyKey ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.05)",
+          border: `1px solid ${copiado === copyKey ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
+          color: copiado === copyKey ? "#4ade80" : "var(--text-secondary,#9999b3)",
+          cursor:"pointer", fontFamily:"inherit", fontWeight:600,
+          display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontSize:12,
+          transition:"all .2s",
+        }}
+      >
+        {copiado === copyKey ? "✓ Copiado" : "📋 Copiar"}
+      </button>
+      {waMsg && fM.tel && (
+        <button
+          onClick={() => {
+            const clean = (fM.tel||"").replace(/\D/g,"");
+            const phone = clean.startsWith("52") ? clean : `52${clean}`;
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(waMsg)}`, "_blank");
+          }}
+          style={{
+            flex: 1, minWidth: 90, padding: "10px 8px", borderRadius: 14,
+            background: "rgba(37,211,102,.12)", border: "1px solid rgba(37,211,102,.3)",
+            color: "#25d366", cursor:"pointer", fontFamily:"inherit", fontWeight:700,
+            display:"flex", alignItems:"center", justifyContent:"center", gap:5, fontSize:12,
+          }}
+        >
+          📲 WhatsApp
+        </button>
+      )}
+    </div>
+  );
+
+  // ── WA messages ──
+  const waMsgComp = fM.plan
+    ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gym.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fechaInicio)}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Forma de pago: ${fM.formaPago||"—"}\n\n¡Gracias por unirte! 💪`
+    : null;
+
+  // ── Tarjeta de cada documento ──
+  const DocCard = ({ title, color, icon, generating, onGenerate, previewPng, filePrefix, copyKey, waMsg, always = false }) => (
+    <div style={{
+      background: "var(--bg-elevated,#1e1e2e)",
+      border: `1.5px solid ${previewPng ? color+"55" : "var(--border-strong,#2e2e42)"}`,
+      borderRadius: 16, padding: "14px", marginBottom: 12, transition: "border .2s",
+    }}>
+      {/* Header de la tarjeta */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: previewPng ? 12 : 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+          }}>{icon}</div>
+          <p style={{ color: "var(--text-primary,#e8e8f0)", fontWeight: 700, fontSize: 13 }}>{title}</p>
+        </div>
+        <button
+          onClick={onGenerate}
+          disabled={generating || (!always && !fM.plan && filePrefix !== "id-digital" && filePrefix !== "qr")}
+          style={{
+            padding: "8px 14px", borderRadius: 10, border: "none",
+            background: generating ? `${color}30` : color,
+            color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer",
+            fontFamily: "inherit", opacity: generating ? 0.7 : 1, transition: "all .2s",
+            display: "flex", alignItems: "center", gap: 5,
+          }}
+        >
+          {generating ? "⏳" : "✨"} {generating ? "Generando..." : previewPng ? "Regenerar" : "Generar"}
+        </button>
+      </div>
+
+      {/* Preview */}
+      {previewPng && (
+        <>
+          <img
+            src={previewPng}
+            alt={title}
+            style={{
+              width: "100%", borderRadius: 10,
+              border: "1px solid var(--border,#2a2a3e)",
+              boxShadow: "0 2px 12px rgba(0,0,0,.3)",
+            }}
+          />
+          <AccionButtons dataUrl={previewPng} filePrefix={filePrefix} copyKey={copyKey} waMsg={waMsg} />
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div>
-      {/* Resumen */}
-      <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
-        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>Resumen de membresía</p>
-        {[
-          ["Miembro", fM.nombre || "—"],
-          ["Plan", fM.plan || "Sin membresía"],
-          ["Monto", fM.plan ? fmt$(fM.monto) : "—"],
-          ["Inicio", fmtDateShort(fechaInicio)],
-          ["Vencimiento", fmtDateShort(venceISO)],
-        ].map(([l, v]) => (
-          <div key={l} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 12 }}>{l}</span>
-            <span style={{ color: "var(--text-primary,#e8e8f0)", fontSize: 12, fontWeight: 600 }}>{v}</span>
-          </div>
-        ))}
+      {/* Resumen compacto */}
+      <div style={{
+        background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)",
+        borderRadius: 14, padding: "12px 16px", marginBottom: 16,
+      }}>
+        <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+          Resumen
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
+          {[
+            ["Miembro", fM.nombre || "—"],
+            ["Plan", fM.plan || "Sin membresía"],
+            ["Monto", fM.plan ? ("$" + Number(fM.monto||0).toLocaleString("es-MX")) : "—"],
+            ["Vence", fmtDateShort(venceISO)],
+          ].map(([l, v]) => (
+            <div key={l} style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11 }}>{l}</span>
+              <span style={{ color: "var(--text-primary,#e8e8f0)", fontSize: 11, fontWeight: 600 }}>{v}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Métodos de pago — solo si hay plan */}
+      {/* Forma de pago */}
       {fM.plan && (
         <>
-          <p style={{ ...S.label, marginBottom: 10 }}>Forma de pago</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 18 }}>
+          <p style={{ ...S.label, marginBottom: 8 }}>Forma de pago</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
             {metodos.map(m => {
               const sel = fM.formaPago === m.id;
               return (
-                <button
-                  key={m.id}
-                  onClick={() => { setFM(p => ({ ...p, formaPago: m.id })); setComprobantePNG(null); }}
+                <button key={m.id}
+                  onClick={() => { setFM(p => ({ ...p, formaPago: m.id })); setComprobantePNG(null); setInfoBancoPNG(null); }}
                   style={{
-                    padding: "14px 8px",
+                    padding: "12px 6px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
                     border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
-                    borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
                     background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
                     transition: "all .2s",
                   }}
                 >
-                  <span style={{ fontSize: 22 }}>{m.icon}</span>
-                  <span style={{ color: sel ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontSize: 12, fontWeight: sel ? 700 : 500 }}>
+                  <span style={{ fontSize: 20 }}>{m.icon}</span>
+                  <span style={{ color: sel ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontSize: 11, fontWeight: sel ? 700 : 500 }}>
                     {m.label}
                   </span>
                 </button>
@@ -1035,123 +1483,49 @@ function Step3({ fM, setFM, gymConfig, comprobantePNG, setComprobantePNG, genera
         </>
       )}
 
-      {/* Comprobante + QR — dos botones en grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-        {/* ── Botón Comprobante ── */}
-        {(fM.formaPago === "Efectivo" || fM.formaPago === "Tarjeta" || !fM.plan) && (
-          <button
-            onClick={generar}
-            disabled={generandoComp || !fM.plan}
-            style={{
-              padding: "14px 8px", border: "none", borderRadius: 14,
-              background: (!fM.plan || generandoComp)
-                ? "rgba(108,99,255,.25)"
-                : "linear-gradient(135deg,#6c63ff,#e040fb)",
-              boxShadow: (!fM.plan || generandoComp) ? "none" : "0 4px 18px rgba(108,99,255,.35)",
-              color: "#fff", fontWeight: 700, fontSize: 13, cursor: !fM.plan ? "not-allowed" : "pointer",
-              fontFamily: "inherit", display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", gap: 6, opacity: !fM.plan ? 0.5 : 1,
-            }}
-          >
-            <span style={{ fontSize: 22 }}>{generandoComp ? "⏳" : "🧾"}</span>
-            <span>{generandoComp ? "Generando..." : "Comprobante"}</span>
-          </button>
-        )}
+      {/* ── 4 DocCards ── */}
+      <DocCard
+        title="Identificación Digital"
+        color="#8b5cf6" icon="🪪"
+        generating={generandoID}
+        onGenerate={genIDDigital}
+        previewPng={idDigitalPNG}
+        filePrefix="id-digital"
+        copyKey="id"
+        always
+      />
 
-        {/* ── Botón QR ── */}
-        <button
-          onClick={generarQR}
-          disabled={generandoQR}
-          style={{
-            padding: "14px 8px", border: "none", borderRadius: 14,
-            background: generandoQR
-              ? "rgba(56,189,248,.2)"
-              : "linear-gradient(135deg,#0ea5e9,#38bdf8)",
-            boxShadow: generandoQR ? "none" : "0 4px 18px rgba(14,165,233,.3)",
-            color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer",
-            fontFamily: "inherit", display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 6,
-          }}
-        >
-          <span style={{ fontSize: 22 }}>{generandoQR ? "⏳" : "📲"}</span>
-          <span>{generandoQR ? "Generando..." : "Generar QR"}</span>
-        </button>
-      </div>
+      <DocCard
+        title="Comprobante de Pago"
+        color="#6c63ff" icon="🧾"
+        generating={generandoComp}
+        onGenerate={genComprobante}
+        previewPng={comprobantePNG}
+        filePrefix="comprobante"
+        copyKey="comp"
+        waMsg={waMsgComp}
+      />
 
-      {/* Vista previa comprobante */}
-      {comprobantePNG && (
-        <div style={{ animation: "fadeIn .3s ease", marginBottom: 14 }}>
-          <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>🧾 Comprobante</p>
-          <img
-            src={comprobantePNG}
-            alt="Comprobante"
-            style={{ width: "100%", borderRadius: 12, border: "1px solid var(--border,#2a2a3e)", marginBottom: 8 }}
-          />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={descargarComp} style={{ ...S.btnSecondary, flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <span>📥</span> Descargar
-            </button>
-            {fM.tel && (
-              <button onClick={compartirWhatsApp} style={{
-                flex: 1, padding: "12px", borderRadius: 14,
-                background: "rgba(37,211,102,.15)", border: "1px solid rgba(37,211,102,.3)",
-                color: "#25d366", cursor: "pointer", fontFamily: "inherit", fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13,
-              }}>
-                <span style={{ fontSize: 18 }}>📲</span> WhatsApp
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      <DocCard
+        title="Info para Transferencia"
+        color="#0ea5e9" icon="🏦"
+        generating={generandoInfo}
+        onGenerate={genInfoBanco}
+        previewPng={infoBancoPNG}
+        filePrefix="transferencia"
+        copyKey="banco"
+      />
 
-      {/* Vista previa QR */}
-      {qrPNG && (
-        <div style={{ animation: "fadeIn .3s ease", marginBottom: 14 }}>
-          <p style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>📲 Código QR — {fM.nombre}</p>
-          <div style={{ background: "#fff", borderRadius: 14, padding: 14, display: "flex", flexDirection: "column", alignItems: "center", border: "1px solid var(--border,#2a2a3e)" }}>
-            <img src={qrPNG} alt="QR" style={{ width: 160, height: 160, imageRendering: "pixelated" }} />
-            <p style={{ color: "#1a1a2e", fontWeight: 700, fontSize: 13, marginTop: 8, textAlign: "center" }}>
-              {(fM.nombre || "").toUpperCase()}
-            </p>
-            <p style={{ color: "#666", fontSize: 11, marginTop: 2 }}>{gym.nombre || ""}</p>
-          </div>
-          <button
-            onClick={descargarQR}
-            style={{
-              ...S.btnSecondary,
-              width: "100%", marginTop: 8,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              background: "rgba(14,165,233,.1)", border: "1px solid rgba(14,165,233,.3)",
-              color: "#38bdf8",
-            }}
-          >
-            <span>📥</span> Descargar QR — {(fM.nombre || "alumno").split(" ")[0]}
-          </button>
-        </div>
-      )}
-
-      {/* Transferencia → datos bancarios */}
-      {fM.formaPago === "Transferencia" && (
-        <div style={{ background: "rgba(56,189,248,.07)", border: "1px solid rgba(56,189,248,.2)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-          <p style={{ color: "#38bdf8", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>📋 Datos bancarios del gym</p>
-          {[
-            ["CLABE", gym.transferencia_clabe || "—"],
-            ["Titular", gym.transferencia_titular || "—"],
-            ["Banco", gym.transferencia_banco || "—"],
-          ].map(([l, v]) => (
-            <div key={l} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 12 }}>{l}</span>
-              <span style={{ color: "var(--text-primary,#e8e8f0)", fontSize: 12, fontWeight: 600, fontFamily: "'DM Mono',monospace" }}>{v}</span>
-            </div>
-          ))}
-          <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 10 }}>
-            <p style={{ color: "#fbbf24", fontSize: 11 }}>
-              ⏳ El comprobante se generará después desde el historial del miembro, una vez que se confirme la transferencia.
-            </p>
-          </div>
-        </div>
-      )}
+      <DocCard
+        title="Código QR de Acceso"
+        color="#10b981" icon="📲"
+        generating={generandoQR}
+        onGenerate={genQR}
+        previewPng={qrPNG}
+        filePrefix="qr"
+        copyKey="qr"
+        always
+      />
     </div>
   );
 }
