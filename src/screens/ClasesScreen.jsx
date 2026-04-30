@@ -270,10 +270,8 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 300,
-      background: "var(--bg-base)",
-      display: "flex", flexDirection: "column",
-      animation: "detalleIn .2s cubic-bezier(.32,.72,0,1)",
+      display: "flex", flexDirection: "column", height: "100%",
+      animation: "detalleIn .2s ease",
     }}>
       <style>{`
         @keyframes detalleIn {
@@ -656,6 +654,29 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
     </button>
   );
 
+  // ── Vista detalle: reemplaza contenido sin afectar el sidebar ──
+  if (modalDetalle) {
+    return (
+      <>
+        <ModalDetalle
+          clase={modalDetalle} inscripciones={inscripciones} miembros={miembros} txs={txs}
+          gymId={gymId} canManage={canManage} planes={planes}
+          onEditClase={() => { setModalClase(modalDetalle); setModalDetalle(null); }}
+          onClose={() => setModalDetalle(null)}
+          onAddTx={onAddTx}
+        />
+        {modalClase && (
+          <NuevaClaseWizard
+            clase={modalClase === "nueva" ? null : modalClase}
+            gymId={gymId} miembros={miembros} instructores={instructores} planes={planes}
+            gymConfig={gymConfig}
+            onSave={handleGuardarClase} onClose={() => setModalClase(null)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
@@ -770,15 +791,6 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
         />
       )}
 
-      {modalDetalle && (
-        <ModalDetalle
-          clase={modalDetalle} inscripciones={inscripciones} miembros={miembros} txs={txs}
-          gymId={gymId} canManage={canManage} planes={planes}
-          onEditClase={() => { setModalClase(modalDetalle); setModalDetalle(null); }}
-          onClose={() => setModalDetalle(null)}
-          onAddTx={onAddTx}
-        />
-      )}
     </div>
   );
 }
