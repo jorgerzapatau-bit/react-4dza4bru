@@ -26,6 +26,18 @@ const DIAS = [
   { key: "dom", label: "DOM" },
 ];
 
+// La DB guarda días en formato largo ("lunes"), el UI usa corto ("lun")
+const DIA_SHORT_TO_LONG = {
+  lun: "lunes", mar: "martes", mie: "miercoles",
+  jue: "jueves", vie: "viernes", sab: "sabado", dom: "domingo",
+};
+const DIA_LONG_TO_SHORT = {
+  lunes: "lun", martes: "mar", miercoles: "mie", miércoles: "mie",
+  jueves: "jue", viernes: "vie", sabado: "sab", sábado: "sab", domingo: "dom",
+};
+const toShort = (d) => DIA_LONG_TO_SHORT[d?.toLowerCase()] || d;
+const toLong  = (d) => DIA_SHORT_TO_LONG[d?.toLowerCase()]  || d;
+
 const CICLOS = [
   { value: "mensual",    label: "Mensual",    meses: 1  },
   { value: "trimestral", label: "Trimestral", meses: 3  },
@@ -514,7 +526,7 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     edad_max:          String(clase?.edad_max   ?? 99),
     cupo_max:          String(clase?.cupo_max   ?? 20),
     activo:            clase?.activo !== false,
-    dias_semana:       clase?.dias_semana        || [],
+    dias_semana:       (clase?.dias_semana || []).map(toShort),
     hora_inicio:       clase?.hora_inicio        || "09:00",
     hora_fin:          clase?.hora_fin           || "10:00",
     fecha_inicio:      clase?.fecha_inicio       || todayISO(),
@@ -598,7 +610,7 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
           clase_id: finalClaseId,
           hora_inicio: form.hora_inicio,
           hora_fin: form.hora_fin,
-          dias_semana: form.dias_semana,
+          dias_semana: form.dias_semana.map(toLong),  // DB espera formato largo
           fecha_inicio: form.fecha_inicio || todayISO(),
           fecha_fin: form.fecha_fin || null,
           activo: true,
@@ -617,14 +629,15 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       }
 
       // ══ 2. GUARDAR PLAN DE MEMBRESÍA ════════════════════════════
-      // cupo_clases NO existe en la DB — columna eliminada
+      // Columnas reales: dias_gracia, penalidad_mora, tipo_penalidad, clases_vinculadas
+      // NO existen: mora_tipo, mora_monto, cupo_clases
       const planPayload = {
         nombre: form.nombre.trim(),
         precio_publico: precioNum,
         ciclo_renovacion: form.ciclo_renovacion || "mensual",
         dias_gracia: diasGracia,
-        mora_tipo: form.mora_tipo || "ninguna",
-        mora_monto: Number(form.mora_monto) || 0,
+        penalidad_mora: Number(form.mora_monto) || 0,
+        tipo_penalidad: form.mora_tipo === "porcentaje" ? "porcentaje" : "fijo",
         activo: form.activo !== false,
         clases_vinculadas: [String(finalClaseId)],
       };

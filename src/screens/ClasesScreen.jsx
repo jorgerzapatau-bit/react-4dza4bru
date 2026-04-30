@@ -588,6 +588,13 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
       ]);
       // Mergear horario activo en cada clase para que el wizard tenga los datos
       const horarios = hData || [];
+      // Normalizar días de DB (largo: "lunes") a UI (corto: "lun")
+      const DIA_LONG_TO_SHORT = {
+        lunes:"lun", martes:"mar", miercoles:"mie", miércoles:"mie",
+        jueves:"jue", viernes:"vie", sabado:"sab", sábado:"sab", domingo:"dom",
+      };
+      const toShort = d => DIA_LONG_TO_SHORT[d?.toLowerCase()] || d;
+
       const clasesConHorario = (cData || []).map(c => {
         const h = horarios.find(h => String(h.clase_id) === String(c.id) && h.activo !== false);
         if (!h) return c;
@@ -596,7 +603,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
           horario_id:   h.id,
           hora_inicio:  h.hora_inicio,
           hora_fin:     h.hora_fin,
-          dias_semana:  h.dias_semana,
+          dias_semana:  (h.dias_semana || []).map(toShort),
           fecha_inicio: h.fecha_inicio,
           fecha_fin:    h.fecha_fin,
         };
