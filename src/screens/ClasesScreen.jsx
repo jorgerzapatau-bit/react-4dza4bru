@@ -191,18 +191,25 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, canManage, onS
   );
 }
 
-// ── Modal Detalle ─────────────────────────────────────────────────
+// ── Modal Detalle — Pantalla completa con header fijo ─────────────
 function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, planes, onEditClase, onClose, onAddTx }) {
   const planVinculado = (planes || []).find(p =>
     (p.clases_vinculadas || []).map(String).includes(String(clase.id))
   );
   const precio = planVinculado?.precio_publico ?? clase?.precio_membresia ?? null;
   const ciclo  = planVinculado?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
+  const accentColor = clase.color || "#6c63ff";
 
   const [busqueda, setBusqueda] = useState("");
   const [cobrandoId, setCobrandoId] = useState(null);
 
-  // Calcular días restantes
+  // Cerrar con Escape
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const diasRestantes = (vence) => {
     if (!vence) return null;
     return Math.ceil((new Date(vence + "T00:00:00") - new Date()) / 86400000);
@@ -228,8 +235,6 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
         return { miembro: m, info };
       }).filter(Boolean);
     }
-
-    // Ordenar: por vencer (≤7 días) primero, luego por días restantes asc
     return lista.sort((a, b) => {
       const da = diasRestantes(a.info.vence) ?? 9999;
       const db = diasRestantes(b.info.vence) ?? 9999;
@@ -264,134 +269,310 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
   };
 
   return (
-    <Modal title={clase.nombre} onClose={onClose}>
-      {/* Chips de resumen */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        <span style={{ background: cupoEstado.bg, color: cupoEstado.color, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
-          {alumnos.length} / {clase.cupo_max} · {cupoEstado.label}
-        </span>
-        {precio !== null && (
-          <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
-            {precio > 0 ? `$${Number(precio).toLocaleString("es-MX")} / ${CICLO_LABEL[ciclo] || ciclo}` : "Gratuita"}
-          </span>
-        )}
-        {porVencer.length > 0 && (
-          <span style={{ background: "rgba(248,113,113,.12)", color: "#f87171", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
-            ⚠️ {porVencer.length} por vencer
-          </span>
-        )}
-        {(clase.edad_min > 0 || clase.edad_max < 99) && (
-          <span style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", borderRadius: 8, padding: "4px 10px", fontSize: 11 }}>
-            {clase.edad_min}–{clase.edad_max} años
-          </span>
-        )}
-      </div>
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 300,
+      background: "var(--bg-main)",
+      display: "flex", flexDirection: "column",
+      animation: "slideInRight .22s cubic-bezier(.32,.72,0,1)",
+    }}>
+      <style>{`
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(40px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        .detalle-alumno-row:hover { background: var(--bg-elevated) !important; }
+        .detalle-cobrar-btn:hover { filter: brightness(1.12); transform: scale(1.03); }
+        .detalle-edit-fab:hover   { transform: scale(1.07); box-shadow: 0 8px 28px rgba(108,99,255,.5) !important; }
+      `}</style>
 
-      {/* Horario */}
-      {clase.hora_inicio && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: `${clase.color || "#6c63ff"}10`, border: `1px solid ${clase.color || "#6c63ff"}25`, borderRadius: 10, padding: "8px 12px", marginBottom: 16 }}>
-          <span style={{ fontSize: 14 }}>🕐</span>
-          <span style={{ color: clase.color || "#6c63ff", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
-            {fmtHora(clase.hora_inicio)} — {fmtHora(clase.hora_fin)}
-          </span>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {(clase.dias_semana || []).map(d => (
-              <span key={d} style={{ background: `${clase.color || "#6c63ff"}18`, color: clase.color || "#6c63ff", borderRadius: 5, padding: "2px 6px", fontSize: 10, fontWeight: 700 }}>
-                {DIAS_SHORT[d?.toLowerCase()] || d}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── HEADER FIJO ── */}
+      <div style={{
+        flexShrink: 0, position: "sticky", top: 0, zIndex: 10,
+        background: "var(--bg-card)",
+        borderBottom: "1px solid var(--border)",
+        boxShadow: "0 2px 16px rgba(0,0,0,.12)",
+      }}>
+        {/* Barra de acento de color de la clase */}
+        <div style={{ height: 3, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)` }} />
 
-      {/* Alumnos */}
-      <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
-        Alumnos ({alumnos.length})
-      </p>
+        <div style={{ padding: "0 20px", maxWidth: 720, margin: "0 auto", width: "100%" }}>
+          {/* Fila 1: back + nombre + editar */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 14, paddingBottom: 10 }}>
+            {/* Botón volver */}
+            <button
+              onClick={onClose}
+              style={{
+                flexShrink: 0, width: 36, height: 36,
+                border: "1px solid var(--border-strong)", borderRadius: 10,
+                background: "var(--bg-elevated)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, color: "var(--text-secondary)",
+                transition: "background .15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--bg-main)"}
+              onMouseLeave={e => e.currentTarget.style.background = "var(--bg-elevated)"}
+            >←</button>
 
-      {alumnos.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <input type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar alumno..."
-            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 13px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
-          />
-        </div>
-      )}
+            {/* Avatar + nombre */}
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: `${accentColor}22`, color: accentColor,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18,
+            }}>🥋</div>
 
-      {/* Banner "Por vencer" cuando hay alumnos urgentes y no hay búsqueda activa */}
-      {porVencer.length > 0 && !busqueda && (
-        <div style={{ padding: "8px 12px", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", borderRadius: 10, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 14 }}>🔔</span>
-          <p style={{ color: "#f87171", fontSize: 12 }}>
-            <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> con membresía por vencer en 7 días o menos. Se muestran primero.
-          </p>
-        </div>
-      )}
-
-      {alumnosFiltrados.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "24px 0" }}>
-          <p style={{ fontSize: 28, marginBottom: 8 }}>🎓</p>
-          <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>
-            {busqueda ? "Sin resultados." : "Ningún alumno inscrito aún."}
-          </p>
-        </div>
-      ) : alumnosFiltrados.map(({ miembro: m, info }) => {
-        const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
-        const dias = diasRestantes(info.vence);
-        const urgente = dias !== null && dias <= 7;
-        const vencido = dias !== null && dias < 0;
-        const cobrando = cobrandoId === m.id;
-
-        return (
-          <div key={m.id} style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 12px", borderRadius: 14, marginBottom: 8,
-            background: "var(--bg-elevated)",
-            border: vencido ? "1px solid rgba(248,113,113,.4)" : urgente ? "1px solid rgba(245,158,11,.35)" : "1px solid var(--border)",
-          }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: `${clase.color || "#6c63ff"}22`, color: clase.color || "#6c63ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
-              {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : avatarIniciales(m.nombre)}
-            </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{m.nombre}</p>
-              <p style={{ color: vencido ? "#f87171" : urgente ? "#f59e0b" : "var(--text-tertiary)", fontSize: 11 }}>
-                {edad !== null ? `${edad} años · ` : ""}
-                {vencido ? `Venció hace ${Math.abs(dias)}d`
-                  : urgente ? `⚠️ Vence en ${dias}d (${fmtDate(info.vence)})`
-                  : info.vence ? `Vence: ${fmtDate(info.vence)}` : "Sin vencimiento"}
-              </p>
+              <h2 style={{
+                color: "var(--text-primary)", fontSize: 17, fontWeight: 800,
+                overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                lineHeight: 1.2,
+              }}>{clase.nombre}</h2>
+              {clase.instructor_nombre && (
+                <p style={{ color: "var(--text-tertiary)", fontSize: 11, fontWeight: 500 }}>
+                  {clase.instructor_nombre}
+                </p>
+              )}
             </div>
-            {/* Botón cobrar renovación */}
-            {canManage && precio > 0 && (
+
+            {/* Botón Editar — SIEMPRE VISIBLE para canManage */}
+            {canManage && (
               <button
-                onClick={() => handleCobrar(m, info)}
-                disabled={cobrando}
+                onClick={onEditClase}
+                className="detalle-edit-fab"
                 style={{
-                  flexShrink: 0, padding: "5px 11px",
-                  border: urgente || vencido ? "none" : "1px solid var(--border-strong)",
-                  borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-                  fontSize: 11, fontWeight: 700,
-                  background: urgente || vencido ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-card)",
-                  color: urgente || vencido ? "#fff" : "var(--text-secondary)",
-                  opacity: cobrando ? 0.5 : 1,
+                  flexShrink: 0,
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "8px 14px",
+                  border: "none", borderRadius: 10,
+                  background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                  color: "#fff", cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  boxShadow: "0 4px 16px rgba(108,99,255,.35)",
                   transition: "all .15s",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {cobrando ? "..." : "Cobrar"}
+                ✏️ Editar
               </button>
             )}
           </div>
-        );
-      })}
 
-      {canManage && (
-        <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
-          <button onClick={onEditClase} style={{ width: "100%", padding: "10px", border: "1px solid var(--border)", borderRadius: 12, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600 }}>
-            ⚙️ Editar datos de la clase
-          </button>
+          {/* Fila 2: chips de info */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingBottom: 12 }}>
+            <span style={{
+              background: cupoEstado.bg, color: cupoEstado.color,
+              borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
+            }}>
+              {alumnos.length}/{clase.cupo_max} · {cupoEstado.label}
+            </span>
+            {precio !== null && (
+              <span style={{
+                background: "rgba(74,222,128,.12)", color: "#4ade80",
+                borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
+              }}>
+                {precio > 0 ? `$${Number(precio).toLocaleString("es-MX")} / ${CICLO_LABEL[ciclo] || ciclo}` : "Gratuita"}
+              </span>
+            )}
+            {porVencer.length > 0 && (
+              <span style={{
+                background: "rgba(248,113,113,.12)", color: "#f87171",
+                borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
+              }}>
+                ⚠️ {porVencer.length} por vencer
+              </span>
+            )}
+            {(clase.edad_min > 0 || clase.edad_max < 99) && (
+              <span style={{
+                background: "var(--bg-elevated)", color: "var(--text-secondary)",
+                borderRadius: 8, padding: "3px 10px", fontSize: 11,
+              }}>
+                {clase.edad_min}–{clase.edad_max} años
+              </span>
+            )}
+            {/* Horario inline */}
+            {clase.hora_inicio && (
+              <span style={{
+                background: `${accentColor}12`, color: accentColor,
+                borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
+                fontFamily: "'DM Mono',monospace",
+              }}>
+                🕐 {fmtHora(clase.hora_inicio)}–{fmtHora(clase.hora_fin)}
+                {" "}
+                {(clase.dias_semana || []).map(d => DIAS_SHORT[d?.toLowerCase()] || d).join(" · ")}
+              </span>
+            )}
+          </div>
         </div>
-      )}
-    </Modal>
+
+        {/* Barra de cupo */}
+        <div style={{ height: 2, background: "var(--border)", position: "relative" }}>
+          <div style={{
+            position: "absolute", top: 0, left: 0, height: "100%",
+            width: `${Math.min((alumnos.length / Math.max(clase.cupo_max, 1)) * 100, 100)}%`,
+            background: cupoEstado.color,
+            transition: "width .5s ease",
+            borderRadius: "0 2px 2px 0",
+          }} />
+        </div>
+      </div>
+
+      {/* ── CONTENIDO SCROLLABLE ── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 40px" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+
+          {/* Banner por vencer */}
+          {porVencer.length > 0 && !busqueda && (
+            <div style={{
+              padding: "10px 14px", marginBottom: 16,
+              background: "rgba(248,113,113,.07)",
+              border: "1px solid rgba(248,113,113,.22)",
+              borderRadius: 12,
+              display: "flex", alignItems: "flex-start", gap: 10,
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>🔔</span>
+              <p style={{ color: "#f87171", fontSize: 12, lineHeight: 1.5 }}>
+                <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> con membresía por vencer en 7 días o menos — se muestran primero.
+              </p>
+            </div>
+          )}
+
+          {/* Sección alumnos */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <p style={{
+              color: "var(--text-secondary)", fontSize: 11, fontWeight: 700,
+              textTransform: "uppercase", letterSpacing: .6,
+            }}>
+              ALUMNOS ({alumnos.length})
+            </p>
+          </div>
+
+          {/* Búsqueda */}
+          {alumnos.length > 0 && (
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <span style={{
+                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none",
+              }}>🔍</span>
+              <input
+                type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                placeholder="Buscar alumno..."
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  background: "var(--bg-card)", border: "1px solid var(--border-strong)",
+                  borderRadius: 12, padding: "10px 36px 10px 36px",
+                  color: "var(--text-primary)", fontSize: 13,
+                  fontFamily: "inherit", outline: "none",
+                }}
+              />
+              {busqueda && (
+                <button onClick={() => setBusqueda("")} style={{
+                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", color: "var(--text-tertiary)",
+                  cursor: "pointer", fontSize: 14,
+                }}>✕</button>
+              )}
+            </div>
+          )}
+
+          {/* Lista de alumnos */}
+          {alumnosFiltrados.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 0" }}>
+              <p style={{ fontSize: 36, marginBottom: 10 }}>🎓</p>
+              <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>
+                {busqueda ? "Sin resultados para esa búsqueda." : "Ningún alumno inscrito aún."}
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {alumnosFiltrados.map(({ miembro: m, info }) => {
+                const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
+                const dias = diasRestantes(info.vence);
+                const urgente = dias !== null && dias <= 7;
+                const vencido = dias !== null && dias < 0;
+                const cobrando = cobrandoId === m.id;
+
+                return (
+                  <div
+                    key={m.id}
+                    className="detalle-alumno-row"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "12px 14px", borderRadius: 16,
+                      background: "var(--bg-card)",
+                      border: vencido
+                        ? "1px solid rgba(248,113,113,.35)"
+                        : urgente
+                          ? "1px solid rgba(245,158,11,.3)"
+                          : "1px solid var(--border)",
+                      transition: "background .15s",
+                    }}
+                  >
+                    {/* Avatar */}
+                    <div style={{
+                      width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                      overflow: "hidden",
+                      background: `${accentColor}1a`, color: accentColor,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 13, fontWeight: 700,
+                    }}>
+                      {m.foto
+                        ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : avatarIniciales(m.nombre)
+                      }
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        color: "var(--text-primary)", fontSize: 13, fontWeight: 700,
+                        overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                      }}>{m.nombre}</p>
+                      <p style={{
+                        color: vencido ? "#f87171" : urgente ? "#f59e0b" : "var(--text-tertiary)",
+                        fontSize: 11, marginTop: 1,
+                      }}>
+                        {edad !== null ? `${edad} años · ` : ""}
+                        {vencido
+                          ? `Venció hace ${Math.abs(dias)}d`
+                          : urgente
+                            ? `⚠️ Vence en ${dias}d (${fmtDate(info.vence)})`
+                            : info.vence
+                              ? `Vence: ${fmtDate(info.vence)}`
+                              : "Sin vencimiento"
+                        }
+                      </p>
+                    </div>
+
+                    {/* Botón cobrar */}
+                    {canManage && precio > 0 && (
+                      <button
+                        className="detalle-cobrar-btn"
+                        onClick={() => handleCobrar(m, info)}
+                        disabled={cobrando}
+                        style={{
+                          flexShrink: 0, padding: "6px 13px",
+                          border: urgente || vencido ? "none" : "1px solid var(--border-strong)",
+                          borderRadius: 9, cursor: "pointer", fontFamily: "inherit",
+                          fontSize: 11, fontWeight: 700,
+                          background: urgente || vencido
+                            ? "linear-gradient(135deg,#6c63ff,#e040fb)"
+                            : "var(--bg-elevated)",
+                          color: urgente || vencido ? "#fff" : "var(--text-secondary)",
+                          opacity: cobrando ? 0.5 : 1,
+                          transition: "all .15s",
+                        }}
+                      >
+                        {cobrando ? "···" : "Cobrar"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
