@@ -493,9 +493,17 @@ function ConfirmSalir({ onConfirm, onCancel }) {
 export default function NuevaClaseWizard({ clase, gymId, miembros, instructores, planes, gymConfig, onSave, onClose }) {
   const esEdicion = !!clase;
 
-  const planVinculado = planes
-    ? (planes || []).find(p => (p.clases_vinculadas || []).map(String).includes(String(clase?.id)))
-    : null;
+  // Bug fix: buscar plan por plan_id explícito primero, luego por clases_vinculadas
+  const planVinculado = (() => {
+    if (!planes || !clase?.id) return null;
+    if (clase?.plan_id) {
+      const byId = planes.find(p => String(p.id) === String(clase.plan_id));
+      if (byId) return byId;
+    }
+    return planes.find(p =>
+      (p.clases_vinculadas || []).map(String).includes(String(clase.id))
+    ) || null;
+  })();
 
   const [form, setForm] = useState(() => ({
     nombre:            clase?.nombre            || "",
@@ -553,34 +561,47 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     if (!validar()) return;
     setSaving(true); setError("");
     try {
-      const payload = {
-        gym_id: gymId, nombre: form.nombre.trim(),
+      // ── Payload tabla clases (solo campos de la tabla clases) ────
+      const clasePayload = {
+        gym_id: gymId,
+        nombre: form.nombre.trim(),
         descripcion: form.descripcion.trim() || null,
         instructor_id: form.instructor_id || null,
         instructor_nombre: form.instructor_nombre || null,
-        edad_min: Number(form.edad_min) || 0, edad_max: Number(form.edad_max) || 99,
-        cupo_max: Number(form.cupo_max) || 20, activo: form.activo,
-        dias_semana: form.dias_semana, hora_inicio: form.hora_inicio, hora_fin: form.hora_fin,
-        fecha_inicio: form.fecha_inicio || todayISO(), fecha_fin: form.fecha_fin || null,
+        edad_min: Number(form.edad_min) || 0,
+        edad_max: Number(form.edad_max) || 99,
+        cupo_max: Number(form.cupo_max) || 20,
+        activo: form.activo !== false,
+        dias_semana: form.dias_semana,
+        hora_inicio: form.hora_inicio,
+        hora_fin: form.hora_fin,
+        fecha_inicio: form.fecha_inicio || todayISO(),
+        fecha_fin: form.fecha_fin || null,
       };
 
       const dbC = await supabase.from("clases");
       let savedClase;
       if (esEdicion) {
-        await dbC.update(clase.id, payload);
-        savedClase = { ...clase, ...payload };
+        const ok = await dbC.update(clase.id, clasePayload);
+        if (!ok) { setError("Error al guardar la clase."); setSaving(false); return; }
+        savedClase = { ...clase, ...clasePayload };
       } else {
-        savedClase = await dbC.insert(payload);
+        savedClase = await dbC.insert(clasePayload);
+        if (!savedClase) { setError("Error al guardar la clase."); setSaving(false); return; }
       }
-      if (!savedClase) { setError("Error al guardar la clase."); setSaving(false); return; }
 
       const claseId = savedClase.id || clase?.id;
       const precioNum = Number(form.precio_membresia || 0);
-      const dbP = await supabase.from("planes_membresia");
+      const diasGracia = (form.dias_gracia !== undefined && form.dias_gracia !== "")
+        ? Number(form.dias_gracia) : 5;
+
+      // ── Payload tabla planes_membresia ───────────────────────────
       const planPayload = {
-        gym_id: gymId, nombre: form.nombre.trim(),
-        precio_publico: precioNum, ciclo_renovacion: form.ciclo_renovacion,
-        dias_gracia: Number(form.dias_gracia) ?? 5,
+        gym_id: gymId,
+        nombre: form.nombre.trim(),
+        precio_publico: precioNum,
+        ciclo_renovacion: form.ciclo_renovacion || "mensual",
+        dias_gracia: diasGracia,
         mora_tipo: form.mora_tipo || "ninguna",
         mora_monto: Number(form.mora_monto) || 0,
         activo: form.activo !== false,
@@ -588,15 +609,19 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
         cupo_clases: null,
       };
 
-      // Resolver plan_id: prioridad form > planVinculado > campo plan_id de la clase
-      const resolvedPlanId = form.plan_id
-        || planVinculado?.id
-        || clase?.plan_id
-        || null;
+      // ── Resolver plan_id: plan_id en form > planVinculado > clase.plan_id ──
+      const resolvedPlanId =
+        form.plan_id ||
+        planVinculado?.id ||
+        clase?.plan_id ||
+        null;
 
+      const dbP = await supabase.from("planes_membresia");
       if (resolvedPlanId) {
-        await dbP.update(resolvedPlanId, planPayload);
+        const okP = await dbP.update(resolvedPlanId, planPayload);
+        if (!okP) console.warn("⚠️ UPDATE plan falló para id:", resolvedPlanId);
       } else {
+        // Crear plan nuevo y vincularlo
         const savedPlan = await dbP.insert(planPayload);
         if (savedPlan?.id) {
           const dbC2 = await supabase.from("clases");
@@ -609,8 +634,8 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       onSave({
         ...savedClase,
         precio_membresia:  precioNum,
-        ciclo_renovacion:  form.ciclo_renovacion,
-        dias_gracia:       Number(form.dias_gracia) || 0,
+        ciclo_renovacion:  form.ciclo_renovacion || "mensual",
+        dias_gracia:       diasGracia,
         mora_tipo:         form.mora_tipo || "ninguna",
         mora_monto:        Number(form.mora_monto) || 0,
       }, esEdicion);
