@@ -271,134 +271,108 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 300,
-      background: "var(--bg-main)",
+      background: "var(--bg-base)",
       display: "flex", flexDirection: "column",
-      animation: "slideInRight .22s cubic-bezier(.32,.72,0,1)",
+      animation: "detalleIn .2s cubic-bezier(.32,.72,0,1)",
     }}>
       <style>{`
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to   { opacity: 1; transform: translateX(0); }
+        @keyframes detalleIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .detalle-alumno-row:hover { background: var(--bg-elevated) !important; }
-        .detalle-cobrar-btn:hover { filter: brightness(1.12); transform: scale(1.03); }
-        .detalle-edit-fab:hover   { transform: scale(1.07); box-shadow: 0 8px 28px rgba(108,99,255,.5) !important; }
+        .d-alumno:hover { background: var(--bg-elevated) !important; }
+        .d-cobrar:hover  { filter: brightness(1.1); transform: scale(1.04); }
+        .d-edit:hover    { filter: brightness(1.1); transform: scale(1.04); box-shadow: 0 6px 22px rgba(108,99,255,.5) !important; }
+        .d-back:hover    { background: var(--bg-elevated) !important; }
+        @media (min-width: 768px) {
+          .detalle-body    { flex-direction: row !important; align-items: flex-start !important; gap: 20px !important; }
+          .detalle-sidebar { width: 280px !important; flex-shrink: 0 !important; position: sticky !important; top: 20px !important; }
+          .detalle-main    { flex: 1 !important; min-width: 0 !important; }
+        }
       `}</style>
 
-      {/* ── HEADER FIJO ── */}
+      {/* ══ HEADER FIJO ══ */}
       <div style={{
-        flexShrink: 0, position: "sticky", top: 0, zIndex: 10,
+        flexShrink: 0,
         background: "var(--bg-card)",
         borderBottom: "1px solid var(--border)",
-        boxShadow: "0 2px 16px rgba(0,0,0,.12)",
+        boxShadow: "0 2px 12px rgba(0,0,0,.15)",
       }}>
-        {/* Barra de acento de color de la clase */}
-        <div style={{ height: 3, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88)` }} />
+        {/* Franja de color */}
+        <div style={{ height: 3, background: `linear-gradient(90deg,${accentColor},${accentColor}55)` }} />
 
-        <div style={{ padding: "0 20px", maxWidth: 720, margin: "0 auto", width: "100%" }}>
-          {/* Fila 1: back + nombre + editar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 14, paddingBottom: 10 }}>
+        <div style={{ padding: "12px 20px 0", maxWidth: 1400, margin: "0 auto" }}>
+          {/* Fila principal */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingBottom: 10 }}>
+
             {/* Botón volver */}
-            <button
-              onClick={onClose}
-              style={{
-                flexShrink: 0, width: 36, height: 36,
-                border: "1px solid var(--border-strong)", borderRadius: 10,
-                background: "var(--bg-elevated)", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, color: "var(--text-secondary)",
-                transition: "background .15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = "var(--bg-main)"}
-              onMouseLeave={e => e.currentTarget.style.background = "var(--bg-elevated)"}
-            >←</button>
-
-            {/* Avatar + nombre */}
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: `${accentColor}22`, color: accentColor,
+            <button className="d-back" onClick={onClose} style={{
+              flexShrink: 0, width: 34, height: 34,
+              border: "1px solid var(--border-strong)", borderRadius: 9,
+              background: "var(--bg-base)", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18,
-            }}>🥋</div>
+              fontSize: 16, color: "var(--text-secondary)", transition: "background .15s",
+            }}>←</button>
 
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{
-                color: "var(--text-primary)", fontSize: 17, fontWeight: 800,
-                overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
-                lineHeight: 1.2,
-              }}>{clase.nombre}</h2>
-              {clase.instructor_nombre && (
-                <p style={{ color: "var(--text-tertiary)", fontSize: 11, fontWeight: 500 }}>
-                  {clase.instructor_nombre}
-                </p>
-              )}
-            </div>
+            {/* Dot de color */}
+            <div style={{
+              width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
+              background: accentColor, boxShadow: `0 0 0 3px ${accentColor}30`,
+            }} />
 
-            {/* Botón Editar — SIEMPRE VISIBLE para canManage */}
+            {/* Nombre */}
+            <h2 style={{
+              flex: 1, minWidth: 0,
+              color: "var(--text-primary)", fontSize: 18, fontWeight: 800,
+              overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+            }}>{clase.nombre}</h2>
+
+            {/* ── BOTÓN EDITAR siempre visible ── */}
             {canManage && (
-              <button
-                onClick={onEditClase}
-                className="detalle-edit-fab"
-                style={{
-                  flexShrink: 0,
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "8px 14px",
-                  border: "none", borderRadius: 10,
-                  background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-                  color: "#fff", cursor: "pointer",
-                  fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                  boxShadow: "0 4px 16px rgba(108,99,255,.35)",
-                  transition: "all .15s",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                ✏️ Editar
+              <button className="d-edit" onClick={onEditClase} style={{
+                flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 16px", border: "none", borderRadius: 10,
+                background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                color: "#fff", cursor: "pointer", fontFamily: "inherit",
+                fontSize: 12, fontWeight: 700,
+                boxShadow: "0 3px 14px rgba(108,99,255,.4)",
+                transition: "all .15s", whiteSpace: "nowrap",
+              }}>
+                ✏️ Editar clase
               </button>
             )}
           </div>
 
-          {/* Fila 2: chips de info */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingBottom: 12 }}>
-            <span style={{
-              background: cupoEstado.bg, color: cupoEstado.color,
-              borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
-            }}>
+          {/* Chips */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingBottom: 11 }}>
+            <span style={{ background: cupoEstado.bg, color: cupoEstado.color, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
               {alumnos.length}/{clase.cupo_max} · {cupoEstado.label}
             </span>
             {precio !== null && (
-              <span style={{
-                background: "rgba(74,222,128,.12)", color: "#4ade80",
-                borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
-              }}>
+              <span style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
                 {precio > 0 ? `$${Number(precio).toLocaleString("es-MX")} / ${CICLO_LABEL[ciclo] || ciclo}` : "Gratuita"}
               </span>
             )}
             {porVencer.length > 0 && (
-              <span style={{
-                background: "rgba(248,113,113,.12)", color: "#f87171",
-                borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
-              }}>
+              <span style={{ background: "rgba(248,113,113,.1)", color: "#f87171", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
                 ⚠️ {porVencer.length} por vencer
               </span>
             )}
             {(clase.edad_min > 0 || clase.edad_max < 99) && (
-              <span style={{
-                background: "var(--bg-elevated)", color: "var(--text-secondary)",
-                borderRadius: 8, padding: "3px 10px", fontSize: 11,
-              }}>
+              <span style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", borderRadius: 20, padding: "3px 10px", fontSize: 11 }}>
                 {clase.edad_min}–{clase.edad_max} años
               </span>
             )}
-            {/* Horario inline */}
             {clase.hora_inicio && (
-              <span style={{
-                background: `${accentColor}12`, color: accentColor,
-                borderRadius: 8, padding: "3px 10px", fontSize: 11, fontWeight: 700,
-                fontFamily: "'DM Mono',monospace",
-              }}>
+              <span style={{ background: `${accentColor}15`, color: accentColor, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
                 🕐 {fmtHora(clase.hora_inicio)}–{fmtHora(clase.hora_fin)}
-                {" "}
-                {(clase.dias_semana || []).map(d => DIAS_SHORT[d?.toLowerCase()] || d).join(" · ")}
+                {" · "}
+                {(clase.dias_semana || []).map(d => DIAS_SHORT[d?.toLowerCase()] || d).join(" ")}
+              </span>
+            )}
+            {clase.instructor_nombre && (
+              <span style={{ background: "var(--bg-elevated)", color: "var(--text-secondary)", borderRadius: 20, padding: "3px 10px", fontSize: 11 }}>
+                👤 {clase.instructor_nombre}
               </span>
             )}
           </div>
@@ -409,167 +383,183 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
           <div style={{
             position: "absolute", top: 0, left: 0, height: "100%",
             width: `${Math.min((alumnos.length / Math.max(clase.cupo_max, 1)) * 100, 100)}%`,
-            background: cupoEstado.color,
-            transition: "width .5s ease",
-            borderRadius: "0 2px 2px 0",
+            background: cupoEstado.color, borderRadius: "0 2px 2px 0", transition: "width .5s",
           }} />
         </div>
       </div>
 
-      {/* ── CONTENIDO SCROLLABLE ── */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 40px" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+      {/* ══ BODY scrollable ══ */}
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        <div className="detalle-body" style={{
+          display: "flex", flexDirection: "column",
+          gap: 0, maxWidth: 1400, margin: "0 auto",
+          padding: "20px 20px 48px",
+        }}>
 
-          {/* Banner por vencer */}
-          {porVencer.length > 0 && !busqueda && (
-            <div style={{
-              padding: "10px 14px", marginBottom: 16,
-              background: "rgba(248,113,113,.07)",
-              border: "1px solid rgba(248,113,113,.22)",
-              borderRadius: 12,
-              display: "flex", alignItems: "flex-start", gap: 10,
-            }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>🔔</span>
-              <p style={{ color: "#f87171", fontSize: 12, lineHeight: 1.5 }}>
-                <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> con membresía por vencer en 7 días o menos — se muestran primero.
-              </p>
+          {/* ── SIDEBAR: stats + descripción (desktop) ── */}
+          <div className="detalle-sidebar" style={{ width: "100%" }}>
+
+            {/* Tarjetas de stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 16 }}>
+              {[
+                { label: "Inscritos",    val: alumnos.length,       icon: "👥", color: accentColor },
+                { label: "Cupo máx.",    val: clase.cupo_max,        icon: "🏟️", color: "var(--text-secondary)" },
+                { label: "Por vencer",   val: porVencer.length,      icon: "⚠️", color: porVencer.length > 0 ? "#f59e0b" : "var(--text-tertiary)" },
+                { label: "Membresía",    val: precio > 0 ? `$${Number(precio).toLocaleString("es-MX")}` : "Gratis", icon: "💳", color: "#4ade80" },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  background: "var(--bg-card)", border: "1px solid var(--border)",
+                  borderRadius: 14, padding: "12px 14px",
+                  display: "flex", flexDirection: "column", gap: 4,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 16 }}>{s.icon}</span>
+                    <span style={{ color: "var(--text-tertiary)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{s.label}</span>
+                  </div>
+                  <p style={{ color: s.color, fontSize: 20, fontWeight: 800, fontFamily: "'DM Mono',monospace", lineHeight: 1 }}>{s.val}</p>
+                </div>
+              ))}
             </div>
-          )}
 
-          {/* Sección alumnos */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <p style={{
-              color: "var(--text-secondary)", fontSize: 11, fontWeight: 700,
-              textTransform: "uppercase", letterSpacing: .6,
-            }}>
-              ALUMNOS ({alumnos.length})
-            </p>
+            {/* Descripción */}
+            {clase.descripcion && (
+              <div style={{
+                background: "var(--bg-card)", border: "1px solid var(--border)",
+                borderRadius: 14, padding: "14px 16px", marginBottom: 16,
+              }}>
+                <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Descripción</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>{clase.descripcion}</p>
+              </div>
+            )}
+
+            {/* Banner por vencer */}
+            {porVencer.length > 0 && !busqueda && (
+              <div style={{
+                padding: "10px 14px", marginBottom: 16,
+                background: "rgba(248,113,113,.07)", border: "1px solid rgba(248,113,113,.2)",
+                borderRadius: 12, display: "flex", gap: 10,
+              }}>
+                <span style={{ fontSize: 16, flexShrink: 0 }}>🔔</span>
+                <p style={{ color: "#f87171", fontSize: 12, lineHeight: 1.5 }}>
+                  <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> vence en ≤7 días. Se muestran primero.
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* Búsqueda */}
-          {alumnos.length > 0 && (
-            <div style={{ position: "relative", marginBottom: 14 }}>
-              <span style={{
-                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
-                fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none",
-              }}>🔍</span>
-              <input
-                type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                placeholder="Buscar alumno..."
-                style={{
-                  width: "100%", boxSizing: "border-box",
-                  background: "var(--bg-card)", border: "1px solid var(--border-strong)",
-                  borderRadius: 12, padding: "10px 36px 10px 36px",
-                  color: "var(--text-primary)", fontSize: 13,
-                  fontFamily: "inherit", outline: "none",
-                }}
-              />
-              {busqueda && (
-                <button onClick={() => setBusqueda("")} style={{
-                  position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", color: "var(--text-tertiary)",
-                  cursor: "pointer", fontSize: 14,
-                }}>✕</button>
-              )}
-            </div>
-          )}
+          {/* ── MAIN: lista de alumnos ── */}
+          <div className="detalle-main" style={{ flex: 1, paddingLeft: 0 }}>
 
-          {/* Lista de alumnos */}
-          {alumnosFiltrados.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "48px 0" }}>
-              <p style={{ fontSize: 36, marginBottom: 10 }}>🎓</p>
-              <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>
-                {busqueda ? "Sin resultados para esa búsqueda." : "Ningún alumno inscrito aún."}
+            {/* Header sección */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .6 }}>
+                Alumnos ({alumnos.length})
               </p>
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {alumnosFiltrados.map(({ miembro: m, info }) => {
-                const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
-                const dias = diasRestantes(info.vence);
-                const urgente = dias !== null && dias <= 7;
-                const vencido = dias !== null && dias < 0;
-                const cobrando = cobrandoId === m.id;
 
-                return (
-                  <div
-                    key={m.id}
-                    className="detalle-alumno-row"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "12px 14px", borderRadius: 16,
+            {/* Buscador */}
+            {alumnos.length > 0 && (
+              <div style={{ position: "relative", marginBottom: 12 }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none" }}>🔍</span>
+                <input
+                  type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                  placeholder="Buscar alumno..."
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    background: "var(--bg-card)", border: "1px solid var(--border-strong)",
+                    borderRadius: 12, padding: "10px 36px",
+                    color: "var(--text-primary)", fontSize: 13,
+                    fontFamily: "inherit", outline: "none",
+                  }}
+                />
+                {busqueda && (
+                  <button onClick={() => setBusqueda("")} style={{
+                    position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", fontSize: 14,
+                  }}>✕</button>
+                )}
+              </div>
+            )}
+
+            {/* Lista */}
+            {alumnosFiltrados.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 0" }}>
+                <p style={{ fontSize: 36, marginBottom: 10 }}>🎓</p>
+                <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>
+                  {busqueda ? "Sin resultados." : "Ningún alumno inscrito aún."}
+                </p>
+              </div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+                gap: 8,
+              }}>
+                {alumnosFiltrados.map(({ miembro: m, info }) => {
+                  const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
+                  const dias = diasRestantes(info.vence);
+                  const urgente = dias !== null && dias <= 7;
+                  const vencido = dias !== null && dias < 0;
+                  const cobrando = cobrandoId === m.id;
+
+                  return (
+                    <div key={m.id} className="d-alumno" style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "11px 13px", borderRadius: 14,
                       background: "var(--bg-card)",
                       border: vencido
                         ? "1px solid rgba(248,113,113,.35)"
                         : urgente
                           ? "1px solid rgba(245,158,11,.3)"
                           : "1px solid var(--border)",
-                      transition: "background .15s",
-                    }}
-                  >
-                    {/* Avatar */}
-                    <div style={{
-                      width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                      overflow: "hidden",
-                      background: `${accentColor}1a`, color: accentColor,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 13, fontWeight: 700,
+                      transition: "background .12s",
                     }}>
-                      {m.foto
-                        ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : avatarIniciales(m.nombre)
-                      }
-                    </div>
-
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        color: "var(--text-primary)", fontSize: 13, fontWeight: 700,
-                        overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
-                      }}>{m.nombre}</p>
-                      <p style={{
-                        color: vencido ? "#f87171" : urgente ? "#f59e0b" : "var(--text-tertiary)",
-                        fontSize: 11, marginTop: 1,
+                      {/* Avatar */}
+                      <div style={{
+                        width: 38, height: 38, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
+                        background: `${accentColor}18`, color: accentColor,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: 700,
                       }}>
-                        {edad !== null ? `${edad} años · ` : ""}
-                        {vencido
-                          ? `Venció hace ${Math.abs(dias)}d`
-                          : urgente
-                            ? `⚠️ Vence en ${dias}d (${fmtDate(info.vence)})`
-                            : info.vence
-                              ? `Vence: ${fmtDate(info.vence)}`
-                              : "Sin vencimiento"
+                        {m.foto
+                          ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          : avatarIniciales(m.nombre)
                         }
-                      </p>
-                    </div>
-
-                    {/* Botón cobrar */}
-                    {canManage && precio > 0 && (
-                      <button
-                        className="detalle-cobrar-btn"
-                        onClick={() => handleCobrar(m, info)}
-                        disabled={cobrando}
-                        style={{
-                          flexShrink: 0, padding: "6px 13px",
+                      </div>
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{m.nombre}</p>
+                        <p style={{ color: vencido ? "#f87171" : urgente ? "#f59e0b" : "var(--text-tertiary)", fontSize: 11, marginTop: 1 }}>
+                          {edad !== null ? `${edad} años · ` : ""}
+                          {vencido
+                            ? `Venció hace ${Math.abs(dias)}d`
+                            : urgente
+                              ? `⚠️ Vence en ${dias}d — ${fmtDate(info.vence)}`
+                              : info.vence ? `Vence: ${fmtDate(info.vence)}` : "Sin vencimiento"
+                          }
+                        </p>
+                      </div>
+                      {/* Cobrar */}
+                      {canManage && precio > 0 && (
+                        <button className="d-cobrar" onClick={() => handleCobrar(m, info)} disabled={cobrando} style={{
+                          flexShrink: 0, padding: "6px 12px",
                           border: urgente || vencido ? "none" : "1px solid var(--border-strong)",
-                          borderRadius: 9, cursor: "pointer", fontFamily: "inherit",
-                          fontSize: 11, fontWeight: 700,
-                          background: urgente || vencido
-                            ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                            : "var(--bg-elevated)",
+                          borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+                          fontSize: 11, fontWeight: 700, transition: "all .15s",
+                          background: urgente || vencido ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
                           color: urgente || vencido ? "#fff" : "var(--text-secondary)",
                           opacity: cobrando ? 0.5 : 1,
-                          transition: "all .15s",
-                        }}
-                      >
-                        {cobrando ? "···" : "Cobrar"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                        }}>
+                          {cobrando ? "···" : "Cobrar"}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
