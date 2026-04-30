@@ -566,15 +566,17 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
 }
 
 // ── PASO 2: Membresía ─────────────────────────────────────────
-// Cada clase ya tiene su precio de membresía integrado (precio_membresia /
-// ciclo_renovacion). Seleccionar la clase = seleccionar la membresía.
-// Lista única, sin secciones separadas.
-function Step2({ fM, setFM, clases, horarios }) {
+// Cada clase ya tiene su precio de membresía integrado.
+// El precio real se resuelve igual que en ClasesScreen:
+//   planVinculado?.precio_publico ?? clase?.costo ?? 0
+// Seleccionar la clase = seleccionar la membresía.
+function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
   const edad    = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
   const esMenor = edad !== null && edad < 18;
 
   const CICLO_LABEL = { mensual: "mes", trimestral: "trimestre", semestral: "semestre", anual: "año" };
   const DIAS_SHORT  = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D" };
+  const MESES_MAP   = { mensual:1, trimestral:3, semestral:6, anual:12 };
 
   const fmtHora = (t) => {
     if (!t) return "";
@@ -583,10 +585,20 @@ function Step2({ fM, setFM, clases, horarios }) {
     return `${hr % 12 || 12}:${m} ${hr >= 12 ? "p.m." : "a.m."}`;
   };
 
-  // Clases activas
+  // Resolver precio y ciclo para una clase — misma lógica que ClasesScreen
+  const resolverPrecio = (c) => {
+    const planVinculado = (planesMembresia || []).find(p =>
+      (p.clases_vinculadas || []).map(String).includes(String(c.id))
+    );
+    const precio = Number(planVinculado?.precio_publico ?? c?.costo ?? 0);
+    const ciclo  = planVinculado?.ciclo_renovacion || c?.ciclo_renovacion || "mensual";
+    const meses  = planVinculado?.meses ?? MESES_MAP[ciclo] ?? 1;
+    const planNombre = planVinculado?.nombre || c.nombre;
+    return { precio, ciclo, meses, planNombre, planVinculado };
+  };
+
   const clasesActivas = (clases || []).filter(c => c.activo !== false);
 
-  // Determinar compatibilidad de edad para una clase
   const ageCheck = (c) => {
     if (edad === null) return { apto: true, warning: null };
     const min = c.edad_min ?? 0;
@@ -596,7 +608,6 @@ function Step2({ fM, setFM, clases, horarios }) {
     return { apto: true, warning: null };
   };
 
-  // Horarios de una clase
   const horariosDeClase = (claseId) =>
     (horarios || []).filter(h => h.clase_id === claseId && h.activo !== false);
 
@@ -668,8 +679,7 @@ function Step2({ fM, setFM, clases, horarios }) {
       ) : (
         clasesActivas.map(c => {
           const isSel    = fM.claseId === c.id;
-          const precio   = Number(c.precio_membresia ?? c.costo ?? 0);
-          const ciclo    = c.ciclo_renovacion || "mensual";
+          const { precio, ciclo, meses, planNombre } = resolverPrecio(c);
           const color    = c.color || "#6c63ff";
           const { apto, warning } = ageCheck(c);
           const horas    = horariosDeClase(c.id);
@@ -682,15 +692,15 @@ function Step2({ fM, setFM, clases, horarios }) {
                 setFM(prev => ({
                   ...prev,
                   claseId:  c.id,
-                  planId:   c.id,            // reuse claseId as planId (same entity)
-                  plan:     c.nombre,
+                  planId:   c.id,
+                  plan:     planNombre,
                   monto:    prev.beca ? "0" : String(precio),
                   planData: {
                     id:               c.id,
-                    nombre:           c.nombre,
+                    nombre:           planNombre,
                     precio_publico:   precio,
                     ciclo_renovacion: ciclo,
-                    meses: { mensual:1, trimestral:3, semestral:6, anual:12 }[ciclo] ?? 1,
+                    meses,
                   },
                 }));
               }}
@@ -1371,7 +1381,7 @@ export default function NuevoMiembroWizard({
             />
           )}
           {step === 2 && (
-            <Step2 fM={fM} setFM={setFM} clases={clases} horarios={horarios} />
+            <Step2 fM={fM} setFM={setFM} clases={clases} horarios={horarios} planesMembresia={planes} />
           )}
           {step === 3 && (
             <Step3
