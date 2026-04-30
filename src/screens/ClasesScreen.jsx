@@ -283,9 +283,7 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
         .d-edit:hover    { filter: brightness(1.1); transform: scale(1.04); box-shadow: 0 6px 22px rgba(108,99,255,.5) !important; }
         .d-back:hover    { background: var(--bg-elevated) !important; }
         @media (min-width: 768px) {
-          .detalle-body    { flex-direction: row !important; align-items: flex-start !important; gap: 20px !important; }
-          .detalle-sidebar { width: 280px !important; flex-shrink: 0 !important; position: sticky !important; top: 20px !important; }
-          .detalle-main    { flex: 1 !important; min-width: 0 !important; }
+          .detalle-stats   { grid-template-columns: repeat(4,1fr) !important; }
         }
       `}</style>
 
@@ -388,66 +386,63 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
 
       {/* ══ BODY scrollable ══ */}
       <div style={{ flex: 1, overflowY: "auto" }}>
-        <div className="detalle-body" style={{
-          display: "flex", flexDirection: "column",
-          gap: 0, maxWidth: 1400, margin: "0 auto",
-          padding: "20px 20px 48px",
-        }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 20px 48px" }}>
 
-          {/* ── SIDEBAR: stats + descripción (desktop) ── */}
-          <div className="detalle-sidebar" style={{ width: "100%" }}>
-
-            {/* Tarjetas de stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 16 }}>
-              {[
-                { label: "Inscritos",    val: alumnos.length,       icon: "👥", color: accentColor },
-                { label: "Cupo máx.",    val: clase.cupo_max,        icon: "🏟️", color: "var(--text-secondary)" },
-                { label: "Por vencer",   val: porVencer.length,      icon: "⚠️", color: porVencer.length > 0 ? "#f59e0b" : "var(--text-tertiary)" },
-                { label: "Membresía",    val: precio > 0 ? `$${Number(precio).toLocaleString("es-MX")}` : "Gratis", icon: "💳", color: "#4ade80" },
-              ].map((s, i) => (
-                <div key={i} style={{
-                  background: "var(--bg-card)", border: "1px solid var(--border)",
-                  borderRadius: 14, padding: "12px 14px",
-                  display: "flex", flexDirection: "column", gap: 4,
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 16 }}>{s.icon}</span>
-                    <span style={{ color: "var(--text-tertiary)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{s.label}</span>
-                  </div>
-                  <p style={{ color: s.color, fontSize: 20, fontWeight: 800, fontFamily: "'DM Mono',monospace", lineHeight: 1 }}>{s.val}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Descripción */}
-            {clase.descripcion && (
-              <div style={{
+          {/* ── STATS: fila superior centrada ── */}
+          <div className="detalle-stats" style={{
+            display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 16,
+          }}>
+            {[
+              { label: "Inscritos",  val: alumnos.length,  icon: "👥", color: accentColor },
+              { label: "Cupo máx.",  val: clase.cupo_max,   icon: "🏟️", color: "var(--text-secondary)" },
+              { label: "Por vencer", val: porVencer.length, icon: "⚠️", color: porVencer.length > 0 ? "#f59e0b" : "var(--text-tertiary)" },
+              { label: "Membresía",  val: precio > 0 ? `$${Number(precio).toLocaleString("es-MX")}` : "Gratis", icon: "💳", color: "#4ade80" },
+            ].map((s, i) => (
+              <div key={i} style={{
                 background: "var(--bg-card)", border: "1px solid var(--border)",
-                borderRadius: 14, padding: "14px 16px", marginBottom: 16,
+                borderRadius: 14, padding: "14px 16px",
+                display: "flex", alignItems: "center", gap: 12,
               }}>
-                <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Descripción</p>
-                <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>{clase.descripcion}</p>
+                <span style={{ fontSize: 22 }}>{s.icon}</span>
+                <div>
+                  <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>{s.label}</p>
+                  <p style={{ color: s.color, fontSize: 22, fontWeight: 800, fontFamily: "'DM Mono',monospace", lineHeight: 1.1 }}>{s.val}</p>
+                </div>
               </div>
-            )}
-
-            {/* Banner por vencer */}
-            {porVencer.length > 0 && !busqueda && (
-              <div style={{
-                padding: "10px 14px", marginBottom: 16,
-                background: "rgba(248,113,113,.07)", border: "1px solid rgba(248,113,113,.2)",
-                borderRadius: 12, display: "flex", gap: 10,
-              }}>
-                <span style={{ fontSize: 16, flexShrink: 0 }}>🔔</span>
-                <p style={{ color: "#f87171", fontSize: 12, lineHeight: 1.5 }}>
-                  <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> vence en ≤7 días. Se muestran primero.
-                </p>
-              </div>
-            )}
+            ))}
           </div>
 
-          {/* ── MAIN: lista de alumnos ── */}
-          <div className="detalle-main" style={{ flex: 1, paddingLeft: 0 }}>
+          {/* Descripción */}
+          {clase.descripcion && (
+            <div style={{
+              background: "var(--bg-card)", border: "1px solid var(--border)",
+              borderRadius: 14, padding: "13px 16px", marginBottom: 16,
+              display: "flex", gap: 10, alignItems: "flex-start",
+            }}>
+              <span style={{ fontSize: 15, marginTop: 1 }}>📝</span>
+              <div>
+                <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Descripción</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.5 }}>{clase.descripcion}</p>
+              </div>
+            </div>
+          )}
 
+          {/* Banner por vencer */}
+          {porVencer.length > 0 && !busqueda && (
+            <div style={{
+              padding: "10px 14px", marginBottom: 16,
+              background: "rgba(248,113,113,.07)", border: "1px solid rgba(248,113,113,.2)",
+              borderRadius: 12, display: "flex", gap: 10, alignItems: "flex-start",
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>🔔</span>
+              <p style={{ color: "#f87171", fontSize: 12, lineHeight: 1.5 }}>
+                <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> con membresía por vencer en ≤7 días. Se muestran primero.
+              </p>
+            </div>
+          )}
+
+          {/* ── ALUMNOS ── */}
+          <div>
             {/* Header sección */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .6 }}>

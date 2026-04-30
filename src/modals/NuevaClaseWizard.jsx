@@ -580,13 +580,19 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       const planPayload = {
         gym_id: gymId, nombre: form.nombre.trim(),
         precio_publico: precioNum, ciclo_renovacion: form.ciclo_renovacion,
-        dias_gracia: Number(form.dias_gracia) || 0,
-        mora_tipo: form.mora_tipo || "ninguna", mora_monto: Number(form.mora_monto) || 0,
-        activo: form.activo, clases_vinculadas: [String(claseId)], cupo_clases: null,
+        dias_gracia: Number(form.dias_gracia) ?? 5,
+        mora_tipo: form.mora_tipo || "ninguna",
+        mora_monto: Number(form.mora_monto) || 0,
+        activo: form.activo !== false,
+        clases_vinculadas: [String(claseId)],
+        cupo_clases: null,
       };
 
-      // Resolver plan_id: del form, del planVinculado encontrado, o del campo plan_id de la clase
-      const resolvedPlanId = form.plan_id || planVinculado?.id || clase?.plan_id || null;
+      // Resolver plan_id: prioridad form > planVinculado > campo plan_id de la clase
+      const resolvedPlanId = form.plan_id
+        || planVinculado?.id
+        || clase?.plan_id
+        || null;
 
       if (resolvedPlanId) {
         await dbP.update(resolvedPlanId, planPayload);
@@ -600,7 +606,14 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       }
 
       setSaving(false);
-      onSave({ ...savedClase, precio_membresia: precioNum, ciclo_renovacion: form.ciclo_renovacion }, esEdicion);
+      onSave({
+        ...savedClase,
+        precio_membresia:  precioNum,
+        ciclo_renovacion:  form.ciclo_renovacion,
+        dias_gracia:       Number(form.dias_gracia) || 0,
+        mora_tipo:         form.mora_tipo || "ninguna",
+        mora_monto:        Number(form.mora_monto) || 0,
+      }, esEdicion);
     } catch (e) {
       console.error(e);
       setError("Error inesperado al guardar.");
