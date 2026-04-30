@@ -19,7 +19,7 @@ import NuevoMiembroWizard from "../modals/NuevoMiembroWizard";
 import MensajesScreen from "../screens/MensajesScreen";
 import TiendaScreen from "../screens/TiendaScreen";
 // Al tope con los otros imports
-import HorariosScreen from "../screens/HorariosScreen";
+import ClasesScreen from "../screens/ClasesScreen";
 import InstructoresScreen from "../screens/InstructoresScreen";
 
 // Screens
@@ -505,8 +505,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           />
         )}
 
-        {!loading && !configScreen && screen === "horarios" && (
-          <HorariosScreen
+        {!loading && !configScreen && screen === "clases" && (
+          <ClasesScreen
             gymId={GYM_ID}
             miembros={miembros}
             txs={txs}

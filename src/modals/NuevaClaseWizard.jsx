@@ -1,21 +1,27 @@
 // src/modals/NuevaClaseWizard.jsx
 // ══════════════════════════════════════════════════════════════════
-//  Wizard 3 pasos para crear (o editar) una clase:
-//  [1 Datos] → [2 Membresías] → [3 Horarios]
+//  Wizard 2 pasos para crear (o editar) una clase:
+//  [1 Datos + Horario] → [2 Membresía]
+//
+//  Cambios respecto a versión anterior:
+//  - Horario único embebido en Paso 1 (sin tabla horarios separada)
+//  - Eliminado Paso 3 (horarios múltiples)
+//  - Eliminada imagen de portada
+//  - Los campos de horario se guardan directo en la tabla clases
 //
 //  Props:
 //    clase        object | null   — si viene, modo edición
 //    gymId        string
 //    miembros     array           — para selector de instructor
+//    instructores array           — instructores de tabla instructores
 //    planes       array           — planes_membresia disponibles
-//    horarios     array           — horarios existentes de esta clase (edición)
-//    onSave       fn(clase, esEdicion, horariosNuevos)
+//    onSave       fn(clase, esEdicion)
 //    onClose      fn()
 // ══════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "../supabase";
-import { todayISO, fmtDate } from "../utils/dateUtils";
+import { todayISO } from "../utils/dateUtils";
 import InstructorSelect from "../components/InstructorSelect";
 
 // ── Constantes ────────────────────────────────────────────────────
@@ -33,14 +39,6 @@ const COLORES_PRESET = [
   "#6c63ff", "#e040fb", "#f43f5e", "#f59e0b",
   "#10b981", "#3b82f6", "#ec4899", "#f97316",
 ];
-
-const FORM_HORARIO_VACIO = {
-  hora_inicio: "09:00",
-  hora_fin: "10:00",
-  dias_semana: [],
-  fecha_inicio: todayISO(),
-  fecha_fin: "",
-};
 
 // ── Estilos base compartidos ──────────────────────────────────────
 const S = {
@@ -107,7 +105,7 @@ const S = {
   },
 };
 
-// ── Barra de Progreso ─────────────────────────────────────────────
+// ── Barra de Progreso (2 pasos) ───────────────────────────────────
 function ProgressBar({ step, labels }) {
   const total = labels.length;
   return (
@@ -150,7 +148,7 @@ function ProgressBar({ step, labels }) {
         {labels.map((l, i) => (
           <p key={i} style={{
             flex: 1,
-            textAlign: i === 0 ? "left" : i === labels.length - 1 ? "right" : "center",
+            textAlign: i === 0 ? "left" : "right",
             fontSize: 10, fontWeight: step === i + 1 ? 700 : 400,
             color: step === i + 1
               ? "var(--text-primary, #e8e8f0)"
@@ -183,11 +181,26 @@ function DiaChip({ label, activo, onClick }) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  PASO 1 — Datos de la clase
+//  PASO 1 — Datos de la clase + Horario único
 // ══════════════════════════════════════════════════════════════════
-function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
+function Step1DatosHorario({ form, set, miembros, instructores, esEdicion }) {
+  const fmtHoraPreview = (t) => {
+    if (!t) return "—";
+    const [h, m] = t.split(":");
+    const hr = parseInt(h);
+    return `${hr % 12 || 12}:${m} ${hr >= 12 ? "p.m." : "a.m."}`;
+  };
+
   return (
     <div>
+      {/* ── SECCIÓN: Datos generales ── */}
+      <p style={{
+        color: "var(--text-tertiary, #6b6b8a)", fontSize: 10, fontWeight: 700,
+        textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12,
+      }}>
+        Información general
+      </p>
+
       {/* Nombre */}
       <div style={S.field}>
         <label style={S.label}>Nombre de la clase *</label>
@@ -214,7 +227,10 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
       <div style={S.field}>
         <label style={S.label}>Instructor encargado</label>
         <InstructorSelect
-          instructores={instructores && instructores.length > 0 ? instructores : miembros.map(m => ({ id: m.id, nombre: m.nombre, foto: m.foto || null, especialidad: null }))}
+          instructores={instructores && instructores.length > 0
+            ? instructores
+            : miembros.map(m => ({ id: m.id, nombre: m.nombre, foto: m.foto || null, especialidad: null }))
+          }
           value={form.instructor_id}
           onChange={(id, nombre) => {
             set("instructor_id", id);
@@ -263,8 +279,7 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
               key={c} onClick={() => set("color", c)}
               style={{
                 width: 30, height: 30, borderRadius: "50%",
-                background: c, border: "none", cursor: "pointer",
-                flexShrink: 0,
+                background: c, border: "none", cursor: "pointer", flexShrink: 0,
                 boxShadow: form.color === c
                   ? `0 0 0 3px var(--bg-card, #12121f), 0 0 0 5px ${c}`
                   : "none",
@@ -299,7 +314,7 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
 
       {/* Activo toggle — solo en edición */}
       {esEdicion && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <button
             onClick={() => set("activo", !form.activo)}
             style={{
@@ -323,12 +338,107 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
           </span>
         </div>
       )}
+
+      {/* ── SEPARADOR ── */}
+      <div style={{
+        height: 1, background: "var(--border, #2a2a3e)",
+        margin: "4px 0 18px",
+      }} />
+
+      {/* ── SECCIÓN: Horario ── */}
+      <p style={{
+        color: "var(--text-tertiary, #6b6b8a)", fontSize: 10, fontWeight: 700,
+        textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12,
+      }}>
+        Horario de la clase
+      </p>
+
+      {/* Días de la semana */}
+      <div style={S.field}>
+        <label style={S.label}>Días de entrenamiento *</label>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          {DIAS.map(d => (
+            <DiaChip
+              key={d.key}
+              label={d.label}
+              activo={(form.dias_semana || []).includes(d.key)}
+              onClick={() => {
+                const dias = form.dias_semana || [];
+                set("dias_semana", dias.includes(d.key)
+                  ? dias.filter(x => x !== d.key)
+                  : [...dias, d.key]
+                );
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Hora inicio / fin */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+        <div>
+          <label style={S.label}>Hora inicio</label>
+          <input
+            type="time" value={form.hora_inicio || "09:00"}
+            onChange={e => set("hora_inicio", e.target.value)}
+            style={S.inp}
+          />
+        </div>
+        <div>
+          <label style={S.label}>Hora fin</label>
+          <input
+            type="time" value={form.hora_fin || "10:00"}
+            onChange={e => set("hora_fin", e.target.value)}
+            style={S.inp}
+          />
+        </div>
+      </div>
+
+      {/* Preview del horario */}
+      {(form.dias_semana || []).length > 0 && form.hora_inicio && form.hora_fin && (
+        <div style={{
+          padding: "10px 14px",
+          background: `${form.color || "#6c63ff"}10`,
+          border: `1px solid ${form.color || "#6c63ff"}30`,
+          borderRadius: 12, marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <span style={{ fontSize: 14 }}>🕐</span>
+          <span style={{ color: form.color || "#6c63ff", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
+            {fmtHoraPreview(form.hora_inicio)} — {fmtHoraPreview(form.hora_fin)}
+          </span>
+          <span style={{ color: "var(--text-secondary, #9999b3)", fontSize: 12 }}>
+            · {(form.dias_semana || []).length} día{(form.dias_semana || []).length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
+
+      {/* Vigencia */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div>
+          <label style={S.label}>Vigencia desde</label>
+          <input
+            type="date" value={form.fecha_inicio || todayISO()}
+            onChange={e => set("fecha_inicio", e.target.value)}
+            style={S.inp}
+          />
+        </div>
+        <div>
+          <label style={S.label}>Hasta (opcional)</label>
+          <input
+            type="date" value={form.fecha_fin || ""}
+            onChange={e => set("fecha_fin", e.target.value)}
+            placeholder="Sin fecha fin"
+            style={S.inp}
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  PASO 2 — Membresías vinculadas
+//  PASO 2 — Membresía vinculada
 // ══════════════════════════════════════════════════════════════════
 function Step2Membresias({ form, set, planes }) {
   const seleccionados = form.planes_ids || [];
@@ -510,205 +620,14 @@ function Step2Membresias({ form, set, planes }) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  PASO 3 — Horarios
-// ══════════════════════════════════════════════════════════════════
-function HorarioForm({ horario, onChange, onRemove, color, index }) {
-  const toggleDia = (dia) => {
-    const dias = horario.dias_semana || [];
-    onChange({
-      ...horario,
-      dias_semana: dias.includes(dia)
-        ? dias.filter(d => d !== dia)
-        : [...dias, dia],
-    });
-  };
-
-  return (
-    <div style={{
-      border: `1px solid ${color}30`,
-      borderLeft: `3px solid ${color}`,
-      borderRadius: "0 14px 14px 0",
-      padding: "14px 14px 12px",
-      marginBottom: 12,
-      background: `${color}08`,
-      position: "relative",
-    }}>
-      {/* Header horario */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <p style={{ color, fontSize: 12, fontWeight: 700 }}>
-          🕐 Horario {index + 1}
-        </p>
-        <button
-          onClick={onRemove}
-          style={{
-            border: "none", background: "rgba(248,113,113,.12)",
-            color: "#f87171", borderRadius: 8, padding: "4px 10px",
-            cursor: "pointer", fontSize: 11, fontWeight: 700,
-          }}
-        >
-          ✕ Quitar
-        </button>
-      </div>
-
-      {/* Días */}
-      <div style={{ marginBottom: 12 }}>
-        <p style={{ ...S.label, marginBottom: 8 }}>Días *</p>
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-          {DIAS.map(d => (
-            <DiaChip
-              key={d.key}
-              label={d.label}
-              activo={(horario.dias_semana || []).includes(d.key)}
-              onClick={() => toggleDia(d.key)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Horas */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-        <div>
-          <label style={S.label}>Inicio</label>
-          <input
-            type="time" value={horario.hora_inicio}
-            onChange={e => onChange({ ...horario, hora_inicio: e.target.value })}
-            style={S.inp}
-          />
-        </div>
-        <div>
-          <label style={S.label}>Final</label>
-          <input
-            type="time" value={horario.hora_fin}
-            onChange={e => onChange({ ...horario, hora_fin: e.target.value })}
-            style={S.inp}
-          />
-        </div>
-      </div>
-
-      {/* Vigencia */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <div>
-          <label style={S.label}>Desde</label>
-          <input
-            type="date" value={horario.fecha_inicio}
-            onChange={e => onChange({ ...horario, fecha_inicio: e.target.value })}
-            style={S.inp}
-          />
-        </div>
-        <div>
-          <label style={S.label}>Hasta (opcional)</label>
-          <input
-            type="date" value={horario.fecha_fin || ""}
-            onChange={e => onChange({ ...horario, fecha_fin: e.target.value })}
-            placeholder="Sin fecha fin"
-            style={S.inp}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Step3Horarios({ horarios, setHorarios, color, horariosExistentes }) {
-  const fmtHora = (t) => {
-    if (!t) return "—";
-    const [h, m] = t.split(":");
-    const hr = parseInt(h);
-    return `${hr % 12 || 12}:${m} ${hr >= 12 ? "p.m." : "a.m."}`;
-  };
-
-  const DIAS_FULL = {
-    lun: "Lunes", mar: "Martes", mie: "Miércoles", jue: "Jueves",
-    vie: "Viernes", sab: "Sábado", dom: "Domingo",
-  };
-
-  return (
-    <div>
-      <p style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 12, marginBottom: 16, lineHeight: 1.5 }}>
-        Agrega uno o más horarios semanales. Puedes configurar días, hora de inicio/fin y vigencia.
-      </p>
-
-      {/* Horarios existentes (edición) */}
-      {horariosExistentes && horariosExistentes.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <p style={{ ...S.label, marginBottom: 8 }}>Horarios ya guardados</p>
-          {horariosExistentes.map(h => (
-            <div key={h.id} style={{
-              padding: "10px 13px", borderRadius: 12, marginBottom: 7,
-              background: "var(--bg-elevated, #1e1e2e)",
-              border: `1px solid ${color}25`,
-              borderLeft: `3px solid ${color}`,
-              opacity: h.activo !== false ? 1 : .5,
-            }}>
-              <p style={{ color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginBottom: 4 }}>
-                {fmtHora(h.hora_inicio)} — {fmtHora(h.hora_fin)}
-              </p>
-              <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                {(h.dias_semana || []).map(d => (
-                  <span key={d} style={{
-                    background: `${color}18`, color,
-                    borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700,
-                  }}>
-                    {DIAS_FULL[d] || d}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 11, marginTop: 4, marginBottom: 14 }}>
-            Para editar horarios existentes, usa el botón "⚙️ Editar datos de la clase" en el detalle de la clase.
-          </p>
-        </div>
-      )}
-
-      {/* Formularios de nuevos horarios */}
-      {horarios.map((h, i) => (
-        <HorarioForm
-          key={i}
-          horario={h}
-          index={i}
-          color={color}
-          onChange={updated => setHorarios(p => p.map((x, j) => j === i ? updated : x))}
-          onRemove={() => setHorarios(p => p.filter((_, j) => j !== i))}
-        />
-      ))}
-
-      {/* Botón agregar horario */}
-      <button
-        onClick={() => setHorarios(p => [...p, { ...FORM_HORARIO_VACIO, fecha_inicio: todayISO() }])}
-        style={{
-          width: "100%", padding: "13px",
-          border: `1.5px dashed ${color}50`,
-          borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-          background: `${color}08`,
-          color, fontSize: 13, fontWeight: 700,
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-          transition: "all .2s",
-        }}
-      >
-        <span style={{ fontSize: 18 }}>+</span>
-        Agregar horario
-      </button>
-
-      {horarios.length === 0 && (!horariosExistentes || horariosExistentes.length === 0) && (
-        <p style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 11, textAlign: "center", marginTop: 12 }}>
-          Puedes guardar la clase sin horarios y agregarlos después.
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL — NuevaClaseWizard
 // ══════════════════════════════════════════════════════════════════
 export default function NuevaClaseWizard({
   clase,
   gymId,
   miembros,
-  instructores,         // lista de instructores de tabla instructores
+  instructores,
   planes,
-  horariosExistentes,   // horarios ya guardados en BD (modo edición)
   onSave,
   onClose,
 }) {
@@ -718,15 +637,20 @@ export default function NuevaClaseWizard({
   const [form, setForm] = useState(() => {
     if (clase) {
       return {
-        nombre:             clase.nombre         || "",
-        descripcion:        clase.descripcion    || "",
-        instructor_id:      clase.instructor_id  || "",
-        instructor_nombre:  clase.instructor_nombre || "",
-        edad_min:           String(clase.edad_min  ?? 0),
-        edad_max:           String(clase.edad_max  ?? 99),
-        cupo_max:           String(clase.cupo_max  ?? 20),
-        color:              clase.color           || "#6c63ff",
-        activo:             clase.activo !== false,
+        nombre:            clase.nombre            || "",
+        descripcion:       clase.descripcion       || "",
+        instructor_id:     clase.instructor_id     || "",
+        instructor_nombre: clase.instructor_nombre || "",
+        edad_min:          String(clase.edad_min   ?? 0),
+        edad_max:          String(clase.edad_max   ?? 99),
+        cupo_max:          String(clase.cupo_max   ?? 20),
+        color:             clase.color             || "#6c63ff",
+        activo:            clase.activo !== false,
+        dias_semana:       clase.dias_semana        || [],
+        hora_inicio:       clase.hora_inicio        || "09:00",
+        hora_fin:          clase.hora_fin           || "10:00",
+        fecha_inicio:      clase.fecha_inicio       || todayISO(),
+        fecha_fin:         clase.fecha_fin          || "",
         planes_ids: (planes || [])
           .filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)))
           .map(p => String(p.id)),
@@ -737,13 +661,14 @@ export default function NuevaClaseWizard({
       instructor_id: "", instructor_nombre: "",
       edad_min: "0", edad_max: "99", cupo_max: "20",
       color: "#6c63ff", activo: true,
+      dias_semana: [], hora_inicio: "09:00", hora_fin: "10:00",
+      fecha_inicio: todayISO(), fecha_fin: "",
       planes_ids: [],
     };
   });
 
-  const [horariosNuevos, setHorariosNuevos] = useState([]);
-  const [step, setStep]   = useState(1);
-  const [error, setError] = useState("");
+  const [step, setStep]     = useState(1);
+  const [error, setError]   = useState("");
   const [saving, setSaving] = useState(false);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -751,14 +676,25 @@ export default function NuevaClaseWizard({
   // ── Validación por paso ────────────────────────────────────────
   const validarPaso = () => {
     if (step === 1) {
-      if (!form.nombre.trim()) { setError("El nombre de la clase es obligatorio."); return false; }
-      if (!form.cupo_max || Number(form.cupo_max) < 1) { setError("El cupo máximo debe ser al menos 1."); return false; }
-    }
-    if (step === 3) {
-      for (const [i, h] of horariosNuevos.entries()) {
-        if (h.dias_semana.length === 0) { setError(`Horario ${i + 1}: selecciona al menos un día.`); return false; }
-        if (!h.hora_inicio || !h.hora_fin) { setError(`Horario ${i + 1}: hora inicio y fin son obligatorias.`); return false; }
-        if (h.hora_fin <= h.hora_inicio) { setError(`Horario ${i + 1}: la hora de fin debe ser posterior al inicio.`); return false; }
+      if (!form.nombre.trim()) {
+        setError("El nombre de la clase es obligatorio.");
+        return false;
+      }
+      if (!form.cupo_max || Number(form.cupo_max) < 1) {
+        setError("El cupo máximo debe ser al menos 1.");
+        return false;
+      }
+      if ((form.dias_semana || []).length === 0) {
+        setError("Selecciona al menos un día de entrenamiento.");
+        return false;
+      }
+      if (!form.hora_inicio || !form.hora_fin) {
+        setError("La hora de inicio y fin son obligatorias.");
+        return false;
+      }
+      if (form.hora_fin <= form.hora_inicio) {
+        setError("La hora de fin debe ser posterior al inicio.");
+        return false;
       }
     }
     setError("");
@@ -772,17 +708,24 @@ export default function NuevaClaseWizard({
     setError("");
 
     try {
+      // El horario va embebido directamente en la tabla clases
       const payload = {
-        gym_id:             gymId,
-        nombre:             form.nombre.trim(),
-        descripcion:        form.descripcion.trim() || null,
-        instructor_id:      form.instructor_id || null,
-        instructor_nombre:  form.instructor_nombre || null,
-        edad_min:           Number(form.edad_min) || 0,
-        edad_max:           Number(form.edad_max) || 99,
-        cupo_max:           Number(form.cupo_max) || 20,
-        color:              form.color,
-        activo:             form.activo,
+        gym_id:            gymId,
+        nombre:            form.nombre.trim(),
+        descripcion:       form.descripcion.trim() || null,
+        instructor_id:     form.instructor_id || null,
+        instructor_nombre: form.instructor_nombre || null,
+        edad_min:          Number(form.edad_min) || 0,
+        edad_max:          Number(form.edad_max) || 99,
+        cupo_max:          Number(form.cupo_max) || 20,
+        color:             form.color,
+        activo:            form.activo,
+        // Campos de horario embebidos
+        dias_semana:       form.dias_semana,
+        hora_inicio:       form.hora_inicio,
+        hora_fin:          form.hora_fin,
+        fecha_inicio:      form.fecha_inicio || todayISO(),
+        fecha_fin:         form.fecha_fin || null,
       };
 
       const db = await supabase.from("clases");
@@ -811,28 +754,8 @@ export default function NuevaClaseWizard({
         }
       }
 
-      // Guardar nuevos horarios
-      const savedHorarios = [];
-      if (saved && horariosNuevos.length > 0) {
-        const dbH = await supabase.from("horarios");
-        const claseId = saved.id || clase?.id;
-        for (const h of horariosNuevos) {
-          const savedH = await dbH.insert({
-            clase_id:    claseId,
-            gym_id:      gymId,
-            hora_inicio: h.hora_inicio,
-            hora_fin:    h.hora_fin,
-            dias_semana: h.dias_semana,
-            fecha_inicio: h.fecha_inicio || todayISO(),
-            fecha_fin:   h.fecha_fin || null,
-            activo:      true,
-          });
-          if (savedH) savedHorarios.push(savedH);
-        }
-      }
-
       setSaving(false);
-      if (saved) onSave(saved, esEdicion, savedHorarios);
+      if (saved) onSave(saved, esEdicion);
       else setError("Error al guardar. Intenta de nuevo.");
     } catch (e) {
       console.error(e);
@@ -844,18 +767,17 @@ export default function NuevaClaseWizard({
   // ── Navegación ────────────────────────────────────────────────
   const goNext = () => {
     if (!validarPaso()) return;
-    setStep(s => Math.min(s + 1, 3));
+    setStep(2);
   };
 
   const goPrev = () => {
     setError("");
-    setStep(s => Math.max(s - 1, 1));
+    setStep(1);
   };
 
-  const LABELS = ["Datos", "Membresías", "Horarios"];
+  const LABELS = ["Datos y horario", "Membresía"];
 
-  // ── Texto del botón principal ─────────────────────────────────
-  const nextLabel = step < 3
+  const nextLabel = step < 2
     ? "Siguiente →"
     : saving
       ? "Guardando..."
@@ -906,7 +828,7 @@ export default function NuevaClaseWizard({
           )}
 
           {step === 1 && (
-            <Step1Datos
+            <Step1DatosHorario
               form={form} set={set}
               miembros={miembros}
               instructores={instructores}
@@ -917,14 +839,6 @@ export default function NuevaClaseWizard({
             <Step2Membresias
               form={form} set={set}
               planes={planes}
-            />
-          )}
-          {step === 3 && (
-            <Step3Horarios
-              horarios={horariosNuevos}
-              setHorarios={setHorariosNuevos}
-              color={form.color || "#6c63ff"}
-              horariosExistentes={horariosExistentes}
             />
           )}
         </div>
@@ -942,7 +856,7 @@ export default function NuevaClaseWizard({
               </button>
             )}
             <button
-              onClick={step < 3 ? goNext : handleGuardar}
+              onClick={step < 2 ? goNext : handleGuardar}
               disabled={saving}
               style={{
                 ...S.btnPrimary,

@@ -64,11 +64,11 @@ const IC = {
 const BASE_NAV_ITEMS = (isDojo, termino) => [
   { label: "Inicio",      icon: IC.home,     s: "dashboard"  },
   { label: termino || (isDojo ? "Alumnos" : "Miembros"), icon: IC.members, s: "miembros" },
-  { label: "Membresías",  icon: IC.card,     s: "membresias" },
+  
   { label: "Mensajes",    icon: IC.chat,     s: "mensajes",  hasBadge: true },
   { label: "Caja",        icon: IC.cash,     s: "caja"       },
   { label: "Tienda",      icon: IC.store,    s: "tienda"     },
-  { label: "Horarios",    icon: IC.calendar, s: "horarios"   },
+  { label: "Clases",      icon: IC.calendar, s: "clases"     },
   { label: "Instructores", icon: IC.instructor, s: "instructores" },
 ];
 
