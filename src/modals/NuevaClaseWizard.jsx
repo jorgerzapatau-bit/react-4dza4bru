@@ -561,9 +561,9 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     if (!validar()) return;
     setSaving(true); setError("");
     try {
-      // ── Payload tabla clases (solo campos de la tabla clases) ────
-      const clasePayload = {
-        gym_id: gymId,
+      // ── Payload tabla clases ────────────────────────────────────
+      // Nota: gym_id NO se incluye en UPDATE (RLS de Supabase lo rechaza)
+      const clasePayloadBase = {
         nombre: form.nombre.trim(),
         descripcion: form.descripcion.trim() || null,
         instructor_id: form.instructor_id || null,
@@ -582,11 +582,12 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       const dbC = await supabase.from("clases");
       let savedClase;
       if (esEdicion) {
-        const ok = await dbC.update(clase.id, clasePayload);
-        if (!ok) { setError("Error al guardar la clase."); setSaving(false); return; }
-        savedClase = { ...clase, ...clasePayload };
+        // No enviamos gym_id en el PATCH — evita rechazo por RLS
+        await dbC.update(clase.id, clasePayloadBase);
+        savedClase = { ...clase, ...clasePayloadBase };
       } else {
-        savedClase = await dbC.insert(clasePayload);
+        // En INSERT sí incluimos gym_id
+        savedClase = await dbC.insert({ gym_id: gymId, ...clasePayloadBase });
         if (!savedClase) { setError("Error al guardar la clase."); setSaving(false); return; }
       }
 
@@ -596,8 +597,8 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
         ? Number(form.dias_gracia) : 5;
 
       // ── Payload tabla planes_membresia ───────────────────────────
-      const planPayload = {
-        gym_id: gymId,
+      // gym_id solo en INSERT, no en UPDATE (RLS)
+      const planPayloadBase = {
         nombre: form.nombre.trim(),
         precio_publico: precioNum,
         ciclo_renovacion: form.ciclo_renovacion || "mensual",
@@ -618,11 +619,11 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
 
       const dbP = await supabase.from("planes_membresia");
       if (resolvedPlanId) {
-        const okP = await dbP.update(resolvedPlanId, planPayload);
-        if (!okP) console.warn("⚠️ UPDATE plan falló para id:", resolvedPlanId);
+        // No enviamos gym_id en PATCH del plan
+        await dbP.update(resolvedPlanId, planPayloadBase);
       } else {
-        // Crear plan nuevo y vincularlo
-        const savedPlan = await dbP.insert(planPayload);
+        // Crear plan nuevo con gym_id incluido
+        const savedPlan = await dbP.insert({ gym_id: gymId, ...planPayloadBase });
         if (savedPlan?.id) {
           const dbC2 = await supabase.from("clases");
           await dbC2.update(claseId, { plan_id: savedPlan.id });
