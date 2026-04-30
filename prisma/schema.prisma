@@ -513,24 +513,32 @@ model accesos {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model gimnasios {
-  id                  String                @id
-  nombre              String
-  slogan              String?
-  telefono            String?
-  direccion           String?
-  color_primario      String?               @default("#6c63ff")
-  color_secundario    String?               @default("#e040fb")
-  planes              Json?                 @default("[{\"meses\": 1, \"nombre\": \"Mensual\", \"precio\": 850}, {\"meses\": 3, \"nombre\": \"Trimestral\", \"precio\": 2200}, {\"meses\": 6, \"nombre\": \"Semestral\", \"precio\": 3900}, {\"meses\": 12, \"nombre\": \"Anual\", \"precio\": 7500}]")
-  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
-  zona_horaria        String?               @default("America/Merida")
-  logo                String?
-  termino_miembros    String?               @default("Miembros")
-  tipo_negocio        String                @default("gimnasio")
-  accesos             accesos[]
-  miembros            miembros[]
-  planes_membresia    planes_membresia[]
-  politicas_membresia politicas_membresia[]
-  transacciones       transacciones[]
+  id                    String                @id
+  nombre                String
+  slogan                String?
+  telefono              String?
+  direccion             String?
+  color_primario        String?               @default("#6c63ff")
+  color_secundario      String?               @default("#e040fb")
+  planes                Json?                 @default("[{\"meses\": 1, \"nombre\": \"Mensual\", \"precio\": 850}, {\"meses\": 3, \"nombre\": \"Trimestral\", \"precio\": 2200}, {\"meses\": 6, \"nombre\": \"Semestral\", \"precio\": 3900}, {\"meses\": 12, \"nombre\": \"Anual\", \"precio\": 7500}]")
+  created_at            DateTime?             @default(now()) @db.Timestamptz(6)
+  zona_horaria          String?               @default("America/Merida")
+  logo                  String?
+  termino_miembros      String?               @default("Miembros")
+  tipo_negocio          String                @default("gimnasio")
+  propietario_titulo    String?
+  propietario_nombre    String?
+  transferencia_clabe   String?
+  transferencia_titular String?
+  transferencia_banco   String?
+  recordatorio_tpl      String?
+  plantillas_wa         Json?
+  wa_enviados           Json?
+  accesos               accesos[]
+  miembros              miembros[]
+  planes_membresia      planes_membresia[]
+  politicas_membresia   politicas_membresia[]
+  transacciones         transacciones[]
 
   @@schema("public")
 }

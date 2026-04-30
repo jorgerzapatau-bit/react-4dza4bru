@@ -17,6 +17,13 @@ function getAuthHeaders() {
   };
 }
 
+// ── Asegura que _accessToken esté cargado antes de cualquier request autenticada ──
+async function ensureToken() {
+  if (!_accessToken) {
+    await auth.getSession();
+  }
+}
+
 // ══════════════════════════════════════════════
 // AUTH — email + password via Supabase Auth REST
 // ══════════════════════════════════════════════
@@ -119,7 +126,7 @@ function _clearSession() {
 // GYM_USERS — asociación usuario <-> gym
 // ══════════════════════════════════════════════
 export async function getUserGymId(userId, gymId) {
-  // Si se pasa gymId, verificar acceso específico a ese gym
+  await ensureToken();
   const filter = gymId
     ? `user_id=eq.${userId}&gym_id=eq.${gymId}&select=gym_id&limit=1`
     : `user_id=eq.${userId}&select=gym_id&limit=1`;
@@ -134,6 +141,7 @@ export async function getUserGymId(userId, gymId) {
 
 // ── Obtener rol del usuario (owner | admin) ──────────────────────
 export async function getUserRole(userId, gymId) {
+  await ensureToken();
   const filter = gymId
     ? `user_id=eq.${userId}&gym_id=eq.${gymId}&select=role&limit=1`
     : `user_id=eq.${userId}&select=role&limit=1`;
@@ -155,6 +163,7 @@ export const supabase = {
   key: SUPABASE_ANON_KEY,
 
   async from(table) {
+    await ensureToken();
     const base = `${SUPABASE_URL}/rest/v1/${table}`;
 
     return {
@@ -213,6 +222,7 @@ export const supabase = {
   },
 
   async getGym(gymId) {
+    await ensureToken();
     const url = `${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${gymId}`;
     const r = await fetch(url, { headers: getAuthHeaders() });
     const data = await r.json();
@@ -220,7 +230,8 @@ export const supabase = {
   },
 
   async saveGym(gym) {
-    // Intentar PATCH primero (actualizar existente)
+    await ensureToken();
+    // PATCH para actualizar registro existente
     const url = `${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${gym.id}`;
     const r = await fetch(url, {
       method: "PATCH",
@@ -228,12 +239,24 @@ export const supabase = {
       body: JSON.stringify(gym),
     });
     if (r.ok) return true;
-    // Fallback: upsert via POST con merge-duplicates
+
+    // Log del error real para diagnóstico
+    const err = await r.json().catch(() => ({}));
+    console.error("❌ PATCH gimnasios falló:", r.status, JSON.stringify(err));
+
+    // No hacer fallback a POST si es error de permisos (RLS)
+    if (r.status === 401 || r.status === 403) return false;
+
+    // Fallback a upsert solo si el registro no existe (404)
     const r2 = await fetch(`${SUPABASE_URL}/rest/v1/gimnasios`, {
       method: "POST",
       headers: { ...getAuthHeaders(), "Prefer": "resolution=merge-duplicates" },
       body: JSON.stringify(gym),
     });
+    if (!r2.ok) {
+      const err2 = await r2.json().catch(() => ({}));
+      console.error("❌ POST gimnasios falló:", r2.status, JSON.stringify(err2));
+    }
     return r2.ok;
   },
 };
