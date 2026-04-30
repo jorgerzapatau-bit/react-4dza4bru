@@ -316,10 +316,25 @@ function Step2Horario({ form, set }) {
 }
 
 // ── PASO 3: Precio y políticas de cobro ────────────────────────────
-function Step3Precio({ form, set }) {
+function Step3Precio({ form, set, gymConfig }) {
   const precioNum = Number(form.precio_membresia || 0);
-  const cicloActual = CICLOS.find(c => c.value === form.ciclo_renovacion) || CICLOS[0];
   const moraActual = form.mora_tipo || "ninguna";
+
+  // Filtrar ciclos según los planes activos en la Configuración del gym
+  const configPlanes = gymConfig?.planes || null;
+  const ciclosHabilitados = CICLOS.filter(c => {
+    if (!configPlanes) return true; // si no hay config, mostrar todos
+    return configPlanes.some(p => p.activo !== false && p.nombre?.toLowerCase() === c.label.toLowerCase());
+  });
+  // Si ninguno habilitado (config rara), mostrar todos como fallback
+  const ciclosVisibles = ciclosHabilitados.length > 0 ? ciclosHabilitados : CICLOS;
+
+  const cicloActual = ciclosVisibles.find(c => c.value === form.ciclo_renovacion) || ciclosVisibles[0];
+
+  // Si el ciclo seleccionado ya no está disponible, seleccionar el primero disponible
+  if (form.ciclo_renovacion !== cicloActual?.value && cicloActual) {
+    set("ciclo_renovacion", cicloActual.value);
+  }
 
   return (
     <div>
@@ -345,7 +360,7 @@ function Step3Precio({ form, set }) {
       <div style={S.field}>
         <label style={S.label}>Ciclo de renovación</label>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {CICLOS.map(c => {
+          {ciclosVisibles.map(c => {
             const sel = form.ciclo_renovacion === c.value;
             return (
               <button key={c.value} onClick={() => set("ciclo_renovacion", c.value)} style={{
@@ -475,11 +490,11 @@ function ConfirmSalir({ onConfirm, onCancel }) {
 // ══════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════
-export default function NuevaClaseWizard({ clase, gymId, miembros, instructores, planes, onSave, onClose }) {
+export default function NuevaClaseWizard({ clase, gymId, miembros, instructores, planes, gymConfig, onSave, onClose }) {
   const esEdicion = !!clase;
 
-  const planVinculado = esEdicion && planes
-    ? (planes || []).find(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)))
+  const planVinculado = planes
+    ? (planes || []).find(p => (p.clases_vinculadas || []).map(String).includes(String(clase?.id)))
     : null;
 
   const [form, setForm] = useState(() => ({
@@ -570,8 +585,11 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
         activo: form.activo, clases_vinculadas: [String(claseId)], cupo_clases: null,
       };
 
-      if (form.plan_id) {
-        await dbP.update(form.plan_id, planPayload);
+      // Resolver plan_id: del form, del planVinculado encontrado, o del campo plan_id de la clase
+      const resolvedPlanId = form.plan_id || planVinculado?.id || clase?.plan_id || null;
+
+      if (resolvedPlanId) {
+        await dbP.update(resolvedPlanId, planPayload);
       } else {
         const savedPlan = await dbP.insert(planPayload);
         if (savedPlan?.id) {
@@ -613,7 +631,7 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
           {error && <div style={S.errorBox}>{error}</div>}
           {step === 1 && <Step1Datos form={form} set={set} miembros={miembros} instructores={instructores} esEdicion={esEdicion} />}
           {step === 2 && <Step2Horario form={form} set={set} />}
-          {step === 3 && <Step3Precio form={form} set={set} />}
+          {step === 3 && <Step3Precio form={form} set={set} gymConfig={gymConfig} />}
         </div>
 
         <div style={S.footer}>

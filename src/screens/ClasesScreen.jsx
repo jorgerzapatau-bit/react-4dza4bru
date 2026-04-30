@@ -594,6 +594,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
         <NuevaClaseWizard
           clase={modalClase === "nueva" ? null : modalClase}
           gymId={gymId} miembros={miembros} instructores={instructores} planes={planes}
+          gymConfig={gymConfig}
           onSave={handleGuardarClase} onClose={() => setModalClase(null)}
         />
       )}
