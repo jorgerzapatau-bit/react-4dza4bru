@@ -577,35 +577,42 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
   const loadDatos = useCallback(async () => {
     setLoading(true);
     try {
-      const [dbC, dbH, dbI, dbP, dbInst] = await Promise.all([
+      const [dbC, dbH, dbI, dbP, dbPol, dbInst] = await Promise.all([
         supabase.from("clases"), supabase.from("horarios"),
         supabase.from("inscripciones"), supabase.from("planes_membresia"),
-        supabase.from("instructores"),
+        supabase.from("politicas_membresia"), supabase.from("instructores"),
       ]);
-      const [cData, hData, iData, pData, instData] = await Promise.all([
+      const [cData, hData, iData, pData, polData, instData] = await Promise.all([
         dbC.select(gymId), dbH.select(gymId), dbI.select(gymId),
-        dbP.select(gymId), dbInst.select(gymId),
+        dbP.select(gymId), dbPol.select(gymId), dbInst.select(gymId),
       ]);
-      // Mergear horario activo en cada clase para que el wizard tenga los datos
-      const horarios = hData || [];
-      // Normalizar días de DB (largo: "lunes") a UI (corto: "lun")
+
       const DIA_LONG_TO_SHORT = {
         lunes:"lun", martes:"mar", miercoles:"mie", miércoles:"mie",
         jueves:"jue", viernes:"vie", sabado:"sab", sábado:"sab", domingo:"dom",
       };
       const toShort = d => DIA_LONG_TO_SHORT[d?.toLowerCase()] || d;
 
+      const horarios_  = hData   || [];
+      const planes_    = pData   || [];
+      const politicas_ = polData || [];
+
       const clasesConHorario = (cData || []).map(c => {
-        const h = horarios.find(h => String(h.clase_id) === String(c.id) && h.activo !== false);
-        if (!h) return c;
+        const h   = horarios_.find(h => String(h.clase_id) === String(c.id) && h.activo !== false);
+        const pl  = planes_.find(p => (p.clases_vinculadas || []).map(String).includes(String(c.id)));
+        const pol = pl ? politicas_.find(p => String(p.plan_id) === String(pl.id)) : null;
         return {
           ...c,
-          horario_id:   h.id,
-          hora_inicio:  h.hora_inicio,
-          hora_fin:     h.hora_fin,
-          dias_semana:  (h.dias_semana || []).map(toShort),
-          fecha_inicio: h.fecha_inicio,
-          fecha_fin:    h.fecha_fin,
+          ...(h ? {
+            horario_id:   h.id,
+            hora_inicio:  h.hora_inicio,
+            hora_fin:     h.hora_fin,
+            dias_semana:  (h.dias_semana || []).map(toShort),
+            fecha_inicio: h.fecha_inicio,
+            fecha_fin:    h.fecha_fin,
+          } : {}),
+          ...(pl  ? { plan_id:     pl.id  } : {}),
+          ...(pol ? { politica_id: pol.id } : {}),
         };
       });
       setClases(clasesConHorario);
