@@ -1,7 +1,12 @@
 // src/screens/ClasesScreen.jsx
 // ══════════════════════════════════════════════════════════════════
-//  Gestión de Clases — tarjeta simplificada con precio visible.
-//  Sin "planes con acceso" — cada clase tiene su propio precio.
+//  Mejoras v3:
+//  1. Botón ⚙️ editar directo en la tarjeta (visible para canManage)
+//  2. Badge de cupo con estado semántico: Llena / Casi llena / Con espacio
+//  3. Alumnos ordenados: "Por vencer" arriba con alerta roja
+//  4. Botón "Cobrar renovación" por alumno en el detalle
+//  5. Chip de alerta "Sin horario" con enlace directo a editar
+//  6. Filtro Activas / Inactivas en la barra de filtros
 // ══════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -17,12 +22,8 @@ const DIAS = [
   { key: "vie", label: "VIE" }, { key: "sab", label: "SÁB" },
   { key: "dom", label: "DOM" },
 ];
-
-const DIAS_SHORT = {
-  lun: "Lun", mar: "Mar", mie: "Mié", jue: "Jue", vie: "Vie", sab: "Sáb", dom: "Dom",
-};
-
-const CICLO_LABEL = { mensual: "mes", trimestral: "trimestre", semestral: "semestre", anual: "año" };
+const DIAS_SHORT = { lun:"Lun", mar:"Mar", mie:"Mié", jue:"Jue", vie:"Vie", sab:"Sáb", dom:"Dom" };
+const CICLO_LABEL = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
 
 const fmtHora = (t) => {
   if (!t) return "—";
@@ -33,35 +34,42 @@ const fmtHora = (t) => {
 
 function avatarIniciales(nombre) {
   if (!nombre) return "?";
-  const parts = nombre.trim().split(" ");
-  return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].slice(0, 2).toUpperCase();
+  const p = nombre.trim().split(" ");
+  return p.length >= 2 ? (p[0][0] + p[1][0]).toUpperCase() : p[0].slice(0, 2).toUpperCase();
 }
 
-// ── Tarjeta de clase — precio visible, sin "planes con acceso" ──
-function ClaseCard({ clase, inscripciones, miembros, txs, planes, onSelect }) {
+// ── Helpers de cupo ───────────────────────────────────────────────
+function getCupoEstado(inscritos, cupoMax) {
+  if (cupoMax === 0) return { label: "Sin límite", color: "#4ade80", bg: "rgba(74,222,128,.12)" };
+  const pct = inscritos / cupoMax;
+  if (pct >= 1)    return { label: "Llena",       color: "#f87171", bg: "rgba(248,113,113,.12)" };
+  if (pct >= 0.8)  return { label: "Casi llena",  color: "#f59e0b", bg: "rgba(245,158,11,.12)"  };
+  return              { label: "Con espacio",  color: "#4ade80", bg: "rgba(74,222,128,.12)"  };
+}
+
+// ── Tarjeta de clase ──────────────────────────────────────────────
+function ClaseCard({ clase, inscripciones, miembros, txs, planes, canManage, onSelect, onEdit }) {
   const planVinculado = (planes || []).find(p =>
     (p.clases_vinculadas || []).map(String).includes(String(clase.id))
   );
   const precio = planVinculado?.precio_publico ?? clase?.precio_membresia ?? null;
   const ciclo  = planVinculado?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
 
-  // Contar alumnos con membresía activa de esta clase
   const inscritos = planVinculado
     ? (miembros || []).filter(m => {
         const info = getMembershipInfo(m.id, txs || [], m);
         if (info.estado !== "Activo") return false;
-        const planNombre = (info.plan || "").toLowerCase().trim();
-        const pNombre    = (planVinculado.nombre || "").toLowerCase().trim();
-        return pNombre === planNombre || pNombre.includes(planNombre) || planNombre.includes(pNombre);
+        const pn = (planVinculado.nombre || "").toLowerCase().trim();
+        const ip = (info.plan || "").toLowerCase().trim();
+        return pn === ip || pn.includes(ip) || ip.includes(pn);
       }).length
     : inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa").length;
 
-  const pct = clase.cupo_max > 0 ? Math.round((inscritos / clase.cupo_max) * 100) : 0;
-  const cupoColor = pct >= 90 ? "#f87171" : pct >= 70 ? "#f59e0b" : "#4ade80";
+  const cupoEstado = getCupoEstado(inscritos, clase.cupo_max);
+  const sinHorario = !clase.hora_inicio || (clase.dias_semana || []).length === 0;
 
   return (
     <div
-      onClick={() => onSelect(clase)}
       style={{
         background: "var(--bg-card)", border: "1px solid var(--border)",
         borderLeft: `4px solid ${clase.color || "#6c63ff"}`,
@@ -69,23 +77,56 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, onSelect }) {
         padding: "16px 16px 14px", cursor: "pointer",
         transition: "transform .15s, box-shadow .15s",
         position: "relative", overflow: "hidden",
+        opacity: clase.activo === false ? 0.55 : 1,
       }}
+      onClick={() => onSelect(clase)}
       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(0,0,0,.18)"; }}
       onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
     >
       <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: clase.color || "#6c63ff", opacity: .06, pointerEvents: "none" }} />
 
-      {/* Header */}
-      <div style={{ marginBottom: 10 }}>
-        <p style={{ color: "var(--text-tertiary)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .8, marginBottom: 4 }}>General</p>
-        <h3 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700, lineHeight: 1.2, marginBottom: 3 }}>{clase.nombre}</h3>
-        {clase.descripcion && <p style={{ color: "var(--text-secondary)", fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{clase.descripcion}</p>}
+      {/* Header: nombre + botón editar */}
+      <div style={{ marginBottom: 10, display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: "var(--text-tertiary)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .8, marginBottom: 4 }}>General</p>
+          <h3 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700, lineHeight: 1.2, marginBottom: 3, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{clase.nombre}</h3>
+          {clase.descripcion && <p style={{ color: "var(--text-secondary)", fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{clase.descripcion}</p>}
+        </div>
+        {/* Botón editar — visible para canManage, directo sin abrir detalle */}
+        {canManage && (
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(clase); }}
+            title="Editar clase"
+            style={{
+              flexShrink: 0, width: 30, height: 30,
+              border: "1px solid var(--border-strong)", borderRadius: 8,
+              background: "var(--bg-elevated)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, color: "var(--text-secondary)",
+              transition: "background .15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(108,99,255,.15)"}
+            onMouseLeave={e => e.currentTarget.style.background = "var(--bg-elevated)"}
+          >⚙️</button>
+        )}
       </div>
 
-      {/* Horario */}
+      {/* Horario — con alerta si falta */}
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, marginBottom: 10 }}>
-        {!clase.hora_inicio ? (
-          <p style={{ color: "var(--text-tertiary)", fontSize: 11 }}>Sin horario asignado</p>
+        {sinHorario ? (
+          <div
+            onClick={e => { if (canManage) { e.stopPropagation(); onEdit(clase); } }}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "6px 10px", borderRadius: 8,
+              background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.25)",
+              cursor: canManage ? "pointer" : "default",
+            }}
+          >
+            <span style={{ fontSize: 13 }}>⚠️</span>
+            <span style={{ color: "#f59e0b", fontSize: 11, fontWeight: 600 }}>Sin horario asignado</span>
+            {canManage && <span style={{ color: "#f59e0b", fontSize: 10, marginLeft: "auto" }}>Configurar →</span>}
+          </div>
         ) : (
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -105,7 +146,7 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, onSelect }) {
         )}
       </div>
 
-      {/* Instructor + Cupo */}
+      {/* Instructor + cupo con badge semántico */}
       <div style={{ borderTop: "1px solid var(--border)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${clase.color || "#6c63ff"}22`, color: clase.color || "#6c63ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700 }}>
@@ -118,16 +159,21 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, onSelect }) {
         </div>
         <div style={{ textAlign: "right" }}>
           <p style={{ color: "var(--text-tertiary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4 }}>Cupo</p>
-          <p style={{ color: cupoColor, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{inscritos} / {clase.cupo_max}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{inscritos}/{clase.cupo_max}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: cupoEstado.bg, color: cupoEstado.color }}>
+              {cupoEstado.label}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Barra cupo */}
+      {/* Barra de cupo */}
       <div style={{ height: 3, background: "var(--bg-elevated)", borderRadius: 2, marginTop: 8 }}>
-        <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: cupoColor, borderRadius: 2, transition: "width .4s ease" }} />
+        <div style={{ height: "100%", width: `${Math.min((inscritos / Math.max(clase.cupo_max, 1)) * 100, 100)}%`, background: cupoEstado.color, borderRadius: 2, transition: "width .4s ease" }} />
       </div>
 
-      {/* Precio de membresía — visible y claro */}
+      {/* Precio */}
       <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Membresía</p>
         {precio !== null && precio > 0 ? (
@@ -145,8 +191,8 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, onSelect }) {
   );
 }
 
-// ── Modal Detalle — solo pestaña Alumnos ─────────────────────────
-function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, isOwner, canManage, planes, onEditClase, onClose }) {
+// ── Modal Detalle ─────────────────────────────────────────────────
+function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, planes, onEditClase, onClose, onAddTx }) {
   const planVinculado = (planes || []).find(p =>
     (p.clases_vinculadas || []).map(String).includes(String(clase.id))
   );
@@ -154,25 +200,41 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, isOwner, can
   const ciclo  = planVinculado?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
 
   const [busqueda, setBusqueda] = useState("");
+  const [cobrandoId, setCobrandoId] = useState(null);
+
+  // Calcular días restantes
+  const diasRestantes = (vence) => {
+    if (!vence) return null;
+    return Math.ceil((new Date(vence + "T00:00:00") - new Date()) / 86400000);
+  };
 
   const alumnos = useMemo(() => {
+    let lista;
     if (!planVinculado) {
-      return inscripciones
+      lista = inscripciones
         .filter(i => i.clase_id === clase.id && i.estado === "activa")
         .map(ins => {
           const m = miembros.find(m => String(m.id) === String(ins.miembro_id));
           if (!m) return null;
           return { miembro: m, info: getMembershipInfo(m.id, txs || [], m) };
         }).filter(Boolean);
+    } else {
+      lista = miembros.map(m => {
+        const info = getMembershipInfo(m.id, txs || [], m);
+        if (info.estado !== "Activo") return null;
+        const pn = (planVinculado.nombre || "").toLowerCase().trim();
+        const ip = (info.plan || "").toLowerCase().trim();
+        if (!(pn === ip || pn.includes(ip) || ip.includes(pn))) return null;
+        return { miembro: m, info };
+      }).filter(Boolean);
     }
-    return miembros.map(m => {
-      const info = getMembershipInfo(m.id, txs || [], m);
-      if (info.estado !== "Activo") return null;
-      const planNombre = (info.plan || "").toLowerCase().trim();
-      const pNombre    = (planVinculado.nombre || "").toLowerCase().trim();
-      if (!(pNombre === planNombre || pNombre.includes(planNombre) || planNombre.includes(pNombre))) return null;
-      return { miembro: m, info };
-    }).filter(Boolean);
+
+    // Ordenar: por vencer (≤7 días) primero, luego por días restantes asc
+    return lista.sort((a, b) => {
+      const da = diasRestantes(a.info.vence) ?? 9999;
+      const db = diasRestantes(b.info.vence) ?? 9999;
+      return da - db;
+    });
   }, [miembros, txs, inscripciones, clase.id, planVinculado]); // eslint-disable-line
 
   const alumnosFiltrados = useMemo(() => {
@@ -181,16 +243,41 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, isOwner, can
     return alumnos.filter(a => a.miembro.nombre.toLowerCase().includes(q) || (a.miembro.tel || "").includes(q));
   }, [alumnos, busqueda]);
 
+  const porVencer = alumnos.filter(a => { const d = diasRestantes(a.info.vence); return d !== null && d <= 7; });
+  const cupoEstado = getCupoEstado(alumnos.length, clase.cupo_max);
+
+  const handleCobrar = async (miembro, info) => {
+    setCobrandoId(miembro.id);
+    try {
+      if (onAddTx && precio > 0) {
+        await onAddTx({
+          tipo: "ingreso",
+          monto: precio,
+          desc: `Renovación ${clase.nombre} — ${miembro.nombre}`,
+          miembro_id: miembro.id,
+          plan: planVinculado?.nombre || clase.nombre,
+          forma_pago: "Efectivo",
+        });
+      }
+    } catch (e) { console.error(e); }
+    setCobrandoId(null);
+  };
+
   return (
     <Modal title={clase.nombre} onClose={onClose}>
-      {/* Resumen */}
+      {/* Chips de resumen */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        <span style={{ background: `${clase.color || "#6c63ff"}20`, color: clase.color || "#6c63ff", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
-          {alumnos.length} / {clase.cupo_max} alumnos
+        <span style={{ background: cupoEstado.bg, color: cupoEstado.color, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
+          {alumnos.length} / {clase.cupo_max} · {cupoEstado.label}
         </span>
         {precio !== null && (
           <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
             {precio > 0 ? `$${Number(precio).toLocaleString("es-MX")} / ${CICLO_LABEL[ciclo] || ciclo}` : "Gratuita"}
+          </span>
+        )}
+        {porVencer.length > 0 && (
+          <span style={{ background: "rgba(248,113,113,.12)", color: "#f87171", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
+            ⚠️ {porVencer.length} por vencer
           </span>
         )}
         {(clase.edad_min > 0 || clase.edad_max < 99) && (
@@ -217,15 +304,27 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, isOwner, can
         </div>
       )}
 
-      {/* Título alumnos */}
+      {/* Alumnos */}
       <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: .5 }}>
         Alumnos ({alumnos.length})
       </p>
 
       {alumnos.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <input type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar alumno..."
-            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 13px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+          <input type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar alumno..."
+            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 13px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
+          />
+        </div>
+      )}
+
+      {/* Banner "Por vencer" cuando hay alumnos urgentes y no hay búsqueda activa */}
+      {porVencer.length > 0 && !busqueda && (
+        <div style={{ padding: "8px 12px", background: "rgba(248,113,113,.08)", border: "1px solid rgba(248,113,113,.2)", borderRadius: 10, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14 }}>🔔</span>
+          <p style={{ color: "#f87171", fontSize: 12 }}>
+            <strong>{porVencer.length} alumno{porVencer.length !== 1 ? "s" : ""}</strong> con membresía por vencer en 7 días o menos. Se muestran primero.
+          </p>
         </div>
       )}
 
@@ -238,26 +337,54 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, isOwner, can
         </div>
       ) : alumnosFiltrados.map(({ miembro: m, info }) => {
         const edad = m.fecha_nacimiento ? calcEdad(m.fecha_nacimiento) : null;
-        const diasRestantes = info.vence ? Math.ceil((new Date(info.vence + "T00:00:00") - new Date()) / 86400000) : null;
-        const urgente = diasRestantes !== null && diasRestantes <= 7;
+        const dias = diasRestantes(info.vence);
+        const urgente = dias !== null && dias <= 7;
+        const vencido = dias !== null && dias < 0;
+        const cobrando = cobrandoId === m.id;
+
         return (
-          <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 14, marginBottom: 8, background: "var(--bg-elevated)", border: urgente ? "1px solid rgba(245,158,11,.35)" : "1px solid var(--border)" }}>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: `${clase.color || "#6c63ff"}22`, color: clase.color || "#6c63ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
+          <div key={m.id} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 12px", borderRadius: 14, marginBottom: 8,
+            background: "var(--bg-elevated)",
+            border: vencido ? "1px solid rgba(248,113,113,.4)" : urgente ? "1px solid rgba(245,158,11,.35)" : "1px solid var(--border)",
+          }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: `${clase.color || "#6c63ff"}22`, color: clase.color || "#6c63ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700 }}>
               {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : avatarIniciales(m.nombre)}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{m.nombre}</p>
-              <p style={{ color: urgente ? "#f59e0b" : "var(--text-tertiary)", fontSize: 11 }}>
+              <p style={{ color: vencido ? "#f87171" : urgente ? "#f59e0b" : "var(--text-tertiary)", fontSize: 11 }}>
                 {edad !== null ? `${edad} años · ` : ""}
-                {urgente ? `⚠️ Vence en ${diasRestantes}d` : info.vence ? `Vence: ${fmtDate(info.vence)}` : "Sin vencimiento"}
+                {vencido ? `Venció hace ${Math.abs(dias)}d`
+                  : urgente ? `⚠️ Vence en ${dias}d (${fmtDate(info.vence)})`
+                  : info.vence ? `Vence: ${fmtDate(info.vence)}` : "Sin vencimiento"}
               </p>
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(74,222,128,.12)", color: "#4ade80", flexShrink: 0 }}>✓ Activo</span>
+            {/* Botón cobrar renovación */}
+            {canManage && precio > 0 && (
+              <button
+                onClick={() => handleCobrar(m, info)}
+                disabled={cobrando}
+                style={{
+                  flexShrink: 0, padding: "5px 11px",
+                  border: urgente || vencido ? "none" : "1px solid var(--border-strong)",
+                  borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+                  fontSize: 11, fontWeight: 700,
+                  background: urgente || vencido ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-card)",
+                  color: urgente || vencido ? "#fff" : "var(--text-secondary)",
+                  opacity: cobrando ? 0.5 : 1,
+                  transition: "all .15s",
+                }}
+              >
+                {cobrando ? "..." : "Cobrar"}
+              </button>
+            )}
           </div>
         );
       })}
 
-      {isOwner && (
+      {canManage && (
         <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
           <button onClick={onEditClase} style={{ width: "100%", padding: "10px", border: "1px solid var(--border)", borderRadius: 12, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600 }}>
             ⚙️ Editar datos de la clase
@@ -272,16 +399,16 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, isOwner, can
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════
 export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner, canManage = isOwner, planes: planesProp }) {
-  const [clases, setClases]             = useState([]);
+  const [clases, setClases]               = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
-  const [planes, setPlanes]             = useState(planesProp || []);
-  const [instructores, setInstructores] = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [busqueda, setBusqueda]         = useState("");
-  const [filtroDia, setFiltroDia]       = useState("todos");
-  const [modalClase, setModalClase]     = useState(null);
-  const [modalDetalle, setModalDetalle] = useState(null);
-  const [confirmDarBaja, setConfirmDarBaja] = useState(null);
+  const [planes, setPlanes]               = useState(planesProp || []);
+  const [instructores, setInstructores]   = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [busqueda, setBusqueda]           = useState("");
+  const [filtroDia, setFiltroDia]         = useState("todos");
+  const [filtroEstado, setFiltroEstado]   = useState("activas"); // "activas" | "inactivas"
+  const [modalClase, setModalClase]       = useState(null);
+  const [modalDetalle, setModalDetalle]   = useState(null);
 
   const loadDatos = useCallback(async () => {
     setLoading(true);
@@ -303,8 +430,14 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
 
   useEffect(() => { loadDatos(); }, [loadDatos]);
 
+  const recargarPlanes = () => {
+    supabase.from("planes_membresia").then(db => db.select(gymId)).then(pData => {
+      if (pData) setPlanes(pData);
+    }).catch(() => {});
+  };
+
   const stats = useMemo(() => {
-    const clasesActivas = clases.filter(c => c.activo);
+    const clasesActivas = clases.filter(c => c.activo !== false);
     const totalInscritos = inscripciones.filter(i => i.estado === "activa").length;
     const conteoPorClase = {};
     inscripciones.filter(i => i.estado === "activa").forEach(i => {
@@ -317,12 +450,14 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
   const clasesFiltradas = useMemo(() => {
     const q = busqueda.toLowerCase();
     return clases.filter(c => {
-      if (!c.activo && !canManage) return false;
+      const esActiva = c.activo !== false;
+      if (filtroEstado === "activas" && !esActiva) return false;
+      if (filtroEstado === "inactivas" && esActiva) return false;
       if (q && !c.nombre.toLowerCase().includes(q) && !(c.instructor_nombre || "").toLowerCase().includes(q)) return false;
       if (filtroDia !== "todos" && !(c.dias_semana || []).includes(filtroDia)) return false;
       return true;
     });
-  }, [clases, busqueda, filtroDia, canManage]);
+  }, [clases, busqueda, filtroDia, filtroEstado]);
 
   const handleGuardarClase = (saved, esEdicion) => {
     if (esEdicion) {
@@ -331,19 +466,24 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
     } else {
       setClases(p => [...p, saved]);
     }
-    // Recargar planes para que la tarjeta muestre el precio actualizado
-    supabase.from("planes_membresia").then(db => db.select(gymId)).then(pData => {
-      if (pData) setPlanes(pData);
-    }).catch(() => {});
+    recargarPlanes();
     setModalClase(null);
   };
 
-  const handleDarBaja = async (inscripcion) => {
-    const db = await supabase.from("inscripciones");
-    await db.update(inscripcion.id, { estado: "baja" });
-    setInscripciones(p => p.map(i => i.id === inscripcion.id ? { ...i, estado: "baja" } : i));
-    setConfirmDarBaja(null);
-  };
+  const chipFiltro = (k, label, activo) => (
+    <button
+      key={k}
+      onClick={() => k.startsWith("dia:") ? setFiltroDia(k.replace("dia:", "")) : setFiltroEstado(k)}
+      style={{
+        flexShrink: 0, padding: "5px 14px", border: "none", borderRadius: 20,
+        cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700,
+        background: activo ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+        color: activo ? "#fff" : "var(--text-secondary)",
+      }}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -351,6 +491,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
       {/* HEADER */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
+
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>📅</div>
             <div style={{ flex: 1 }}>
@@ -359,7 +500,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
               </h1>
               <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>Clases, horarios y membresías en un solo lugar</p>
             </div>
-            {isOwner && (
+            {canManage && (
               <button onClick={() => setModalClase("nueva")} style={{ border: "none", borderRadius: 12, padding: "8px 16px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff", boxShadow: "0 3px 14px rgba(108,99,255,.35)" }}>
                 + Nueva clase
               </button>
@@ -397,13 +538,16 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
             </div>
           </div>
 
-          {/* Filtros por día */}
-          <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 4, marginTop: 10 }}>
-            {[{ key: "todos", label: "Todos" }, ...DIAS].map(d => (
-              <button key={d.key} onClick={() => setFiltroDia(d.key)} style={{ flexShrink: 0, padding: "5px 14px", border: "none", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: filtroDia === d.key ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)", color: filtroDia === d.key ? "#fff" : "var(--text-secondary)" }}>
-                {d.label}
-              </button>
-            ))}
+          {/* Filtros — Estado + Días */}
+          <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 4, marginTop: 10, alignItems: "center" }}>
+            {/* Estado */}
+            {chipFiltro("activas",   "Activas",   filtroEstado === "activas")}
+            {chipFiltro("inactivas", "Inactivas", filtroEstado === "inactivas")}
+            {/* Separador */}
+            <div style={{ width: 1, height: 18, background: "var(--border-strong)", flexShrink: 0, margin: "0 2px" }} />
+            {/* Días */}
+            {chipFiltro("dia:todos", "Todos", filtroDia === "todos")}
+            {DIAS.map(d => chipFiltro(`dia:${d.key}`, d.label, filtroDia === d.key))}
           </div>
         </div>
       </div>
@@ -414,16 +558,16 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
           {loading ? (
             <div style={{ textAlign: "center", padding: "60px 0" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(108,99,255,.2)", borderTopColor: "#6c63ff", margin: "0 auto 14px", animation: "spin .8s linear infinite" }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
               <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Cargando clases...</p>
             </div>
           ) : clasesFiltradas.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 0" }}>
               <p style={{ fontSize: 36, marginBottom: 12 }}>📭</p>
               <p style={{ color: "var(--text-secondary)", fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
-                {busqueda || filtroDia !== "todos" ? "Sin resultados para este filtro" : "Aún no hay clases creadas"}
+                {busqueda || filtroDia !== "todos" ? "Sin resultados para este filtro" : filtroEstado === "inactivas" ? "No hay clases inactivas" : "Aún no hay clases creadas"}
               </p>
-              {isOwner && !busqueda && filtroDia === "todos" && (
+              {canManage && !busqueda && filtroDia === "todos" && filtroEstado === "activas" && (
                 <button onClick={() => setModalClase("nueva")} style={{ marginTop: 12, border: "none", borderRadius: 12, padding: "10px 22px", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff" }}>
                   + Crear primera clase
                 </button>
@@ -432,7 +576,13 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, paddingBottom: 24 }}>
               {clasesFiltradas.map(c => (
-                <ClaseCard key={c.id} clase={c} inscripciones={inscripciones} miembros={miembros} txs={txs} planes={planes} onSelect={setModalDetalle} />
+                <ClaseCard
+                  key={c.id} clase={c}
+                  inscripciones={inscripciones} miembros={miembros} txs={txs} planes={planes}
+                  canManage={canManage}
+                  onSelect={setModalDetalle}
+                  onEdit={cl => setModalClase(cl)}
+                />
               ))}
             </div>
           )}
@@ -451,28 +601,12 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
       {modalDetalle && (
         <ModalDetalle
           clase={modalDetalle} inscripciones={inscripciones} miembros={miembros} txs={txs}
-          gymId={gymId} isOwner={isOwner} canManage={canManage} planes={planes}
+          gymId={gymId} canManage={canManage} planes={planes}
           onEditClase={() => { setModalClase(modalDetalle); setModalDetalle(null); }}
-          onDarBaja={setConfirmDarBaja} onClose={() => setModalDetalle(null)}
+          onClose={() => setModalDetalle(null)}
+          onAddTx={onAddTx}
         />
       )}
-
-      {confirmDarBaja && (() => {
-        const m = miembros.find(mb => String(mb.id) === String(confirmDarBaja.miembro_id));
-        return (
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-            <div style={{ background: "var(--bg-card)", borderRadius: 20, padding: "28px 24px", maxWidth: 340, width: "100%", textAlign: "center" }}>
-              <p style={{ fontSize: 36, marginBottom: 12 }}>⚠️</p>
-              <h3 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700, marginBottom: 8 }}>¿Dar de baja?</h3>
-              <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 20 }}>{m?.nombre || "Este miembro"} será dado de baja de la clase.</p>
-              <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => setConfirmDarBaja(null)} style={{ flex: 1, padding: "11px", border: "1px solid var(--border)", borderRadius: 12, background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}>Cancelar</button>
-                <button onClick={() => handleDarBaja(confirmDarBaja)} style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>Dar de baja</button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
