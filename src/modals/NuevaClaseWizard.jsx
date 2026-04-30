@@ -537,6 +537,7 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     mora_tipo:         planVinculado?.mora_tipo || clase?.mora_tipo || "ninguna",
     mora_monto:        String(planVinculado?.mora_monto || clase?.mora_monto || ""),
     plan_id:           planVinculado?.id || clase?.plan_id || null,
+    politica_id:       clase?.politica_id || null,
   }));
 
   const [step, setStep]         = useState(1);
@@ -629,65 +630,46 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       }
 
       // ══ 2. GUARDAR PLAN DE MEMBRESÍA ════════════════════════════
-      // Columnas reales: dias_gracia, penalidad_mora, tipo_penalidad, clases_vinculadas
-      // NO existen: mora_tipo, mora_monto, cupo_clases
+      // Columnas REALES de planes_membresia:
+      //   nombre, precio_publico, ciclo_renovacion, activo, clases_vinculadas
+      // NO existen: dias_gracia, mora_tipo, mora_monto, penalidad_mora, cupo_clases
       const planPayload = {
-        nombre: form.nombre.trim(),
-        precio_publico: precioNum,
-        ciclo_renovacion: form.ciclo_renovacion || "mensual",
-        dias_gracia: diasGracia,
-        penalidad_mora: Number(form.mora_monto) || 0,
-        tipo_penalidad: form.mora_tipo === "porcentaje" ? "porcentaje" : "fijo",
-        activo: form.activo !== false,
+        nombre:            form.nombre.trim(),
+        precio_publico:    precioNum,
+        ciclo_renovacion:  form.ciclo_renovacion || "mensual",
+        activo:            form.activo !== false,
         clases_vinculadas: [String(finalClaseId)],
       };
 
-      // Buscar plan_id con todos los métodos disponibles
+      // ══ 3. POLÍTICA (tabla politicas_membresia) ═══════════════════
+      // dias_gracia, penalidad_mora y tipo_penalidad van aquí
+      const politicaPayload = {
+        dias_gracia:    diasGracia,
+        penalidad_mora: Number(form.mora_monto) || 0,
+        tipo_penalidad: form.mora_tipo === "porcentaje" ? "porcentaje" : "fijo",
+      };
+
       const resolvedPlanId =
-        form.plan_id ||
-        planVinculado?.id ||
-        clase?.plan_id ||
-        null;
+        form.plan_id || planVinculado?.id || clase?.plan_id || null;
 
-      console.log("🔍 resolvedPlanId:", resolvedPlanId, "| form.plan_id:", form.plan_id, "| planVinculado?.id:", planVinculado?.id, "| clase?.plan_id:", clase?.plan_id);
-
-      const dbP = await supabase.from("planes_membresia");
+      const dbP   = await supabase.from("planes_membresia");
+      const dbPol = await supabase.from("politicas_membresia");
 
       if (resolvedPlanId) {
-        // Actualizar plan existente (sin gym_id — RLS lo rechaza en PATCH)
-        const okP = await dbP.update(resolvedPlanId, planPayload);
-        console.log("✅ Plan actualizado:", resolvedPlanId, "ok:", okP);
+        await dbP.update(resolvedPlanId, planPayload);
+        if (form.politica_id) {
+          await dbPol.update(form.politica_id, { ...politicaPayload, plan_id: resolvedPlanId });
+        } else {
+          await dbPol.insert({ gym_id: gymId, ...politicaPayload, plan_id: resolvedPlanId });
+        }
         savedClase = { ...savedClase, plan_id: resolvedPlanId };
       } else {
-        // No hay plan vinculado — buscar si existe uno por nombre antes de crear
-        console.log("⚠️ No se encontró plan vinculado, buscando por nombre...");
-        const dbSearch = await supabase.from("planes_membresia");
-        const allPlanes = await dbSearch.select(gymId);
-        const planByName = (allPlanes || []).find(p =>
-          p.nombre?.toLowerCase().trim() === form.nombre.toLowerCase().trim()
-        );
-
-        if (planByName?.id) {
-          // Existe un plan con ese nombre — actualizarlo y vincularlo
-          console.log("🔗 Plan encontrado por nombre, vinculando:", planByName.id);
-          await dbP.update(planByName.id, {
-            ...planPayload,
-            clases_vinculadas: [String(finalClaseId)],
-          });
-          // Guardar plan_id en la clase para futuras ediciones
+        const savedPlan = await dbP.insert({ gym_id: gymId, ...planPayload });
+        if (savedPlan?.id) {
+          await dbPol.insert({ gym_id: gymId, ...politicaPayload, plan_id: savedPlan.id });
           const dbC2 = await supabase.from("clases");
-          await dbC2.update(finalClaseId, { plan_id: planByName.id });
-          savedClase = { ...savedClase, plan_id: planByName.id };
-        } else {
-          // Crear plan nuevo
-          console.log("🆕 Creando plan nuevo...");
-          const savedPlan = await dbP.insert({ gym_id: gymId, ...planPayload });
-          if (savedPlan?.id) {
-            const dbC2 = await supabase.from("clases");
-            await dbC2.update(finalClaseId, { plan_id: savedPlan.id });
-            savedClase = { ...savedClase, plan_id: savedPlan.id };
-            console.log("✅ Plan creado y vinculado:", savedPlan.id);
-          }
+          await dbC2.update(finalClaseId, { plan_id: savedPlan.id });
+          savedClase = { ...savedClase, plan_id: savedPlan.id };
         }
       }
 
