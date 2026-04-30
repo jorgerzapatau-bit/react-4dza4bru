@@ -566,274 +566,286 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
 }
 
 // ── PASO 2: Membresía ─────────────────────────────────────────
-// Muestra primero los planes de membresía (planesMembresia) con filtro de edad,
-// luego las clases disponibles como agrupación secundaria opcional.
-function Step2({ fM, setFM, clases, planesMembresia }) {
-  const edad = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
+// Cada clase ya tiene su precio de membresía integrado (precio_membresia /
+// ciclo_renovacion). Seleccionar la clase = seleccionar la membresía.
+// Lista única, sin secciones separadas.
+function Step2({ fM, setFM, clases, horarios }) {
+  const edad    = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
   const esMenor = edad !== null && edad < 18;
 
   const CICLO_LABEL = { mensual: "mes", trimestral: "trimestre", semestral: "semestre", anual: "año" };
-  const CICLO_ICON  = { mensual: "📅", trimestral: "🗓️", semestral: "📆", anual: "🏆" };
+  const DIAS_SHORT  = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D" };
 
-  // ── Sección: planes de membresía ──────────────────────────────
-  const planesActivos = (planesMembresia || []).filter(p => p.activo !== false);
+  const fmtHora = (t) => {
+    if (!t) return "";
+    const [h, m] = t.split(":");
+    const hr = parseInt(h);
+    return `${hr % 12 || 12}:${m} ${hr >= 12 ? "p.m." : "a.m."}`;
+  };
 
-  // Filtra planes por rango de edad si se conoce la edad del alumno
-  const planApto = (p) => {
+  // Clases activas
+  const clasesActivas = (clases || []).filter(c => c.activo !== false);
+
+  // Determinar compatibilidad de edad para una clase
+  const ageCheck = (c) => {
     if (edad === null) return { apto: true, warning: null };
-    const min = p.edad_min ?? 0;
-    const max = p.edad_max ?? 99;
-    if (edad < min) return { apto: false, warning: `Edad mínima ${min} años (alumno tiene ${edad})` };
-    if (edad > max) return { apto: false, warning: `Edad máxima ${max} años (alumno tiene ${edad})` };
+    const min = c.edad_min ?? 0;
+    const max = c.edad_max ?? 99;
+    if (edad < min) return { apto: false, warning: `Mínimo ${min} años` };
+    if (edad > max) return { apto: false, warning: `Máximo ${max} años` };
     return { apto: true, warning: null };
   };
 
+  // Horarios de una clase
+  const horariosDeClase = (claseId) =>
+    (horarios || []).filter(h => h.clase_id === claseId && h.activo !== false);
+
   return (
     <div>
-      {/* Aviso menor de edad */}
+      {/* Banner menor de edad */}
       {esMenor && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "rgba(251,191,36,.09)", border: "1px solid rgba(251,191,36,.28)", borderRadius: 12, marginBottom: 14 }}>
-          <span style={{ fontSize: 16, flexShrink: 0 }}>👶</span>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 14px", marginBottom: 14,
+          background: "rgba(251,191,36,.09)", border: "1px solid rgba(251,191,36,.28)", borderRadius: 12,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>👶</span>
           <p style={{ color: "#fbbf24", fontSize: 12, lineHeight: 1.4 }}>
-            <strong>Alumno menor de edad ({edad} años)</strong> — solo se muestran planes compatibles con su edad.
+            <strong>Menor de edad ({edad} años)</strong> — las clases incompatibles con su rango de edad aparecen deshabilitadas.
           </p>
         </div>
       )}
 
-      {/* ── PLANES DE MEMBRESÍA ── */}
-      {planesActivos.length > 0 ? (
-        <>
-          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 10 }}>
-            📋 Planes de membresía disponibles
+      {/* ── Opción: Sin clase / sin membresía ── */}
+      <button
+        onClick={() => setFM(p => ({
+          ...p,
+          claseId: null, planId: null,
+          plan: null, monto: null, planData: null,
+        }))}
+        style={{
+          width: "100%", padding: "14px 16px", marginBottom: 10,
+          border: !fM.claseId
+            ? "2px solid rgba(167,139,250,.5)"
+            : "1.5px solid var(--border-strong,#2e2e42)",
+          borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+          background: !fM.claseId ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
+          display: "flex", alignItems: "center", gap: 12, transition: "all .2s", textAlign: "left",
+        }}
+      >
+        <div style={{
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          background: !fM.claseId ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+        }}>⏸️</div>
+        <div style={{ flex: 1 }}>
+          <p style={{
+            color: !fM.claseId ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+            fontWeight: !fM.claseId ? 700 : 500, fontSize: 14,
+          }}>Sin clase por ahora</p>
+          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
+            Se puede asignar después desde el perfil
           </p>
+        </div>
+        {!fM.claseId && <span style={{ color: "#a78bfa", fontSize: 18 }}>✓</span>}
+      </button>
 
-          {planesActivos.map(p => {
-            const isSelected = fM.planId === p.id;
-            const precio     = Number(p.precio_publico) || 0;
-            const ciclo      = p.ciclo_renovacion || "mensual";
-            const { apto, warning } = planApto(p);
-
-            return (
-              <button
-                key={p.id}
-                onClick={() => {
-                  if (!apto) return; // no permitir seleccionar si rango de edad no aplica
-                  setFM(prev => ({
-                    ...prev,
-                    planId:   p.id,
-                    plan:     p.nombre,
-                    monto:    prev.beca ? "0" : String(precio),
-                    planData: {
-                      id:               p.id,
-                      nombre:           p.nombre,
-                      precio_publico:   precio,
-                      ciclo_renovacion: ciclo,
-                      meses: { mensual:1, trimestral:3, semestral:6, anual:12 }[ciclo] ?? 1,
-                    },
-                  }));
-                }}
-                style={{
-                  width: "100%", padding: "14px 16px", marginBottom: 8,
-                  border: isSelected
-                    ? "2px solid #6c63ff"
-                    : !apto
-                    ? "1.5px solid rgba(248,113,113,.2)"
-                    : "1.5px solid var(--border-strong,#2e2e42)",
-                  borderRadius: 14,
-                  cursor: apto ? "pointer" : "not-allowed",
-                  fontFamily: "inherit",
-                  background: isSelected
-                    ? "rgba(108,99,255,.12)"
-                    : !apto
-                    ? "rgba(248,113,113,.04)"
-                    : "var(--bg-elevated,#1e1e2e)",
-                  display: "flex", alignItems: "center", gap: 12,
-                  transition: "all .2s", textAlign: "left",
-                  opacity: !apto ? 0.55 : 1,
-                }}
-              >
-                {/* Ícono ciclo */}
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                  background: isSelected ? "rgba(108,99,255,.22)" : "rgba(255,255,255,.06)",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                }}>
-                  {CICLO_ICON[ciclo] || "📋"}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: isSelected ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontWeight: 700, fontSize: 14 }}>
-                    {p.nombre}
-                  </p>
-                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
-                    {ciclo.charAt(0).toUpperCase() + ciclo.slice(1)}
-                    {(p.edad_min || p.edad_max < 99) && ` · ${p.edad_min ?? 0}–${p.edad_max ?? 99} años`}
-                  </p>
-                  {warning && (
-                    <p style={{ color: "#f87171", fontSize: 11, marginTop: 3 }}>⚠️ {warning}</p>
-                  )}
-                  {fM.beca && isSelected && (
-                    <p style={{ color: "#4ade80", fontSize: 11, marginTop: 3 }}>🎓 Beca — no pagará membresía</p>
-                  )}
-                </div>
-
-                {/* Precio */}
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  {precio > 0 ? (
-                    <>
-                      <p style={{
-                        background: isSelected ? "rgba(108,99,255,.22)" : "rgba(255,255,255,.07)",
-                        color: isSelected ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
-                        borderRadius: 10, padding: "4px 12px", fontSize: 13, fontWeight: 700,
-                        fontFamily: "'DM Mono',monospace",
-                      }}>
-                        {fM.beca && isSelected
-                          ? <span style={{ color: "#4ade80" }}>$0</span>
-                          : `$${precio.toLocaleString("es-MX")}`}
-                      </p>
-                      {!fM.beca && (
-                        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 2 }}>
-                          / {CICLO_LABEL[ciclo] || ciclo}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 10, padding: "4px 12px", fontSize: 12, fontWeight: 700 }}>
-                      Gratuita
-                    </p>
-                  )}
-                  {isSelected && (
-                    <p style={{ color: "#6c63ff", fontSize: 10, marginTop: 4, fontWeight: 700 }}>✓ Seleccionado</p>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </>
-      ) : (
-        /* Sin planes configurados: mensaje orientador */
-        <div style={{ padding: "16px", background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 14, marginBottom: 16, display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+      {/* ── Lista de clases (= opciones de membresía) ── */}
+      {clasesActivas.length === 0 ? (
+        <div style={{
+          padding: "16px", borderRadius: 14, marginTop: 8,
+          background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)",
+          display: "flex", gap: 10, alignItems: "flex-start",
+        }}>
+          <span style={{ fontSize: 20 }}>⚠️</span>
           <div>
-            <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>Sin planes de membresía configurados</p>
+            <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>No hay clases activas</p>
             <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 12, marginTop: 4 }}>
-              Ve a Configuración → Membresías para crear tus planes antes de registrar alumnos.
+              Ve a Gestión de Clases para crear clases antes de registrar alumnos.
             </p>
           </div>
         </div>
+      ) : (
+        clasesActivas.map(c => {
+          const isSel    = fM.claseId === c.id;
+          const precio   = Number(c.precio_membresia ?? c.costo ?? 0);
+          const ciclo    = c.ciclo_renovacion || "mensual";
+          const color    = c.color || "#6c63ff";
+          const { apto, warning } = ageCheck(c);
+          const horas    = horariosDeClase(c.id);
+
+          return (
+            <button
+              key={c.id}
+              onClick={() => {
+                if (!apto) return;
+                setFM(prev => ({
+                  ...prev,
+                  claseId:  c.id,
+                  planId:   c.id,            // reuse claseId as planId (same entity)
+                  plan:     c.nombre,
+                  monto:    prev.beca ? "0" : String(precio),
+                  planData: {
+                    id:               c.id,
+                    nombre:           c.nombre,
+                    precio_publico:   precio,
+                    ciclo_renovacion: ciclo,
+                    meses: { mensual:1, trimestral:3, semestral:6, anual:12 }[ciclo] ?? 1,
+                  },
+                }));
+              }}
+              style={{
+                width: "100%", padding: "14px 16px", marginBottom: 8,
+                border: isSel
+                  ? `2px solid ${color}`
+                  : !apto
+                  ? "1.5px solid rgba(248,113,113,.18)"
+                  : "1.5px solid var(--border-strong,#2e2e42)",
+                borderRadius: 14,
+                cursor: apto ? "pointer" : "not-allowed",
+                opacity: !apto ? 0.5 : 1,
+                fontFamily: "inherit",
+                background: isSel
+                  ? `${color}18`
+                  : !apto ? "rgba(248,113,113,.03)" : "var(--bg-elevated,#1e1e2e)",
+                display: "flex", alignItems: "center", gap: 12,
+                transition: "all .2s", textAlign: "left",
+              }}
+            >
+              {/* Dot color de clase */}
+              <div style={{
+                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                background: isSel ? `${color}28` : "rgba(255,255,255,.05)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <div style={{ width: 14, height: 14, borderRadius: "50%", background: color }} />
+              </div>
+
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{
+                  color: isSel ? color : "var(--text-primary,#e8e8f0)",
+                  fontWeight: 700, fontSize: 14,
+                }}>
+                  {c.nombre}
+                </p>
+
+                {/* Horarios de esta clase */}
+                {horas.length > 0 && (
+                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
+                    🕐 {fmtHora(horas[0].hora_inicio)} – {fmtHora(horas[0].hora_fin)}
+                    {(horas[0].dias_semana || []).length > 0 && (
+                      <span style={{ marginLeft: 4 }}>
+                        · {horas[0].dias_semana.map(d => DIAS_SHORT[d] || d).join(" ")}
+                      </span>
+                    )}
+                    {horas.length > 1 && (
+                      <span style={{ marginLeft: 4, color: "#6b7280" }}>+{horas.length - 1} horarios</span>
+                    )}
+                  </p>
+                )}
+
+                {/* Rango de edad configurado */}
+                {((c.edad_min ?? 0) > 0 || (c.edad_max ?? 99) < 99) && (
+                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 2 }}>
+                    👤 {c.edad_min ?? 0}–{c.edad_max ?? 99} años
+                  </p>
+                )}
+
+                {/* Warning de edad incompatible */}
+                {warning && (
+                  <p style={{ color: "#f87171", fontSize: 11, marginTop: 3 }}>⚠️ {warning}</p>
+                )}
+
+                {/* Beca seleccionada */}
+                {fM.beca && isSel && (
+                  <p style={{ color: "#4ade80", fontSize: 11, marginTop: 3 }}>🎓 Beca — sin costo</p>
+                )}
+              </div>
+
+              {/* Precio */}
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                {precio > 0 ? (
+                  <>
+                    <p style={{
+                      background: isSel ? `${color}28` : "rgba(255,255,255,.07)",
+                      color: isSel ? color : "var(--text-secondary,#9999b3)",
+                      borderRadius: 10, padding: "4px 12px",
+                      fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace",
+                    }}>
+                      {fM.beca && isSel
+                        ? <span style={{ color: "#4ade80" }}>$0</span>
+                        : `$${precio.toLocaleString("es-MX")}`}
+                    </p>
+                    {!fM.beca && (
+                      <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 3 }}>
+                        / {CICLO_LABEL[ciclo] || ciclo}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p style={{
+                    background: "rgba(74,222,128,.1)", color: "#4ade80",
+                    borderRadius: 10, padding: "4px 12px", fontSize: 12, fontWeight: 700,
+                  }}>
+                    Gratuita
+                  </p>
+                )}
+              </div>
+            </button>
+          );
+        })
       )}
 
-      {/* Monto editable cuando se seleccionó un plan */}
-      {fM.planId && !fM.beca && (
-        <div style={{ marginTop: 4, marginBottom: 14, padding: "14px", background: "rgba(108,99,255,.07)", borderRadius: 14, border: "1px solid rgba(108,99,255,.2)" }}>
-          <label style={{ color: "#a78bfa", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6, display: "block" }}>
+      {/* Monto editable cuando hay clase/plan seleccionado y no es beca */}
+      {fM.claseId && !fM.beca && (
+        <div style={{
+          marginTop: 8, padding: "14px",
+          background: "rgba(108,99,255,.07)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14,
+        }}>
+          <label style={{
+            color: "#a78bfa", fontSize: 11, fontWeight: 600,
+            textTransform: "uppercase", letterSpacing: .5, marginBottom: 6, display: "block",
+          }}>
             💰 Monto a cobrar (editable)
           </label>
           <input
             type="number" value={fM.monto || ""} min="0"
             onChange={e => setFM(p => ({ ...p, monto: e.target.value }))}
             placeholder="0" inputMode="numeric"
-            style={{ width: "100%", background: "var(--bg-elevated,#1e1e2e)", border: "1px solid var(--border-strong,#2e2e42)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary,#e8e8f0)", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
-          />
-        </div>
-      )}
-
-      {/* ── CLASES (separador) ── */}
-      {(clases || []).filter(c => c.activo !== false).length > 0 && (
-        <>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 12px" }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border-strong,#2e2e42)" }} />
-            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, flexShrink: 0 }}>
-              🥋 Asignar a clase (opcional)
-            </p>
-            <div style={{ flex: 1, height: 1, background: "var(--border-strong,#2e2e42)" }} />
-          </div>
-
-          {/* Sin clase */}
-          <button
-            onClick={() => setFM(p => ({ ...p, claseId: null }))}
             style={{
-              width: "100%", padding: "12px 16px", marginBottom: 8,
-              border: !fM.claseId ? "2px solid rgba(255,255,255,.28)" : "1.5px solid var(--border-strong,#2e2e42)",
-              borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-              background: !fM.claseId ? "rgba(255,255,255,.05)" : "var(--bg-elevated,#1e1e2e)",
-              display: "flex", alignItems: "center", gap: 12, transition: "all .2s",
+              width: "100%", background: "var(--bg-elevated,#1e1e2e)",
+              border: "1px solid var(--border-strong,#2e2e42)", borderRadius: 12,
+              padding: "12px 14px", color: "var(--text-primary,#e8e8f0)",
+              fontSize: 15, fontFamily: "'DM Mono',monospace",
+              fontWeight: 700, outline: "none", boxSizing: "border-box",
             }}
-          >
-            <span style={{ fontSize: 20 }}>⏸️</span>
-            <div style={{ textAlign: "left", flex: 1 }}>
-              <p style={{ color: !fM.claseId ? "var(--text-primary,#e8e8f0)" : "var(--text-tertiary,#6b6b8a)", fontWeight: !fM.claseId ? 700 : 400, fontSize: 13 }}>
-                Sin clase por ahora
-              </p>
-              <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11 }}>Se puede asignar después desde el perfil</p>
-            </div>
-            {!fM.claseId && <span style={{ color: "#a78bfa", fontSize: 14 }}>✓</span>}
-          </button>
-
-          {(clases || []).filter(c => c.activo !== false).map(c => {
-            const isSelC = fM.claseId === c.id;
-            const DIAS_SHORT = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D" };
-            const fmtHora = (t) => {
-              if (!t) return "";
-              const [h, m] = t.split(":");
-              const hr = parseInt(h);
-              return `${hr % 12 || 12}:${m} ${hr >= 12 ? "pm" : "am"}`;
-            };
-
-            // Advertencia edad en clases
-            let warnClase = null;
-            if (edad !== null) {
-              if ((c.edad_min ?? 0) > 0 && edad < c.edad_min) warnClase = `Min. ${c.edad_min} años`;
-              else if ((c.edad_max ?? 99) < 99 && edad > c.edad_max) warnClase = `Max. ${c.edad_max} años`;
-            }
-
-            return (
-              <button
-                key={c.id}
-                onClick={() => setFM(prev => ({ ...prev, claseId: isSelC ? null : c.id }))}
-                style={{
-                  width: "100%", padding: "12px 16px", marginBottom: 8,
-                  border: isSelC ? `2px solid ${c.color || "#6c63ff"}` : "1.5px solid var(--border-strong,#2e2e42)",
-                  borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-                  background: isSelC ? `${c.color || "#6c63ff"}14` : "var(--bg-elevated,#1e1e2e)",
-                  display: "flex", alignItems: "center", gap: 12, transition: "all .2s", textAlign: "left",
-                }}
-              >
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: c.color || "#6c63ff", flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <p style={{ color: isSelC ? (c.color || "#6c63ff") : "var(--text-primary,#e8e8f0)", fontWeight: isSelC ? 700 : 500, fontSize: 13 }}>
-                    {c.nombre}
-                  </p>
-                  {c.hora_inicio && (
-                    <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 1 }}>
-                      🕐 {fmtHora(c.hora_inicio)} – {fmtHora(c.hora_fin)}
-                      {(c.dias_semana || []).length > 0 && ` · ${c.dias_semana.map(d => DIAS_SHORT[d]||d).join(" ")}`}
-                    </p>
-                  )}
-                  {warnClase && <p style={{ color: "#fbbf24", fontSize: 10, marginTop: 2 }}>⚠️ {warnClase}</p>}
-                </div>
-                {isSelC && <span style={{ color: c.color || "#6c63ff", fontSize: 14 }}>✓</span>}
-              </button>
-            );
-          })}
-        </>
-      )}
-
-      {/* Sin plan y sin clase → opción continuar sin membresía */}
-      {!fM.planId && (
-        <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(107,114,128,.07)", border: "1px solid rgba(107,114,128,.2)", borderRadius: 12 }}>
-          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, textAlign: "center" }}>
-            Si no seleccionas plan, el alumno se registrará <strong>sin membresía</strong> y podrás asignarla después.
-          </p>
+          />
         </div>
       )}
 
       {/* Aviso beca */}
       {fM.beca && (
-        <div style={{ marginTop: 10, padding: "10px 14px", background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 12, display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={{
+          marginTop: 10, padding: "10px 14px",
+          background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 12,
+          display: "flex", gap: 8, alignItems: "center",
+        }}>
           <span style={{ fontSize: 16 }}>🎓</span>
-          <p style={{ color: "#fbbf24", fontSize: 11 }}>Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.</p>
+          <p style={{ color: "#fbbf24", fontSize: 11 }}>
+            Alumno becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.
+          </p>
         </div>
+      )}
+
+      {/* Nota pie */}
+      {!fM.claseId && clasesActivas.length > 0 && (
+        <p style={{
+          color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, textAlign: "center",
+          marginTop: 14, lineHeight: 1.5,
+        }}>
+          Si no seleccionas clase, el alumno se registrará <strong style={{ color: "var(--text-secondary,#9999b3)" }}>sin membresía</strong> y podrás asignarla después.
+        </p>
       )}
     </div>
   );
@@ -1359,7 +1371,7 @@ export default function NuevoMiembroWizard({
             />
           )}
           {step === 2 && (
-            <Step2 fM={fM} setFM={setFM} clases={clases} planesMembresia={planes} />
+            <Step2 fM={fM} setFM={setFM} clases={clases} horarios={horarios} />
           )}
           {step === 3 && (
             <Step3
