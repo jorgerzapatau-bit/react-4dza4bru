@@ -502,10 +502,10 @@ function ConfirmSalir({ onConfirm, onCancel }) {
 // ══════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════
-export default function NuevaClaseWizard({ clase, gymId, miembros, instructores, planes, gymConfig, onSave, onClose }) {
+export default function NuevaClaseWizard({ clase, gymId, miembros, instructores, planes, politicas, gymConfig, onSave, onClose }) {
   const esEdicion = !!clase;
 
-  // Bug fix: buscar plan por plan_id explícito primero, luego por clases_vinculadas
+  // Buscar plan vinculado
   const planVinculado = (() => {
     if (!planes || !clase?.id) return null;
     if (clase?.plan_id) {
@@ -515,6 +515,12 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     return planes.find(p =>
       (p.clases_vinculadas || []).map(String).includes(String(clase.id))
     ) || null;
+  })();
+
+  // Buscar política vinculada al plan (tiene dias_gracia, penalidad_mora, tipo_penalidad)
+  const politicaVinculada = (() => {
+    if (!politicas || !planVinculado?.id) return null;
+    return politicas.find(p => String(p.plan_id) === String(planVinculado.id)) || null;
   })();
 
   const [form, setForm] = useState(() => ({
@@ -533,11 +539,11 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     fecha_fin:         clase?.fecha_fin          || "",
     precio_membresia:  String(planVinculado?.precio_publico || clase?.precio_membresia || ""),
     ciclo_renovacion:  planVinculado?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual",
-    dias_gracia:       planVinculado?.dias_gracia ?? clase?.dias_gracia ?? 5,
-    mora_tipo:         planVinculado?.mora_tipo || clase?.mora_tipo || "ninguna",
-    mora_monto:        String(planVinculado?.mora_monto || clase?.mora_monto || ""),
+    dias_gracia:       politicaVinculada?.dias_gracia ?? clase?.dias_gracia ?? 5,
+    mora_tipo:         politicaVinculada?.tipo_penalidad || "ninguna",
+    mora_monto:        String(politicaVinculada?.penalidad_mora || ""),
     plan_id:           planVinculado?.id || clase?.plan_id || null,
-    politica_id:       clase?.politica_id || null,
+    politica_id:       politicaVinculada?.id || clase?.politica_id || null,
   }));
 
   const [step, setStep]         = useState(1);

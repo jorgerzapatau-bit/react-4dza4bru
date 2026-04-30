@@ -573,6 +573,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
   const [filtroEstado, setFiltroEstado]   = useState("activas"); // "activas" | "inactivas"
   const [modalClase, setModalClase]       = useState(null);
   const [modalDetalle, setModalDetalle]   = useState(null);
+  const [politicas, setPoliticas]         = useState([]);
 
   const loadDatos = useCallback(async () => {
     setLoading(true);
@@ -618,6 +619,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
       setClases(clasesConHorario);
       setInscripciones(iData || []);
       setPlanes(pData || []);
+      setPoliticas(polData || []);
       setInstructores((instData || []).filter(i => i.activo !== false));
     } catch (e) { console.error("Error cargando clases:", e); }
     setLoading(false);
@@ -695,7 +697,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
           <NuevaClaseWizard
             clase={modalClase === "nueva" ? null : modalClase}
             gymId={gymId} miembros={miembros} instructores={instructores} planes={planes}
-            gymConfig={gymConfig}
+            gymConfig={gymConfig} politicas={politicas}
             onSave={handleGuardarClase} onClose={() => setModalClase(null)}
           />
         )}
@@ -812,7 +814,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
         <NuevaClaseWizard
           clase={modalClase === "nueva" ? null : modalClase}
           gymId={gymId} miembros={miembros} instructores={instructores} planes={planes}
-          gymConfig={gymConfig}
+          gymConfig={gymConfig} politicas={politicas}
           onSave={handleGuardarClase} onClose={() => setModalClase(null)}
         />
       )}
