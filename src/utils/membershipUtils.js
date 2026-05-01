@@ -82,9 +82,11 @@ export function getMembershipInfo(miembroId, txs, miembro) {
   const esGratis = descStr.includes("Cortesía") || Number(ultima.monto) === 0;
 
   const planMatch =
-    descStr.match(/Renovación (\w+)/) ||
-    descStr.match(/(Mensual|Trimestral|Semestral|Anual)/);
-  const plan = planMatch ? planMatch[1] : "Mensual";
+    descStr.match(/Renovaci[oó]n ([^-[]+?)(?:\s+-|\s+\[)/) ||
+    descStr.match(/Renovaci[oó]n (\w[\w\s]*)/);
+  const plan = planMatch ? planMatch[1].trim() : (
+    descStr.match(/(Mensual|Trimestral|Semestral|Anual)/)?.[1] || "Mensual"
+  );
 
   const diasCongelados = miembro?.dias_congelados || 0;
 

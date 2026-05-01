@@ -1388,9 +1388,13 @@ export default function MemberDetailModal({
       {/* ══════════ HERO CARD ══════════ */}
       {(() => {
         // ── Buscar plan vinculado en planesMembresia para obtener horario real
-        const planVinculado = (planesMembresia || []).find(p =>
-          p.nombre === memInfo.plan || p.clase_nombre === memInfo.plan
-        );
+        const planNombreActual = memInfo.plan || "";
+        const planVinculado = (planesMembresia || []).find(p => {
+          const pn = (p.nombre || "").toLowerCase().trim();
+          const cn = (p.clase_nombre || "").toLowerCase().trim();
+          const mn = planNombreActual.toLowerCase().trim();
+          return pn === mn || cn === mn || pn.includes(mn) || mn.includes(pn) || cn.includes(mn) || mn.includes(cn);
+        });
         const horasRaw = planVinculado?.hora_inicio || null;
         const horaFin  = planVinculado?.hora_fin || null;
         const diasPlan = planVinculado?.dias_semana || [];
