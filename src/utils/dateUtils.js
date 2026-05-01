@@ -76,7 +76,7 @@ export function fmtDate(iso) {
   if (!iso || iso === "—") return "—";
   if (!/^\d{4}-\d{2}/.test(iso)) return iso; // ya es display
   const [y, m, day] = iso.split("-");
-  // const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]; // duplicate removed
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const mesNom = meses[parseInt(m) - 1];
   if (!mesNom) return iso;
   return `${parseInt(day)} ${mesNom} ${y}`;

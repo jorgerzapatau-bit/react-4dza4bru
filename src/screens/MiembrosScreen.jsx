@@ -6,7 +6,7 @@
 //   ✅ Nuevo botón usa el término configurable
 //   ✅ Modo DOJO: badge de cinturón en tarjeta de alumno
 // ══════════════════════════════════════════════
-import { fmt, fmtDate, diasParaVencer, todayISO } from "../utils/dateUtils";
+import { fmt, fmtDate, diasParaVencer } from "../utils/dateUtils";
 import { getMembershipInfo } from "../utils/membershipUtils";
 import { getIsDojo, getGradoInfo } from "../utils/constants";
 
@@ -215,3 +215,7 @@ export default function MiembrosScreen({
             });
           })()}
         </div>
+      </div>
+    </>
+  );
+}
