@@ -586,6 +586,8 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
   };
 
   // Resolver precio y ciclo para una clase — misma lógica que ClasesScreen
+  // IMPORTANTE: planNombre siempre es el nombre de la CLASE (lo que el usuario eligió),
+  // no el nombre del plan contable interno. El plan vinculado solo aporta precio y ciclo.
   const resolverPrecio = (c) => {
     const planVinculado = (planesMembresia || []).find(p =>
       (p.clases_vinculadas || []).map(String).includes(String(c.id))
@@ -593,7 +595,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
     const precio = Number(planVinculado?.precio_publico ?? c?.costo ?? 0);
     const ciclo  = planVinculado?.ciclo_renovacion || c?.ciclo_renovacion || "mensual";
     const meses  = planVinculado?.meses ?? MESES_MAP[ciclo] ?? 1;
-    const planNombre = planVinculado?.nombre || c.nombre;
+    const planNombre = c.nombre; // siempre el nombre de la clase, no del plan contable
     return { precio, ciclo, meses, planNombre, planVinculado };
   };
 

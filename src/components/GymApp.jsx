@@ -173,6 +173,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const txData = await txDb.select(GYM_ID);
         setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null })));
         setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, beca: m.beca || false,
+          // ── Estado y QR ──
+          estado: m.estado || "Activo",
+          qr_token: m.qr_token || null,
           // ── DOJO ──
           grado_actual: m.grado_actual || null, fecha_ultimo_examen: m.fecha_ultimo_examen || null, proximo_objetivo: m.proximo_objetivo || null,
         })));
@@ -753,42 +756,31 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onAdd={async (wizardFM, receiptInfo) => {
               setFM(wizardFM);
               const savedM = await addM(wizardFM);
-              // El wizard maneja su propio cierre (paso 4 o cierre directo en pendiente)
-              // Solo agregar WA queue si pago fue confirmado (no pendiente)
-              if (!wizardFM.pago_pendiente) {
-                const gym_nombreQ = (gymConfig?.nombre || "el gym");
-                const nombre1Q = (receiptInfo?.nombreMiembro || wizardFM.nombre || "").split(" ")[0];
-                const isMenorQ = wizardFM.fecha_nacimiento && (() => {
-                  const n = new Date(wizardFM.fecha_nacimiento + "T00:00:00");
-                  const h = new Date();
-                  let eq = h.getFullYear() - n.getFullYear();
-                  if (h.getMonth() - n.getMonth() < 0 || (h.getMonth() - n.getMonth() === 0 && h.getDate() < n.getDate())) eq--;
-                  return eq < 18;
-                })();
-                const telQ = (isMenorQ && wizardFM.tutor_telefono) ? wizardFM.tutor_telefono : (wizardFM.tel || "");
-                if (receiptInfo?.waMsg && receiptInfo?.tel) {
-                  const entry = {
-                    id: Date.now().toString(),
-                    fechaCreacion: new Date().toISOString(),
-                    nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
-                    tel: receiptInfo.tel,
-                    msg: receiptInfo.waMsg,
-                    plan: receiptInfo.plan,
-                    monto: receiptInfo.monto,
-                    formaPago: receiptInfo.formaPago,
-                    venceISO: receiptInfo.venceISO,
-                    comprobantePNG: receiptInfo.comprobantePNG || null,
-                    enviado: false,
-                    tipo: "nuevo_miembro",
-                  };
-                  setWaQueue(prev => {
-                    const next = [entry, ...prev];
-                    try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
-                    return next;
-                  });
-                }
+              // Cerrar el modal siempre — el wizard ya avanzó a paso 4 o se cerró solo
+              setModal(null);
+              // Agregar WA queue solo si pago fue confirmado (no transferencia pendiente)
+              if (!wizardFM.pago_pendiente && receiptInfo?.waMsg && receiptInfo?.tel) {
+                const entry = {
+                  id: Date.now().toString(),
+                  fechaCreacion: new Date().toISOString(),
+                  nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
+                  tel: receiptInfo.tel,
+                  msg: receiptInfo.waMsg,
+                  plan: receiptInfo.plan,
+                  monto: receiptInfo.monto,
+                  formaPago: receiptInfo.formaPago,
+                  venceISO: receiptInfo.venceISO,
+                  comprobantePNG: receiptInfo.comprobantePNG || null,
+                  enviado: false,
+                  tipo: "nuevo_miembro",
+                };
+                setWaQueue(prev => {
+                  const next = [entry, ...prev];
+                  try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
+                  return next;
+                });
               }
-              // Navegar al dashboard para mostrar el nuevo movimiento
+              // Navegar al dashboard
               setTimeout(() => { setScreen("dashboard"); setTab(0); }, 200);
               return savedM;
             }}
