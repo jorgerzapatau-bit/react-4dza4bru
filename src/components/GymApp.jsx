@@ -182,7 +182,20 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         try {
           const dbPM = await supabase.from("planes_membresia");
           const pmData = await dbPM.select(GYM_ID);
-          if (pmData) setPlanesMembresia(pmData.filter(p => p.activo !== false));
+          if (pmData) {
+            try {
+              const [dbC, dbH] = await Promise.all([supabase.from("clases"), supabase.from("horarios")]);
+              const [cData, hData] = await Promise.all([dbC.select(GYM_ID), dbH.select(GYM_ID)]);
+              const DL2S = { lunes:"Lun", martes:"Mar", miercoles:"Mié", miércoles:"Mié", jueves:"Jue", viernes:"Vie", sabado:"Sáb", sábado:"Sáb", domingo:"Dom" };
+              const toS = d => DL2S[d?.toLowerCase()] || (d ? d.charAt(0).toUpperCase()+d.slice(1,3) : d);
+              setPlanesMembresia(pmData.filter(p => p.activo !== false).map(plan => {
+                const clase = (cData||[]).find(c => (plan.clases_vinculadas||[]).map(String).includes(String(c.id)) || c.nombre === plan.nombre);
+                if (!clase) return plan;
+                const h = (hData||[]).find(h => String(h.clase_id)===String(clase.id) && h.activo!==false);
+                return { ...plan, clase_nombre: clase.nombre, ...(h ? { hora_inicio: h.hora_inicio, hora_fin: h.hora_fin, dias_semana: (h.dias_semana||[]).map(toS) } : {}) };
+              }));
+            } catch(e2) { setPlanesMembresia(pmData.filter(p => p.activo !== false)); }
+          }
         } catch(e) { /* tabla puede no existir aún */ }
       } catch(e) {
         console.error("Error loading data:", e);

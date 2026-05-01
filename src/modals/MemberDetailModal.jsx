@@ -1387,289 +1387,288 @@ export default function MemberDetailModal({
 
       {/* ══════════ HERO CARD ══════════ */}
       {(() => {
-        // ── Extraer horario de notas (ej: "Horario: 4:30 · Plan: MAR/J" o "MAR/J · 4:30")
+        // ── Buscar plan vinculado en planesMembresia para obtener horario real
+        const planVinculado = (planesMembresia || []).find(p =>
+          p.nombre === memInfo.plan || p.clase_nombre === memInfo.plan
+        );
+        const horasRaw = planVinculado?.hora_inicio || null;
+        const horaFin  = planVinculado?.hora_fin || null;
+        const diasPlan = planVinculado?.dias_semana || [];
+
+        // Formatear hora: "16:00:00" → "4:00 pm"
+        const fmtH = (t) => {
+          if (!t) return null;
+          const [h, m2] = t.split(":").map(Number);
+          const suf = h >= 12 ? "pm" : "am";
+          const h12 = h % 12 || 12;
+          return `${h12}:${String(m2).padStart(2,"0")} ${suf}`;
+        };
+        const horarioStr = horasRaw
+          ? horaFin ? `${fmtH(horasRaw)} – ${fmtH(horaFin)}` : fmtH(horasRaw)
+          : null;
+        const diasStr = diasPlan.length > 0 ? diasPlan.join(" · ") : null;
+
+        // Fallback: extraer de notas si no hay plan vinculado con horario
         const notas = m.notas || "";
-        const horarioMatch = notas.match(/(?:horario[:\s]+)?(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i);
-        const diasMatch = notas.match(/(?:plan[:\s]+)?([LMJVSD]{2,}(?:\/[LMJVSD]{2,})*)/i)
-          || notas.match(/(lun|mar|mié|jue|vie|sáb|dom)[^\d]*/i);
-        const horarioChip = horarioMatch ? horarioMatch[1] : null;
-        const diasChip = diasMatch ? diasMatch[1].toUpperCase() : null;
+        const horarioFallback = !horarioStr
+          ? notas.match(/(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i)?.[1] || null
+          : null;
+        const diasFallback = !diasStr
+          ? (notas.match(/(?:plan[:\s]+)([A-ZÁÉÍÓÚ\/]+)/i)?.[1] || notas.match(/\b(MAR|LUN|MIÉ|JUE|VIE|SÁB|DOM)(?:\/[A-ZÁÉÍÓÚ]+)*/i)?.[0] || null)
+          : null;
 
-        // ── Colores por estado
-        const esActivo = !isPagoPendiente && memInfo.estado === "Activo";
-        const esVencido = !isPagoPendiente && memInfo.estado === "Vencido";
+        const horarioFinal = horarioStr || horarioFallback;
+        const diasFinal    = diasStr    || diasFallback;
+        const claseFinal   = planVinculado?.clase_nombre || memInfo.plan;
+
+        // ── Estado
+        const esActivo    = !isPagoPendiente && memInfo.estado === "Activo";
+        const esVencido   = !isPagoPendiente && memInfo.estado === "Vencido";
         const esCongelado = memInfo.estado === "Congelado";
-        const esSinMem = memInfo.estado === "Sin membresía";
+        const esSinMem    = memInfo.estado === "Sin membresía";
 
-        const heroBg = isPagoPendiente
-          ? "linear-gradient(160deg,#1a1400 0%,#2d1f00 60%,#3d2a00 100%)"
-          : esActivo
-          ? "linear-gradient(160deg,#0a0f1e 0%,#0d1a2e 55%,#0a1f2e 100%)"
-          : esCongelado
-          ? "linear-gradient(160deg,#060d1a 0%,#0a1428 60%,#0d1c36 100%)"
-          : esVencido
-          ? "linear-gradient(160deg,#1a060a 0%,#2d0d14 60%,#3d0f1a 100%)"
-          : "linear-gradient(160deg,#0f0f17 0%,#161622 60%,#1e1e2e 100%)";
-
-        const accentColor = isPagoPendiente ? "#fbbf24"
-          : esActivo ? "#22d3ee"
+        const accentColor = isPagoPendiente ? "#f59e0b"
+          : esActivo    ? "#22d3ee"
           : esCongelado ? "#60a5fa"
-          : esVencido ? "#f87171"
-          : "#8b949e";
+          : esVencido   ? "#f87171"
+          : "var(--text-tertiary,#6b7280)";
 
         const estadoColor = isPagoPendiente ? "#fbbf24"
-          : esActivo ? "#4ade80"
+          : esActivo    ? "#4ade80"
           : esCongelado ? "#60a5fa"
-          : esVencido ? "#f87171"
-          : "#8b949e";
+          : esVencido   ? "#f87171"
+          : "var(--text-tertiary,#6b7280)";
 
         const estadoLabel = isPagoPendiente ? "⏳ Pago pendiente"
           : esCongelado ? "🧊 Congelado"
-          : esVencido ? "⚠️ Vencido"
-          : esSinMem ? "Sin membresía"
+          : esVencido   ? "⚠️ Vencido"
+          : esSinMem    ? "Sin membresía"
           : "● Activo";
 
-        // días restantes con urgencia
+        // ── Días restantes
         const diasR = diasParaVencer(memInfo.vence);
-        const diasColor = diasR === null ? "#8b949e"
-          : diasR <= 0 ? "#f87171"
-          : diasR <= 5 ? "#fb923c"
+        const diasColor = diasR === null ? "var(--text-tertiary,#6b7280)"
+          : diasR <= 0  ? "#f87171"
+          : diasR <= 5  ? "#fb923c"
           : diasR <= 15 ? "#fbbf24"
           : "#4ade80";
-
         const diasLabel = diasR === null ? null
           : diasR === 0 ? "vence hoy"
-          : diasR < 0 ? `venció hace ${Math.abs(diasR)}d`
+          : diasR < 0   ? `venció hace ${Math.abs(diasR)}d`
           : `${diasR} días restantes`;
 
         const esMenor = esMenorDeEdad(m.fecha_nacimiento);
         const tieneTutor = m.tutor_nombre && m.tutor_nombre.trim();
-        const waNumTutor = (m.tutor_telefono || "").replace(/\D/g, "");
+        const waNumTutor  = (m.tutor_telefono || "").replace(/\D/g,"");
         const waFullTutor = waNumTutor.startsWith("52") ? waNumTutor : "52" + waNumTutor;
 
-        // grado info
         const gradoInfo = isDojo && m.grado_actual ? (() => {
           try { return getGradoInfo(m.grado_actual); } catch { return null; }
         })() : null;
 
         return (
           <div style={{
-            background: heroBg,
-            borderBottom: `1px solid ${accentColor}22`,
+            background: "var(--bg-card)",
+            borderBottom: `2px solid ${accentColor}44`,
             padding: "20px 20px 0",
             position: "relative",
             overflow: "hidden",
           }}>
-            {/* Glow de fondo */}
+            {/* Glow de acento — sutil, funciona en dark y light */}
             <div style={{
-              position: "absolute", top: -40, right: -40,
-              width: 180, height: 180, borderRadius: "50%",
-              background: `radial-gradient(circle, ${accentColor}18 0%, transparent 70%)`,
+              position: "absolute", top: -60, right: -60,
+              width: 200, height: 200, borderRadius: "50%",
+              background: `radial-gradient(circle, ${accentColor}14 0%, transparent 70%)`,
               pointerEvents: "none",
             }} />
 
             {/* Fila superior: Avatar + Info principal */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
-
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
               {/* Avatar */}
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{
                   width: 72, height: 72, borderRadius: 20,
                   background: isPagoPendiente ? "linear-gradient(135deg,#f59e0b,#d97706)"
-                    : esActivo ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                    : esVencido ? "linear-gradient(135deg,#f43f5e,#fb923c)"
+                    : esActivo   ? "linear-gradient(135deg,#6c63ff,#e040fb)"
+                    : esVencido  ? "linear-gradient(135deg,#f43f5e,#fb923c)"
                     : "linear-gradient(135deg,#374151,#4b5563)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 26, color: "#fff", fontWeight: 800, overflow: "hidden",
-                  boxShadow: `0 0 0 2.5px ${accentColor}44, 0 8px 24px rgba(0,0,0,.5)`,
+                  boxShadow: `0 0 0 2.5px ${accentColor}55, 0 6px 20px rgba(0,0,0,.25)`,
                 }}>
                   {m.foto
-                    ? <img src={m.foto} alt={m.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <img src={m.foto} alt={m.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                     : m.nombre.charAt(0)}
                 </div>
                 <button onClick={() => setPhotoModal(true)} style={{
-                  position: "absolute", bottom: -4, right: -4,
-                  width: 22, height: 22, borderRadius: 7,
-                  background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-                  border: "2px solid #0a0f1e", cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 10, boxShadow: "0 2px 6px rgba(108,99,255,.6)",
+                  position:"absolute", bottom:-4, right:-4,
+                  width:22, height:22, borderRadius:7,
+                  background:"linear-gradient(135deg,#6c63ff,#e040fb)",
+                  border:"2px solid var(--bg-card)", cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:10, boxShadow:"0 2px 6px rgba(108,99,255,.5)",
                 }}>📷</button>
               </div>
 
               {/* Nombre + chips */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex:1, minWidth:0 }}>
                 <h2 style={{
-                  color: "#fff", fontSize: 16, fontWeight: 800, margin: "0 0 4px",
-                  lineHeight: 1.2, letterSpacing: "-0.3px",
-                  overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                  color: "var(--text-primary)", fontSize:16, fontWeight:800,
+                  margin:"0 0 5px", lineHeight:1.2, letterSpacing:"-0.3px",
+                  overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis",
                 }}>
                   {m.nombre}
                 </h2>
 
-                {/* Chips de estado + edad + grado */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+                {/* Chips fila 1: estado · plan · edad */}
+                <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
                   <span style={{
-                    background: `${estadoColor}22`, color: estadoColor,
-                    border: `1px solid ${estadoColor}44`,
-                    borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 800,
+                    background:`${estadoColor}1a`, color:estadoColor,
+                    border:`1px solid ${estadoColor}44`,
+                    borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:800,
                   }}>{estadoLabel}</span>
 
-                  {memInfo.plan && (
+                  {claseFinal && (
                     <span style={{
-                      background: `${accentColor}15`, color: accentColor,
-                      border: `1px solid ${accentColor}30`,
-                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
-                    }}>🏷️ {memInfo.plan}</span>
+                      background:`${accentColor}15`, color:accentColor,
+                      border:`1px solid ${accentColor}35`,
+                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
+                    }}>🏷️ {claseFinal}</span>
                   )}
 
                   {esMenor && edad !== null && (
                     <span style={{
-                      background: "rgba(251,191,36,.15)", color: "#fbbf24",
-                      border: "1px solid rgba(251,191,36,.3)",
-                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                      background:"rgba(251,191,36,.12)", color:"#f59e0b",
+                      border:"1px solid rgba(251,191,36,.3)",
+                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
                     }}>👶 {edad} años</span>
                   )}
 
                   {gradoInfo && (
                     <span style={{
-                      background: `${gradoInfo.color}22`, color: gradoInfo.color || "#e5e7eb",
-                      border: `1px solid ${gradoInfo.color}44`,
-                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                      background:`${gradoInfo.color}1a`, color: gradoInfo.color,
+                      border:`1px solid ${gradoInfo.color}40`,
+                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
                     }}>{gradoInfo.emoji} {m.grado_actual}</span>
                   )}
 
                   {m.beca && (
                     <span style={{
-                      background: "rgba(251,191,36,.15)", color: "#fbbf24",
-                      border: "1px solid rgba(251,191,36,.3)",
-                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                      background:"rgba(251,191,36,.12)", color:"#f59e0b",
+                      border:"1px solid rgba(251,191,36,.3)",
+                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
                     }}>🎓 Beca</span>
                   )}
                 </div>
 
-                {/* Horario chip — extraído de notas */}
-                {(horarioChip || diasChip) && (
+                {/* Chip de horario + días — datos estructurados del plan */}
+                {(horarioFinal || diasFinal) && (
                   <div style={{
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                    background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)",
-                    borderRadius: 8, padding: "4px 10px",
+                    display:"inline-flex", alignItems:"center", gap:6,
+                    background:"var(--bg-elevated)", border:"1px solid var(--border)",
+                    borderRadius:8, padding:"4px 10px",
                   }}>
-                    <span style={{ fontSize: 11 }}>🗓️</span>
-                    <span style={{ color: "#e5e7eb", fontSize: 11, fontWeight: 700 }}>
-                      {[diasChip, horarioChip].filter(Boolean).join(" · ")}
-                    </span>
+                    <span style={{ fontSize:11 }}>🗓️</span>
+                    {diasFinal && (
+                      <span style={{ color:"var(--text-primary)", fontSize:11, fontWeight:800 }}>
+                        {diasFinal}
+                      </span>
+                    )}
+                    {diasFinal && horarioFinal && (
+                      <span style={{ color:"var(--text-tertiary,#6b7280)", fontSize:10 }}>·</span>
+                    )}
+                    {horarioFinal && (
+                      <span style={{ color:accentColor, fontSize:11, fontWeight:700 }}>
+                        {horarioFinal}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Barra de días restantes */}
+            {/* Barra de urgencia — días restantes */}
             {diasLabel && (
               <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                background: `${diasColor}12`, border: `1px solid ${diasColor}30`,
-                borderRadius: 10, padding: "8px 12px", marginBottom: 12,
+                display:"flex", alignItems:"center", justifyContent:"space-between",
+                background:`${diasColor}12`, border:`1px solid ${diasColor}30`,
+                borderRadius:10, padding:"8px 12px", marginBottom:10,
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 14 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:13 }}>
                     {diasR !== null && diasR <= 0 ? "🔴" : diasR !== null && diasR <= 5 ? "🟠" : diasR !== null && diasR <= 15 ? "🟡" : "🟢"}
                   </span>
                   <div>
-                    <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Membresía</span>
-                    <p style={{ color: diasColor, fontSize: 12, fontWeight: 800, margin: 0 }}>{diasLabel}</p>
+                    <p style={{ color:"var(--text-tertiary,#6b7280)", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, margin:0 }}>Membresía</p>
+                    <p style={{ color:diasColor, fontSize:12, fontWeight:800, margin:0 }}>{diasLabel}</p>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <span style={{ color: "#8b949e", fontSize: 10 }}>Vence</span>
-                  <p style={{ color: "#e5e7eb", fontSize: 11, fontWeight: 700, margin: 0 }}>{fmtDate(memInfo.vence) || "—"}</p>
+                <div style={{ textAlign:"right" }}>
+                  <p style={{ color:"var(--text-tertiary,#6b7280)", fontSize:9, margin:0 }}>Vence</p>
+                  <p style={{ color:"var(--text-primary)", fontSize:11, fontWeight:700, margin:0 }}>{fmtDate(memInfo.vence) || "—"}</p>
                 </div>
               </div>
             )}
 
-            {/* Fila de stats rápidos */}
+            {/* Mini-stats: Desde / Último pago / Forma de pago */}
             {memInfo.estado !== "Sin membresía" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10 }}>
                 {[
-                  {
-                    icon: "📅", label: "Desde",
-                    val: fmtDate(memInfo.inicio) || "—",
-                    color: "#a5b4fc",
-                  },
-                  {
-                    icon: "💰", label: "Último pago",
-                    val: memInfo.esGratis ? "Cortesía 🎁" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—"),
-                    color: "#4ade80",
-                  },
-                  {
-                    icon: "💳", label: "Forma de pago",
-                    val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo"
-                      : memInfo.formaPago === "Transferencia" ? "📲 Transfer."
-                      : memInfo.formaPago === "Tarjeta" ? "💳 Tarjeta"
-                      : "—",
-                    color: "#94a3b8",
-                  },
-                ].map((s, i) => (
+                  { icon:"📅", label:"Desde",        val: fmtDate(memInfo.inicio) || "—",                                     color:"var(--text-secondary,#a5b4fc)" },
+                  { icon:"💰", label:"Último pago",   val: memInfo.esGratis ? "🎁 Cortesía" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—"), color:"#4ade80" },
+                  { icon:"💳", label:"Pago",          val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transfer." : memInfo.formaPago === "Tarjeta" ? "💳 Tarjeta" : "—", color:"var(--text-secondary,#94a3b8)" },
+                ].map((s,i) => (
                   <div key={i} style={{
-                    background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)",
-                    borderRadius: 10, padding: "8px 10px",
+                    background:"var(--bg-elevated)", border:"1px solid var(--border)",
+                    borderRadius:10, padding:"7px 8px",
                   }}>
-                    <p style={{ color: "#64748b", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{s.icon} {s.label}</p>
-                    <p style={{ color: s.color, fontSize: 11, fontWeight: 700, margin: 0 }}>{s.val}</p>
+                    <p style={{ color:"var(--text-tertiary,#6b7280)", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.3, marginBottom:2 }}>{s.icon} {s.label}</p>
+                    <p style={{ color:s.color, fontSize:11, fontWeight:700, margin:0 }}>{s.val}</p>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Botones de acción principales */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              {/* WA alumno */}
+            {/* Botones de acción principales: WA alumno + WA tutor */}
+            <div style={{ display:"flex", gap:8, marginBottom:8 }}>
               {m.tel && onGoToMensajes && (
                 <button onClick={() => onGoToMensajes(m)} style={{
-                  flex: 1, padding: "10px 8px", border: "none", borderRadius: 12,
-                  cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                  background: "linear-gradient(135deg,#25d366,#128c7e)",
-                  color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                  boxShadow: "0 3px 10px rgba(37,211,102,.3)",
+                  flex:1, padding:"9px 8px", border:"none", borderRadius:10,
+                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
+                  background:"linear-gradient(135deg,#25d366,#128c7e)",
+                  color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+                  boxShadow:"0 3px 10px rgba(37,211,102,.25)",
                 }}>
                   💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "WA alumno"}
                 </button>
               )}
-
-              {/* WA tutor — solo para menores */}
               {esMenor && tieneTutor && waNumTutor.length >= 10 && (
                 <button onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")} style={{
-                  flex: 1, padding: "10px 8px",
-                  border: "1px solid rgba(251,191,36,.4)", borderRadius: 12,
-                  cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                  background: "rgba(251,191,36,.12)", color: "#fbbf24",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                }}>
-                  👨‍👧 WA tutor
-                </button>
+                  flex:1, padding:"9px 8px",
+                  border:"1px solid rgba(245,158,11,.4)", borderRadius:10,
+                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
+                  background:"rgba(245,158,11,.1)", color:"#f59e0b",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+                }}>👨‍👧 WA tutor</button>
               )}
-
-              {/* Alerta sin tutor para menores */}
               {esMenor && !tieneTutor && (
                 <button onClick={() => setEditing(true)} style={{
-                  flex: 1, padding: "10px 8px",
-                  border: "1px dashed rgba(244,63,94,.5)", borderRadius: 12,
-                  cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700,
-                  background: "rgba(244,63,94,.08)", color: "#f87171",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                }}>
-                  ⚠️ Registrar tutor
-                </button>
+                  flex:1, padding:"9px 8px",
+                  border:"1px dashed rgba(244,63,94,.5)", borderRadius:10,
+                  cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:700,
+                  background:"rgba(244,63,94,.07)", color:"#f87171",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+                }}>⚠️ Registrar tutor</button>
               )}
             </div>
 
-            {/* Acciones secundarias */}
-            <div style={{ display: "flex", gap: 6, paddingBottom: 16 }}>
+            {/* Acciones: Editar · Renovar · Cobrar · Congelar */}
+            <div style={{ display:"flex", gap:6, paddingBottom:14 }}>
               <button onClick={() => setEditing(true)} style={{
-                flex: 1, padding: "9px 4px", borderRadius: 10,
-                border: "1px solid rgba(167,139,250,.35)", background: "rgba(167,139,250,.1)",
-                color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                flex:1, padding:"9px 4px", borderRadius:9,
+                border:"1px solid rgba(167,139,250,.4)", background:"rgba(167,139,250,.1)",
+                color:"#a78bfa", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:4,
               }}>✏️ Editar</button>
               <button onClick={() => {
                 const dias = diasParaVencer(memInfo.vence);
@@ -1678,30 +1677,31 @@ export default function MemberDetailModal({
                 setRenovar({ plan: memInfo.plan || defaultPlan, monto: String(memInfo.monto || (planPrecioActivo && planPrecioActivo[memInfo.plan || defaultPlan]) || defaultMonto || ""), inicio: sugerido, vence: calcVence(sugerido, memInfo.plan || defaultPlan), venceManual: false, formaPago: "Efectivo" });
                 setRenovarModal(true);
               }} style={{
-                flex: 2, padding: "9px 4px", borderRadius: 10,
-                border: "none", background: "linear-gradient(135deg,#22d3ee,#0891b2)",
-                color: "#fff", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                boxShadow: "0 3px 10px rgba(34,211,238,.3)",
+                flex:2, padding:"9px 4px", borderRadius:9,
+                border:"none", background:"linear-gradient(135deg,#22d3ee,#0891b2)",
+                color:"#fff", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+                boxShadow:"0 3px 10px rgba(34,211,238,.25)",
               }}>🔄 Renovar</button>
-              <button onClick={() => { setCobro({ tipo: "libre", desc: "", monto: "", fecha: todayISO(), formaPago: "Efectivo" }); setCobrarModal(true); }} style={{
-                flex: 1, padding: "9px 4px", borderRadius: 10,
-                border: "1px solid rgba(74,222,128,.35)", background: "rgba(74,222,128,.1)",
-                color: "#4ade80", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              <button onClick={() => { setCobro({ tipo:"libre", desc:"", monto:"", fecha:todayISO(), formaPago:"Efectivo" }); setCobrarModal(true); }} style={{
+                flex:1, padding:"9px 4px", borderRadius:9,
+                border:"1px solid rgba(74,222,128,.4)", background:"rgba(74,222,128,.1)",
+                color:"#4ade80", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:4,
               }}>💰 Cobrar</button>
               {memInfo.estado === "Activo" && !memInfo.congelado && (
                 <button onClick={() => setCongelarModal(true)} style={{
-                  flex: 1, padding: "9px 4px", borderRadius: 10,
-                  border: "1px solid rgba(96,165,250,.35)", background: "rgba(96,165,250,.1)",
-                  color: "#60a5fa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                }}>🧊 Congelar</button>
+                  flex:1, padding:"9px 4px", borderRadius:9,
+                  border:"1px solid rgba(96,165,250,.4)", background:"rgba(96,165,250,.1)",
+                  color:"#60a5fa", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+                }}>🧊</button>
               )}
             </div>
           </div>
         );
       })()}
+
 
       {/* ── Tabs ── */}
       <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 0, padding: "6px 16px", borderBottom: "1px solid var(--border)", marginBottom: 0 }}>
