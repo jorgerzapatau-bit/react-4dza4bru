@@ -1,7 +1,7 @@
 // src/modals/MemberDetailModal.jsx
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import MemberQRTab from "./MemberQRTab";
-import { Modal, Btn, Inp } from "../components/UI";
+import { Btn, Inp } from "../components/UI";
 import PhotoModal from "../components/PhotoModal";
 import { CAT_ICON } from "../utils/constants";
 import { GRADOS_KARATE, GRADOS_NOMBRES, getGradoInfo } from "../utils/constants";
@@ -730,7 +730,6 @@ export default function MemberDetailModal({
         const tel = m.tel || "";
         const waNumero = tel.replace(/\D/g, "");
         const waFull = waNumero.startsWith("52") ? waNumero : "52" + waNumero;
-        const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
         const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
         const vD = vence ? new Date(vence + "T00:00:00") : null;
         const venceFmt = vD ? `${vD.getDate()} ${MESES_S[vD.getMonth()]} ${vD.getFullYear()}` : "—";
