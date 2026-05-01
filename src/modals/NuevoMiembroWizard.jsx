@@ -1392,27 +1392,13 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
         </>
       )}
 
-      {/* ── Efectivo / Tarjeta → Comprobante de Pago ── */}
+      {/* ── Efectivo / Tarjeta → nota de que el comprobante se genera en paso 4 ── */}
       {fM.plan && !esPorTransferencia && fM.formaPago && (
-        <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${comprobantePNG ? "#6c63ff55" : "var(--border-strong,#2e2e42)"}`, borderRadius:16, padding:14, marginBottom:12 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <div style={{ width:36, height:36, borderRadius:10, background:"rgba(108,99,255,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🧾</div>
-              <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>Comprobante de Pago</p>
-            </div>
-            <button onClick={genComprobante} disabled={generandoComp}
-              style={{ padding:"8px 14px", borderRadius:10, border:"none", background: generandoComp ? "rgba(108,99,255,.3)" : "#6c63ff",
-                color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
-                display:"flex", alignItems:"center", gap:5 }}>
-              {generandoComp ? "⏳ Generando..." : comprobantePNG ? "✨ Regenerar" : "✨ Generar"}
-            </button>
-          </div>
-          {comprobantePNG && (
-            <>
-              <img src={comprobantePNG} alt="Comprobante" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,#2a2a3e)", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
-              <BotonesAccion dataUrl={comprobantePNG} prefix="comprobante" cKey="comp" waM={waMsg} />
-            </>
-          )}
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:12 }}>
+          <span style={{ fontSize:18, flexShrink:0 }}>🧾</span>
+          <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, lineHeight:1.4 }}>
+            El <strong style={{ color:"var(--text-primary,#e8e8f0)" }}>comprobante de pago</strong> y la <strong style={{ color:"var(--text-primary,#e8e8f0)" }}>ID Digital</strong> se generarán automáticamente en el siguiente paso.
+          </p>
         </div>
       )}
 
@@ -1479,57 +1465,95 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
 }
 
 // ══════════════════════════════════════════════════════════════════
-// ── PASO 4: Identificación Digital (solo si pago confirmado) ─────
+// ── PASO 4: ID Digital + Comprobante (auto-genera al entrar) ─────
 // ══════════════════════════════════════════════════════════════════
-function Step4ID({ fM, gymConfig, savedMiembro }) {
-  const [idPNG,      setIdPNG]      = useState(null);
-  const [generando,  setGenerando]  = useState(false);
-  const [copiado,    setCopiado]    = useState(false);
+function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
+  const [idPNG,     setIdPNG]     = useState(null);
+  const [generando, setGenerando] = useState(false);
+  const [copiadoID, setCopiadoID] = useState(false);
+  const [copiadoCo, setCopiadoCo] = useState(false);
 
-  const gym = gymConfig || {};
-  // Usar qr_token del miembro guardado, o generar uno
+  const gym    = gymConfig || {};
   const codigo = savedMiembro?.qr_token ||
     ("DZ-" + Math.random().toString(36).toUpperCase().slice(2,6));
 
-  const generar = async () => {
-    setGenerando(true);
-    try {
-      const png = await generarIDDigitalPNG({
-        miembro: { nombre: fM.nombre },
-        gymConfig,
-        codigoAcceso: codigo,
-      });
-      setIdPNG(png);
-    } catch(e) { alert("No se pudo generar la identificación."); }
-    finally { setGenerando(false); }
-  };
+  // ── Auto-generar ID al entrar al paso 4 ──
+  useEffect(() => {
+    let mounted = true;
+    const autoGen = async () => {
+      setGenerando(true);
+      try {
+        const png = await generarIDDigitalPNG({
+          miembro: { nombre: fM.nombre }, gymConfig, codigoAcceso: codigo,
+        });
+        if (mounted) setIdPNG(png);
+      } catch(e) {}
+      finally { if (mounted) setGenerando(false); }
+    };
+    autoGen();
+    return () => { mounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const descargar = () => {
-    if (!idPNG) return;
+  const descargar = (dataUrl, nombre) => {
     const a = document.createElement("a");
-    a.href = idPNG;
-    a.download = `ID-${(fM.nombre||"alumno").replace(/\s+/g,"-").toLowerCase()}.png`;
+    a.href = dataUrl;
+    a.download = `${nombre}-${(fM.nombre||"alumno").replace(/\s+/g,"-").toLowerCase()}.png`;
     a.click();
   };
 
-  const copiar = async () => {
-    await copiarImagenAlPortapapeles(idPNG);
-    setCopiado(true); setTimeout(() => setCopiado(false), 2000);
+  const copiar = async (dataUrl, setCop) => {
+    await copiarImagenAlPortapapeles(dataUrl);
+    setCop(true); setTimeout(() => setCop(false), 2000);
   };
 
-  const enviarWA = () => {
-    const tel = fM.tel || (fM.tutor_telefono || "");
+  const enviarWA = (dataUrl, tipo) => {
+    const tel = fM.tel || fM.tutor_telefono || "";
     if (!tel) return;
     const clean = tel.replace(/\D/g,"");
     const phone = clean.startsWith("52") ? clean : "52"+clean;
-    const msg = `🥋 ¡Bienvenido/a a *${gym.nombre||"el Dojo"}*, ${(fM.nombre||"").split(" ")[0]}!\n\nTe compartimos tu Identificación Digital de acceso.\nCódigo: *${codigo}*\n\nPresénta tu QR en recepción para registrar tu asistencia. 💪`;
+    const msg = tipo === "id"
+      ? `🥋 ¡Bienvenido/a a *${gym.nombre||"el Dojo"}*, ${(fM.nombre||"").split(" ")[0]}!\n\nTe compartimos tu Identificación Digital de acceso.\nCódigo: *${codigo}*\n\nPresénta tu QR en recepción para registrar tu asistencia. 💪`
+      : `🧾 Hola ${(fM.nombre||"").split(" ")[0]}, te compartimos tu comprobante de pago en *${gym.nombre||"el Dojo"}*.\n\nPlan: ${fM.plan||"—"} · $${Number(fM.monto||0).toLocaleString("es-MX")}\nVence: ${fmtDateShort(venceISO)}\n\n¡Gracias por tu pago! 💪`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
+  const BotonesDoc = ({ dataUrl, onDescargar, onCopiar, copiado, showWA, waOnClick }) => (
+    <div style={{ display:"flex", gap:7, marginTop:10, flexWrap:"wrap" }}>
+      <button onClick={onDescargar}
+        style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
+          background:"var(--bg-card,#12121f)", border:"1px solid var(--border-strong,#2e2e42)",
+          color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+        📥 Descargar
+      </button>
+      <button onClick={onCopiar}
+        style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
+          background: copiado ? "rgba(74,222,128,.12)" : "var(--bg-card,#12121f)",
+          border: `1px solid ${copiado ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
+          color: copiado ? "#4ade80" : "var(--text-secondary,#9999b3)",
+          fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+        {copiado ? "✓ Copiado" : "📋 Copiar"}
+      </button>
+      {showWA && (
+        <button onClick={waOnClick}
+          style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
+            background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
+            color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+          📲 WhatsApp
+        </button>
+      )}
+    </div>
+  );
+
+  const hasTel = !!(fM.tel || fM.tutor_telefono);
+
   return (
-    <div style={{ textAlign:"center" }}>
+    <div>
       {/* Celebración */}
-      <div style={{ marginBottom:20 }}>
+      <div style={{ textAlign:"center", marginBottom:20 }}>
         <div style={{ fontSize:48, marginBottom:8 }}>🎉</div>
         <h3 style={{ color:"var(--text-primary,#e8e8f0)", fontSize:18, fontWeight:700, marginBottom:4 }}>
           ¡{(fM.nombre||"").split(" ")[0]} ya es miembro!
@@ -1539,63 +1563,75 @@ function Step4ID({ fM, gymConfig, savedMiembro }) {
         </p>
       </div>
 
-      {/* Card ID Digital */}
-      <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${idPNG ? "#8b5cf655" : "var(--border-strong,#2e2e42)"}`, borderRadius:18, padding:16, marginBottom:14, textAlign:"left" }}>
+      {/* ── Card: ID Digital ── */}
+      <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${idPNG ? "#8b5cf655" : "var(--border-strong,#2e2e42)"}`, borderRadius:18, padding:16, marginBottom:12, textAlign:"left" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: idPNG ? 14 : 0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:40, height:40, borderRadius:12, background:"rgba(139,92,246,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🪪</div>
             <div>
               <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:14 }}>Identificación Digital</p>
-              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Código: <span style={{ color:"#10b981", fontFamily:"'DM Mono',monospace", fontWeight:700 }}>{codigo}</span></p>
+              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>
+                {generando ? "Generando..." : `Código: `}
+                {!generando && <span style={{ color:"#10b981", fontFamily:"'DM Mono',monospace", fontWeight:700 }}>{codigo}</span>}
+              </p>
             </div>
           </div>
-          <button onClick={generar} disabled={generando}
-            style={{ padding:"9px 16px", borderRadius:11, border:"none",
-              background: generando ? "rgba(139,92,246,.3)" : "linear-gradient(135deg,#8b5cf6,#6c63ff)",
-              color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
-              boxShadow: generando ? "none" : "0 4px 14px rgba(139,92,246,.35)",
-              display:"flex", alignItems:"center", gap:5 }}>
-            {generando ? "⏳ Generando..." : idPNG ? "✨ Regenerar" : "✨ Generar ID"}
+          <button onClick={async () => {
+            setGenerando(true);
+            try { const png = await generarIDDigitalPNG({ miembro:{nombre:fM.nombre}, gymConfig, codigoAcceso:codigo }); setIdPNG(png); }
+            catch(e) {} finally { setGenerando(false); }
+          }} disabled={generando}
+            style={{ padding:"8px 14px", borderRadius:11, border:"none",
+              background: generando ? "rgba(139,92,246,.3)" : "rgba(139,92,246,.15)",
+              color:"#c4b5fd", fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"inherit",
+              display:"flex", alignItems:"center", gap:4 }}>
+            {generando ? "⏳" : "↺"} {generando ? "Generando..." : "Regenerar"}
           </button>
         </div>
-
+        {generando && !idPNG && (
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"24px 0", gap:10 }}>
+            <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid #8b5cf6", borderTopColor:"transparent", animation:"spin .8s linear infinite" }} />
+            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>Generando tu identificación...</p>
+          </div>
+        )}
         {idPNG && (
           <>
             <img src={idPNG} alt="ID Digital" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,#2a2a3e)", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
-            <div style={{ display:"flex", gap:7, marginTop:10, flexWrap:"wrap" }}>
-              <button onClick={descargar}
-                style={{ flex:1, minWidth:80, padding:"11px 8px", borderRadius:12, fontFamily:"inherit",
-                  background:"var(--bg-card,#12121f)", border:"1px solid var(--border-strong,#2e2e42)",
-                  color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                📥 Descargar
-              </button>
-              <button onClick={copiar}
-                style={{ flex:1, minWidth:80, padding:"11px 8px", borderRadius:12, fontFamily:"inherit",
-                  background: copiado ? "rgba(74,222,128,.12)" : "var(--bg-card,#12121f)",
-                  border: `1px solid ${copiado ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
-                  color: copiado ? "#4ade80" : "var(--text-secondary,#9999b3)",
-                  fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                {copiado ? "✓ Copiado" : "📋 Copiar"}
-              </button>
-              {(fM.tel || fM.tutor_telefono) && (
-                <button onClick={enviarWA}
-                  style={{ flex:1, minWidth:80, padding:"11px 8px", borderRadius:12, fontFamily:"inherit",
-                    background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
-                    color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
-                    display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
-                  📲 WhatsApp
-                </button>
-              )}
-            </div>
+            <BotonesDoc
+              dataUrl={idPNG}
+              onDescargar={() => descargar(idPNG, "ID")}
+              onCopiar={() => copiar(idPNG, setCopiadoID)}
+              copiado={copiadoID}
+              showWA={hasTel}
+              waOnClick={() => enviarWA(idPNG, "id")}
+            />
           </>
         )}
       </div>
 
-      <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, lineHeight:1.5 }}>
-        La ID Digital es el acceso oficial del alumno al dojo.<br/>Genera y envíala por WhatsApp o descárgala para imprimirla.
+      {/* ── Card: Comprobante de Pago ── */}
+      {comprobantePNG && (
+        <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1.5px solid #6c63ff55", borderRadius:18, padding:16, marginBottom:12, textAlign:"left" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:"rgba(108,99,255,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🧾</div>
+            <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:14 }}>Comprobante de Pago</p>
+          </div>
+          <img src={comprobantePNG} alt="Comprobante" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,#2a2a3e)", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
+          <BotonesDoc
+            dataUrl={comprobantePNG}
+            onDescargar={() => descargar(comprobantePNG, "comprobante")}
+            onCopiar={() => copiar(comprobantePNG, setCopiadoCo)}
+            copiado={copiadoCo}
+            showWA={hasTel}
+            waOnClick={() => enviarWA(comprobantePNG, "comp")}
+          />
+        </div>
+      )}
+
+      <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, lineHeight:1.5, textAlign:"center" }}>
+        La ID Digital es el acceso oficial del alumno al dojo.<br/>Descárgala, cópiala o envíala por WhatsApp.
       </p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
@@ -1731,6 +1767,15 @@ export default function NuevoMiembroWizard({
 
       // Avanzar al paso 4 solo si pago fue confirmado (Efectivo/Tarjeta)
       if (!esPendienteLocal) {
+        // Auto-generar comprobante para mostrar en paso 4
+        try {
+          const png = await generarComprobantePagoPNG({
+            gymConfig, miembro: { nombre: fM.nombre },
+            plan: fM.plan, monto: fM.monto,
+            formaPago: formaPagoFinal, venceISO,
+          });
+          setComprobantePNG(png);
+        } catch(e) {}
         setStep(4);
       } else {
         // Transferencia: cerrar wizard (alumno queda Pendiente)
@@ -1813,7 +1858,7 @@ export default function NuevoMiembroWizard({
             />
           )}
           {step===4 && (
-            <Step4ID fM={fM} gymConfig={gymConfig} savedMiembro={savedMiembro} />
+            <Step4ID fM={fM} gymConfig={gymConfig} savedMiembro={savedMiembro} comprobantePNG={comprobantePNG} venceISO={venceISO} />
           )}
         </div>
 
