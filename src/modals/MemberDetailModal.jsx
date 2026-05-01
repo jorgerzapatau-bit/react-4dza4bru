@@ -1,6 +1,15 @@
 // src/modals/MemberDetailModal.jsx
 import { useState, useEffect, useMemo } from "react";
 import MemberQRTab from "./MemberQRTab";
+const useIsDesktop = () => {
+  const [ok, setOk] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : false);
+  useEffect(() => {
+    const h = () => setOk(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return ok;
+};
 import { Modal, Btn, Inp } from "../components/UI";
 import PhotoModal from "../components/PhotoModal";
 import { CAT_ICON } from "../utils/constants";
@@ -23,15 +32,204 @@ import { uid } from "../utils/helpers";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
 import TutorFields from "../components/TutorFields";
 
-const useIsDesktop = () => {
-  const [ok, setOk] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : false);
-  useEffect(() => {
-    const h = () => setOk(window.innerWidth >= 768);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
-  return ok;
-};
+// ── Helpers de formato ──────────────────────────────────────────
+function fmt$(n) { return "$" + Number(n || 0).toLocaleString("es-MX"); }
+
+// ── Generador de Comprobante de Pago (Canvas PNG) ───────────────
+async function generarComprobantePNG({ gymConfig, miembro, plan, monto, formaPago, venceISO }) {
+  const gym = gymConfig || {};
+  const W = 560;
+  const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const hoyD = new Date();
+  const fechaHoy  = `${DIAS[hoyD.getDay()]}, ${MESES[hoyD.getMonth()]} ${hoyD.getDate()}, ${hoyD.getFullYear()}`;
+  const venceLong = venceISO
+    ? (() => { const d = new Date(venceISO+"T00:00:00"); return `${DIAS[d.getDay()]}, ${MESES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; })()
+    : "—";
+
+  const rows = [
+    { label: "Fecha:",        value: fechaHoy,                                        bold: true },
+    { type: "alumno",         nombre: (miembro.nombre || "—").toUpperCase(), plan: `Plan ${plan || "—"}` },
+    { label: "Modo de Pago:", value: (formaPago || "—").toUpperCase(),                bold: true },
+    { label: "Cantidad:",     value: fmt$(monto),                                     bold: true },
+    { label: "Vencimiento:",  value: venceLong,                                       bold: true },
+    { label: "Recibió:",      value: gym.propietario_nombre || "—",                   bold: false },
+  ];
+
+  const HEADER_H = 140, ROW_H = 36, CLABE_H = gym.transferencia_clabe ? 90 : 0, FOOTER_H = 60, STAMP_H = 50;
+  const H = HEADER_H + rows.length * ROW_H + CLABE_H + FOOTER_H + STAMP_H + 8;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, HEADER_H); ctx.lineTo(W, HEADER_H); ctx.stroke();
+
+  const LOGO_SZ = 80, LX = 20, LY = 18;
+  if (gym.logo) {
+    await new Promise(res => {
+      const img = new Image(); img.crossOrigin = "anonymous";
+      img.onload = () => { ctx.save(); ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.clip(); ctx.drawImage(img,LX,LY,LOGO_SZ,LOGO_SZ); ctx.restore(); res(); };
+      img.onerror = res; img.src = gym.logo;
+    });
+  } else {
+    ctx.fillStyle = "#1e1b4b"; ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.font = "bold 28px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("🥋", LX+LOGO_SZ/2, LY+LOGO_SZ/2); ctx.textBaseline = "alphabetic";
+  }
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#111827"; ctx.font = "bold 17px Georgia,serif";
+  ctx.fillText((gym.nombre || "GYM").toUpperCase(), W/2, 38);
+  ctx.fillStyle = "#6b7280"; ctx.font = "13px Georgia,serif";
+  ctx.fillText(gym.slogan || "", W/2, 58);
+  if (gym.telefono) { ctx.fillStyle = "#374151"; ctx.font = "12px Arial"; ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78); }
+  if (gym.facebook) { ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial"; ctx.fillText(`Facebook: ${gym.facebook}`, W/2, 96); }
+  ctx.strokeStyle = "#d1d5db"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(20, 110); ctx.lineTo(W-20, 110); ctx.stroke();
+  ctx.fillStyle = "#ef4444"; ctx.font = "bold 9px Arial"; ctx.textAlign = "right";
+  ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W-16, 128); ctx.textAlign = "left";
+
+  let y = HEADER_H + 2;
+  rows.forEach((row, i) => {
+    ctx.fillStyle = i%2===0?"#ffffff":"#f9fafb"; ctx.fillRect(0,y,W,ROW_H);
+    ctx.strokeStyle="#f3f4f6"; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
+    if (row.type === "alumno") {
+      ctx.fillStyle="#111827"; ctx.font="bold 15px Arial"; ctx.textAlign="center"; ctx.fillText(row.nombre, W/2, y+20);
+      ctx.fillStyle="#6b7280"; ctx.font="11px Arial"; ctx.fillText(row.plan, W/2, y+ROW_H-6); ctx.textAlign="left";
+    } else {
+      ctx.fillStyle="#6b7280"; ctx.font="12px Arial"; ctx.fillText(row.label, 24, y+ROW_H-12);
+      ctx.fillStyle="#111827"; ctx.font=row.bold?"bold 13px Arial":"13px Arial"; ctx.textAlign="right";
+      ctx.fillText(row.value, W-24, y+ROW_H-12); ctx.textAlign="left";
+    }
+    y += ROW_H;
+  });
+
+  if (gym.transferencia_clabe) {
+    ctx.fillStyle="#f3f4f6"; ctx.fillRect(0,y,W,CLABE_H);
+    ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    ctx.fillStyle="#111827"; ctx.font="bold 12px Arial"; ctx.textAlign="left"; ctx.fillText("PARA TRANSFERENCIAS:", 24, y+22);
+    ctx.font="12px Arial"; ctx.fillStyle="#374151";
+    ctx.fillText(`CLABE:  ${gym.transferencia_clabe}`, 24, y+42);
+    ctx.fillText(`Beneficiario:  ${gym.transferencia_titular||"—"}`, 24, y+60);
+    if (gym.transferencia_banco) ctx.fillText(`Banco:  ${gym.transferencia_banco}`, 24, y+78);
+    y += CLABE_H;
+  }
+
+  ctx.fillStyle="#f9fafb"; ctx.fillRect(0,y,W,FOOTER_H);
+  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  ctx.fillStyle="#6b7280"; ctx.font="11px Arial"; ctx.textAlign="center";
+  ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y+22);
+  ctx.fillText("Whatsapp que aparece en la parte superior de este recibo.", W/2, y+40);
+  y += FOOTER_H;
+  ctx.fillStyle="#111827"; ctx.font="bold 20px Arial"; ctx.textAlign="center";
+  ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W/2, y+34);
+
+  return canvas.toDataURL("image/png");
+}
+
+// ── Generador de Info de Transferencia (Canvas PNG) ──────────────
+async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, venceISO }) {
+  const gym = gymConfig || {};
+  const W = 560;
+  const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const hoyD = new Date();
+  const fechaHoy  = `${DIAS[hoyD.getDay()]}, ${MESES[hoyD.getMonth()]} ${hoyD.getDate()}, ${hoyD.getFullYear()}`;
+  const venceLong = venceISO
+    ? (() => { const d = new Date(venceISO+"T00:00:00"); return `${DIAS[d.getDay()]}, ${MESES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; })()
+    : "—";
+
+  const tableRows = [
+    ...(gym.facebook ? [{ label: "Facebook:", value: gym.facebook, span: true }] : []),
+    { label: "Fecha:",        value: fechaHoy },
+    { label: "ALUMNO",        value: (miembro.nombre||"—").toUpperCase(), bold: true },
+    { label: "",              value: (MESES[hoyD.getMonth()]).toUpperCase() },
+    { label: "Modo de Pago:", value: "TRANSFERENCIA" },
+    { label: "Cantidad:",     value: fmt$(monto), big: true },
+    { label: "Vencimiento:",  value: venceLong, bold: true },
+    { label: "Recibió:",      value: gym.propietario_nombre || gym.transferencia_titular || "—" },
+  ];
+
+  const HEADER_H = 140, ROW_H = 36, CLABE_H = 100, FOOTER_H = 56;
+  const H = HEADER_H + tableRows.length * ROW_H + CLABE_H + FOOTER_H + 8;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#f9fafb"; ctx.fillRect(0,0,W,HEADER_H);
+  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,HEADER_H); ctx.lineTo(W,HEADER_H); ctx.stroke();
+
+  const LOGO_SZ=80, LX=20, LY=18;
+  if (gym.logo) {
+    await new Promise(res => {
+      const img=new Image(); img.crossOrigin="anonymous";
+      img.onload=()=>{ ctx.save(); ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.clip(); ctx.drawImage(img,LX,LY,LOGO_SZ,LOGO_SZ); ctx.restore(); res(); };
+      img.onerror=res; img.src=gym.logo;
+    });
+  } else {
+    ctx.fillStyle="#1e1b4b"; ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.font="bold 28px serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("🥋",LX+LOGO_SZ/2,LY+LOGO_SZ/2); ctx.textBaseline="alphabetic";
+  }
+  ctx.textAlign="center";
+  ctx.fillStyle="#111827"; ctx.font="bold 17px Georgia,serif"; ctx.fillText((gym.nombre||"GYM").toUpperCase(), W/2, 38);
+  ctx.fillStyle="#6b7280"; ctx.font="13px Georgia,serif"; ctx.fillText(gym.slogan||"", W/2, 58);
+  if (gym.telefono) { ctx.fillStyle="#374151"; ctx.font="12px Arial"; ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78); }
+
+  let y = HEADER_H + 2;
+  tableRows.forEach((row, i) => {
+    ctx.fillStyle=i%2===0?"#fff":"#f9fafb"; ctx.fillRect(0,y,W,ROW_H);
+    ctx.strokeStyle="#f3f4f6"; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
+    if (row.span) {
+      ctx.fillStyle="#374151"; ctx.font="12px Arial"; ctx.textAlign="center";
+      ctx.fillText(`${row.label}  ${row.value}`, W/2, y+ROW_H-10); ctx.textAlign="left";
+    } else if (row.big) {
+      ctx.fillStyle="#6b7280"; ctx.font="12px Arial"; ctx.textAlign="left"; ctx.fillText(row.label, 24, y+ROW_H-10);
+      ctx.fillStyle="#111827"; ctx.font="bold 16px Arial"; ctx.textAlign="right"; ctx.fillText(row.value, W-24, y+ROW_H-10); ctx.textAlign="left";
+    } else {
+      ctx.fillStyle="#6b7280"; ctx.font=row.bold?"bold 12px Arial":"12px Arial"; ctx.fillText(row.label, 24, y+ROW_H-10);
+      ctx.fillStyle="#111827"; ctx.font=row.bold?"bold 13px Arial":"13px Arial"; ctx.textAlign="right"; ctx.fillText(row.value, W-24, y+ROW_H-10); ctx.textAlign="left";
+    }
+    y += ROW_H;
+  });
+
+  ctx.fillStyle="#fff"; ctx.fillRect(0,y,W,CLABE_H);
+  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  ctx.fillStyle="#111827"; ctx.font="bold 12px Arial"; ctx.textAlign="left"; ctx.fillText("PARA TRANSFERENCIAS:", 24, y+22);
+  ctx.font="12px Arial"; ctx.fillStyle="#374151";
+  ctx.fillText(`CLABE:   ${gym.transferencia_clabe||"—"}`, 24, y+42);
+  ctx.fillText(`Beneficiario:   ${gym.transferencia_titular||"—"}`, 24, y+60);
+  if (gym.transferencia_banco) ctx.fillText(`Banco:   ${gym.transferencia_banco}`, 24, y+78);
+  y += CLABE_H;
+
+  ctx.fillStyle="#f3f4f6"; ctx.fillRect(0,y,W,FOOTER_H);
+  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  ctx.fillStyle="#374151"; ctx.font="bold 11px Arial"; ctx.textAlign="center";
+  ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y+20);
+  ctx.fillText("Whatsapp que aparece en la parte superior de este recibo.", W/2, y+38);
+
+  return canvas.toDataURL("image/png");
+}
+
+// ── Copiar imagen PNG al portapapeles ────────────────────────────
+async function copiarImagenAlPortapapeles(dataUrl) {
+  try {
+    const blob = await (await fetch(dataUrl)).blob();
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    return true;
+  } catch {
+    const win = window.open();
+    if (win) win.document.write(`<img src="${dataUrl}" style="max-width:100%">`);
+    return false;
+  }
+}
 
 /* ─── CONGELAR MODAL (sub-componente interno) ─── */
 function CongelarModal({ m, onClose, onConfirm }) {
@@ -274,6 +472,9 @@ export default function MemberDetailModal({
 
   const [photoModal, setPhotoModal] = useState(false);
   const [renovarModal, setRenovarModal] = useState(false);
+  const [comprobanteModal, setComprobanteModal] = useState(false);
+  const [comprobanteData, setComprobanteData] = useState(null); // { tipo: "efectivo"|"transferencia", png, infoPNG, plan, monto, vence }
+  const [copiado, setCopiado] = useState(false);
   const [congelarModal, setCongelarModal] = useState(false);
   const [cobrarModal, setCobrarModal] = useState(false);
   const [cobro, setCobro] = useState({
@@ -415,6 +616,39 @@ export default function MemberDetailModal({
       vence_manual: venceISO || null,
     });
     setRenovarModal(false);
+
+    // Si es beca, no generar comprobante
+    if (m.beca) return;
+
+    const fp = renovar.formaPago || "Efectivo";
+    if (fp === "Efectivo" || fp === "Tarjeta") {
+      // Generar comprobante de pago
+      try {
+        const png = await generarComprobantePNG({
+          gymConfig,
+          miembro: m,
+          plan: renovar.plan,
+          monto: montoPagado,
+          formaPago: fp,
+          venceISO,
+        });
+        setComprobanteData({ tipo: "efectivo", png, plan: renovar.plan, monto: montoPagado, vence: venceISO, formaPago: fp });
+        setComprobanteModal(true);
+      } catch(e) { console.error(e); }
+    } else if (fp === "Transferencia") {
+      // Generar info de transferencia
+      try {
+        const infoPNG = await generarInfoTransferenciaPNG({
+          gymConfig,
+          miembro: m,
+          plan: renovar.plan,
+          monto: montoPagado,
+          venceISO,
+        });
+        setComprobanteData({ tipo: "transferencia", infoPNG, plan: renovar.plan, monto: montoPagado, vence: venceISO });
+        setComprobanteModal(true);
+      } catch(e) { console.error(e); }
+    }
   };
 
   // ── Confirmar pago de transferencia pendiente ──────────────────
@@ -488,6 +722,120 @@ export default function MemberDetailModal({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, background: "var(--bg-main)", overflow: "hidden" }}>
+
+      {/* ══ MODAL: Comprobante de Renovación ══ */}
+      {comprobanteModal && comprobanteData && (() => {
+        const { tipo, png, infoPNG, plan, monto, vence, formaPago } = comprobanteData;
+        const tel = m.tel || "";
+        const waNumero = tel.replace(/\D/g, "");
+        const waFull = waNumero.startsWith("52") ? waNumero : "52" + waNumero;
+        const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+        const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        const vD = vence ? new Date(vence + "T00:00:00") : null;
+        const venceFmt = vD ? `${vD.getDate()} ${MESES_S[vD.getMonth()]} ${vD.getFullYear()}` : "—";
+
+        const waTextComp = tel ? `🧾 Hola ${m.nombre.split(" ")[0]}, aquí está tu comprobante de renovación en *${gymConfig?.nombre || "el gym"}*.\n\nPlan: ${plan} · $${Number(monto).toLocaleString("es-MX")}\nVence: ${venceFmt}\n\n¡Gracias por tu pago! 💪` : null;
+        const waTextInfo = tel ? `¡Hola ${m.nombre.split(" ")[0]}! 🥋 Para completar tu renovación en *${gymConfig?.nombre || "el gym"}*, realiza tu transferencia por *$${Number(monto).toLocaleString("es-MX")}* (Plan ${plan}).\n\nVence: ${venceFmt}\n\nFavor de enviar tu comprobante por este mismo WhatsApp. ¡Gracias! 💪` : null;
+
+        const descargar = (dataUrl, prefix) => {
+          const a = document.createElement("a");
+          a.href = dataUrl;
+          a.download = `${prefix}_${m.nombre.replace(/\s+/g,"_")}.png`;
+          a.click();
+        };
+        const copiarImg = async (dataUrl) => {
+          await copiarImagenAlPortapapeles(dataUrl);
+          setCopiado(true);
+          setTimeout(() => setCopiado(false), 2200);
+        };
+
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.92)", backdropFilter:"blur(12px)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+            <div style={{ background:"var(--bg-card)", borderRadius:24, padding:24, width:"100%", maxWidth:420, maxHeight:"90vh", overflowY:"auto", border:"1px solid rgba(255,255,255,.08)" }}>
+
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                <div>
+                  <h2 style={{ color:"var(--text-primary)", fontSize:17, fontWeight:700, margin:0 }}>
+                    {tipo === "transferencia" ? "📲 Info para Transferencia" : "🧾 Comprobante de Pago"}
+                  </h2>
+                  <p style={{ color:"#8b949e", fontSize:12, marginTop:4 }}>
+                    {tipo === "transferencia"
+                      ? "Comparte los datos de pago con el alumno"
+                      : "Renovación registrada exitosamente"}
+                  </p>
+                </div>
+                <button onClick={() => setComprobanteModal(false)}
+                  style={{ border:"none", background:"rgba(255,255,255,.1)", color:"#8b949e", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  ✕
+                </button>
+              </div>
+
+              {/* Resumen */}
+              <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:16, display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                <div>
+                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Plan</p>
+                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>{plan}</p>
+                </div>
+                <div>
+                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Monto</p>
+                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2, fontFamily:"'DM Mono',monospace" }}>${Number(monto).toLocaleString("es-MX")}</p>
+                </div>
+                <div>
+                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Vencimiento</p>
+                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>{venceFmt}</p>
+                </div>
+                <div>
+                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
+                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>
+                    {tipo === "transferencia" ? "📲 Transferencia" : formaPago === "Tarjeta" ? "💳 Tarjeta" : "💵 Efectivo"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Imagen */}
+              {(tipo === "transferencia" ? infoPNG : png) && (
+                <div style={{ marginBottom:16 }}>
+                  <img
+                    src={tipo === "transferencia" ? infoPNG : png}
+                    alt={tipo === "transferencia" ? "Info transferencia" : "Comprobante"}
+                    style={{ width:"100%", borderRadius:10, border:"1px solid rgba(255,255,255,.08)", boxShadow:"0 2px 12px rgba(0,0,0,.4)" }}
+                  />
+                </div>
+              )}
+
+              {/* Botones de acción */}
+              <div style={{ display:"flex", gap:8, marginBottom:tel?12:0 }}>
+                <button
+                  onClick={() => descargar(tipo==="transferencia"?infoPNG:png, tipo==="transferencia"?"transferencia":"comprobante")}
+                  style={{ flex:1, padding:"11px 8px", border:"1px solid rgba(255,255,255,.12)", borderRadius:12, background:"var(--bg-elevated)", color:"var(--text-primary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  ⬇️ Descargar
+                </button>
+                <button
+                  onClick={() => copiarImg(tipo==="transferencia"?infoPNG:png)}
+                  style={{ flex:1, padding:"11px 8px", border:"1px solid rgba(255,255,255,.12)", borderRadius:12, background:"var(--bg-elevated)", color: copiado ? "#4ade80" : "var(--text-primary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  {copiado ? "✅ Copiado" : "📋 Copiar"}
+                </button>
+              </div>
+
+              {/* Botón WhatsApp */}
+              {tel && (tipo==="transferencia" ? waTextInfo : waTextComp) && (
+                <button
+                  onClick={() => window.open(`https://wa.me/${waFull}?text=${encodeURIComponent(tipo==="transferencia"?waTextInfo:waTextComp)}`, "_blank")}
+                  style={{ width:"100%", padding:"13px", border:"none", borderRadius:14, background:"linear-gradient(135deg,#25d366,#128c7e)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 4px 14px rgba(37,211,102,.35)", marginBottom:12 }}>
+                  <span>💬</span> Enviar por WhatsApp
+                </button>
+              )}
+
+              <button
+                onClick={() => setComprobanteModal(false)}
+                style={{ width:"100%", padding:"12px", border:"1px solid var(--border)", borderRadius:12, background:"transparent", color:"#8b949e", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══ MODAL: Confirmar pago de transferencia ══ */}
       {confirmarModal && (
