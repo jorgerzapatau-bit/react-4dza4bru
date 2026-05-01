@@ -1383,137 +1383,328 @@ export default function MemberDetailModal({
       })()}
 
       {/* ══════════ MAIN BODY (scrollable) ══════════ */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 80px" }}>
-      {/* ══════════ AVATAR + HEADER ══════════ */}
-      <div style={{ textAlign: "center", marginBottom: 20 }}>
-        <div style={{ position: "relative", width: 96, margin: "0 auto 12px" }}>
-          <div
-            style={{
-              width: 96, height: 96, borderRadius: "50%",
-              background: isPagoPendiente
-                ? "linear-gradient(135deg,#f59e0b,#fbbf24)"
-                : m.estado === "Activo"
-                ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                : "linear-gradient(135deg,#f43f5e,#fb923c)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 34, color: "#fff", fontWeight: 700, overflow: "hidden",
-              boxShadow: m.foto ? "0 0 0 3px rgba(108,99,255,.5)" : "none",
-            }}
-          >
-            {m.foto
-              ? <img src={m.foto} alt={m.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : m.nombre.charAt(0)}
-          </div>
-          <button
-            onClick={() => setPhotoModal(true)}
-            style={{
-              position: "absolute", bottom: -4, right: -4,
-              width: 30, height: 30, borderRadius: 10,
-              background: "linear-gradient(135deg,#6c63ff,#e040fb)",
-              border: "2px solid var(--bg-base)", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, boxShadow: "0 2px 8px rgba(108,99,255,.5)",
-            }}
-          >
-            📷
-          </button>
-        </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 0 80px" }}>
 
-        <h2 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700 }}>{m.nombre}</h2>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, marginTop: 8 }}>
-          <span
-            style={{
-              background:
-                isPagoPendiente ? "rgba(251,191,36,.15)"
-                : memInfo.estado === "Activo" ? "rgba(74,222,128,.15)"
-                : memInfo.estado === "Congelado" ? "rgba(96,165,250,.15)"
-                : memInfo.estado === "Sin membresía" ? "rgba(107,114,128,.15)"
-                : "rgba(248,113,113,.15)",
-              color:
-                isPagoPendiente ? "#fbbf24"
-                : memInfo.estado === "Activo" ? "#4ade80"
-                : memInfo.estado === "Congelado" ? "#60a5fa"
-                : memInfo.estado === "Sin membresía" ? "#8b949e"
-                : "#f87171",
-              borderRadius: 10, padding: "4px 14px", fontSize: 12, fontWeight: 700,
-            }}
-          >
-            {isPagoPendiente ? "⏳ Pago pendiente"
-              : memInfo.estado === "Congelado" ? "🧊 Congelado"
-              : memInfo.estado}
-          </span>
-          <span style={{ color: "#8b949e", fontSize: 11, fontWeight: 500 }}>
-            {isPagoPendiente
-              ? "Transferencia por confirmar"
-              : memInfo.estado === "Congelado"
-              ? `🧊 Congelado — vence ${fmtDate(memInfo.vence)}`
-              : memInfo.estado === "Activo"
-              ? `Activo hasta ${fmtDate(memInfo.vence)}`
-              : memInfo.estado === "Sin membresía"
-              ? "Sin membresía registrada"
-              : `Vencido desde ${fmtDate(memInfo.vence)}`}
-          </span>
-        </div>
+      {/* ══════════ HERO CARD ══════════ */}
+      {(() => {
+        // ── Extraer horario de notas (ej: "Horario: 4:30 · Plan: MAR/J" o "MAR/J · 4:30")
+        const notas = m.notas || "";
+        const horarioMatch = notas.match(/(?:horario[:\s]+)?(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i);
+        const diasMatch = notas.match(/(?:plan[:\s]+)?([LMJVSD]{2,}(?:\/[LMJVSD]{2,})*)/i)
+          || notas.match(/(lun|mar|mié|jue|vie|sáb|dom)[^\d]*/i);
+        const horarioChip = horarioMatch ? horarioMatch[1] : null;
+        const diasChip = diasMatch ? diasMatch[1].toUpperCase() : null;
 
-        {/* ── Mini-stats: Plan / Vence / Último pago ── */}
-        {memInfo.estado !== "Sin membresía" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 12, textAlign: "left" }}>
-            {[
-              { label: "Plan", val: memInfo.plan || "—" },
-              {
-                label: "Vence",
-                val: fmtDate(memInfo.vence) || "—",
-                color: (() => {
-                  const d = diasParaVencer(memInfo.vence);
-                  return d !== null && d <= 5 ? "#f87171" : d !== null && d <= 15 ? "#fbbf24" : "#4ade80";
-                })(),
-              },
-              { label: "Último pago", val: memInfo.esGratis ? "Cortesía" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—") },
-            ].map((s, i) => (
-              <div key={i} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "7px 9px" }}>
-                <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, marginBottom: 2 }}>{s.label}</p>
-                <p style={{ color: s.color || "var(--text-primary)", fontSize: 11, fontWeight: 700 }}>{s.val}</p>
+        // ── Colores por estado
+        const esActivo = !isPagoPendiente && memInfo.estado === "Activo";
+        const esVencido = !isPagoPendiente && memInfo.estado === "Vencido";
+        const esCongelado = memInfo.estado === "Congelado";
+        const esSinMem = memInfo.estado === "Sin membresía";
+
+        const heroBg = isPagoPendiente
+          ? "linear-gradient(160deg,#1a1400 0%,#2d1f00 60%,#3d2a00 100%)"
+          : esActivo
+          ? "linear-gradient(160deg,#0a0f1e 0%,#0d1a2e 55%,#0a1f2e 100%)"
+          : esCongelado
+          ? "linear-gradient(160deg,#060d1a 0%,#0a1428 60%,#0d1c36 100%)"
+          : esVencido
+          ? "linear-gradient(160deg,#1a060a 0%,#2d0d14 60%,#3d0f1a 100%)"
+          : "linear-gradient(160deg,#0f0f17 0%,#161622 60%,#1e1e2e 100%)";
+
+        const accentColor = isPagoPendiente ? "#fbbf24"
+          : esActivo ? "#22d3ee"
+          : esCongelado ? "#60a5fa"
+          : esVencido ? "#f87171"
+          : "#8b949e";
+
+        const estadoColor = isPagoPendiente ? "#fbbf24"
+          : esActivo ? "#4ade80"
+          : esCongelado ? "#60a5fa"
+          : esVencido ? "#f87171"
+          : "#8b949e";
+
+        const estadoLabel = isPagoPendiente ? "⏳ Pago pendiente"
+          : esCongelado ? "🧊 Congelado"
+          : esVencido ? "⚠️ Vencido"
+          : esSinMem ? "Sin membresía"
+          : "● Activo";
+
+        // días restantes con urgencia
+        const diasR = diasParaVencer(memInfo.vence);
+        const diasColor = diasR === null ? "#8b949e"
+          : diasR <= 0 ? "#f87171"
+          : diasR <= 5 ? "#fb923c"
+          : diasR <= 15 ? "#fbbf24"
+          : "#4ade80";
+
+        const diasLabel = diasR === null ? null
+          : diasR === 0 ? "vence hoy"
+          : diasR < 0 ? `venció hace ${Math.abs(diasR)}d`
+          : `${diasR} días restantes`;
+
+        const esMenor = esMenorDeEdad(m.fecha_nacimiento);
+        const tieneTutor = m.tutor_nombre && m.tutor_nombre.trim();
+        const waNumTutor = (m.tutor_telefono || "").replace(/\D/g, "");
+        const waFullTutor = waNumTutor.startsWith("52") ? waNumTutor : "52" + waNumTutor;
+
+        // grado info
+        const gradoInfo = isDojo && m.grado_actual ? (() => {
+          try { return getGradoInfo(m.grado_actual); } catch { return null; }
+        })() : null;
+
+        return (
+          <div style={{
+            background: heroBg,
+            borderBottom: `1px solid ${accentColor}22`,
+            padding: "20px 20px 0",
+            position: "relative",
+            overflow: "hidden",
+          }}>
+            {/* Glow de fondo */}
+            <div style={{
+              position: "absolute", top: -40, right: -40,
+              width: 180, height: 180, borderRadius: "50%",
+              background: `radial-gradient(circle, ${accentColor}18 0%, transparent 70%)`,
+              pointerEvents: "none",
+            }} />
+
+            {/* Fila superior: Avatar + Info principal */}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 14 }}>
+
+              {/* Avatar */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: 20,
+                  background: isPagoPendiente ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                    : esActivo ? "linear-gradient(135deg,#6c63ff,#e040fb)"
+                    : esVencido ? "linear-gradient(135deg,#f43f5e,#fb923c)"
+                    : "linear-gradient(135deg,#374151,#4b5563)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 26, color: "#fff", fontWeight: 800, overflow: "hidden",
+                  boxShadow: `0 0 0 2.5px ${accentColor}44, 0 8px 24px rgba(0,0,0,.5)`,
+                }}>
+                  {m.foto
+                    ? <img src={m.foto} alt={m.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : m.nombre.charAt(0)}
+                </div>
+                <button onClick={() => setPhotoModal(true)} style={{
+                  position: "absolute", bottom: -4, right: -4,
+                  width: 22, height: 22, borderRadius: 7,
+                  background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                  border: "2px solid #0a0f1e", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, boxShadow: "0 2px 6px rgba(108,99,255,.6)",
+                }}>📷</button>
               </div>
-            ))}
+
+              {/* Nombre + chips */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h2 style={{
+                  color: "#fff", fontSize: 16, fontWeight: 800, margin: "0 0 4px",
+                  lineHeight: 1.2, letterSpacing: "-0.3px",
+                  overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                }}>
+                  {m.nombre}
+                </h2>
+
+                {/* Chips de estado + edad + grado */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+                  <span style={{
+                    background: `${estadoColor}22`, color: estadoColor,
+                    border: `1px solid ${estadoColor}44`,
+                    borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 800,
+                  }}>{estadoLabel}</span>
+
+                  {memInfo.plan && (
+                    <span style={{
+                      background: `${accentColor}15`, color: accentColor,
+                      border: `1px solid ${accentColor}30`,
+                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                    }}>🏷️ {memInfo.plan}</span>
+                  )}
+
+                  {esMenor && edad !== null && (
+                    <span style={{
+                      background: "rgba(251,191,36,.15)", color: "#fbbf24",
+                      border: "1px solid rgba(251,191,36,.3)",
+                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                    }}>👶 {edad} años</span>
+                  )}
+
+                  {gradoInfo && (
+                    <span style={{
+                      background: `${gradoInfo.color}22`, color: gradoInfo.color || "#e5e7eb",
+                      border: `1px solid ${gradoInfo.color}44`,
+                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                    }}>{gradoInfo.emoji} {m.grado_actual}</span>
+                  )}
+
+                  {m.beca && (
+                    <span style={{
+                      background: "rgba(251,191,36,.15)", color: "#fbbf24",
+                      border: "1px solid rgba(251,191,36,.3)",
+                      borderRadius: 7, padding: "2px 8px", fontSize: 10, fontWeight: 700,
+                    }}>🎓 Beca</span>
+                  )}
+                </div>
+
+                {/* Horario chip — extraído de notas */}
+                {(horarioChip || diasChip) && (
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)",
+                    borderRadius: 8, padding: "4px 10px",
+                  }}>
+                    <span style={{ fontSize: 11 }}>🗓️</span>
+                    <span style={{ color: "#e5e7eb", fontSize: 11, fontWeight: 700 }}>
+                      {[diasChip, horarioChip].filter(Boolean).join(" · ")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Barra de días restantes */}
+            {diasLabel && (
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: `${diasColor}12`, border: `1px solid ${diasColor}30`,
+                borderRadius: 10, padding: "8px 12px", marginBottom: 12,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>
+                    {diasR !== null && diasR <= 0 ? "🔴" : diasR !== null && diasR <= 5 ? "🟠" : diasR !== null && diasR <= 15 ? "🟡" : "🟢"}
+                  </span>
+                  <div>
+                    <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Membresía</span>
+                    <p style={{ color: diasColor, fontSize: 12, fontWeight: 800, margin: 0 }}>{diasLabel}</p>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ color: "#8b949e", fontSize: 10 }}>Vence</span>
+                  <p style={{ color: "#e5e7eb", fontSize: 11, fontWeight: 700, margin: 0 }}>{fmtDate(memInfo.vence) || "—"}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Fila de stats rápidos */}
+            {memInfo.estado !== "Sin membresía" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
+                {[
+                  {
+                    icon: "📅", label: "Desde",
+                    val: fmtDate(memInfo.inicio) || "—",
+                    color: "#a5b4fc",
+                  },
+                  {
+                    icon: "💰", label: "Último pago",
+                    val: memInfo.esGratis ? "Cortesía 🎁" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—"),
+                    color: "#4ade80",
+                  },
+                  {
+                    icon: "💳", label: "Forma de pago",
+                    val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo"
+                      : memInfo.formaPago === "Transferencia" ? "📲 Transfer."
+                      : memInfo.formaPago === "Tarjeta" ? "💳 Tarjeta"
+                      : "—",
+                    color: "#94a3b8",
+                  },
+                ].map((s, i) => (
+                  <div key={i} style={{
+                    background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)",
+                    borderRadius: 10, padding: "8px 10px",
+                  }}>
+                    <p style={{ color: "#64748b", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{s.icon} {s.label}</p>
+                    <p style={{ color: s.color, fontSize: 11, fontWeight: 700, margin: 0 }}>{s.val}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Botones de acción principales */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              {/* WA alumno */}
+              {m.tel && onGoToMensajes && (
+                <button onClick={() => onGoToMensajes(m)} style={{
+                  flex: 1, padding: "10px 8px", border: "none", borderRadius: 12,
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  background: "linear-gradient(135deg,#25d366,#128c7e)",
+                  color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                  boxShadow: "0 3px 10px rgba(37,211,102,.3)",
+                }}>
+                  💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "WA alumno"}
+                </button>
+              )}
+
+              {/* WA tutor — solo para menores */}
+              {esMenor && tieneTutor && waNumTutor.length >= 10 && (
+                <button onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")} style={{
+                  flex: 1, padding: "10px 8px",
+                  border: "1px solid rgba(251,191,36,.4)", borderRadius: 12,
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                  background: "rgba(251,191,36,.12)", color: "#fbbf24",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                }}>
+                  👨‍👧 WA tutor
+                </button>
+              )}
+
+              {/* Alerta sin tutor para menores */}
+              {esMenor && !tieneTutor && (
+                <button onClick={() => setEditing(true)} style={{
+                  flex: 1, padding: "10px 8px",
+                  border: "1px dashed rgba(244,63,94,.5)", borderRadius: 12,
+                  cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700,
+                  background: "rgba(244,63,94,.08)", color: "#f87171",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                }}>
+                  ⚠️ Registrar tutor
+                </button>
+              )}
+            </div>
+
+            {/* Acciones secundarias */}
+            <div style={{ display: "flex", gap: 6, paddingBottom: 16 }}>
+              <button onClick={() => setEditing(true)} style={{
+                flex: 1, padding: "9px 4px", borderRadius: 10,
+                border: "1px solid rgba(167,139,250,.35)", background: "rgba(167,139,250,.1)",
+                color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              }}>✏️ Editar</button>
+              <button onClick={() => {
+                const dias = diasParaVencer(memInfo.vence);
+                const venceISO = (() => { const v = parseDate(memInfo.vence); if (!v) return todayISO(); v.setHours(0,0,0,0); return v.toISOString().split("T")[0]; })();
+                const sugerido = dias !== null && dias > 0 ? venceISO : todayISO();
+                setRenovar({ plan: memInfo.plan || defaultPlan, monto: String(memInfo.monto || (planPrecioActivo && planPrecioActivo[memInfo.plan || defaultPlan]) || defaultMonto || ""), inicio: sugerido, vence: calcVence(sugerido, memInfo.plan || defaultPlan), venceManual: false, formaPago: "Efectivo" });
+                setRenovarModal(true);
+              }} style={{
+                flex: 2, padding: "9px 4px", borderRadius: 10,
+                border: "none", background: "linear-gradient(135deg,#22d3ee,#0891b2)",
+                color: "#fff", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                boxShadow: "0 3px 10px rgba(34,211,238,.3)",
+              }}>🔄 Renovar</button>
+              <button onClick={() => { setCobro({ tipo: "libre", desc: "", monto: "", fecha: todayISO(), formaPago: "Efectivo" }); setCobrarModal(true); }} style={{
+                flex: 1, padding: "9px 4px", borderRadius: 10,
+                border: "1px solid rgba(74,222,128,.35)", background: "rgba(74,222,128,.1)",
+                color: "#4ade80", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+              }}>💰 Cobrar</button>
+              {memInfo.estado === "Activo" && !memInfo.congelado && (
+                <button onClick={() => setCongelarModal(true)} style={{
+                  flex: 1, padding: "9px 4px", borderRadius: 10,
+                  border: "1px solid rgba(96,165,250,.35)", background: "rgba(96,165,250,.1)",
+                  color: "#60a5fa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                }}>🧊 Congelar</button>
+              )}
+            </div>
           </div>
-        )}
-
-        {m.tel && onGoToMensajes && (
-          <button
-            onClick={() => onGoToMensajes(m)}
-            style={{
-              marginTop: 10, padding: "8px 16px", border: "none", borderRadius: 20,
-              cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-              background: "linear-gradient(135deg,#25d366,#128c7e)",
-              color: "#fff", display: "inline-flex", alignItems: "center", gap: 6,
-              boxShadow: "0 3px 12px rgba(37,211,102,.35)",
-            }}
-          >
-            <span>💬</span> Enviar mensaje WA
-          </button>
-        )}
-
-        {waUmbral !== null && m.tel && onGoToMensajes && (
-          <button
-            onClick={() => onGoToMensajes(m)}
-            style={{
-              marginTop: 10, padding: "8px 16px", border: "none", borderRadius: 20,
-              cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-              background: "linear-gradient(135deg,#25d366,#128c7e)",
-              color: "#fff", display: "inline-flex", alignItems: "center", gap: 6,
-              boxShadow: "0 3px 12px rgba(37,211,102,.35)",
-            }}
-          >
-            <span>💬</span>
-            Enviar recordatorio WA (
-            {diasRestantes === 0 ? "hoy" : diasRestantes === 1 ? "mañana" : `${diasRestantes} días`}
-            )
-          </button>
-        )}
-      </div>
+        );
+      })()}
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 0, padding: "6px 16px", borderBottom: "1px solid var(--border)", marginBottom: 0 }}>
         {[{ k: "perfil", label: "📋 Perfil" }, { k: "historial", label: "💳 Historial" }, { k: "qr", label: "🔳 QR" }].map((t) => (
           <button
             key={t.k}
@@ -1535,7 +1726,7 @@ export default function MemberDetailModal({
 
       {/* ══════════ TAB: PERFIL ══════════ */}
       {detTab === "perfil" && (
-        <>
+        <div style={{ padding: "18px 20px 0" }}>
           {editing ? (
             <>
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
@@ -1946,54 +2137,6 @@ export default function MemberDetailModal({
                 )}
               </div>
 
-              {/* ── 2. BOTONES DE ACCIÓN (posición prominente, justo bajo membresía) ── */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <Btn full outline color="#a78bfa" onClick={() => setEditing(true)}>✏️ Editar</Btn>
-                <Btn
-                  full
-                  onClick={() => {
-                    const dias = diasParaVencer(memInfo.vence);
-                    const venceISO = (() => {
-                      const v = parseDate(memInfo.vence);
-                      if (!v) return todayISO();
-                      v.setHours(0, 0, 0, 0);
-                      return v.toISOString().split("T")[0];
-                    })();
-                    const sugerido = dias !== null && dias > 0 ? venceISO : todayISO();
-                    setRenovar({
-                      plan: memInfo.plan || defaultPlan,
-                      monto: String(memInfo.monto || (planPrecioActivo && planPrecioActivo[memInfo.plan || defaultPlan]) || defaultMonto || ""),
-                      inicio: sugerido,
-                      vence: calcVence(sugerido, memInfo.plan || defaultPlan),
-                      venceManual: false,
-                      formaPago: "Efectivo",
-                    });
-                    setRenovarModal(true);
-                  }}
-                  color="#22d3ee"
-                >
-                  🔄 Renovar
-                </Btn>
-              </div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                <Btn
-                  full
-                  outline
-                  color="#4ade80"
-                  onClick={() => {
-                    setCobro({ tipo: "libre", desc: "", monto: "", fecha: todayISO(), formaPago: "Efectivo" });
-                    setCobrarModal(true);
-                  }}
-                >
-                  💰 + Cobrar
-                </Btn>
-                {memInfo.estado === "Activo" && !memInfo.congelado && (
-                  <Btn full outline color="#60a5fa" onClick={() => setCongelarModal(true)}>
-                    🧊 Congelar
-                  </Btn>
-                )}
-              </div>
-
               {/* ── 3. DATOS PERSONALES ── */}
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Datos personales
@@ -2248,12 +2391,12 @@ export default function MemberDetailModal({
               })()}
             </>
           )}
-        </>
+        </div>
       )}
 
       {/* ══════════ TAB: HISTORIAL ══════════ */}
       {detTab === "historial" && (
-        <>
+        <div style={{ padding: "0 20px" }}>
           {historial.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>💳</p>
@@ -2348,7 +2491,7 @@ export default function MemberDetailModal({
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* ══════════ TAB: QR ══════════ */}
