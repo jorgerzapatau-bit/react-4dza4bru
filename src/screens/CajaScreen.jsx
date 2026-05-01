@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { fmt, fmtDate, parseDate } from "../utils/dateUtils";
+import { fmtDate, parseDate } from "../utils/dateUtils";
 import { CAT_ICON } from "../utils/constants";
 
 function CajaScreen({ txs, miembros, gymConfig, onBack }) {
@@ -122,6 +122,7 @@ function CajaScreen({ txs, miembros, gymConfig, onBack }) {
 
   const txsFiltradas = cajaData.txsFiltradas;
   const ingresos = cajaData.ingresos;
+  // eslint-disable-next-line no-unused-vars
   const gastos = cajaData.gastos;
   const totalIng = cajaData.totalIng;
   const totalGas = cajaData.totalGas;
@@ -198,6 +199,7 @@ function CajaScreen({ txs, miembros, gymConfig, onBack }) {
       const W = 210; const margin = 14;
       const gymNombre = gymConfig?.nombre || "GymFit Pro";
       const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
+      // eslint-disable-next-line no-unused-vars
       const fpIcon = (fp) => fp === "Efectivo" ? "Efectivo" : fp === "Transferencia" ? "Transf." : fp === "Tarjeta" ? "Tarjeta" : "";
 
       // ── HEADER ──

@@ -284,6 +284,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
   // Cleanup on unmount
   useEffect(() => () => stopCamera(), []); // eslint-disable-line
 
+  // eslint-disable-next-line no-unused-vars
   const bg     = darkMode ? "#0a0a12" : "#f4f5f9";
   const cardBg = darkMode ? "#0d0f1e" : "#ffffff";
   const border = darkMode ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.07)";

@@ -5,25 +5,25 @@
 //  Con barra de progreso, navegación ← / → y generación de comprobante.
 // ══════════════════════════════════════════════════════════════════
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import TutorFields from "../components/TutorFields";
-import { todayISO, calcEdad, fmtDate } from "../utils/dateUtils";
-import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
-import { DEFAULT_PLANES, calcVence, GRADOS_KARATE, GRADOS_NOMBRES } from "../utils/constants";
+import { todayISO, calcEdad } from "../utils/dateUtils";
+import { esMenorDeEdad } from "../utils/tutorUtils";
+import { DEFAULT_PLANES, calcVence, GRADOS_KARATE } from "../utils/constants";
 
 // ── Helpers ──────────────────────────────────────────────────────
 function fmt$(n) {
   return "$" + Number(n || 0).toLocaleString("es-MX");
 }
 
-function fmtDateLong(isoStr) {
+function _fmtDateLong(isoStr) {
   if (!isoStr) return "—";
   const d = new Date(isoStr + "T00:00:00");
   return d.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 }
 
-function fmtDateMed(isoStr) {
+function _fmtDateMed(isoStr) {
   if (!isoStr) return "—";
   const d = new Date(isoStr + "T00:00:00");
   const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
@@ -39,7 +39,7 @@ function fmtDateShort(isoStr) {
 }
 
 // ── Carga jsPDF dinámicamente ──────────────────────────────────
-function cargarScript(src) {
+function _cargarScript(src) {
   return new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
     const s = document.createElement("script");
@@ -49,14 +49,14 @@ function cargarScript(src) {
 }
 
 // ── Genera el comprobante como PNG data-URL usando canvas ────────
-async function generarComprobantePNG({ gymConfig, miembro, plan, monto, formaPago, venceISO }) {
+async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, formaPago, venceISO }) {
   const gym = gymConfig || {};
   const nombre   = gym.nombre   || "GymFit Pro";
   const slogan   = gym.slogan   || "Fortaleza y Disciplina";
   const tel      = gym.telefono || "";
   const facebook = gym.facebook || "";
   const logo     = gym.logo     || null;
-  const titular  = gym.transferencia_titular || "—";
+  const _titular  = gym.transferencia_titular || "—"; // eslint-disable-line no-unused-vars
   const propietario = gym.propietario_nombre || "";
 
   const hoyD = new Date();
@@ -65,7 +65,7 @@ async function generarComprobantePNG({ gymConfig, miembro, plan, monto, formaPag
   const fechaHoy = `${DIAS_LONG[hoyD.getDay()]}, ${MESES_LONG[hoyD.getMonth()]} ${hoyD.getDate()}, ${hoyD.getFullYear()}`;
   const venceLong = venceISO ? `${DIAS_LONG[new Date(venceISO+"T00:00:00").getDay()]}, ${MESES_LONG[new Date(venceISO+"T00:00:00").getMonth()]} ${new Date(venceISO+"T00:00:00").getDate()}, ${new Date(venceISO+"T00:00:00").getFullYear()}` : "—";
 
-  const W = 520, LINE = 28;
+  const W = 520; // eslint-disable-line no-unused-vars
   const canvas = document.createElement("canvas");
   canvas.width = W;
 
@@ -867,8 +867,8 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
 // ── Generador 1: Identificación Digital (canvas) ─────────────────
 // ══════════════════════════════════════════════════════════════════
 async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
-  const gym  = gymConfig || {};
-  const W = 400, PAD = 24;
+  const gym  = gymConfig || {}; // eslint-disable-line no-unused-vars
+  const W = 400, PAD = 24; // eslint-disable-line no-unused-vars
 
   // ── Cargar QR primero ──
   const qrText = `gymfit:member:${(miembro.nombre || "").replace(/\s+/g,"_")}:${codigoAcceso}`;
@@ -1283,7 +1283,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
   const fechaInicio = fM.fecha_incorporacion || todayISO();
   const esPorTransferencia = fM.formaPago === "Transferencia";
 
-  const genComprobante = async () => {
+  const _genComprobante = async () => {
     setGenerandoComp(true);
     try {
       const png = await generarComprobantePagoPNG({

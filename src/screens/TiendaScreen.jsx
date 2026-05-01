@@ -761,6 +761,7 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
 
   const totalPagado = payments.reduce((s, p) => s + Number(p.amount), 0);
   const saldo       = Math.max(reservation.total_amount - totalPagado, 0);
+  // eslint-disable-next-line no-unused-vars
   const meta        = STATUS_META[reservation.status] || STATUS_META.reserved;
 
   const handlePago = async () => {
@@ -1056,6 +1057,7 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
 // ── Tab: Inventario ───────────────────────────────────────────────
 function TabInventario({ products, onEntradaStock, getKardexForProduct }) {
   const [busqueda, setBusqueda] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const filtrados = products.filter(p =>
@@ -1339,6 +1341,7 @@ function TabKardex({ products, reservations, miembros, getKardexForProduct }) {
 export default function TiendaScreen({ gymId, miembros, txs, onBack, onAddTx }) {
   const {
     products, reservations, loading, error,
+  // eslint-disable-next-line no-unused-vars
     saveProduct, deleteProduct, toggleProductActive,
     createReservation, updateReservationStatus, editReservation,
     addPayment, addStockEntry, getPaymentsForReservation,
@@ -1352,6 +1355,7 @@ export default function TiendaScreen({ gymId, miembros, txs, onBack, onAddTx }) 
   const [modalStock,      setModalStock]       = useState(null); // product para entrada stock
   const [filtroEstado,    setFiltroEstado]     = useState("activas");
   const [busquedaProd,    setBusquedaProd]     = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [saving,          setSaving]           = useState(false);
 
   // ── Cálculo de stock actual (stock_initial + entradas - salidas) ──

@@ -8,7 +8,7 @@
 // ══════════════════════════════════════════════
 import { fmt, fmtDate, diasParaVencer, todayISO } from "../utils/dateUtils";
 import { getMembershipInfo } from "../utils/membershipUtils";
-import { DEFAULT_PLANES, getIsDojo, getGradoInfo } from "../utils/constants";
+import { getIsDojo, getGradoInfo } from "../utils/constants";
 
 export default function MiembrosScreen({
   miembros,
@@ -215,7 +215,3 @@ export default function MiembrosScreen({
             });
           })()}
         </div>
-      </div>
-    </>
-  );
-}

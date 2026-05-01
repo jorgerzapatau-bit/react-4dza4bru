@@ -1,4 +1,4 @@
-import { fmt, fmtDate } from "../utils/dateUtils";
+import { fmt } from "../utils/dateUtils";
 import { parseDate } from "../utils/dateUtils";
 import { getMembershipInfo } from "../utils/membershipUtils";
 import ReportePDF from "../components/ReportePDF";

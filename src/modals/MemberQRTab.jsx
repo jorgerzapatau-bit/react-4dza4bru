@@ -161,6 +161,7 @@ function QRCanvas({ url }) {
   useEffect(() => {
     if (scriptReady) return;
     loadQRScript().then(setScriptReady);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

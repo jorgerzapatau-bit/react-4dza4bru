@@ -1,16 +1,16 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
-import { fmt, fmtDate, today, todayISO, parseDate, calcEdad } from "../utils/dateUtils";
+import { fmtDate, today, todayISO, parseDate } from "../utils/dateUtils";
 import { getMembershipInfo, calcVence } from "../utils/membershipUtils";
 import { diasParaVencer } from "../utils/dateUtils";
 import { diasParaCumple } from "../utils/dateUtils";
-import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, CAT_ING, CAT_GAS, getCatIng, getCatGas, getCatIcon, getIsDojo } from "../utils/constants";
+import { DEFAULT_PLANES, DEFAULT_RECORDATORIO_TPL, getCatIng, getCatGas, getCatIcon, getIsDojo } from "../utils/constants";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
-import TutorFields from "./TutorFields";
+
 
 // Components
 import Nav from "./Nav";
-import { Badge, Btn, Inp, Modal } from "./UI";
+import { Btn, Inp, Modal } from "./UI";
 import PhotoModal from "./PhotoModal";
 import MemberDetailModal from "../modals/MemberDetailModal";
 import EditTxModal from "../modals/EditTxModal";
@@ -91,8 +91,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     tutor_telefono: "",
     tutor_parentesco: "",
   }));
-  const [fMTutorErrores, setFMTutorErrores] = useState({});
-  const [showFotoModal, setShowFotoModal] = useState(false);
+  const [_fMTutorErrores, setFMTutorErrores] = useState({});
+  const [_showFotoModal, setShowFotoModal] = useState(false);
 
   useEffect(() => { const t = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(t); }, []);
 
@@ -112,9 +112,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const isDojo = getIsDojo(gymConfig);
   const CAT_ING_ACTIVO = getCatIng(gymConfig);
   const CAT_GAS_ACTIVO = getCatGas(gymConfig);
-  const CAT_ICON_ACTIVO = getCatIcon(gymConfig);
+  const _CAT_ICON_ACTIVO = getCatIcon(gymConfig);
   // Término singular configurable (Alumno / Miembro)
-  const terminoSingular = (gymConfig?.termino_miembros || (isDojo ? "Alumnos" : "Miembros")).replace(/s$/, "");
+  const _terminoSingular = (gymConfig?.termino_miembros || (isDojo ? "Alumnos" : "Miembros")).replace(/s$/, "");
 
   const nowForCurr = new Date();
   const isCurrentMonth = selMes.year === nowForCurr.getFullYear() && selMes.month === nowForCurr.getMonth();
@@ -259,6 +259,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
 
   useEffect(() => {
     if (!loading && miembros.length > 0 && gymConfig) dispararNotificacionVencimientos();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, miembros.length, gymConfig?.nombre]);
 
   // ── CRUD operations ──
@@ -278,7 +279,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     setFG({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() }); setModal(null); setScreen("dashboard"); setTab(0);
   };
 
-  const fMEsMenor = esMenorDeEdad(fM.fecha_nacimiento);
+  const _fMEsMenor = esMenorDeEdad(fM.fecha_nacimiento);
 
   const addM = async (wizardFM) => {
     // wizardFM viene del wizard; si no, usa el estado fM (legado)
@@ -398,7 +399,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     return savedM;
   };
 
-  const archiveMiembro = async (id) => {
+  const _archiveMiembro = async (id) => {
     const mDb = await supabase.from("miembros");
     await mDb.update(id, { archivado: true });
     setMiembros(p => p.filter(m => m.id !== id));
@@ -467,7 +468,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     if (saved) setTxs(p => [...p, { id: saved.id, tipo: pagoData.tipo, categoria: pagoData.categoria, desc: descFinal, descripcion: descFinal, monto: pagoData.monto, fecha: pagoData.fecha, miembroId: pagoData.miembroId || null, miembro_id: pagoData.miembroId || null, vence_manual: pagoData.vence_manual || null }]);
   };
 
-  const TABS = ["Dashboard", "Ingresos", "Gastos", "Historial"];
+  
 
   // ── Render ──
   return (

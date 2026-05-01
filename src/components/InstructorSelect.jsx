@@ -106,7 +106,7 @@ export default function InstructorSelect({
 
       {/* Trigger */}
       <div
-        role="combobox"
+        role="combobox" aria-controls="listbox" aria-expanded="false"
         aria-expanded={open}
         aria-haspopup="listbox"
         tabIndex={0}

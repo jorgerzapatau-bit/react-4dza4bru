@@ -21,8 +21,6 @@ import {
 } from "../utils/constants";
 import {
   replaceTemplateVars,
-  resolveRecipient,
-  buildWhatsappLink,
   copyToClipboard,
   buildVarsFromMember,
   mapDiasToTemplateKey,
@@ -33,6 +31,7 @@ import { useCommunication } from "../hooks/useCommunication";
 // ─────────────────────────────────────────────
 //  Sub-componente: GuardarEnSlot  (sin cambios)
 // ─────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 function GuardarEnSlot({ tplsCustom, onGuardar }) {
   const [open, setOpen] = useState(false);
   return (

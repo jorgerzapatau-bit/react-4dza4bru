@@ -39,7 +39,7 @@ export default function FinanzasScreen({
     <div style={{ display: "flex", flexDirection: "column" }}>
 
       {/* ── Header sticky ── */}
-      <div style={{ flexShrink: 0, padding: "16px 28px 0", borderBottom: "1px solid var(--border)", position: "sticky", top: 0, background: "var(--bg-base)", borderBottom: "1px solid var(--border)", zIndex: 50 }}>
+      <div style={{ flexShrink: 0, padding: "16px 28px 0",  position: "sticky", top: 0, background: "var(--bg-base)", borderBottom: "1px solid var(--border)", zIndex: 50 }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%" }}>
 
           {/* Fecha + hora + acciones mobile */}

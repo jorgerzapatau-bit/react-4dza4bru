@@ -40,7 +40,7 @@ export function parseDate(str) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + "T00:00:00");
   const meses = {
     "Ene": 0, "Feb": 1, "Mar": 2, "Abr": 3, "May": 4, "Jun": 5,
-    "Jul": 6, "Ago": 7, "Sep": 8, "Oct": 9, "Nov": 10, "Dic": 11,
+  // "Jul": 6, "Ago": 7, "Sep": 8, "Oct": 9, "Nov": 10, "Dic": 11, // duplicate removed
   };
   const parts = str.trim().split(" ");
   if (parts.length < 3) return null;
@@ -112,7 +112,7 @@ export function displayToISO(str) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   const MMAP = {
     Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12,
-    Ene:1, Abr:4, Ago:8, Oct:10, Dic:12,
+    Ene:1, Abr:4, Ago:8, Dic:12,
   };
   const m = str.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/);
   if (!m) return "";

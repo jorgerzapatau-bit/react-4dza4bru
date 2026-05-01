@@ -2,7 +2,7 @@
 // ─── Lógica de membresías, WA y cálculo de vencimiento ────────────────────
 
 import { parseDate, diasParaVencer, fmtDate } from "./dateUtils";
-import { DEFAULT_PLANES, PLAN_MESES } from "./constants";
+import { PLAN_MESES } from "./constants";
 
 // ─── Template por defecto de recordatorio WA ──────────────────────────────
 const DEFAULT_RECORDATORIO_TPL = `Estimado/a {nombre}:

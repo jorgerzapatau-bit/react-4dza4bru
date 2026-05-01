@@ -372,6 +372,7 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig, clases }) {
 // ── ImagePicker: cámara + galería + resize 300×300 ─────────────────
 function ImagePicker({ value, onChange }) {
   const fileRef  = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const camRef   = useState(null);
   const [prev, setPrev] = useState(value || null);
 

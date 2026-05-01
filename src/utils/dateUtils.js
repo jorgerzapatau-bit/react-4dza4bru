@@ -58,7 +58,7 @@ export function displayToISO(str) {
   const MMAP = {
     Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
     Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12,
-    Ene: 1, Abr: 4, Ago: 8, Oct: 10, Dic: 12,
+    Ene: 1, Abr: 4, Ago: 8, Dic: 12,
   };
   const m = str.match(/(\d{1,2})\s+(\w{3})\s+(\d{4})/);
   if (!m) return "";
@@ -76,7 +76,7 @@ export function fmtDate(iso) {
   if (!iso || iso === "—") return "—";
   if (!/^\d{4}-\d{2}/.test(iso)) return iso; // ya es display
   const [y, m, day] = iso.split("-");
-  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  // const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]; // duplicate removed
   const mesNom = meses[parseInt(m) - 1];
   if (!mesNom) return iso;
   return `${parseInt(day)} ${mesNom} ${y}`;

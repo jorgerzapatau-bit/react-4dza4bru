@@ -1,7 +1,7 @@
 // src/modals/EditTxModal.jsx
 import { useState } from "react";
 import { Modal, Btn, Inp } from "../components/UI";
-import { CAT_GAS, CAT_ING, getCatIng, getCatGas } from "../utils/constants";
+import { getCatIng, getCatGas } from "../utils/constants";
 import { parseDate, displayToISO, fmtDate } from "../utils/dateUtils";
 
 /* ─── EDIT TRANSACTION MODAL ─── */

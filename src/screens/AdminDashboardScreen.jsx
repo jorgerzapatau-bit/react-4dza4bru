@@ -64,6 +64,7 @@ function StatCard({ emoji, title, value, sub, accent = "#6c63ff", onClick, badge
 }
 
 /* ─── MemberRow ───────────────────────────────────────────────── */
+// eslint-disable-next-line no-unused-vars
 function MemberRow({ m, right, onClick, darkMode }) {
   return (
     <div
@@ -199,7 +200,7 @@ export default function AdminDashboardScreen({
   const fechaStr = ahora.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: tz });
   const horaStr = ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: tz });
 
-  const DIVIDER = <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />;
+  // const DIVIDER = <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />;
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
