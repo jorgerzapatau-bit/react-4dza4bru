@@ -16,8 +16,22 @@
   },
   "devDependencies": {
     "@prisma/client": "^7.7.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "prisma": "^7.7.0",
     "react-scripts": "latest"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "plugins": [
+      "react-hooks"
+    ],
+    "rules": {
+      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/rules-of-hooks": "error"
+    }
   },
   "overrides": {
     "typescript": "^4.9.5"
