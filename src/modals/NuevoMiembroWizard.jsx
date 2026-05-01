@@ -17,12 +17,14 @@ function fmt$(n) {
   return "$" + Number(n || 0).toLocaleString("es-MX");
 }
 
+// eslint-disable-next-line no-unused-vars
 function _fmtDateLong(isoStr) {
   if (!isoStr) return "—";
   const d = new Date(isoStr + "T00:00:00");
   return d.toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 }
 
+// eslint-disable-next-line no-unused-vars
 function _fmtDateMed(isoStr) {
   if (!isoStr) return "—";
   const d = new Date(isoStr + "T00:00:00");
@@ -39,6 +41,7 @@ function fmtDateShort(isoStr) {
 }
 
 // ── Carga jsPDF dinámicamente ──────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 function _cargarScript(src) {
   return new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
@@ -49,6 +52,7 @@ function _cargarScript(src) {
 }
 
 // ── Genera el comprobante como PNG data-URL usando canvas ────────
+// eslint-disable-next-line no-unused-vars
 async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, formaPago, venceISO }) {
   const gym = gymConfig || {};
   const nombre   = gym.nombre   || "GymFit Pro";
@@ -1283,7 +1287,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
   const fechaInicio = fM.fecha_incorporacion || todayISO();
   const esPorTransferencia = fM.formaPago === "Transferencia";
 
-  const _genComprobante = async () => {
+  const _genComprobante = async () => { // eslint-disable-line no-unused-vars
     setGenerandoComp(true);
     try {
       const png = await generarComprobantePagoPNG({

@@ -120,7 +120,7 @@ function CustomSelect({ value, onChange }) {
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <div
-        role="combobox" aria-controls="listbox" aria-expanded="false"
+        role="combobox" aria-controls="listbox"
         aria-expanded={open}
         aria-haspopup="listbox"
         tabIndex={0}

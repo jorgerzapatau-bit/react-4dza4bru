@@ -91,8 +91,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     tutor_telefono: "",
     tutor_parentesco: "",
   }));
-  const [_fMTutorErrores, setFMTutorErrores] = useState({});
-  const [_showFotoModal, setShowFotoModal] = useState(false);
+  const [_fMTutorErrores, setFMTutorErrores] = useState({}); // eslint-disable-line no-unused-vars
+  const [_showFotoModal, setShowFotoModal] = useState(false); // eslint-disable-line no-unused-vars
 
   useEffect(() => { const t = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(t); }, []);
 
@@ -112,9 +112,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const isDojo = getIsDojo(gymConfig);
   const CAT_ING_ACTIVO = getCatIng(gymConfig);
   const CAT_GAS_ACTIVO = getCatGas(gymConfig);
-  const _CAT_ICON_ACTIVO = getCatIcon(gymConfig);
+  const _CAT_ICON_ACTIVO = getCatIcon(gymConfig); // eslint-disable-line no-unused-vars
   // Término singular configurable (Alumno / Miembro)
-  const _terminoSingular = (gymConfig?.termino_miembros || (isDojo ? "Alumnos" : "Miembros")).replace(/s$/, "");
+  const _terminoSingular = (gymConfig?.termino_miembros || (isDojo ? "Alumnos" : "Miembros")).replace(/s$/, ""); // eslint-disable-line no-unused-vars
 
   const nowForCurr = new Date();
   const isCurrentMonth = selMes.year === nowForCurr.getFullYear() && selMes.month === nowForCurr.getMonth();
@@ -279,7 +279,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     setFG({ cat: "Nómina", desc: "", monto: "", fecha: todayISO() }); setModal(null); setScreen("dashboard"); setTab(0);
   };
 
-  const _fMEsMenor = esMenorDeEdad(fM.fecha_nacimiento);
+  const _fMEsMenor = esMenorDeEdad(fM.fecha_nacimiento); // eslint-disable-line no-unused-vars
 
   const addM = async (wizardFM) => {
     // wizardFM viene del wizard; si no, usa el estado fM (legado)
@@ -399,7 +399,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     return savedM;
   };
 
-  const _archiveMiembro = async (id) => {
+  const _archiveMiembro = async (id) => { // eslint-disable-line no-unused-vars
     const mDb = await supabase.from("miembros");
     await mDb.update(id, { archivado: true });
     setMiembros(p => p.filter(m => m.id !== id));

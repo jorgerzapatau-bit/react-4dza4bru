@@ -449,7 +449,7 @@ function EntradaPendiente({ entry, onMarcarEnviado, onEliminar, onEdit }) {
       <div style={{ display: "flex", gap: 8 }}>
         {entry.tel ? (
           <button onClick={enviarWA} style={{
-            flex: 2, padding: "11px", border: "none", borderRadius: 12,
+            flex: 2, padding: "11px", borderRadius: 12,
             cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
             background: entry.enviado ? "rgba(37,211,102,.12)" : "linear-gradient(135deg,#25d366,#128c7e)",
             color: entry.enviado ? "#4ade80" : "#fff",
@@ -560,7 +560,7 @@ export default function MensajesScreen({
 
   // ── Hook de comunicación ──
   const {
-    templates,
+    templates: _templates, // eslint-disable-line no-unused-vars
     automations,
     loading: commLoading,
     dbAvailable,

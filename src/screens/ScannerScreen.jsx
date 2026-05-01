@@ -406,7 +406,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
             </button>
           ) : (
             <button onClick={stopCamera} style={{
-              width: "100%", padding: "13px", border: "none", borderRadius: 14, cursor: "pointer",
+              width: "100%", padding: "13px", borderRadius: 14, cursor: "pointer",
               background: "rgba(244,63,94,.1)", color: "#f43f5e", border: "1px solid rgba(244,63,94,.3)",
               fontWeight: 700, fontSize: 14, fontFamily: "inherit",
             }}>

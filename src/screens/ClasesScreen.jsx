@@ -11,9 +11,8 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "../supabase";
-import { todayISO, fmtDate, calcEdad } from "../utils/dateUtils";
+import { fmtDate, calcEdad } from "../utils/dateUtils";
 import { getMembershipInfo } from "../utils/membershipUtils";
-import { Modal, Btn } from "../components/UI";
 import NuevaClaseWizard from "../modals/NuevaClaseWizard";
 
 const DIAS = [

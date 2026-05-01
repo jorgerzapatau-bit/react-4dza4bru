@@ -1,7 +1,7 @@
 // src/utils/membershipUtils.js
 // ─── Lógica de membresías, WA y cálculo de vencimiento ────────────────────
 
-import { parseDate, diasParaVencer, fmtDate } from "./dateUtils";
+import { parseDate, diasParaVencer } from "./dateUtils";
 import { PLAN_MESES } from "./constants";
 
 // ─── Template por defecto de recordatorio WA ──────────────────────────────

@@ -9,7 +9,7 @@
 
 import { useState } from "react";
 import { DEFAULT_PLANES } from "../utils/constants";
-import { Btn, Inp, Badge } from "../components/UI";
+import { Btn, Inp } from "../components/UI";
 import { supabase } from "../supabase";
 
 const chipStyle = (active, color = "#6c63ff") => ({

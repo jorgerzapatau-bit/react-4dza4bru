@@ -14,7 +14,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabase";
 import PhotoModal from "../components/PhotoModal";
-import { todayISO } from "../utils/dateUtils";
 
 // ── Helpers ───────────────────────────────────────────────────────
 function iniciales(nombre) {
