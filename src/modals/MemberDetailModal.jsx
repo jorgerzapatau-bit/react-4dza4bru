@@ -416,6 +416,61 @@ export default function MemberDetailModal({
     setRenovarModal(false);
   };
 
+  // ── Confirmar pago de transferencia pendiente ──────────────────
+  const isPagoPendiente = m.estado === "Pendiente";
+  const [confirmandoPago, setConfirmandoPago] = useState(false);
+  const [confirmarModal, setConfirmarModal] = useState(false);
+  const [confirmarDatos, setConfirmarDatos] = useState({
+    monto: m.monto_pendiente || "",
+    plan:  m.plan_pendiente  || "",
+    fecha: todayISO(),
+    formaPago: "Transferencia",
+  });
+
+  const handleConfirmarPago = async () => {
+    if (confirmandoPago) return;
+    setConfirmandoPago(true);
+    try {
+      const monto    = Number(confirmarDatos.monto) || 0;
+      const plan     = confirmarDatos.plan  || "Membresía";
+      const fechaISO = confirmarDatos.fecha || todayISO();
+
+      // 1. Calcular vencimiento
+      const CICLO_MESES = { mensual:1, trimestral:3, semestral:6, anual:12 };
+      const mesesPlan = { Mensual:1, Trimestral:3, Semestral:6, Anual:12 };
+      const meses = CICLO_MESES[plan.toLowerCase()] || mesesPlan[plan] || 1;
+      const [y, mo, d] = fechaISO.split("-").map(Number);
+      const vD = new Date(y, mo - 1 + meses, d);
+      const venceISO = `${vD.getFullYear()}-${String(vD.getMonth()+1).padStart(2,"0")}-${String(vD.getDate()).padStart(2,"0")}`;
+
+      // 2. Generar qr_token si no tiene
+      const qrToken = m.qr_token || ("DZ-" + Math.random().toString(36).toUpperCase().slice(2,6) + Math.random().toString(36).toUpperCase().slice(2,4));
+
+      // 3. Registrar transacción de membresía
+      const descTx = `Renovación ${plan} - ${m.nombre} [Transferencia] (vence:${venceISO})`;
+      await onAddPago({
+        id: uid(),
+        tipo: "ingreso",
+        categoria: "Membresías",
+        desc: descTx,
+        descripcion: descTx,
+        monto,
+        fecha: fechaISO,
+        miembroId: m.id,
+        vence_manual: venceISO,
+      });
+
+      // 4. Actualizar estado del miembro a Activo + guardar qr_token
+      const updated = { ...m, estado: "Activo", qr_token: qrToken };
+      await onSave(updated);
+      if (onMemberUpdate) onMemberUpdate(updated);
+
+      setConfirmarModal(false);
+    } finally {
+      setConfirmandoPago(false);
+    }
+  };
+
   const diasRestantes = diasParaVencer(memInfo.vence);
   const waUmbral =
     diasRestantes !== null && diasRestantes <= 5 && diasRestantes >= 0
@@ -432,6 +487,67 @@ export default function MemberDetailModal({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, background: "var(--bg-main)", overflow: "hidden" }}>
+
+      {/* ══ MODAL: Confirmar pago de transferencia ══ */}
+      {confirmarModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.88)", backdropFilter:"blur(10px)", zIndex:400, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+          <div style={{ background:"var(--bg-card)", borderRadius:24, padding:24, width:"100%", maxWidth:360, border:"1px solid rgba(251,191,36,.3)" }}>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <p style={{ fontSize:40, marginBottom:8 }}>✅</p>
+              <h3 style={{ color:"#fbbf24", fontSize:16, fontWeight:700 }}>Confirmar pago recibido</h3>
+              <p style={{ color:"#8b949e", fontSize:12, marginTop:6, lineHeight:1.5 }}>
+                Al confirmar, el alumno quedará <strong style={{ color:"#4ade80" }}>Activo</strong> y su ID Digital se activará.
+              </p>
+            </div>
+
+            {/* Monto */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Monto recibido ($)</label>
+              <input
+                type="number" value={confirmarDatos.monto} inputMode="numeric"
+                onChange={e => setConfirmarDatos(p => ({...p, monto: e.target.value}))}
+                placeholder="0"
+                style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"12px 14px", color:"var(--text-primary)", fontSize:15, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }}
+              />
+            </div>
+
+            {/* Plan */}
+            <div style={{ marginBottom:12 }}>
+              <label style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Plan / Clase</label>
+              <input
+                type="text" value={confirmarDatos.plan}
+                onChange={e => setConfirmarDatos(p => ({...p, plan: e.target.value}))}
+                placeholder="Ej: Karate Adultos"
+                style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"12px 14px", color:"var(--text-primary)", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+              />
+            </div>
+
+            {/* Fecha */}
+            <div style={{ marginBottom:20 }}>
+              <label style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Fecha de pago</label>
+              <input
+                type="date" value={confirmarDatos.fecha}
+                onChange={e => setConfirmarDatos(p => ({...p, fecha: e.target.value}))}
+                style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"12px 14px", color:"var(--text-primary)", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+              />
+            </div>
+
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => setConfirmarModal(false)}
+                style={{ flex:1, padding:"13px", borderRadius:14, background:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-secondary)", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                Cancelar
+              </button>
+              <button onClick={handleConfirmarPago} disabled={confirmandoPago || !confirmarDatos.monto}
+                style={{ flex:2, padding:"13px", borderRadius:14, border:"none",
+                  background: confirmandoPago ? "rgba(74,222,128,.3)" : "linear-gradient(135deg,#22c55e,#4ade80)",
+                  color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit",
+                  boxShadow:"0 4px 14px rgba(74,222,128,.35)", opacity: !confirmarDatos.monto ? 0.5 : 1 }}>
+                {confirmandoPago ? "⏳ Guardando..." : "✅ Confirmar pago"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Header ── */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 20px", borderBottom: "1px solid var(--border)", background: "var(--bg-card)", flexShrink: 0 }}>
         <button onClick={onClose} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "var(--text-primary)", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "inherit" }}>←</button>
@@ -441,7 +557,7 @@ export default function MemberDetailModal({
           </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{m.nombre}</p>
-            <p style={{ color: "#8b949e", fontSize: 11, margin: 0 }}>{gymConfig?.termino_miembros?.replace(/s$/,"") || "Miembro"} · {memInfo.estado}</p>
+            <p style={{ color: "#8b949e", fontSize: 11, margin: 0 }}>{gymConfig?.termino_miembros?.replace(/s$/,"") || "Miembro"} · {isPagoPendiente ? "⏳ Pago pendiente" : memInfo.estado}</p>
           </div>
           {m.beca && <span style={{ background: "rgba(251,191,36,.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "2px 10px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>🎓 BECA</span>}
         </div>
@@ -920,7 +1036,9 @@ export default function MemberDetailModal({
           <div
             style={{
               width: 96, height: 96, borderRadius: "50%",
-              background: m.estado === "Activo"
+              background: isPagoPendiente
+                ? "linear-gradient(135deg,#f59e0b,#fbbf24)"
+                : m.estado === "Activo"
                 ? "linear-gradient(135deg,#6c63ff,#e040fb)"
                 : "linear-gradient(135deg,#f43f5e,#fb923c)",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -952,22 +1070,28 @@ export default function MemberDetailModal({
           <span
             style={{
               background:
-                memInfo.estado === "Activo" ? "rgba(74,222,128,.15)"
+                isPagoPendiente ? "rgba(251,191,36,.15)"
+                : memInfo.estado === "Activo" ? "rgba(74,222,128,.15)"
                 : memInfo.estado === "Congelado" ? "rgba(96,165,250,.15)"
                 : memInfo.estado === "Sin membresía" ? "rgba(107,114,128,.15)"
                 : "rgba(248,113,113,.15)",
               color:
-                memInfo.estado === "Activo" ? "#4ade80"
+                isPagoPendiente ? "#fbbf24"
+                : memInfo.estado === "Activo" ? "#4ade80"
                 : memInfo.estado === "Congelado" ? "#60a5fa"
                 : memInfo.estado === "Sin membresía" ? "#8b949e"
                 : "#f87171",
               borderRadius: 10, padding: "4px 14px", fontSize: 12, fontWeight: 700,
             }}
           >
-            {memInfo.estado === "Congelado" ? "🧊 Congelado" : memInfo.estado}
+            {isPagoPendiente ? "⏳ Pago pendiente"
+              : memInfo.estado === "Congelado" ? "🧊 Congelado"
+              : memInfo.estado}
           </span>
           <span style={{ color: "#8b949e", fontSize: 11, fontWeight: 500 }}>
-            {memInfo.estado === "Congelado"
+            {isPagoPendiente
+              ? "Transferencia por confirmar"
+              : memInfo.estado === "Congelado"
               ? `🧊 Congelado — vence ${fmtDate(memInfo.vence)}`
               : memInfo.estado === "Activo"
               ? `Activo hasta ${fmtDate(memInfo.vence)}`
@@ -1383,6 +1507,39 @@ export default function MemberDetailModal({
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Membresía actual
               </p>
+
+              {/* ── Banner: Pago Pendiente ── */}
+              {isPagoPendiente && (
+                <div style={{
+                  background:"rgba(251,191,36,.08)", border:"1.5px solid rgba(251,191,36,.35)",
+                  borderRadius:16, padding:"16px", marginBottom:14,
+                }}>
+                  <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:14 }}>
+                    <span style={{ fontSize:28, flexShrink:0 }}>⏳</span>
+                    <div>
+                      <p style={{ color:"#fbbf24", fontWeight:700, fontSize:14 }}>Pago por transferencia pendiente</p>
+                      <p style={{ color:"rgba(251,191,36,.75)", fontSize:12, marginTop:4, lineHeight:1.5 }}>
+                        Este alumno se registró pero aún no se ha confirmado la recepción de su transferencia bancaria. Confirma el pago para activar su membresía y su ID Digital.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setConfirmarDatos({ monto:"", plan:"", fecha:todayISO(), formaPago:"Transferencia" });
+                      setConfirmarModal(true);
+                    }}
+                    style={{
+                      width:"100%", padding:"13px", borderRadius:12, border:"none",
+                      background:"linear-gradient(135deg,#22c55e,#4ade80)",
+                      color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit",
+                      boxShadow:"0 4px 14px rgba(74,222,128,.35)",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+                    }}
+                  >
+                    ✅ Confirmar pago recibido
+                  </button>
+                </div>
+              )}
 
               {memInfo.congelado && (
                 <div style={{ background: "rgba(96,165,250,.1)", border: "1px solid rgba(96,165,250,.3)", borderRadius: 14, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
