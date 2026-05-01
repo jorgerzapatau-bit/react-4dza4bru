@@ -294,6 +294,10 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     }
     setFMTutorErrores({});
 
+    // ── Estado inicial: Pendiente si pago por transferencia ──
+    const estadoInicial = data.estado || (data.pago_pendiente ? "Pendiente" : "Activo");
+    const qrToken       = data.qr_token || null;
+
     const mDb = await supabase.from("miembros");
     const savedM = await mDb.insert({
       gym_id: GYM_ID,
@@ -304,6 +308,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
       sexo: data.sexo || null,
       fecha_nacimiento: data.fecha_nacimiento || null,
       notas: data.notas || null,
+      estado: estadoInicial,
+      qr_token: qrToken,
       tutor_nombre:     esMenor ? (data.tutor_nombre || null)     : null,
       tutor_telefono:   esMenor ? (data.tutor_telefono || null)   : null,
       tutor_parentesco: esMenor ? (data.tutor_parentesco || null) : null,
@@ -322,14 +328,16 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         fecha_descongelar: null,
         dias_congelados: 0,
         beca: data.beca || false,
+        estado: estadoInicial,
+        qr_token: qrToken,
         tutor_nombre:     esMenor ? (data.tutor_nombre || null) : null,
         tutor_telefono:   esMenor ? (data.tutor_telefono || null) : null,
         tutor_parentesco: esMenor ? (data.tutor_parentesco || null) : null,
       }, ...p]);
-      // ── Registrar membresía inicial si se eligió un plan ──
-      if (data.plan) {
+
+      // ── Registrar membresía inicial si se eligió un plan y NO es pendiente ──
+      if (data.plan && estadoInicial !== "Pendiente") {
         const fechaInicio = data.fecha_incorporacion || todayISO();
-        // Support both DEFAULT_PLANES (by name) and planesMembresia (by ciclo_renovacion)
         const CICLO_MESES_GM = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
         const planObj3 = data.planData;
         let venceISO = null;
@@ -358,6 +366,10 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           fecha: fechaInicio, miembroId: savedM.id,
         }, ...p]);
       }
+
+      // ── Si es Pendiente: guardar los datos del plan para cuando confirmen ──
+      // (la transacción se registrará al confirmar el pago desde el perfil)
+
       if (data.clasePrueba) {
         const tDb = await supabase.from("transacciones");
         const fechaPrueba = data.fechaPrueba || todayISO();
@@ -379,6 +391,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         setModal("detalle");
       }
     }
+    // Devolver savedM para que el wizard pueda usar el qr_token real
+    return savedM;
   };
 
   const archiveMiembro = async (id) => {
@@ -738,17 +752,12 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onClose={() => { setModal(null); setFM({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: todayISO(), notas: "", tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "", plan: null, monto: null, formaPago: null }); }}
             onAdd={async (wizardFM, receiptInfo) => {
               setFM(wizardFM);
-              await addM(wizardFM);
-              setModal(null);
-              // Always add QR welcome message; add membership WA if present
-              {
+              const savedM = await addM(wizardFM);
+              // El wizard maneja su propio cierre (paso 4 o cierre directo en pendiente)
+              // Solo agregar WA queue si pago fue confirmado (no pendiente)
+              if (!wizardFM.pago_pendiente) {
                 const gym_nombreQ = (gymConfig?.nombre || "el gym");
                 const nombre1Q = (receiptInfo?.nombreMiembro || wizardFM.nombre || "").split(" ")[0];
-                const msgQRonly = `¡Hola ${nombre1Q}! 🎫 Bienvenido/a a *${gym_nombreQ}*.
-
-Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu asistencia.
-
-¡Nos alegra tenerte con nosotros! 💪`;
                 const isMenorQ = wizardFM.fecha_nacimiento && (() => {
                   const n = new Date(wizardFM.fecha_nacimiento + "T00:00:00");
                   const h = new Date();
@@ -757,75 +766,31 @@ Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu
                   return eq < 18;
                 })();
                 const telQ = (isMenorQ && wizardFM.tutor_telefono) ? wizardFM.tutor_telefono : (wizardFM.tel || "");
-                const entryQRonly = {
-                  id: Date.now().toString(),
-                  fechaCreacion: new Date().toISOString(),
-                  nombreMiembro: receiptInfo?.nombreMiembro || wizardFM.nombre,
-                  tel: telQ,
-                  msg: msgQRonly,
-                  tipo: "qr_bienvenida",
-                  enviado: false,
-                  qrPNG: receiptInfo?.qrPNG || null,
-                };
-                setWaQueue(prev => {
-                  const next = [entryQRonly, ...prev];
-                  try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
-                  return next;
-                });
+                if (receiptInfo?.waMsg && receiptInfo?.tel) {
+                  const entry = {
+                    id: Date.now().toString(),
+                    fechaCreacion: new Date().toISOString(),
+                    nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
+                    tel: receiptInfo.tel,
+                    msg: receiptInfo.waMsg,
+                    plan: receiptInfo.plan,
+                    monto: receiptInfo.monto,
+                    formaPago: receiptInfo.formaPago,
+                    venceISO: receiptInfo.venceISO,
+                    comprobantePNG: receiptInfo.comprobantePNG || null,
+                    enviado: false,
+                    tipo: "nuevo_miembro",
+                  };
+                  setWaQueue(prev => {
+                    const next = [entry, ...prev];
+                    try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
+                    return next;
+                  });
+                }
               }
-
-              if (receiptInfo?.waMsg && receiptInfo?.tel) {
-                const entry = {
-                  id: Date.now().toString(),
-                  fechaCreacion: new Date().toISOString(),
-                  nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
-                  tel: receiptInfo.tel,
-                  msg: receiptInfo.waMsg,
-                  plan: receiptInfo.plan,
-                  monto: receiptInfo.monto,
-                  formaPago: receiptInfo.formaPago,
-                  venceISO: receiptInfo.venceISO,
-                  comprobantePNG: receiptInfo.comprobantePNG || null,
-                  enviado: false,
-                  tipo: "nuevo_miembro",
-                };
-                // Also add QR welcome message
-                const gym_nombre2 = (gymConfig?.nombre || "el gym");
-                const nombre1_2 = (receiptInfo.nombreMiembro || wizardFM.nombre || "").split(" ")[0];
-                const msgQR = `¡Hola ${nombre1_2}! 🎫 Bienvenido/a a *${gym_nombre2}*.
-
-Te enviamos tu código QR de acceso. Preséntalo en recepción para registrar tu asistencia.
-
-¡Nos alegra tenerte con nosotros! 💪`;
-                const telQR = (wizardFM.fecha_nacimiento && (() => {
-                  const n = new Date(wizardFM.fecha_nacimiento + "T00:00:00");
-                  const h = new Date();
-                  let e2 = h.getFullYear() - n.getFullYear();
-                  if (h.getMonth() - n.getMonth() < 0 || (h.getMonth() - n.getMonth() === 0 && h.getDate() < n.getDate())) e2--;
-                  return e2 < 18;
-                })() && wizardFM.tutor_telefono) ? wizardFM.tutor_telefono : (wizardFM.tel || "");
-
-                const entryQR = {
-                  id: (Date.now() + 1).toString(),
-                  fechaCreacion: new Date().toISOString(),
-                  nombreMiembro: receiptInfo.nombreMiembro || wizardFM.nombre,
-                  tel: telQR,
-                  msg: msgQR,
-                  tipo: "qr_bienvenida",
-                  enviado: false,
-                };
-
-                setWaQueue(prev => {
-                  const next = [entryQR, entry, ...prev];
-                  try { localStorage.setItem(WA_QUEUE_KEY, JSON.stringify(next)); } catch(e) {}
-                  return next;
-                });
-              }
-              // Navigate to dashboard so "Últimos movimientos" shows immediately with the new tx
-              setTimeout(() => {
-                setScreen("dashboard");
-                setTab(0);
-              }, 100);
+              // Navegar al dashboard para mostrar el nuevo movimiento
+              setTimeout(() => { setScreen("dashboard"); setTab(0); }, 200);
+              return savedM;
             }}
             gymConfig={gymConfig}
             gymId={GYM_ID}
