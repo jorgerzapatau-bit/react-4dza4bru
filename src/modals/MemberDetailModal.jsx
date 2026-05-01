@@ -1,15 +1,6 @@
 // src/modals/MemberDetailModal.jsx
 import { useState, useEffect, useMemo } from "react";
 import MemberQRTab from "./MemberQRTab";
-const useIsDesktop = () => {
-  const [ok, setOk] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : false);
-  useEffect(() => {
-    const h = () => setOk(window.innerWidth >= 768);
-    window.addEventListener("resize", h);
-    return () => window.removeEventListener("resize", h);
-  }, []);
-  return ok;
-};
 import { Modal, Btn, Inp } from "../components/UI";
 import PhotoModal from "../components/PhotoModal";
 import { CAT_ICON } from "../utils/constants";
@@ -31,6 +22,16 @@ import {
 import { uid } from "../utils/helpers";
 import { esMenorDeEdad, validarTutor } from "../utils/tutorUtils";
 import TutorFields from "../components/TutorFields";
+
+const useIsDesktop = () => {
+  const [ok, setOk] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : false);
+  useEffect(() => {
+    const h = () => setOk(window.innerWidth >= 768);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, []);
+  return ok;
+};
 
 // ── Helpers de formato ──────────────────────────────────────────
 function fmt$(n) { return "$" + Number(n || 0).toLocaleString("es-MX"); }
