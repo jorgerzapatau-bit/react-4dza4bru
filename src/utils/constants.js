@@ -184,8 +184,11 @@ export function getMembershipInfo(miembroId, txs, miembro) {
   const ultima    = memTxs[0];
   const descStr   = ultima.desc || ultima.descripcion || "";
   const esGratis  = descStr.includes("Cortesía") || Number(ultima.monto) === 0;
-  const planMatch = descStr.match(/Renovación (\w+)/) || descStr.match(/(Mensual|Trimestral|Semestral|Anual)/);
-  const plan      = planMatch ? planMatch[1] : "Mensual";
+  const planMatch =
+    descStr.match(/Renovaci[oó]n ([^-[]+?)(?:\s+-|\s+\[)/) ||
+    descStr.match(/Renovaci[oó]n ([\w][\w\s]*)/) ||
+    descStr.match(/(Mensual|Trimestral|Semestral|Anual)/);
+  const plan = planMatch ? planMatch[1].trim() : null;
   const MESES_N   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const diasCongelados = miembro?.dias_congelados || 0;
 
