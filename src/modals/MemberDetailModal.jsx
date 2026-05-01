@@ -1414,7 +1414,7 @@ export default function MemberDetailModal({
           ? notas.match(/(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i)?.[1] || null
           : null;
         const diasFallback = !diasStr
-          ? (notas.match(/(?:plan[:\s]+)([A-ZÁÉÍÓÚ\/]+)/i)?.[1] || notas.match(/\b(MAR|LUN|MIÉ|JUE|VIE|SÁB|DOM)(?:\/[A-ZÁÉÍÓÚ]+)*/i)?.[0] || null)
+          ? (notas.match(/(?:plan[:\s]+)([A-ZÁÉÍÓÚ/]+)/i)?.[1] || notas.match(/\b(MAR|LUN|MIÉ|JUE|VIE|SÁB|DOM)(?:\/[A-ZÁÉÍÓÚ]+)*/i)?.[0] || null)
           : null;
 
         const horarioFinal = horarioStr || horarioFallback;
