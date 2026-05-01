@@ -1437,12 +1437,6 @@ export default function MemberDetailModal({
           : esVencido   ? "#f87171"
           : "var(--text-tertiary,#6b7280)";
 
-        const estadoColor = isPagoPendiente ? "#fbbf24"
-          : esActivo    ? "#4ade80"
-          : esCongelado ? "#60a5fa"
-          : esVencido   ? "#f87171"
-          : "var(--text-tertiary,#6b7280)";
-
         const estadoLabel = isPagoPendiente ? "⏳ Pago pendiente"
           : esCongelado ? "🧊 Congelado"
           : esVencido   ? "⚠️ Vencido"
@@ -1527,41 +1521,54 @@ export default function MemberDetailModal({
                 {/* Chips fila 1: estado · plan · edad */}
                 <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
                   <span style={{
-                    background:`${estadoColor}1a`, color:estadoColor,
-                    border:`1px solid ${estadoColor}44`,
-                    borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:800,
+                    background: isPagoPendiente ? "rgba(245,158,11,.12)"
+                      : esActivo    ? "rgba(22,163,74,.12)"
+                      : esCongelado ? "rgba(37,99,235,.12)"
+                      : esVencido   ? "rgba(220,38,38,.12)"
+                      : "rgba(100,116,139,.12)",
+                    color: isPagoPendiente ? "#b45309"
+                      : esActivo    ? "#15803d"
+                      : esCongelado ? "#1d4ed8"
+                      : esVencido   ? "#b91c1c"
+                      : "var(--text-secondary,#475569)",
+                    border: "none",
+                    borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700,
                   }}>{estadoLabel}</span>
 
                   {claseFinal && (
                     <span style={{
-                      background:`${accentColor}15`, color:accentColor,
-                      border:`1px solid ${accentColor}35`,
-                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
-                    }}>🏷️ {claseFinal}</span>
+                      background: "rgba(37,99,235,.08)",
+                      color: "var(--brand-accent,#2563EB)",
+                      border: "1px solid rgba(37,99,235,.2)",
+                      borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
+                    }}>{claseFinal}</span>
                   )}
 
                   {esMenor && edad !== null && (
                     <span style={{
-                      background:"rgba(251,191,36,.12)", color:"#f59e0b",
-                      border:"1px solid rgba(251,191,36,.3)",
-                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
-                    }}>👶 {edad} años</span>
+                      background: "rgba(100,116,139,.08)",
+                      color: "var(--text-secondary,#475569)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
+                    }}>{edad} años</span>
                   )}
 
                   {gradoInfo && (
                     <span style={{
-                      background:`${gradoInfo.color}1a`, color: gradoInfo.color,
-                      border:`1px solid ${gradoInfo.color}40`,
-                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
+                      background: "rgba(100,116,139,.08)",
+                      color: "var(--text-secondary,#475569)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
                     }}>{gradoInfo.emoji} {m.grado_actual}</span>
                   )}
 
                   {m.beca && (
                     <span style={{
-                      background:"rgba(251,191,36,.12)", color:"#f59e0b",
-                      border:"1px solid rgba(251,191,36,.3)",
-                      borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700,
-                    }}>🎓 Beca</span>
+                      background: "rgba(245,158,11,.1)",
+                      color: "#b45309",
+                      border: "1px solid rgba(245,158,11,.25)",
+                      borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
+                    }}>Beca</span>
                   )}
                 </div>
 
@@ -1579,10 +1586,10 @@ export default function MemberDetailModal({
                       </span>
                     )}
                     {diasFinal && horarioFinal && (
-                      <span style={{ color:"var(--text-tertiary,#6b7280)", fontSize:10 }}>·</span>
+                      <span style={{ color:"var(--text-tertiary,#64748b)", fontSize:10 }}>·</span>
                     )}
                     {horarioFinal && (
-                      <span style={{ color:accentColor, fontSize:11, fontWeight:700 }}>
+                      <span style={{ color:"var(--brand-accent,#2563EB)", fontSize:11, fontWeight:600 }}>
                         {horarioFinal}
                       </span>
                     )}
@@ -1595,7 +1602,8 @@ export default function MemberDetailModal({
             {diasLabel && (
               <div style={{
                 display:"flex", alignItems:"center", justifyContent:"space-between",
-                background:`${diasColor}12`, border:`1px solid ${diasColor}30`,
+                background: diasR !== null && diasR <= 5 ? "rgba(220,38,38,.06)" : "rgba(37,99,235,.05)",
+                border: `1px solid ${diasR !== null && diasR <= 5 ? "rgba(220,38,38,.18)" : "rgba(37,99,235,.15)"}`,
                 borderRadius:10, padding:"8px 12px", marginBottom:10,
               }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -1603,31 +1611,45 @@ export default function MemberDetailModal({
                     {diasR !== null && diasR <= 0 ? "🔴" : diasR !== null && diasR <= 5 ? "🟠" : diasR !== null && diasR <= 15 ? "🟡" : "🟢"}
                   </span>
                   <div>
-                    <p style={{ color:"var(--text-tertiary,#6b7280)", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, margin:0 }}>Membresía</p>
-                    <p style={{ color:diasColor, fontSize:12, fontWeight:800, margin:0 }}>{diasLabel}</p>
+                    <p style={{ color:"var(--text-tertiary,#64748b)", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, margin:0 }}>Membresía</p>
+                    <p style={{ color:diasColor, fontSize:12, fontWeight:700, margin:0 }}>{diasLabel}</p>
                   </div>
                 </div>
                 <div style={{ textAlign:"right" }}>
-                  <p style={{ color:"var(--text-tertiary,#6b7280)", fontSize:9, margin:0 }}>Vence</p>
-                  <p style={{ color:"var(--text-primary)", fontSize:11, fontWeight:700, margin:0 }}>{fmtDate(memInfo.vence) || "—"}</p>
+                  <p style={{ color:"var(--text-tertiary,#64748b)", fontSize:9, margin:0 }}>Vence</p>
+                  <p style={{ color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:700, margin:0 }}>{fmtDate(memInfo.vence) || "—"}</p>
                 </div>
               </div>
             )}
 
-            {/* Mini-stats: Desde / Último pago / Forma de pago */}
+            {/* Mini-stats: Desde / Último pago (con fecha) / Forma de pago */}
             {memInfo.estado !== "Sin membresía" && (
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10 }}>
                 {[
-                  { icon:"📅", label:"Desde",        val: fmtDate(memInfo.inicio) || "—",                                     color:"var(--text-secondary,#a5b4fc)" },
-                  { icon:"💰", label:"Último pago",   val: memInfo.esGratis ? "🎁 Cortesía" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—"), color:"#4ade80" },
-                  { icon:"💳", label:"Pago",          val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transfer." : memInfo.formaPago === "Tarjeta" ? "💳 Tarjeta" : "—", color:"var(--text-secondary,#94a3b8)" },
+                  {
+                    label: "Desde",
+                    val: fmtDate(memInfo.inicio) || "—",
+                  },
+                  {
+                    label: `Último pago · ${fmtDate(memInfo.inicio) || "—"}`,
+                    val: memInfo.esGratis ? "Cortesía" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—"),
+                    highlight: true,
+                  },
+                  {
+                    label: "Forma de pago",
+                    val: memInfo.formaPago === "Efectivo" ? "Efectivo"
+                      : memInfo.formaPago === "Transferencia" ? "Transfer."
+                      : memInfo.formaPago === "Tarjeta" ? "Tarjeta"
+                      : "—",
+                  },
                 ].map((s,i) => (
                   <div key={i} style={{
-                    background:"var(--bg-elevated)", border:"1px solid var(--border)",
-                    borderRadius:10, padding:"7px 8px",
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 10, padding: "7px 8px",
                   }}>
-                    <p style={{ color:"var(--text-tertiary,#6b7280)", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.3, marginBottom:2 }}>{s.icon} {s.label}</p>
-                    <p style={{ color:s.color, fontSize:11, fontWeight:700, margin:0 }}>{s.val}</p>
+                    <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2, lineHeight: 1.3 }}>{s.label}</p>
+                    <p style={{ color: s.highlight ? "var(--text-primary,#0F172A)" : "var(--text-secondary,#475569)", fontSize: 11, fontWeight: s.highlight ? 800 : 600, margin: 0 }}>{s.val}</p>
                   </div>
                 ))}
               </div>
@@ -1637,30 +1659,29 @@ export default function MemberDetailModal({
             <div style={{ display:"flex", gap:8, marginBottom:8 }}>
               {m.tel && onGoToMensajes && (
                 <button onClick={() => onGoToMensajes(m)} style={{
-                  flex:1, padding:"9px 8px", border:"none", borderRadius:10,
-                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
-                  background:"linear-gradient(135deg,#25d366,#128c7e)",
-                  color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-                  boxShadow:"0 3px 10px rgba(37,211,102,.25)",
+                  flex:1, padding:"9px 8px", border:"none", borderRadius:8,
+                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600,
+                  background:"#25d366", color:"#fff",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
                 }}>
-                  💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "WA alumno"}
+                  💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "Mensaje WA"}
                 </button>
               )}
               {esMenor && tieneTutor && waNumTutor.length >= 10 && (
                 <button onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")} style={{
                   flex:1, padding:"9px 8px",
-                  border:"1px solid rgba(245,158,11,.4)", borderRadius:10,
-                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:700,
-                  background:"rgba(245,158,11,.1)", color:"#f59e0b",
+                  border:"1px solid var(--border)", borderRadius:8,
+                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600,
+                  background:"var(--bg-elevated)", color:"var(--text-primary,#0F172A)",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:5,
                 }}>👨‍👧 WA tutor</button>
               )}
               {esMenor && !tieneTutor && (
                 <button onClick={() => setEditing(true)} style={{
                   flex:1, padding:"9px 8px",
-                  border:"1px dashed rgba(244,63,94,.5)", borderRadius:10,
-                  cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:700,
-                  background:"rgba(244,63,94,.07)", color:"#f87171",
+                  border:"1px solid rgba(220,38,38,.3)", borderRadius:8,
+                  cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600,
+                  background:"rgba(220,38,38,.06)", color:"#b91c1c",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:5,
                 }}>⚠️ Registrar tutor</button>
               )}
@@ -1669,9 +1690,10 @@ export default function MemberDetailModal({
             {/* Acciones: Editar · Renovar · Cobrar · Congelar */}
             <div style={{ display:"flex", gap:6, paddingBottom:14 }}>
               <button onClick={() => setEditing(true)} style={{
-                flex:1, padding:"9px 4px", borderRadius:9,
-                border:"1px solid rgba(167,139,250,.4)", background:"rgba(167,139,250,.1)",
-                color:"#a78bfa", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                flex:1, padding:"9px 4px", borderRadius:8,
+                border:"1px solid var(--border)", background:"var(--bg-elevated)",
+                color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
+                cursor:"pointer", fontFamily:"inherit",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:4,
               }}>✏️ Editar</button>
               <button onClick={() => {
@@ -1681,23 +1703,25 @@ export default function MemberDetailModal({
                 setRenovar({ plan: memInfo.plan || defaultPlan, monto: String(memInfo.monto || (planPrecioActivo && planPrecioActivo[memInfo.plan || defaultPlan]) || defaultMonto || ""), inicio: sugerido, vence: calcVence(sugerido, memInfo.plan || defaultPlan), venceManual: false, formaPago: "Efectivo" });
                 setRenovarModal(true);
               }} style={{
-                flex:2, padding:"9px 4px", borderRadius:9,
-                border:"none", background:"linear-gradient(135deg,#22d3ee,#0891b2)",
-                color:"#fff", fontSize:11, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
+                flex:2, padding:"9px 4px", borderRadius:8,
+                border:"none", background:"var(--brand-accent,#2563EB)",
+                color:"#fff", fontSize:11, fontWeight:700,
+                cursor:"pointer", fontFamily:"inherit",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-                boxShadow:"0 3px 10px rgba(34,211,238,.25)",
               }}>🔄 Renovar</button>
               <button onClick={() => { setCobro({ tipo:"libre", desc:"", monto:"", fecha:todayISO(), formaPago:"Efectivo" }); setCobrarModal(true); }} style={{
-                flex:1, padding:"9px 4px", borderRadius:9,
-                border:"1px solid rgba(74,222,128,.4)", background:"rgba(74,222,128,.1)",
-                color:"#4ade80", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                flex:1, padding:"9px 4px", borderRadius:8,
+                border:"1px solid var(--border)", background:"var(--bg-elevated)",
+                color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
+                cursor:"pointer", fontFamily:"inherit",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:4,
               }}>💰 Cobrar</button>
               {memInfo.estado === "Activo" && !memInfo.congelado && (
                 <button onClick={() => setCongelarModal(true)} style={{
-                  flex:1, padding:"9px 4px", borderRadius:9,
-                  border:"1px solid rgba(96,165,250,.4)", background:"rgba(96,165,250,.1)",
-                  color:"#60a5fa", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+                  flex:1, padding:"9px 4px", borderRadius:8,
+                  border:"1px solid var(--border)", background:"var(--bg-elevated)",
+                  color:"var(--text-secondary,#475569)", fontSize:11, fontWeight:600,
+                  cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:4,
                 }}>🧊</button>
               )}
@@ -1708,19 +1732,22 @@ export default function MemberDetailModal({
 
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 0, padding: "6px 16px", borderBottom: "1px solid var(--border)", marginBottom: 0 }}>
-        {[{ k: "perfil", label: "📋 Perfil" }, { k: "historial", label: "💳 Historial" }, { k: "qr", label: "🔳 QR" }].map((t) => (
+      <div style={{ display: "flex", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+        {[
+          { k: "perfil",    label: "Perfil" },
+          { k: "historial", label: `Historial${historial.length > 0 ? ` (${historial.length})` : ""}` },
+          { k: "qr",        label: "QR" },
+        ].map((t) => (
           <button
             key={t.k}
             onClick={() => setDetTab(t.k)}
             style={{
-              flex: 1, padding: "9px 0", border: "none", borderRadius: 11, cursor: "pointer",
-              fontFamily: "inherit",
-              background: detTab === t.k ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "transparent",
-              color: detTab === t.k ? "#fff" : "#8b949e",
+              flex: 1, padding: "11px 0", border: "none", cursor: "pointer",
+              fontFamily: "inherit", background: "transparent",
+              color: detTab === t.k ? "var(--brand-accent,#2563EB)" : "var(--text-secondary,#475569)",
               fontSize: 12, fontWeight: detTab === t.k ? 700 : 500,
-              boxShadow: detTab === t.k ? "0 2px 12px rgba(108,99,255,.4)" : "none",
-              transition: "all .2s",
+              borderBottom: detTab === t.k ? "2px solid var(--brand-accent,#2563EB)" : "2px solid transparent",
+              transition: "all .15s",
             }}
           >
             {t.label}
@@ -2358,41 +2385,6 @@ export default function MemberDetailModal({
                 )}
               </div>
 
-              {/* ── 7. RESUMEN FINANCIERO ── */}
-              {(() => {
-                const inicioDate = memInfo.inicio ? parseDate(memInfo.inicio) : null;
-                const mesActivo = inicioDate
-                  ? historial.filter((t) => {
-                      const d = parseDate(t.fecha);
-                      return d && d.getFullYear() === inicioDate.getFullYear() && d.getMonth() === inicioDate.getMonth();
-                    })
-                  : historial;
-                const totalMes = mesActivo.filter((t) => t.tipo === "ingreso").reduce((s, t) => s + Number(t.monto), 0);
-                const MESES_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-                const mesLabel = inicioDate
-                  ? `${MESES_SHORT[inicioDate.getMonth()]} ${inicioDate.getFullYear()}`
-                  : "Este mes";
-                return (
-                  <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                    <div style={{ flex: 1, background: "rgba(34,211,238,.08)", border: "1px solid rgba(34,211,238,.15)", borderRadius: 14, padding: "12px 14px" }}>
-                      <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
-                        Pagado {mesLabel}
-                      </p>
-                      <p style={{ color: "#22d3ee", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginTop: 4 }}>
-                        ${totalMes.toLocaleString("es-MX")}
-                      </p>
-                    </div>
-                    <div style={{ flex: 1, background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "12px 14px" }}>
-                      <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
-                        Movimientos
-                      </p>
-                      <p style={{ color: "#a78bfa", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginTop: 4 }}>
-                        {historial.length}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
             </>
           )}
         </div>
