@@ -1190,3 +1190,687 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, ve
       ctx.textAlign = "right"; ctx.fillText(row.value, W - 24, y + ROW_H - 10);
       ctx.textAlign = "left";
     }
+    y += ROW_H;
+  });
+
+  // CLABE section
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, y, W, CLABE_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+
+  const CLABE = gym.transferencia_clabe || "—";
+  const titular = gym.transferencia_titular || "—";
+  const banco   = gym.transferencia_banco   || "";
+  ctx.fillStyle = "#111827"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
+  ctx.fillText("PARA TRANSFERENCIAS:", 24, y + 22);
+  ctx.font = "12px Arial"; ctx.fillStyle = "#374151";
+  ctx.fillText(`CLABE:   ${CLABE}`, 24, y + 42);
+  ctx.fillText(`Beneficiario:   ${titular}`, 24, y + 60);
+  if (banco) ctx.fillText(`Banco:   ${banco}`, 24, y + 78);
+  y += CLABE_H;
+
+  // Footer
+  ctx.fillStyle = "#f3f4f6"; ctx.fillRect(0, y, W, FOOTER_H);
+  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  ctx.fillStyle = "#374151"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+  ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y + 20);
+  ctx.fillText("Whasthsapp que aparece en la parte superior de este recibo.", W/2, y + 38);
+
+  return canvas.toDataURL("image/png");
+}
+
+// ── Copiar imagen PNG al portapapeles ──────────────────────────────
+async function copiarImagenAlPortapapeles(dataUrl) {
+  try {
+    const blob = await (await fetch(dataUrl)).blob();
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob })
+    ]);
+    return true;
+  } catch(e) {
+    // Fallback: abrir en nueva pestaña para que el usuario copie manualmente
+    const win = window.open();
+    if (win) { win.document.write(`<img src="${dataUrl}" style="max-width:100%">`); }
+    return false;
+  }
+}
+
+// ── Genera QR PNG usando qrcodejs CDN ────────────────────────────
+async function generarQRPNG(text) {
+  return new Promise((resolve) => {
+    try {
+      const cargar = () => new Promise((res) => {
+        if (window.QRCode) { res(); return; }
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+        s.onload = res; s.onerror = res;
+        document.head.appendChild(s);
+      });
+      cargar().then(() => {
+        if (!window.QRCode) { resolve(null); return; }
+        const div = document.createElement("div");
+        div.style.cssText = "position:fixed;left:-9999px;top:-9999px;width:200px;height:200px;";
+        document.body.appendChild(div);
+        new window.QRCode(div, {
+          text, width: 200, height: 200,
+          colorDark: "#1a1a2e", colorLight: "#ffffff",
+          correctLevel: window.QRCode.CorrectLevel.H,
+        });
+        setTimeout(() => {
+          const canvas = div.querySelector("canvas");
+          const png = canvas ? canvas.toDataURL("image/png") : null;
+          document.body.removeChild(div);
+          resolve(png);
+        }, 300);
+      });
+    } catch(e) { resolve(null); }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── PASO 3: Pago (bifurcado por forma de pago) ───────────────────
+// ══════════════════════════════════════════════════════════════════
+function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComprobantePNG, generandoComp, setGenerandoComp, infoBancoPNG, setInfoBancoPNG, generandoInfo, setGenerandoInfo }) {
+  const gym     = gymConfig || {};
+  const metodos = [
+    { id: "Efectivo",      icon: "💵", label: "Efectivo" },
+    { id: "Transferencia", icon: "🏦", label: "Transferencia" },
+    { id: "Tarjeta",       icon: "💳", label: "Tarjeta" },
+  ];
+  const [copiado, setCopiado] = useState(null);
+
+  const fechaInicio = fM.fecha_incorporacion || todayISO();
+  const esPorTransferencia = fM.formaPago === "Transferencia";
+
+  const genComprobante = async () => {
+    setGenerandoComp(true);
+    try {
+      const png = await generarComprobantePagoPNG({
+        gymConfig, miembro: { nombre: fM.nombre },
+        plan: fM.plan, monto: fM.monto,
+        formaPago: fM.formaPago, venceISO,
+      });
+      setComprobantePNG(png);
+    } catch(e) { alert("No se pudo generar el comprobante."); }
+    finally { setGenerandoComp(false); }
+  };
+
+  const genInfoBanco = async () => {
+    setGenerandoInfo(true);
+    try {
+      const png = await generarInfoTransferenciaPNG({
+        gymConfig, miembro: { nombre: fM.nombre },
+        plan: fM.plan, monto: fM.monto, venceISO,
+      });
+      setInfoBancoPNG(png);
+    } catch(e) { alert("No se pudo generar la info de transferencia."); }
+    finally { setGenerandoInfo(false); }
+  };
+
+  const descargar = (dataUrl, prefix) => {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `${prefix}-${(fM.nombre||"alumno").replace(/\s+/g,"-").toLowerCase()}.png`;
+    a.click();
+  };
+
+  const copiar = async (dataUrl, key) => {
+    await copiarImagenAlPortapapeles(dataUrl);
+    setCopiado(key); setTimeout(() => setCopiado(null), 2000);
+  };
+
+  const waMsg = fM.plan
+    ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gym.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fechaInicio)}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Pago: ${fM.formaPago||"—"}\n\n¡Gracias por unirte! 💪`
+    : null;
+
+  const BotonesAccion = ({ dataUrl, prefix, cKey, waM }) => (
+    <div style={{ display:"flex", gap:7, marginTop:9, flexWrap:"wrap" }}>
+      <button onClick={() => descargar(dataUrl, prefix)}
+        style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
+          background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)",
+          color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+        📥 Descargar
+      </button>
+      <button onClick={() => copiar(dataUrl, cKey)}
+        style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
+          background: copiado===cKey ? "rgba(74,222,128,.12)" : "var(--bg-elevated,#1e1e2e)",
+          border: `1px solid ${copiado===cKey ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
+          color: copiado===cKey ? "#4ade80" : "var(--text-secondary,#9999b3)",
+          fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+        {copiado===cKey ? "✓ Copiado" : "📋 Copiar"}
+      </button>
+      {waM && fM.tel && (
+        <button onClick={() => { const c=(fM.tel||"").replace(/\D/g,""); window.open(`https://wa.me/${c.startsWith("52")?c:"52"+c}?text=${encodeURIComponent(waM)}`,"_blank"); }}
+          style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
+            background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
+            color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+          📲 WhatsApp
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      {/* Resumen */}
+      <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
+        <p style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen</p>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4px 16px" }}>
+          {[["Alumno", fM.nombre||"—"], ["Plan", fM.plan||"Sin membresía"], ["Monto", fM.plan ? `$${Number(fM.monto||0).toLocaleString("es-MX")}` : "—"], ["Vence", fmtDateShort(venceISO)]].map(([l,v]) => (
+            <div key={l} style={{ display:"flex", justifyContent:"space-between" }}>
+              <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>{l}</span>
+              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Selector forma de pago */}
+      {fM.plan && (
+        <>
+          <p style={{ ...S.label, marginBottom:8 }}>Forma de pago</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
+            {metodos.map(m => {
+              const sel = fM.formaPago === m.id;
+              return (
+                <button key={m.id}
+                  onClick={() => { setFM(p => ({...p, formaPago:m.id})); setComprobantePNG(null); setInfoBancoPNG(null); }}
+                  style={{ padding:"13px 6px", borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                    border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                    background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all .2s" }}>
+                  <span style={{ fontSize:22 }}>{m.icon}</span>
+                  <span style={{ color: sel ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontSize:12, fontWeight: sel ? 700 : 500 }}>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── Efectivo / Tarjeta → Comprobante de Pago ── */}
+      {fM.plan && !esPorTransferencia && fM.formaPago && (
+        <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${comprobantePNG ? "#6c63ff55" : "var(--border-strong,#2e2e42)"}`, borderRadius:16, padding:14, marginBottom:12 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:"rgba(108,99,255,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🧾</div>
+              <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>Comprobante de Pago</p>
+            </div>
+            <button onClick={genComprobante} disabled={generandoComp}
+              style={{ padding:"8px 14px", borderRadius:10, border:"none", background: generandoComp ? "rgba(108,99,255,.3)" : "#6c63ff",
+                color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
+                display:"flex", alignItems:"center", gap:5 }}>
+              {generandoComp ? "⏳ Generando..." : comprobantePNG ? "✨ Regenerar" : "✨ Generar"}
+            </button>
+          </div>
+          {comprobantePNG && (
+            <>
+              <img src={comprobantePNG} alt="Comprobante" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,#2a2a3e)", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
+              <BotonesAccion dataUrl={comprobantePNG} prefix="comprobante" cKey="comp" waM={waMsg} />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Transferencia → Info bancaria + aviso pendiente ── */}
+      {fM.plan && esPorTransferencia && (
+        <>
+          {/* Banner estado pendiente */}
+          <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"12px 14px", background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.28)", borderRadius:12, marginBottom:12 }}>
+            <span style={{ fontSize:18, flexShrink:0 }}>⏳</span>
+            <div>
+              <p style={{ color:"#fbbf24", fontWeight:700, fontSize:13 }}>Pago por confirmar</p>
+              <p style={{ color:"rgba(251,191,36,.8)", fontSize:11, marginTop:3, lineHeight:1.4 }}>
+                El alumno se registrará como <strong>Pendiente</strong> hasta que confirmes el pago desde su perfil. La Identificación Digital se activará en ese momento.
+              </p>
+            </div>
+          </div>
+
+          {/* Info para transferencia */}
+          <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${infoBancoPNG ? "#0ea5e955" : "var(--border-strong,#2e2e42)"}`, borderRadius:16, padding:14, marginBottom:12 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:"rgba(14,165,233,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏦</div>
+                <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>Info para Transferencia</p>
+              </div>
+              <button onClick={genInfoBanco} disabled={generandoInfo}
+                style={{ padding:"8px 14px", borderRadius:10, border:"none", background: generandoInfo ? "rgba(14,165,233,.3)" : "#0ea5e9",
+                  color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
+                  display:"flex", alignItems:"center", gap:5 }}>
+                {generandoInfo ? "⏳ Generando..." : infoBancoPNG ? "✨ Regenerar" : "✨ Generar"}
+              </button>
+            </div>
+            {infoBancoPNG && (
+              <>
+                <img src={infoBancoPNG} alt="Info transferencia" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,#2a2a3e)", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
+                <BotonesAccion dataUrl={infoBancoPNG} prefix="transferencia" cKey="banco" waM={waMsg} />
+              </>
+            )}
+          </div>
+
+          {/* Datos bancarios rápidos (para ver sin generar imagen) */}
+          {(gym.transferencia_clabe || gym.transferencia_titular) && (
+            <div style={{ background:"rgba(14,165,233,.06)", border:"1px solid rgba(14,165,233,.2)", borderRadius:12, padding:"12px 14px" }}>
+              <p style={{ color:"#38bdf8", fontSize:11, fontWeight:700, marginBottom:8 }}>📋 Datos bancarios rápidos</p>
+              {[["CLABE", gym.transferencia_clabe||"—"], ["Titular", gym.transferencia_titular||"—"], ["Banco", gym.transferencia_banco||""]].filter(([,v])=>v).map(([l,v]) => (
+                <div key={l} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                  <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>{l}</span>
+                  <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600, fontFamily:"'DM Mono',monospace" }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Sin plan → nota */}
+      {!fM.plan && (
+        <div style={{ padding:"14px 16px", background:"rgba(107,114,128,.07)", border:"1px solid rgba(107,114,128,.2)", borderRadius:12, textAlign:"center" }}>
+          <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:13 }}>Sin membresía seleccionada</p>
+          <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:4 }}>El alumno se registrará sin plan activo. Podrás asignarle una membresía después.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── PASO 4: Identificación Digital (solo si pago confirmado) ─────
+// ══════════════════════════════════════════════════════════════════
+function Step4ID({ fM, gymConfig, savedMiembro }) {
+  const [idPNG,      setIdPNG]      = useState(null);
+  const [generando,  setGenerando]  = useState(false);
+  const [copiado,    setCopiado]    = useState(false);
+
+  const gym = gymConfig || {};
+  // Usar qr_token del miembro guardado, o generar uno
+  const codigo = savedMiembro?.qr_token ||
+    ("DZ-" + Math.random().toString(36).toUpperCase().slice(2,6));
+
+  const generar = async () => {
+    setGenerando(true);
+    try {
+      const png = await generarIDDigitalPNG({
+        miembro: { nombre: fM.nombre },
+        gymConfig,
+        codigoAcceso: codigo,
+      });
+      setIdPNG(png);
+    } catch(e) { alert("No se pudo generar la identificación."); }
+    finally { setGenerando(false); }
+  };
+
+  const descargar = () => {
+    if (!idPNG) return;
+    const a = document.createElement("a");
+    a.href = idPNG;
+    a.download = `ID-${(fM.nombre||"alumno").replace(/\s+/g,"-").toLowerCase()}.png`;
+    a.click();
+  };
+
+  const copiar = async () => {
+    await copiarImagenAlPortapapeles(idPNG);
+    setCopiado(true); setTimeout(() => setCopiado(false), 2000);
+  };
+
+  const enviarWA = () => {
+    const tel = fM.tel || (fM.tutor_telefono || "");
+    if (!tel) return;
+    const clean = tel.replace(/\D/g,"");
+    const phone = clean.startsWith("52") ? clean : "52"+clean;
+    const msg = `🥋 ¡Bienvenido/a a *${gym.nombre||"el Dojo"}*, ${(fM.nombre||"").split(" ")[0]}!\n\nTe compartimos tu Identificación Digital de acceso.\nCódigo: *${codigo}*\n\nPresénta tu QR en recepción para registrar tu asistencia. 💪`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  return (
+    <div style={{ textAlign:"center" }}>
+      {/* Celebración */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontSize:48, marginBottom:8 }}>🎉</div>
+        <h3 style={{ color:"var(--text-primary,#e8e8f0)", fontSize:18, fontWeight:700, marginBottom:4 }}>
+          ¡{(fM.nombre||"").split(" ")[0]} ya es miembro!
+        </h3>
+        <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>
+          Registro completado · Pago confirmado
+        </p>
+      </div>
+
+      {/* Card ID Digital */}
+      <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${idPNG ? "#8b5cf655" : "var(--border-strong,#2e2e42)"}`, borderRadius:18, padding:16, marginBottom:14, textAlign:"left" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: idPNG ? 14 : 0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:"rgba(139,92,246,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🪪</div>
+            <div>
+              <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:14 }}>Identificación Digital</p>
+              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Código: <span style={{ color:"#10b981", fontFamily:"'DM Mono',monospace", fontWeight:700 }}>{codigo}</span></p>
+            </div>
+          </div>
+          <button onClick={generar} disabled={generando}
+            style={{ padding:"9px 16px", borderRadius:11, border:"none",
+              background: generando ? "rgba(139,92,246,.3)" : "linear-gradient(135deg,#8b5cf6,#6c63ff)",
+              color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
+              boxShadow: generando ? "none" : "0 4px 14px rgba(139,92,246,.35)",
+              display:"flex", alignItems:"center", gap:5 }}>
+            {generando ? "⏳ Generando..." : idPNG ? "✨ Regenerar" : "✨ Generar ID"}
+          </button>
+        </div>
+
+        {idPNG && (
+          <>
+            <img src={idPNG} alt="ID Digital" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,#2a2a3e)", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
+            <div style={{ display:"flex", gap:7, marginTop:10, flexWrap:"wrap" }}>
+              <button onClick={descargar}
+                style={{ flex:1, minWidth:80, padding:"11px 8px", borderRadius:12, fontFamily:"inherit",
+                  background:"var(--bg-card,#12121f)", border:"1px solid var(--border-strong,#2e2e42)",
+                  color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                📥 Descargar
+              </button>
+              <button onClick={copiar}
+                style={{ flex:1, minWidth:80, padding:"11px 8px", borderRadius:12, fontFamily:"inherit",
+                  background: copiado ? "rgba(74,222,128,.12)" : "var(--bg-card,#12121f)",
+                  border: `1px solid ${copiado ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
+                  color: copiado ? "#4ade80" : "var(--text-secondary,#9999b3)",
+                  fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                {copiado ? "✓ Copiado" : "📋 Copiar"}
+              </button>
+              {(fM.tel || fM.tutor_telefono) && (
+                <button onClick={enviarWA}
+                  style={{ flex:1, minWidth:80, padding:"11px 8px", borderRadius:12, fontFamily:"inherit",
+                    background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
+                    color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                  📲 WhatsApp
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, lineHeight:1.5 }}>
+        La ID Digital es el acceso oficial del alumno al dojo.<br/>Genera y envíala por WhatsApp o descárgala para imprimirla.
+      </p>
+    </div>
+  );
+}
+
+// ── Componente principal ────────────────────────────────────────
+export default function NuevoMiembroWizard({
+  onClose,
+  onAdd,
+  gymConfig,
+  gymId,
+  activePlanes,
+  planesMembresia,
+  PhotoModal,
+  isDojo,
+}) {
+  const [step,          setStep]          = useState(1);
+  const [savedMiembro,  setSavedMiembro]  = useState(null); // miembro ya guardado en BD
+  const [saving,        setSaving]        = useState(false);
+  const [comprobantePNG, setComprobantePNG] = useState(null);
+  const [generandoComp,  setGenerandoComp]  = useState(false);
+  const [infoBancoPNG,   setInfoBancoPNG]   = useState(null);
+  const [generandoInfo,  setGenerandoInfo]  = useState(false);
+  const [showFotoModal,  setShowFotoModal]  = useState(false);
+
+  const [fM, setFM] = useState({
+    nombre:"", tel:"", foto:null,
+    sexo:"", fecha_nacimiento:"",
+    fecha_incorporacion: todayISO(),
+    notas:"", beca:false,
+    tutor_nombre:"", tutor_telefono:"", tutor_parentesco:"",
+    plan:null, monto:null, claseId:null, planData:null, planId:null,
+    formaPago:null,
+    grado_actual:"", fecha_ultimo_examen:"", proximo_objetivo:"",
+  });
+
+  const planes = planesMembresia?.length > 0 ? planesMembresia : (activePlanes || DEFAULT_PLANES);
+  const [clases,   setClases]   = useState([]);
+  const [horarios, setHorarios] = useState([]);
+  useEffect(() => {
+    if (!gymId) return;
+    Promise.all([supabase.from("clases"), supabase.from("horarios")])
+      .then(([dbC, dbH]) => Promise.all([dbC.select(gymId), dbH.select(gymId)]))
+      .then(([cData, hData]) => {
+        setClases((cData||[]).filter(c => c.activo !== false));
+        setHorarios(hData||[]);
+      }).catch(()=>{});
+  }, [gymId]);
+
+  // ── Validaciones paso 1 ──
+  const esMenorWizard = esMenorDeEdad(fM.fecha_nacimiento);
+  const tutorValido   = !esMenorWizard || (!!(fM.tutor_nombre||"").trim() && !!(fM.tutor_telefono||"").trim());
+  const canNext1      = !!fM.nombre.trim() && tutorValido;
+  const tutorError    = esMenorWizard && !tutorValido && fM.nombre.trim();
+  const hasPlan       = !!(fM.plan || fM.planId);
+  const esPendiente   = fM.formaPago === "Transferencia";
+
+  // ── Calcular vencimiento (compartido entre Step3 y Step4) ──
+  const venceISO = (() => {
+    if (!fM.plan) return null;
+    const planObj = fM.planData;
+    const CM = { mensual:1, trimestral:3, semestral:6, anual:12 };
+    let meses = null;
+    if (planObj) {
+      meses = planObj.meses != null ? planObj.meses : CM[planObj.ciclo_renovacion];
+    } else {
+      try { return calcVence(fM.fecha_incorporacion||todayISO(), fM.plan); } catch(e) { return null; }
+    }
+    if (!meses) return null;
+    const [y,mo,d] = (fM.fecha_incorporacion||todayISO()).split("-").map(Number);
+    const v = new Date(y, mo-1+meses, d);
+    return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
+  })();
+
+  // ── Guardar alumno en BD ──
+  const handleAdd = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      // Forma de pago con fallback — nunca debe ser null al registrar
+      const formaPagoFinal = fM.formaPago || "Efectivo";
+
+      // Determinar estado según forma de pago
+      const esPendienteLocal = formaPagoFinal === "Transferencia";
+      const estadoInicial    = esPendienteLocal ? "Pendiente" : "Activo";
+
+      // Generar qr_token solo si pago confirmado
+      let qrToken = null;
+      if (!esPendienteLocal) {
+        qrToken = "DZ-" + Math.random().toString(36).toUpperCase().slice(2,6) +
+                  Math.random().toString(36).toUpperCase().slice(2,4);
+      }
+
+      // Build receiptInfo para GymApp (WA queue etc.)
+      const esMenorLocal = fM.fecha_nacimiento ? (() => {
+        const n = new Date(fM.fecha_nacimiento+"T00:00:00");
+        const h = new Date();
+        let e = h.getFullYear() - n.getFullYear();
+        const mo = h.getMonth() - n.getMonth();
+        if (mo < 0 || (mo===0 && h.getDate()<n.getDate())) e--;
+        return e < 18;
+      })() : false;
+      const telDestino = esMenorLocal && fM.tutor_telefono ? fM.tutor_telefono : fM.tel;
+
+      let waMsg = null;
+      if (fM.plan && !esPendienteLocal) {
+        waMsg = `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gymConfig?.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fM.fecha_incorporacion||todayISO())}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Pago: ${formaPagoFinal}\n\n¡Gracias por unirte! 💪`;
+      }
+
+      // Pasar estado, qr_token y formaPago final a GymApp via wizardFM
+      const wizardFMExtended = {
+        ...fM,
+        formaPago:     formaPagoFinal,
+        estado:        estadoInicial,
+        qr_token:      qrToken,
+        pago_pendiente: esPendienteLocal,
+      };
+
+      const result = await onAdd(wizardFMExtended, {
+        comprobantePNG,
+        waMsg,
+        tel: telDestino,
+        nombreMiembro: fM.nombre,
+        venceISO,
+        plan: fM.plan,
+        formaPago: formaPagoFinal,
+        monto: fM.monto,
+        estadoInicial,
+        qrToken,
+      });
+
+      // Guardar el miembro devuelto para el paso 4
+      setSavedMiembro({ qr_token: qrToken, ...result });
+
+      // Avanzar al paso 4 solo si pago fue confirmado (Efectivo/Tarjeta)
+      if (!esPendienteLocal) {
+        setStep(4);
+      } else {
+        // Transferencia: cerrar wizard (alumno queda Pendiente)
+        onClose();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Labels ──
+  const TOTAL_STEPS = 4;
+  const stepLabels  = ["Datos", "Membresía", "Pago", "ID Digital"];
+
+  // ── Etiqueta del botón principal ──
+  const nextLabel = (() => {
+    if (step === 1) return "Siguiente →";
+    if (step === 2 && !hasPlan) return "✓ Registrar sin membresía";
+    if (step === 2 && hasPlan && fM.beca) return saving ? "Guardando..." : "🎓 Registrar (Beca — $0)";
+    if (step === 3) {
+      if (saving) return "Guardando...";
+      if (esPendiente) return "⏳ Registrar — pago pendiente";
+      return "✓ Registrar y confirmar pago";
+    }
+    return "Siguiente →";
+  })();
+
+  const goNext = () => {
+    if (step === 1 && !canNext1) return;
+    if (step === 2 && (!hasPlan || fM.beca)) { handleAdd(); return; }
+    if (step === 3) {
+      // Si hay plan y no eligieron forma de pago → poner Efectivo por defecto
+      if (hasPlan && !fM.formaPago) {
+        setFM(p => ({ ...p, formaPago: "Efectivo" }));
+      }
+      handleAdd();
+      return;
+    }
+    setStep(s => Math.min(s+1, TOTAL_STEPS));
+  };
+  const goPrev = () => setStep(s => Math.max(s-1, 1));
+
+  // Paso 4: botón es solo "Cerrar"
+  const isStep4 = step === 4;
+
+  return (
+    <div style={S.overlay} onClick={e => { if (e.target===e.currentTarget && !isStep4) onClose(); }}>
+      <div style={S.sheet}>
+
+        {/* Header */}
+        <div style={S.header}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <h2 style={{ color:"var(--text-primary,#e8e8f0)", fontSize:17, fontWeight:700, display:"flex", alignItems:"center", gap:8 }}>
+              <span>{isStep4 ? "✅" : "👤"}</span>
+              {isStep4 ? "Alumno Registrado" : `Nuevo ${gymConfig?.termino_miembros?.replace(/s$/,"") || "Miembro"}`}
+            </h2>
+            {!isStep4 && (
+              <button onClick={onClose}
+                style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border,#2a2a3e)", borderRadius:10, width:32, height:32, cursor:"pointer", color:"var(--text-primary,#e8e8f0)", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+            )}
+          </div>
+          <ProgressBar step={step} total={TOTAL_STEPS} labels={stepLabels} />
+        </div>
+
+        {/* Body */}
+        <div style={S.body}>
+          {step===1 && (
+            <Step1 fM={fM} setFM={setFM} showFotoModal={showFotoModal} setShowFotoModal={setShowFotoModal} PhotoModal={PhotoModal} isDojo={isDojo} />
+          )}
+          {step===2 && (
+            <Step2 fM={fM} setFM={setFM} clases={clases} horarios={horarios} planesMembresia={planes} />
+          )}
+          {step===3 && (
+            <Step3Pago
+              fM={fM} setFM={setFM} gymConfig={gymConfig} venceISO={venceISO}
+              comprobantePNG={comprobantePNG} setComprobantePNG={setComprobantePNG}
+              generandoComp={generandoComp} setGenerandoComp={setGenerandoComp}
+              infoBancoPNG={infoBancoPNG} setInfoBancoPNG={setInfoBancoPNG}
+              generandoInfo={generandoInfo} setGenerandoInfo={setGenerandoInfo}
+            />
+          )}
+          {step===4 && (
+            <Step4ID fM={fM} gymConfig={gymConfig} savedMiembro={savedMiembro} />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={S.footer}>
+          {step===1 && tutorError && (
+            <div style={{ background:"rgba(251,191,36,.1)", border:"1px solid rgba(251,191,36,.3)", borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
+              <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>⚠️ El miembro es menor de edad — completa los datos del tutor para continuar.</p>
+            </div>
+          )}
+
+          {/* Aviso beca en paso 2 */}
+          {step===2 && fM.beca && hasPlan && (
+            <div style={{ background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.3)", borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
+              <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>🎓 Becario — se registrará sin cobro y con membresía activa.</p>
+            </div>
+          )}
+
+          <div style={{ display:"flex", gap:10 }}>
+            {/* Botón izquierdo */}
+            {isStep4 ? (
+              <button onClick={onClose}
+                style={{ ...S.btnSecondary, flex:"0 0 auto", padding:"14px 20px" }}>
+                Cerrar
+              </button>
+            ) : step > 1 ? (
+              <button onClick={goPrev}
+                style={{ ...S.btnSecondary, flex:"0 0 auto", padding:"14px 20px" }}>
+                ← Anterior
+              </button>
+            ) : (
+              <button onClick={onClose}
+                style={{ ...S.btnSecondary, flex:"0 0 auto", padding:"14px 16px" }}>
+                Cancelar
+              </button>
+            )}
+
+            {/* Botón principal */}
+            {!isStep4 && (
+              <button
+                onClick={goNext}
+                disabled={(step===1 && !canNext1) || saving}
+                style={{
+                  ...S.btnPrimary,
+                  background: esPendiente && step===3
+                    ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                    : S.btnPrimary.background,
+                  opacity: ((step===1 && !canNext1) || saving) ? 0.5 : 1,
+                  cursor:  ((step===1 && !canNext1) || saving) ? "not-allowed" : "pointer",
+                }}>
+                {nextLabel}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }`}</style>
+    </div>
+  );
+}
