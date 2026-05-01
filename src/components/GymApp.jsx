@@ -757,7 +757,11 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
               setFM(wizardFM);
               const savedM = await addM(wizardFM);
               // Cerrar el modal siempre — el wizard ya avanzó a paso 4 o se cerró solo
-              setModal(null);
+              // Solo cerrar el modal si es pago pendiente (transferencia)
+              // Para efectivo/tarjeta, el wizard avanza al paso 4 primero
+              if (wizardFM.pago_pendiente) {
+                setModal(null);
+              }
               // Agregar WA queue solo si pago fue confirmado (no transferencia pendiente)
               if (!wizardFM.pago_pendiente && receiptInfo?.waMsg && receiptInfo?.tel) {
                 const entry = {
@@ -780,8 +784,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
                   return next;
                 });
               }
-              // Navegar al dashboard
-              setTimeout(() => { setScreen("dashboard"); setTab(0); }, 200);
+              // Navegar al dashboard en background — delay suficiente para que paso 4 renderice
+              setTimeout(() => { setScreen("dashboard"); setTab(0); }, 1500);
               return savedM;
             }}
             gymConfig={gymConfig}
