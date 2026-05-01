@@ -261,17 +261,25 @@ export const supabase = {
   },
 };
 
-// ── GYM ID: lee desde URL ?gym=xxx, si no hay lo recupera de localStorage ──
+// ── GYM ID: siempre prioriza la URL ?gym=xxx
+// Si hay gym en URL → úsalo y guárdalo (sobreescribe cualquier valor previo)
+// Si no hay gym en URL → NO hacer fallback al localStorage (evita contaminación cruzada entre gyms)
 export function getGymId() {
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("gym");
   if (fromUrl) {
-    try { localStorage.setItem("gymfit_gym_id", fromUrl); } catch(e) {}
+    try {
+      // Si el gym cambió respecto al guardado, limpiar sesión de gym anterior
+      const saved = localStorage.getItem("gymfit_gym_id");
+      if (saved && saved !== fromUrl) {
+        localStorage.removeItem("gymfit_gym_id");
+        localStorage.removeItem("gymfit_session");
+        console.log("[GymFit] Gym cambió de '" + saved + "' a '" + fromUrl + "' — sesión limpiada");
+      }
+      localStorage.setItem("gymfit_gym_id", fromUrl);
+    } catch(e) {}
     return fromUrl;
   }
-  try {
-    const saved = localStorage.getItem("gymfit_gym_id");
-    if (saved) return saved;
-  } catch(e) {}
+  // Sin ?gym= en la URL: NO recuperar del localStorage para evitar mostrar datos de otro gym
   return null;
 }
