@@ -294,7 +294,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
 
         <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} collapsed={isCollapsed} />
 
-        {isOwner && <NavBtn label="Configuración" icon={IC.gear} active={false} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setConfigScreen(true)} />}
+        {isOwner && <NavBtn label="Configuración" icon={IC.gear} active={screen === "__config__"} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setConfigScreen(true)} />}
 
         <button
           onClick={onLogout}

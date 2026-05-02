@@ -1,10 +1,5 @@
 // ─────────────────────────────────────────────
-//  screens/ConfigScreen.jsx
-//
-//  CAMBIOS:
-//    ✅ Nuevo campo "Término para Miembros" (termino_miembros)
-//       Permite personalizar cómo se llaman los miembros:
-//       Miembro, Alumno, Cliente, Socio, Atleta, etc.
+//  screens/ConfigScreen.jsx  — con pestañas
 // ─────────────────────────────────────────────
 
 import { useState } from "react";
@@ -12,14 +7,6 @@ import { DEFAULT_PLANES } from "../utils/constants";
 import { Btn, Inp } from "../components/UI";
 import { supabase } from "../supabase";
 
-const chipStyle = (active, color = "#6c63ff") => ({
-  flex: 1, padding: "12px 8px", borderRadius: 14, cursor: "pointer",
-  fontFamily: "inherit", textAlign: "center", transition: "all .2s",
-  border: active ? `2px solid ${color}` : "1.5px solid rgba(255,255,255,.08)",
-  background: active ? `rgba(108,99,255,.15)` : "var(--bg-elevated)",
-});
-
-/** Redimensiona y comprime una imagen a base64 (máx 200×200, calidad 0.7) */
 function compressImage(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -43,74 +30,16 @@ function compressImage(file) {
   });
 }
 
-export default function ConfigScreen({
-  gymConfig,
-  gymConfigRef: GYM_ID,
-  formCfg,
-  setFormCfg,
-  setGymConfig,
-  setConfigScreen,
-}) {
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [saveOk, setSaveOk] = useState(false);
+const TABS = [
+  { id: "general",   label: "General",   icon: "🏢" },
+  { id: "pagos",     label: "Pagos",     icon: "💳" },
+  { id: "planes",    label: "Planes",    icon: "📋" },
+  { id: "politicas", label: "Políticas", icon: "⚠️" },
+];
 
-  const handleSaveCfg = async () => {
-    if (!formCfg.nombre) return;
-    setSaving(true);
-    setSaveError(null);
-    setSaveOk(false);
-    const payload = { ...formCfg, id: GYM_ID };
-    const ok = await supabase.saveGym(payload);
-    if (ok) {
-      setGymConfig({ ...formCfg, id: GYM_ID });
-      setSaving(false);
-      setSaveOk(true);
-      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
-      return;
-    }
-    // Fallback: fetch directo
-    const url = `${supabase.url}/rest/v1/gimnasios`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: {
-        "apikey": supabase.key,
-        "Authorization": `Bearer ${supabase.key}`,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates",
-      },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (r.ok) {
-      setGymConfig({ ...formCfg, id: GYM_ID });
-      setSaveOk(true);
-      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
-    } else {
-      let detail = "";
-      try { const j = await r.json(); detail = j?.message || j?.error || ""; } catch {}
-      setSaveError(detail || "Error al guardar. Verifica tu conexión e intenta de nuevo.");
-    }
-  };
-
+function TabGeneral({ formCfg, setFormCfg }) {
   return (
-    <div style={{ flex: 1, padding: "24px 24px 60px" }}>
-      {gymConfig && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <button onClick={() => setConfigScreen(false)} style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "var(--text-primary)", fontSize: 18 }}>←</button>
-          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 700 }}>⚙️ Configuración</h2>
-        </div>
-      )}
-
-      {!gymConfig && (
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 12px", boxShadow: "0 8px 32px rgba(108,99,255,.4)" }}>💪</div>
-          <h1 style={{ color: "var(--text-primary)", fontSize: 22, fontWeight: 700 }}>Configura tu Gimnasio</h1>
-          <p style={{ color: "#8b949e", fontSize: 13, marginTop: 6 }}>Esta información aparecerá en tu app</p>
-        </div>
-      )}
-
-      {/* Logo upload */}
+    <div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
         <div style={{ position: "relative", width: 80, height: 80, marginBottom: 8 }}>
           {formCfg.logo
@@ -129,112 +58,107 @@ export default function ConfigScreen({
         <p style={{ color: "#8b949e", fontSize: 11 }}>Logo del gimnasio</p>
       </div>
 
-      {/* ── Datos básicos ── */}
       <Inp label="Nombre del gimnasio" value={formCfg.nombre} onChange={v => setFormCfg(p => ({ ...p, nombre: v }))} placeholder="Ej: GymFit Pro Mérida" />
       <Inp label="Slogan (opcional)" value={formCfg.slogan || ""} onChange={v => setFormCfg(p => ({ ...p, slogan: v }))} placeholder="Ej: Tu mejor versión empieza aquí" />
       <Inp label="Teléfono" value={formCfg.telefono || ""} onChange={v => setFormCfg(p => ({ ...p, telefono: v }))} placeholder="999 000 0000" type="tel" />
       <Inp label="Dirección" value={formCfg.direccion || ""} onChange={v => setFormCfg(p => ({ ...p, direccion: v }))} placeholder="Ej: Calle 60 #123, Mérida" />
       <Inp label="Zona horaria" value={formCfg.zona_horaria || "America/Merida"} onChange={v => setFormCfg(p => ({ ...p, zona_horaria: v }))} options={["America/Merida","America/Mexico_City","America/Cancun","America/Monterrey","America/Tijuana","America/New_York","America/Chicago","America/Los_Angeles","Europe/Madrid","America/Bogota","America/Lima","America/Santiago","America/Buenos_Aires","America/Caracas"]} />
 
-      {/* ── Parámetros generales ── */}
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 6px" }}>
-        Parámetros generales
-      </p>
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 8px" }}>Tipo de establecimiento</p>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {[
+          { val: "gimnasio", label: "💪 Gimnasio", desc: "Miembros, membresías, clases" },
+          { val: "dojo",     label: "🥋 Dojo / Karate", desc: "Alumnos, cinturones, exámenes" },
+        ].map(op => {
+          const active = (formCfg.tipo_negocio || "gimnasio") === op.val;
+          return (
+            <button key={op.val} onClick={() => setFormCfg(p => ({ ...p, tipo_negocio: op.val }))} style={{
+              flex: 1, padding: "12px 8px", borderRadius: 14, cursor: "pointer",
+              fontFamily: "inherit", textAlign: "center", transition: "all .2s",
+              border: active ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
+              background: active ? "rgba(108,99,255,.15)" : "var(--bg-elevated)",
+            }}>
+              <p style={{ color: active ? "#a78bfa" : "#8b949e", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{op.label}</p>
+              <p style={{ color: active ? "#c4b5fd" : "#6b7280", fontSize: 10, lineHeight: 1.4 }}>{op.desc}</p>
+            </button>
+          );
+        })}
+      </div>
+      {(formCfg.tipo_negocio || "gimnasio") === "dojo" && (
+        <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(168,85,247,.08)", border: "1px solid rgba(168,85,247,.25)", borderRadius: 10 }}>
+          <p style={{ color: "#c084fc", fontSize: 11, lineHeight: 1.6 }}>🥋 <strong>Modo Dojo activo</strong> — vocabulario de karate: Alumnos, Mensualidades, Exámenes de cinturón.</p>
+        </div>
+      )}
 
-      {/* ── Tipo de negocio ── */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 12 }}>
-        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-          🏢 Tipo de establecimiento
-        </p>
-        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
-          Adapta el sistema al vocabulario y flujo de tu negocio.
-        </p>
-        <div style={{ display: "flex", gap: 8 }}>
-          {[
-            { val: "gimnasio", label: "💪 Gimnasio", desc: "Miembros, membresías, clases" },
-            { val: "dojo",     label: "🥋 Dojo / Karate", desc: "Alumnos, cinturones, exámenes" },
-          ].map(op => {
-            const active = (formCfg.tipo_negocio || "gimnasio") === op.val;
-            return (
-              <button
-                key={op.val}
-                onClick={() => setFormCfg(p => ({ ...p, tipo_negocio: op.val }))}
-                style={chipStyle(active)}
-              >
-                <p style={{ color: active ? "#a78bfa" : "#8b949e", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>{op.label}</p>
-                <p style={{ color: active ? "#c4b5fd" : "#6b7280", fontSize: 10, lineHeight: 1.4 }}>{op.desc}</p>
-              </button>
-            );
-          })}
-        </div>
-        {(formCfg.tipo_negocio || "gimnasio") === "dojo" && (
-          <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(168,85,247,.08)", border: "1px solid rgba(168,85,247,.25)", borderRadius: 10 }}>
-            <p style={{ color: "#c084fc", fontSize: 11, lineHeight: 1.6 }}>
-              🥋 <strong>Modo Dojo activo</strong> — El sistema usará vocabulario de karate: Alumnos, Mensualidades,
-              Exámenes de cinturón, y mostrará campos de grado (Kyu/Dan) en cada perfil.
-            </p>
-          </div>
-        )}
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 8px" }}>
+        Término para "{formCfg.termino_miembros || "Miembros"}"
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+        {["Miembros", "Alumnos", "Clientes", "Socios", "Atletas", "Estudiantes"].map(t => {
+          const active = (formCfg.termino_miembros || "Miembros") === t;
+          return (
+            <button key={t} onClick={() => setFormCfg(p => ({ ...p, termino_miembros: t }))} style={{
+              padding: "6px 14px", borderRadius: 20,
+              border: `1.5px solid ${active ? "#6c63ff" : "rgba(255,255,255,.1)"}`,
+              background: active ? "rgba(108,99,255,.2)" : "var(--bg-elevated)",
+              color: active ? "#a78bfa" : "#8b949e",
+              fontSize: 12, fontWeight: active ? 700 : 500,
+              cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
+            }}>{t}</button>
+          );
+        })}
       </div>
-      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 4 }}>
-        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
-          👥 Término para "{formCfg.termino_miembros || "Miembros"}"
-        </p>
-        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
-          ¿Cómo se llaman las personas inscritas en tu establecimiento?
-          Este término aparecerá en toda la aplicación.
-        </p>
-        {/* Quick-select chips */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
-          {["Miembros", "Alumnos", "Clientes", "Socios", "Atletas", "Estudiantes"].map(t => {
-            const active = (formCfg.termino_miembros || "Miembros") === t;
-            return (
-              <button
-                key={t}
-                onClick={() => setFormCfg(p => ({ ...p, termino_miembros: t }))}
-                style={{
-                  padding: "6px 14px", borderRadius: 20, border: `1.5px solid ${active ? "#6c63ff" : "rgba(255,255,255,.1)"}`,
-                  background: active ? "rgba(108,99,255,.2)" : "var(--bg-elevated)",
-                  color: active ? "#a78bfa" : "#8b949e",
-                  fontSize: 12, fontWeight: active ? 700 : 500,
-                  cursor: "pointer", fontFamily: "inherit", transition: "all .15s",
-                }}
-              >
-                {t}
-              </button>
-            );
-          })}
-        </div>
-        <Inp
-          label="O escribe uno personalizado"
-          value={formCfg.termino_miembros || ""}
-          onChange={v => setFormCfg(p => ({ ...p, termino_miembros: v }))}
-          placeholder="Ej: Participantes, Pacientes, Deportistas..."
-        />
-      </div>
-      <p style={{ color: "#4b4b6a", fontSize: 11, marginBottom: 16, paddingLeft: 2 }}>
+      <Inp label="O escribe uno personalizado" value={formCfg.termino_miembros || ""} onChange={v => setFormCfg(p => ({ ...p, termino_miembros: v }))} placeholder="Ej: Participantes, Pacientes..." />
+      <p style={{ color: "#4b4b6a", fontSize: 11, marginBottom: 8, paddingLeft: 2 }}>
         💡 Vista previa: "Nuevo {formCfg.termino_miembros || "Miembro"}", "Lista de {formCfg.termino_miembros || "Miembros"}"
       </p>
 
-      {/* ── Propietario ── */}
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Propietario / Firmante</p>
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 8px" }}>Propietario / Firmante</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <Inp label="Título (Ej: Lic., Dr.)" value={formCfg.propietario_titulo || ""} onChange={v => setFormCfg(p => ({ ...p, propietario_titulo: v }))} placeholder="Ej: Lic." />
         <Inp label="Nombre completo" value={formCfg.propietario_nombre || ""} onChange={v => setFormCfg(p => ({ ...p, propietario_nombre: v }))} placeholder="Ej: Ana García" />
       </div>
+    </div>
+  );
+}
 
-      {/* ── Datos de transferencia ── */}
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Datos para Transferencia</p>
+function TabPagos({ formCfg, setFormCfg }) {
+  return (
+    <div>
+      <div style={{ padding: "12px 14px", background: "rgba(34,211,238,.06)", border: "1px solid rgba(34,211,238,.2)", borderRadius: 12, marginBottom: 16 }}>
+        <p style={{ color: "#22d3ee", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>🏦 Datos para Transferencia</p>
+        <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>Esta información se muestra a los miembros cuando pagan por transferencia.</p>
+      </div>
       <Inp label="CLABE Interbancaria" value={formCfg.transferencia_clabe || ""} onChange={v => setFormCfg(p => ({ ...p, transferencia_clabe: v }))} placeholder="18 dígitos" type="tel" />
       <Inp label="Nombre completo del titular" value={formCfg.transferencia_titular || ""} onChange={v => setFormCfg(p => ({ ...p, transferencia_titular: v }))} placeholder="Ej: Ana García López" />
       <Inp label="Nombre del banco" value={formCfg.transferencia_banco || ""} onChange={v => setFormCfg(p => ({ ...p, transferencia_banco: v }))} placeholder="Ej: BBVA, Banamex, HSBC" />
+      <div style={{ padding: "12px 14px", background: "rgba(108,99,255,.06)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, marginTop: 16 }}>
+        <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>💬 Mensajes automáticos</p>
+        <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
+          Los mensajes de recordatorio, bienvenida y automatizaciones se configuran en
+          <strong style={{ color: "#a78bfa" }}> Módulo Mensajes → Mensajes del sistema</strong>.
+        </p>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── Planes y precios ── */}
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>Planes y precios</p>
+function TabPlanes({ formCfg, setFormCfg }) {
+  return (
+    <div>
+      <div style={{ padding: "10px 14px", background: "rgba(167,139,250,.06)", border: "1px solid rgba(167,139,250,.2)", borderRadius: 12, marginBottom: 14 }}>
+        <p style={{ color: "#a78bfa", fontSize: 11, lineHeight: 1.5 }}>
+          Activa o desactiva los planes según lo que ofrece tu gimnasio. Solo los planes activos aparecerán al registrar miembros.
+        </p>
+      </div>
       {(formCfg.planes || DEFAULT_PLANES).map((plan, i) => {
         const isActive = plan.activo !== false;
         return (
-          <div key={i} style={{ background: isActive ? "var(--bg-card)" : "var(--bg-elevated)", border: `1px solid ${isActive ? "rgba(167,139,250,.2)" : "var(--border)"}`, borderRadius: 14, padding: "10px 14px", marginBottom: 8, opacity: isActive ? 1 : 0.5 }}>
+          <div key={i} style={{
+            background: isActive ? "var(--bg-card)" : "var(--bg-elevated)",
+            border: `1px solid ${isActive ? "rgba(167,139,250,.2)" : "var(--border)"}`,
+            borderRadius: 14, padding: "10px 14px", marginBottom: 8, opacity: isActive ? 1 : 0.5,
+          }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isActive ? 10 : 0 }}>
               <span style={{ color: isActive ? "var(--text-primary)" : "var(--text-tertiary)", fontSize: 13, fontWeight: 600 }}>{plan.nombre}</span>
               <div onClick={() => setFormCfg(p => { const pl = [...p.planes]; pl[i] = { ...pl[i], activo: !isActive }; return { ...p, planes: pl }; })}
@@ -251,146 +175,184 @@ export default function ConfigScreen({
           </div>
         );
       })}
+    </div>
+  );
+}
 
-      {/* ── Política de cobro por atraso ── */}
-      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>
-        Política de cobro por atraso
-      </p>
-
-      {/* Días de gracia */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 8 }}>
-        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>📅 Días de gracia</p>
-        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 10, lineHeight: 1.5 }}>
+function TabPoliticas({ formCfg, setFormCfg }) {
+  const moraActual = formCfg.mora_tipo || "ninguna";
+  return (
+    <div>
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "0 0 8px" }}>Días de gracia</p>
+      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 20 }}>
+        <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
           Tolerancia después del vencimiento antes de marcar la membresía como vencida.
         </p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="number" min={0} max={30}
-            value={formCfg.dias_gracia ?? 5}
+          <input type="number" min={0} max={30} value={formCfg.dias_gracia ?? 5}
             onChange={e => setFormCfg(p => ({ ...p, dias_gracia: Number(e.target.value) }))}
-            style={{
-              flex: 1, background: "var(--bg-elevated)", border: "1.5px solid rgba(255,255,255,.08)",
-              borderRadius: 10, padding: "10px 14px", color: "var(--text-primary)",
-              fontSize: 15, fontFamily: "inherit", outline: "none",
-            }}
+            style={{ flex: 1, background: "var(--bg-elevated)", border: "1.5px solid rgba(255,255,255,.08)", borderRadius: 10, padding: "10px 14px", color: "var(--text-primary)", fontSize: 15, fontFamily: "inherit", outline: "none" }}
           />
           <span style={{ color: "#8b949e", fontSize: 13, whiteSpace: "nowrap" }}>días</span>
         </div>
       </div>
 
-      {/* Penalidad por mora */}
-      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 8 }}>
-        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>⚠️ Penalidad por mora</p>
-        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
-          Cargo adicional cuando un miembro renueva su membresía con atraso.
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            { value: "ninguna",    label: "Sin penalidad",  desc: "No se cobra nada por atraso" },
-            { value: "fijo",       label: "Monto fijo",     desc: "Se suma un cargo fijo al renovar" },
-            { value: "porcentaje", label: "Porcentaje",     desc: "% del precio de la membresía" },
-          ].map(t => {
-            const sel = (formCfg.mora_tipo || "ninguna") === t.value;
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "0 0 6px" }}>Penalidad por mora</p>
+      <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 10, lineHeight: 1.5 }}>
+        Cargo adicional cuando un miembro renueva su membresía con atraso.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+        {[
+          { value: "ninguna",    label: "Sin penalidad",  desc: "No se cobra nada por atraso" },
+          { value: "fijo",       label: "Monto fijo",     desc: "Se suma un cargo fijo al renovar" },
+          { value: "porcentaje", label: "Porcentaje",     desc: "% del precio de la membresía" },
+        ].map(t => {
+          const sel = moraActual === t.value;
+          return (
+            <button key={t.value} onClick={() => setFormCfg(p => ({ ...p, mora_tipo: t.value }))} style={{
+              padding: "12px 14px",
+              border: sel ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
+              borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+              background: sel ? "rgba(108,99,255,.1)" : "var(--bg-elevated)",
+              display: "flex", alignItems: "center", gap: 12,
+              transition: "all .15s", textAlign: "left",
+            }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, border: `2px solid ${sel ? "#6c63ff" : "rgba(255,255,255,.2)"}`, background: sel ? "#6c63ff" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {sel && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
+              </div>
+              <div>
+                <p style={{ color: sel ? "#c4b5fd" : "var(--text-primary)", fontSize: 13, fontWeight: sel ? 700 : 500 }}>{t.label}</p>
+                <p style={{ color: "#6b6b8a", fontSize: 11, marginTop: 1 }}>{t.desc}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {moraActual !== "ninguna" && (
+        <div>
+          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 6 }}>
+            {moraActual === "fijo" ? "Monto de penalidad ($)" : "Porcentaje de penalidad (%)"}
+          </p>
+          <div style={{ position: "relative" }}>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#9999b3", fontSize: 15, fontWeight: 700, pointerEvents: "none" }}>
+              {moraActual === "fijo" ? "$" : "%"}
+            </span>
+            <input type="number" min={0} value={formCfg.mora_monto || ""}
+              onChange={e => setFormCfg(p => ({ ...p, mora_monto: e.target.value }))}
+              placeholder="0"
+              style={{ width: "100%", boxSizing: "border-box", background: "var(--bg-elevated)", border: "1.5px solid rgba(255,255,255,.08)", borderRadius: 10, padding: "10px 14px 10px 28px", color: "var(--text-primary)", fontSize: 15, fontFamily: "inherit", outline: "none" }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ConfigScreen({ gymConfig, gymConfigRef: GYM_ID, formCfg, setFormCfg, setGymConfig, setConfigScreen }) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveOk, setSaveOk] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
+
+  const handleSaveCfg = async () => {
+    if (!formCfg.nombre) return;
+    setSaving(true); setSaveError(null); setSaveOk(false);
+    const payload = { ...formCfg, id: GYM_ID };
+    const ok = await supabase.saveGym(payload);
+    if (ok) {
+      setGymConfig({ ...formCfg, id: GYM_ID });
+      setSaving(false); setSaveOk(true);
+      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
+      return;
+    }
+    const url = `${supabase.url}/rest/v1/gimnasios`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify(payload),
+    });
+    setSaving(false);
+    if (r.ok) {
+      setGymConfig({ ...formCfg, id: GYM_ID }); setSaveOk(true);
+      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
+    } else {
+      let detail = "";
+      try { const j = await r.json(); detail = j?.message || j?.error || ""; } catch {}
+      setSaveError(detail || "Error al guardar. Verifica tu conexión e intenta de nuevo.");
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+
+      {/* ── Header con título y tabs ── */}
+      <div style={{ padding: "20px 28px 0", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
+        {!gymConfig ? (
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 16, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 10px", boxShadow: "0 8px 32px rgba(108,99,255,.4)" }}>💪</div>
+            <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700 }}>Configura tu Gimnasio</h1>
+            <p style={{ color: "#8b949e", fontSize: 12, marginTop: 4 }}>Esta información aparecerá en tu app</p>
+          </div>
+        ) : (
+          <h2 style={{ color: "var(--text-primary)", fontSize: 18, fontWeight: 700, marginBottom: 16 }}>⚙️ Configuración</h2>
+        )}
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 0, overflowX: "auto" }}>
+          {TABS.map(tab => {
+            const active = activeTab === tab.id;
             return (
-              <button key={t.value}
-                onClick={() => setFormCfg(p => ({ ...p, mora_tipo: t.value }))}
-                style={{
-                  padding: "12px 14px",
-                  border: sel ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
-                  borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                  background: sel ? "rgba(108,99,255,.1)" : "var(--bg-elevated)",
-                  display: "flex", alignItems: "center", gap: 12,
-                  transition: "all .15s", textAlign: "left",
-                }}
-              >
-                <div style={{
-                  width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
-                  border: `2px solid ${sel ? "#6c63ff" : "rgba(255,255,255,.2)"}`,
-                  background: sel ? "#6c63ff" : "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  {sel && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
-                </div>
-                <div>
-                  <p style={{ color: sel ? "#c4b5fd" : "var(--text-primary)", fontSize: 13, fontWeight: sel ? 700 : 500 }}>{t.label}</p>
-                  <p style={{ color: "#6b6b8a", fontSize: 11, marginTop: 1 }}>{t.desc}</p>
-                </div>
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                padding: "10px 18px",
+                border: "none",
+                borderBottom: active ? "2px solid #6c63ff" : "2px solid transparent",
+                background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                fontSize: 13, fontWeight: active ? 700 : 500,
+                color: active ? "#a78bfa" : "#8b949e",
+                whiteSpace: "nowrap", transition: "all .15s",
+                display: "flex", alignItems: "center", gap: 6,
+              }}>
+                <span style={{ fontSize: 14 }}>{tab.icon}</span>
+                {tab.label}
               </button>
             );
           })}
         </div>
+      </div>
 
-        {/* Monto o porcentaje si aplica */}
-        {(formCfg.mora_tipo && formCfg.mora_tipo !== "ninguna") && (
-          <div style={{ marginTop: 12 }}>
-            <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 6 }}>
-              {formCfg.mora_tipo === "fijo" ? "Monto de penalidad ($)" : "Porcentaje de penalidad (%)"}
-            </p>
-            <div style={{ position: "relative" }}>
-              <span style={{
-                position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                color: "#9999b3", fontSize: 15, fontWeight: 700, pointerEvents: "none",
-              }}>
-                {formCfg.mora_tipo === "fijo" ? "$" : "%"}
-              </span>
-              <input
-                type="number" min={0}
-                value={formCfg.mora_monto || ""}
-                onChange={e => setFormCfg(p => ({ ...p, mora_monto: e.target.value }))}
-                placeholder="0"
-                style={{
-                  width: "100%", boxSizing: "border-box",
-                  background: "var(--bg-elevated)", border: "1.5px solid rgba(255,255,255,.08)",
-                  borderRadius: 10, padding: "10px 14px 10px 28px",
-                  color: "var(--text-primary)", fontSize: 15, fontFamily: "inherit", outline: "none",
-                }}
-              />
+      {/* ── Contenido scrollable ── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px 16px", minHeight: 0 }}>
+        {activeTab === "general"   && <TabGeneral   formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "pagos"     && <TabPagos     formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "planes"    && <TabPlanes    formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "politicas" && <TabPoliticas formCfg={formCfg} setFormCfg={setFormCfg} />}
+
+        {saveError && (
+          <div style={{ background: "rgba(244,63,94,.12)", border: "1px solid rgba(244,63,94,.35)", borderRadius: 12, padding: "12px 16px", marginTop: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "#f87171", fontSize: 13, fontWeight: 700, margin: "0 0 2px" }}>Error al guardar</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12, margin: 0 }}>{saveError}</p>
             </div>
+            <button onClick={() => setSaveError(null)} style={{ background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", fontSize: 16, padding: 0 }}>✕</button>
+          </div>
+        )}
+        {saveOk && (
+          <div style={{ background: "rgba(74,222,128,.12)", border: "1px solid rgba(74,222,128,.3)", borderRadius: 12, padding: "12px 16px", marginTop: 16, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 18 }}>✅</span>
+            <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 700, margin: 0 }}>¡Configuración guardada!</p>
           </div>
         )}
       </div>
 
-      {/* ── Aviso: mensajes en módulo Mensajes ── */}
-      <div style={{ background: "rgba(108,99,255,.06)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "12px 14px", margin: "16px 0" }}>
-        <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>💬 Mensajes automáticos</p>
-        <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
-          Los mensajes de recordatorio, bienvenida y automatizaciones se configuran en
-          <strong style={{ color: "#a78bfa" }}> Módulo Mensajes → Mensajes del sistema</strong>.
-        </p>
+      {/* ── Pie fijo ── */}
+      <div style={{ padding: "14px 28px", borderTop: "1px solid var(--border)", flexShrink: 0, background: "var(--bg-main)" }}>
+        <Btn full onClick={handleSaveCfg} disabled={saving}>
+          {saving ? "Guardando..." : saveOk ? "¡Guardado! ✓" : gymConfig ? "Guardar cambios ✓" : "Guardar y comenzar ✓"}
+        </Btn>
       </div>
-
-      {/* Toast de error */}
-      {saveError && (
-        <div style={{
-          background: "rgba(244,63,94,.12)", border: "1px solid rgba(244,63,94,.35)",
-          borderRadius: 12, padding: "12px 16px", marginBottom: 12,
-          display: "flex", alignItems: "flex-start", gap: 10,
-        }}>
-          <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
-          <div style={{ flex: 1 }}>
-            <p style={{ color: "#f87171", fontSize: 13, fontWeight: 700, margin: "0 0 2px" }}>Error al guardar</p>
-            <p style={{ color: "var(--text-secondary)", fontSize: 12, margin: 0 }}>{saveError}</p>
-          </div>
-          <button onClick={() => setSaveError(null)} style={{ background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", fontSize: 16, padding: 0 }}>✕</button>
-        </div>
-      )}
-
-      {/* Toast de éxito */}
-      {saveOk && (
-        <div style={{
-          background: "rgba(74,222,128,.12)", border: "1px solid rgba(74,222,128,.3)",
-          borderRadius: 12, padding: "12px 16px", marginBottom: 12,
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <span style={{ fontSize: 18 }}>✅</span>
-          <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 700, margin: 0 }}>¡Configuración guardada!</p>
-        </div>
-      )}
-
-      <div style={{ height: 8 }} />
-      <Btn full onClick={handleSaveCfg} disabled={saving}>
-        {saving ? "Guardando..." : saveOk ? "¡Guardado! ✓" : gymConfig ? "Guardar cambios ✓" : "Guardar y comenzar ✓"}
-      </Btn>
     </div>
   );
 }

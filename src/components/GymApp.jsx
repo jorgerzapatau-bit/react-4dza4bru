@@ -521,10 +521,10 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     <div className="gym-root" data-theme={darkMode ? "dark" : "light"}>
 
       {/* ═══ SIDEBAR NAV ═══ */}
-      {!configScreen && !loading && (
+      {!loading && (
         <Nav
-          screen={screen}
-          setScreen={setScreen}
+          screen={configScreen ? "__config__" : screen}
+          setScreen={(s) => { setConfigScreen(false); setScreen(s); }}
           tab={tab}
           setTab={setTab}
           setModal={setModal}
