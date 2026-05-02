@@ -252,6 +252,104 @@ export default function ConfigScreen({
         );
       })}
 
+      {/* ── Política de cobro por atraso ── */}
+      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, margin: "16px 0 10px" }}>
+        Política de cobro por atraso
+      </p>
+
+      {/* Días de gracia */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 8 }}>
+        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>📅 Días de gracia</p>
+        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 10, lineHeight: 1.5 }}>
+          Tolerancia después del vencimiento antes de marcar la membresía como vencida.
+        </p>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="number" min={0} max={30}
+            value={formCfg.dias_gracia ?? 5}
+            onChange={e => setFormCfg(p => ({ ...p, dias_gracia: Number(e.target.value) }))}
+            style={{
+              flex: 1, background: "var(--bg-elevated)", border: "1.5px solid rgba(255,255,255,.08)",
+              borderRadius: 10, padding: "10px 14px", color: "var(--text-primary)",
+              fontSize: 15, fontFamily: "inherit", outline: "none",
+            }}
+          />
+          <span style={{ color: "#8b949e", fontSize: 13, whiteSpace: "nowrap" }}>días</span>
+        </div>
+      </div>
+
+      {/* Penalidad por mora */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "14px", marginBottom: 8 }}>
+        <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>⚠️ Penalidad por mora</p>
+        <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12, lineHeight: 1.5 }}>
+          Cargo adicional cuando un miembro renueva su membresía con atraso.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { value: "ninguna",    label: "Sin penalidad",  desc: "No se cobra nada por atraso" },
+            { value: "fijo",       label: "Monto fijo",     desc: "Se suma un cargo fijo al renovar" },
+            { value: "porcentaje", label: "Porcentaje",     desc: "% del precio de la membresía" },
+          ].map(t => {
+            const sel = (formCfg.mora_tipo || "ninguna") === t.value;
+            return (
+              <button key={t.value}
+                onClick={() => setFormCfg(p => ({ ...p, mora_tipo: t.value }))}
+                style={{
+                  padding: "12px 14px",
+                  border: sel ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
+                  borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
+                  background: sel ? "rgba(108,99,255,.1)" : "var(--bg-elevated)",
+                  display: "flex", alignItems: "center", gap: 12,
+                  transition: "all .15s", textAlign: "left",
+                }}
+              >
+                <div style={{
+                  width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
+                  border: `2px solid ${sel ? "#6c63ff" : "rgba(255,255,255,.2)"}`,
+                  background: sel ? "#6c63ff" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {sel && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
+                </div>
+                <div>
+                  <p style={{ color: sel ? "#c4b5fd" : "var(--text-primary)", fontSize: 13, fontWeight: sel ? 700 : 500 }}>{t.label}</p>
+                  <p style={{ color: "#6b6b8a", fontSize: 11, marginTop: 1 }}>{t.desc}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Monto o porcentaje si aplica */}
+        {(formCfg.mora_tipo && formCfg.mora_tipo !== "ninguna") && (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 6 }}>
+              {formCfg.mora_tipo === "fijo" ? "Monto de penalidad ($)" : "Porcentaje de penalidad (%)"}
+            </p>
+            <div style={{ position: "relative" }}>
+              <span style={{
+                position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
+                color: "#9999b3", fontSize: 15, fontWeight: 700, pointerEvents: "none",
+              }}>
+                {formCfg.mora_tipo === "fijo" ? "$" : "%"}
+              </span>
+              <input
+                type="number" min={0}
+                value={formCfg.mora_monto || ""}
+                onChange={e => setFormCfg(p => ({ ...p, mora_monto: e.target.value }))}
+                placeholder="0"
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  background: "var(--bg-elevated)", border: "1.5px solid rgba(255,255,255,.08)",
+                  borderRadius: 10, padding: "10px 14px 10px 28px",
+                  color: "var(--text-primary)", fontSize: 15, fontFamily: "inherit", outline: "none",
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Aviso: mensajes en módulo Mensajes ── */}
       <div style={{ background: "rgba(108,99,255,.06)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "12px 14px", margin: "16px 0" }}>
         <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>💬 Mensajes automáticos</p>
