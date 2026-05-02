@@ -1937,6 +1937,54 @@ export default function NuevoMiembroWizard({
     return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,"0")}-${String(v.getDate()).padStart(2,"0")}`;
   })();
 
+  // ── Guardar alumno forzando pago confirmado (Transferencia recibida al instante) ──
+  const handleAddConfirmado = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const formaPagoFinal = fM.formaPago || "Transferencia";
+      const qrToken = "DZ-" + Math.random().toString(36).toUpperCase().slice(2,6) +
+                      Math.random().toString(36).toUpperCase().slice(2,4);
+      const esMenorLocal = fM.fecha_nacimiento ? (() => {
+        const n = new Date(fM.fecha_nacimiento+"T00:00:00");
+        const h = new Date();
+        let e = h.getFullYear() - n.getFullYear();
+        const mo = h.getMonth() - n.getMonth();
+        if (mo < 0 || (mo===0 && h.getDate()<n.getDate())) e--;
+        return e < 18;
+      })() : false;
+      const telDestino = esMenorLocal && fM.tutor_telefono ? fM.tutor_telefono : fM.tel;
+      const waMsg = fM.plan
+        ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gymConfig?.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fM.fecha_incorporacion||todayISO())}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Pago: ${formaPagoFinal}\n\n¡Gracias por unirte! 💪`
+        : null;
+      const wizardFMExtended = {
+        ...fM,
+        formaPago:      formaPagoFinal,
+        estado:         "Activo",   // forzar Activo aunque sea Transferencia
+        qr_token:       qrToken,
+        pago_pendiente: false,
+      };
+      const result = await onAdd(wizardFMExtended, {
+        comprobantePNG, waMsg, tel: telDestino,
+        nombreMiembro: fM.nombre, venceISO,
+        plan: fM.plan, formaPago: formaPagoFinal,
+        monto: fM.monto, estadoInicial: "Activo", qrToken,
+      });
+      setSavedMiembro({ qr_token: qrToken, ...result });
+      try {
+        const png = await generarComprobantePagoPNG({
+          gymConfig, miembro: { nombre: fM.nombre },
+          plan: fM.plan, monto: fM.monto,
+          formaPago: formaPagoFinal, venceISO,
+        });
+        setComprobantePNG(png);
+      } catch(e) {}
+      setStep(4);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ── Guardar alumno en BD ──
   const handleAdd = async () => {
     if (saving) return;
@@ -2128,21 +2176,39 @@ export default function NuevoMiembroWizard({
               </button>
             )}
 
-            {/* Botón principal */}
+            {/* Botón principal + Confirmar pago (solo paso 3 Transferencia) */}
             {!isStep4 && (
-              <button
-                onClick={goNext}
-                disabled={(step===1 && !canNext1) || saving}
-                style={{
-                  ...S.btnPrimary,
-                  background: esPendiente && step===3
-                    ? "linear-gradient(135deg,#f59e0b,#d97706)"
-                    : S.btnPrimary.background,
-                  opacity: ((step===1 && !canNext1) || saving) ? 0.5 : 1,
-                  cursor:  ((step===1 && !canNext1) || saving) ? "not-allowed" : "pointer",
-                }}>
-                {nextLabel}
-              </button>
+              <div style={{ display:"flex", gap:8, flex:1 }}>
+                {step === 3 && esPendiente && (
+                  <button
+                    onClick={handleAddConfirmado}
+                    disabled={saving}
+                    style={{
+                      flex:1, padding:"14px 10px", borderRadius:14, border:"none", fontFamily:"inherit",
+                      background: saving ? "rgba(16,185,129,.4)" : "linear-gradient(135deg,#10b981,#059669)",
+                      color:"#fff", fontWeight:700, fontSize:13, cursor: saving ? "not-allowed" : "pointer",
+                      opacity: saving ? 0.6 : 1,
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+                      boxShadow:"0 2px 12px rgba(16,185,129,.3)",
+                    }}>
+                    ✅ Pago recibido
+                  </button>
+                )}
+                <button
+                  onClick={goNext}
+                  disabled={(step===1 && !canNext1) || saving}
+                  style={{
+                    ...S.btnPrimary,
+                    flex:1,
+                    background: esPendiente && step===3
+                      ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                      : S.btnPrimary.background,
+                    opacity: ((step===1 && !canNext1) || saving) ? 0.5 : 1,
+                    cursor:  ((step===1 && !canNext1) || saving) ? "not-allowed" : "pointer",
+                  }}>
+                  {nextLabel}
+                </button>
+              </div>
             )}
           </div>
         </div>
