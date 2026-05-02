@@ -2207,14 +2207,13 @@ export default function NuevoMiembroWizard({
     return "Siguiente →";
   })();
 
+  const canNext3 = !hasPlan || !!fM.formaPago;
+
   const goNext = () => {
     if (step === 1 && !canNext1) return;
     if (step === 2 && (!hasPlan || fM.beca)) { handleAdd(); return; }
     if (step === 3) {
-      // Si hay plan y no eligieron forma de pago → poner Efectivo por defecto
-      if (hasPlan && !fM.formaPago) {
-        setFM(p => ({ ...p, formaPago: "Efectivo" }));
-      }
+      if (hasPlan && !fM.formaPago) return; // debe elegir forma de pago
       handleAdd();
       return;
     }
@@ -2282,6 +2281,13 @@ export default function NuevoMiembroWizard({
             </div>
           )}
 
+          {/* Aviso forma de pago obligatoria en paso 3 */}
+          {step===3 && hasPlan && !fM.formaPago && (
+            <div style={{ background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.3)", borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
+              <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>⚠️ Selecciona una forma de pago para continuar.</p>
+            </div>
+          )}
+
           <div style={{ display:"flex", gap:10 }}>
             {/* Botón izquierdo */}
             {isStep4 ? (
@@ -2321,15 +2327,15 @@ export default function NuevoMiembroWizard({
                 )}
                 <button
                   onClick={goNext}
-                  disabled={(step===1 && !canNext1) || saving}
+                  disabled={(step===1 && !canNext1) || (step===3 && !canNext3) || saving}
                   style={{
                     ...S.btnPrimary,
                     flex:1,
                     background: esPendiente && step===3
                       ? "linear-gradient(135deg,#f59e0b,#d97706)"
                       : S.btnPrimary.background,
-                    opacity: ((step===1 && !canNext1) || saving) ? 0.5 : 1,
-                    cursor:  ((step===1 && !canNext1) || saving) ? "not-allowed" : "pointer",
+                    opacity: ((step===1 && !canNext1) || (step===3 && !canNext3) || saving) ? 0.5 : 1,
+                    cursor:  ((step===1 && !canNext1) || (step===3 && !canNext3) || saving) ? "not-allowed" : "pointer",
                   }}>
                   {nextLabel}
                 </button>
