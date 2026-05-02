@@ -473,6 +473,8 @@ export default function MemberDetailModal({
 
   const [photoModal, setPhotoModal] = useState(false);
   const [renovarModal, setRenovarModal] = useState(false);
+  const [planCambiado, setPlanCambiado] = useState(false);
+  const [planOriginal, setPlanOriginal] = useState(null);
   const [comprobanteModal, setComprobanteModal] = useState(false);
   const [comprobanteData, setComprobanteData] = useState(null); // { tipo: "efectivo"|"transferencia", png, infoPNG, plan, monto, vence }
   const [copiado, setCopiado] = useState(false);
@@ -604,7 +606,10 @@ export default function MemberDetailModal({
     const fechaISO = renovar.inicio;
     const venceISO = renovar.vence;
     const becaTag = m.beca ? " [BECA]" : "";
-    const descText = `Renovación ${renovar.plan} - ${m.nombre} [${renovar.formaPago || "Efectivo"}]${becaTag}${venceISO ? ` (vence:${venceISO})` : ""}`;
+    const cambioTag = (planCambiado && planOriginal && planOriginal !== renovar.plan)
+      ? ` [cambio desde: ${planOriginal}]`
+      : "";
+    const descText = `Renovación ${renovar.plan} - ${m.nombre} [${renovar.formaPago || "Efectivo"}]${becaTag}${cambioTag}${venceISO ? ` (vence:${venceISO})` : ""}`;
     await onAddPago({
       id: uid(),
       tipo: "ingreso",
@@ -1173,58 +1178,151 @@ export default function MemberDetailModal({
               {/* ── Selector de plan: usa planesMembresia si existen, si no planesActivos ── */}
               {(() => {
                 const tieneMembresias = planesMembresia && planesMembresia.length > 0;
+                const esPrimera = esPrimeraMembresía;
+                const planActualLabel = planOriginal || defaultPlan;
+                const cambiandoPlan = !esPrimera && planCambiado && renovar.plan !== planActualLabel;
 
                 if (tieneMembresias) {
                   return (
                     <div style={{ marginBottom: 14 }}>
-                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-                        Plan
-                      </p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {planesMembresia.map((pm) => {
-                          const isSelected = renovar.plan === pm.nombre;
-                          return (
-                            <button
-                              key={pm.id || pm.nombre}
-                              onClick={() => {
-                                const precio = m.beca ? "0" : String(pm.precio_publico || "");
-                                setRenovar((p) => ({
-                                  ...p,
-                                  plan: pm.nombre,
-                                  monto: precio,
-                                  vence: p.venceManual ? p.vence : calcVence(p.inicio, pm.nombre),
-                                }));
-                              }}
-                              style={{
-                                width: "100%",
-                                padding: "12px 14px",
-                                border: isSelected ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
-                                borderRadius: 14,
-                                cursor: "pointer",
-                                fontFamily: "inherit",
-                                background: isSelected ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                transition: "all .2s",
-                                textAlign: "left",
-                              }}
-                            >
-                              <span style={{ color: isSelected ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSelected ? 700 : 500 }}>
-                                🏷️ {pm.nombre}
-                              </span>
-                              <span style={{
-                                background: isSelected ? "rgba(34,211,238,.2)" : "rgba(255,255,255,.07)",
-                                color: isSelected ? "#22d3ee" : "#8b949e",
-                                borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700,
-                                fontFamily: "'DM Mono', monospace",
-                              }}>
-                                ${Number(pm.precio_publico || 0).toLocaleString("es-MX")}
-                              </span>
-                            </button>
-                          );
-                        })}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Plan
+                        </p>
+                        {!esPrimera && !planCambiado && (
+                          <button
+                            onClick={() => setPlanCambiado(true)}
+                            style={{
+                              border: "none", background: "rgba(255,255,255,.07)",
+                              color: "#8b949e", fontSize: 10, fontWeight: 600,
+                              padding: "4px 10px", borderRadius: 8, cursor: "pointer",
+                              fontFamily: "inherit", letterSpacing: 0.3,
+                            }}
+                          >
+                            ✏️ Cambiar plan
+                          </button>
+                        )}
+                        {!esPrimera && planCambiado && (
+                          <button
+                            onClick={() => {
+                              setPlanCambiado(false);
+                              const precio = m.beca ? "0" : String(
+                                (planesMembresia.find(p => p.nombre === planActualLabel) || {}).precio_publico || ""
+                              );
+                              setRenovar(p => ({
+                                ...p,
+                                plan: planActualLabel,
+                                monto: precio || p.monto,
+                                vence: p.venceManual ? p.vence : calcVence(p.inicio, planActualLabel),
+                              }));
+                            }}
+                            style={{
+                              border: "none", background: "rgba(248,113,113,.12)",
+                              color: "#f87171", fontSize: 10, fontWeight: 600,
+                              padding: "4px 10px", borderRadius: 8, cursor: "pointer",
+                              fontFamily: "inherit", letterSpacing: 0.3,
+                            }}
+                          >
+                            ↩ Cancelar cambio
+                          </button>
+                        )}
                       </div>
+
+                      {/* Plan bloqueado: solo muestra el plan actual sin opciones */}
+                      {!esPrimera && !planCambiado ? (
+                        <div style={{
+                          width: "100%", padding: "12px 14px",
+                          border: "2px solid #22d3ee", borderRadius: 14,
+                          background: "rgba(34,211,238,.1)",
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                        }}>
+                          <span style={{ color: "#22d3ee", fontSize: 13, fontWeight: 700 }}>
+                            🏷️ {planActualLabel}
+                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{
+                              background: "rgba(34,211,238,.2)", color: "#22d3ee",
+                              borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700,
+                              fontFamily: "'DM Mono', monospace",
+                            }}>
+                              ${Number(renovar.monto || 0).toLocaleString("es-MX")}
+                            </span>
+                            <span style={{ fontSize: 10, color: "#22d3ee", opacity: 0.7 }}>🔒</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {cambiandoPlan && (
+                            <div style={{
+                              background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)",
+                              borderRadius: 12, padding: "10px 14px", marginBottom: 10,
+                              display: "flex", gap: 8, alignItems: "flex-start",
+                            }}>
+                              <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+                              <div>
+                                <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>
+                                  Estás cambiando el plan
+                                </p>
+                                <p style={{ color: "#f59e0b", fontSize: 11, opacity: 0.85 }}>
+                                  Plan anterior: <strong>{planActualLabel}</strong> → Nuevo: <strong>{renovar.plan}</strong>
+                                  {renovar.monto && ` · $${Number(renovar.monto).toLocaleString("es-MX")}`}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {planesMembresia.map((pm) => {
+                              const isSelected = renovar.plan === pm.nombre;
+                              const esAnterior = pm.nombre === planActualLabel;
+                              return (
+                                <button
+                                  key={pm.id || pm.nombre}
+                                  onClick={() => {
+                                    const precio = m.beca ? "0" : String(pm.precio_publico || "");
+                                    setRenovar((p) => ({
+                                      ...p,
+                                      plan: pm.nombre,
+                                      monto: precio,
+                                      vence: p.venceManual ? p.vence : calcVence(p.inicio, pm.nombre),
+                                    }));
+                                  }}
+                                  style={{
+                                    width: "100%", padding: "12px 14px",
+                                    border: isSelected ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                                    borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+                                    background: isSelected ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
+                                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                                    transition: "all .2s", textAlign: "left",
+                                  }}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span style={{ color: isSelected ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSelected ? 700 : 500 }}>
+                                      🏷️ {pm.nombre}
+                                    </span>
+                                    {esAnterior && !isSelected && (
+                                      <span style={{
+                                        fontSize: 9, fontWeight: 700, color: "#8b949e",
+                                        background: "rgba(255,255,255,.07)", borderRadius: 6,
+                                        padding: "2px 6px", letterSpacing: 0.4,
+                                      }}>
+                                        ANTERIOR
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span style={{
+                                    background: isSelected ? "rgba(34,211,238,.2)" : "rgba(255,255,255,.07)",
+                                    color: isSelected ? "#22d3ee" : "#8b949e",
+                                    borderRadius: 8, padding: "3px 10px", fontSize: 12, fontWeight: 700,
+                                    fontFamily: "'DM Mono', monospace",
+                                  }}>
+                                    ${Number(pm.precio_publico || 0).toLocaleString("es-MX")}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 }
@@ -1701,6 +1799,8 @@ export default function MemberDetailModal({
                 const venceISO = (() => { const v = parseDate(memInfo.vence); if (!v) return todayISO(); v.setHours(0,0,0,0); return v.toISOString().split("T")[0]; })();
                 const sugerido = dias !== null && dias > 0 ? venceISO : todayISO();
                 setRenovar({ plan: memInfo.plan || defaultPlan, monto: String(memInfo.monto || (planPrecioActivo && planPrecioActivo[memInfo.plan || defaultPlan]) || defaultMonto || ""), inicio: sugerido, vence: calcVence(sugerido, memInfo.plan || defaultPlan), venceManual: false, formaPago: "Efectivo" });
+                setPlanOriginal(memInfo.plan || defaultPlan);
+                setPlanCambiado(false);
                 setRenovarModal(true);
               }} style={{
                 flex:2, padding:"9px 4px", borderRadius:8,
