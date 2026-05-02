@@ -384,6 +384,35 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         }, ...p]);
       }
 
+      // ── Registrar una transacción por cada clase extra seleccionada ──
+      if (estadoInicial !== "Pendiente" && (data.planesExtra||[]).length > 0) {
+        const fechaInicio = data.fecha_incorporacion || todayISO();
+        const formaPago   = data.formaPago || "Efectivo";
+        const CICLO_M     = { mensual:1, trimestral:3, semestral:6, anual:12 };
+        for (const pe of data.planesExtra) {
+          const montoExtra = data.beca ? 0 : (Number(pe.monto)||0);
+          const meses  = pe.planData?.meses ?? CICLO_M[pe.planData?.ciclo_renovacion] ?? 1;
+          let venceE = null;
+          try {
+            const [ye,me,de] = fechaInicio.split("-").map(Number);
+            const ve = new Date(ye, me-1+meses, de);
+            venceE = `${ve.getFullYear()}-${String(ve.getMonth()+1).padStart(2,"0")}-${String(ve.getDate()).padStart(2,"0")}`;
+          } catch(e) {}
+          const descE = `Renovación ${pe.nombre} - ${data.nombre} [${formaPago}]${venceE?` (vence:${venceE})`:""}`;
+          const tDbE = await supabase.from("transacciones");
+          const savedE = await tDbE.insert({
+            gym_id: GYM_ID, tipo:"ingreso", categoria:"Membresías",
+            descripcion: descE, monto: montoExtra, fecha: fechaInicio,
+            miembro_id: savedM.id,
+          });
+          if (savedE) setTxs(p => [{
+            id: savedE.id, tipo:"ingreso", categoria:"Membresías",
+            desc: descE, descripcion: descE, monto: montoExtra,
+            fecha: fechaInicio, miembroId: savedM.id,
+          }, ...p]);
+        }
+      }
+
       // ── Si es Pendiente: guardar los datos del plan para cuando confirmen ──
       // (la transacción se registrará al confirmar el pago desde el perfil)
 

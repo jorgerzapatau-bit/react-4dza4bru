@@ -617,207 +617,245 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
   const horariosDeClase = (claseId) =>
     (horarios || []).filter(h => h.clase_id === claseId && h.activo !== false);
 
-  // ── GIMNASIO: muestra planes directamente desde gymConfig ──────
+  // ── GIMNASIO: planes del gym + clases disponibles ──────────────
   if (!isDojo) {
-    const gymPlanes = (activePlanes || DEFAULT_PLANES).filter(p => p.activo !== false);
-    const CICLO_LABEL_GYM = { mensual: "mes", trimestral: "trimestre", semestral: "semestre", anual: "año" };
-    const MESES_MAP_GYM   = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+    const gymPlanes   = (activePlanes || DEFAULT_PLANES).filter(p => p.activo !== false);
+    const clasesGym   = (clases || []).filter(c => c.activo !== false);
+    const CICLO_LBL   = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
+    const MESES_MAP_G = { mensual:1, trimestral:3, semestral:6, anual:12 };
+
+    // Helpers de toggle para planesExtra (clases)
+    const isExtraSelected = (claseId) =>
+      (fM.planesExtra||[]).some(p => p.id === String(claseId));
+
+    const toggleClase = (clase) => {
+      const id = String(clase.id);
+      const planVinc = (planesMembresia||[]).find(p =>
+        (p.clases_vinculadas||[]).map(String).includes(id)
+      );
+      const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+      const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
+      const meses  = planVinc?.meses ?? MESES_MAP_G[ciclo] ?? 1;
+      setFM(prev => {
+        const ya = (prev.planesExtra||[]).some(p => p.id === id);
+        const extras = ya
+          ? (prev.planesExtra||[]).filter(p => p.id !== id)
+          : [...(prev.planesExtra||[]), {
+              id, nombre: clase.nombre, monto: prev.beca ? 0 : precio,
+              planData: { id, nombre: clase.nombre, precio_publico: precio, ciclo_renovacion: ciclo, meses },
+              tipo: "clase",
+            }];
+        return { ...prev, planesExtra: extras };
+      });
+    };
+
+    const totalMonto = (() => {
+      const base  = fM.plan ? Number(fM.monto||0) : 0;
+      const extra = (fM.planesExtra||[]).reduce((s,p)=>s+Number(p.monto||0),0);
+      return base + extra;
+    })();
+
+    const haySeleccion = !!(fM.plan) || (fM.planesExtra||[]).length > 0;
 
     return (
       <div>
-        {/* Sin membresía por ahora */}
-        <button
-          onClick={() => setFM(p => ({ ...p, claseId: null, planId: null, plan: null, monto: null, planData: null }))}
-          style={{
-            width: "100%", padding: "14px 16px", marginBottom: 10,
-            border: !fM.plan
-              ? "2px solid rgba(167,139,250,.5)"
-              : "1.5px solid var(--border-strong,#2e2e42)",
-            borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-            background: !fM.plan ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
-            display: "flex", alignItems: "center", gap: 12,
-            transition: "all .2s", textAlign: "left",
-          }}
-        >
-          <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: !fM.plan ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-          }}>⏸️</div>
-          <div style={{ flex: 1 }}>
-            <p style={{
-              color: !fM.plan ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
-              fontWeight: !fM.plan ? 700 : 500, fontSize: 14,
-            }}>Sin membresía por ahora</p>
-            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
-              Se puede asignar después desde el perfil
-            </p>
-          </div>
-          {!fM.plan && <span style={{ color: "#a78bfa", fontSize: 18 }}>✓</span>}
-        </button>
-
-        {/* Lista de planes del gimnasio */}
-        {gymPlanes.length === 0 ? (
-          <div style={{
-            padding: "16px", borderRadius: 14, marginTop: 8,
-            background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)",
-            display: "flex", gap: 10, alignItems: "flex-start",
-          }}>
-            <span style={{ fontSize: 20 }}>⚠️</span>
-            <div>
-              <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>No hay planes configurados</p>
-              <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 12, marginTop: 4 }}>
-                Ve a Configuración → Planes para activar los planes de membresía.
-              </p>
-            </div>
-          </div>
-        ) : (
-          gymPlanes.map((plan) => {
-            const isSel  = fM.plan === plan.nombre;
-            const precio = Number(plan.precio || 0);
-            const ciclo  = plan.ciclo_renovacion || "mensual";
-            const meses  = plan.meses ?? MESES_MAP_GYM[ciclo] ?? 1;
-
-            return (
-              <button
-                key={plan.nombre}
-                onClick={() => {
-                  setFM(prev => ({
-                    ...prev,
-                    claseId:  null,
-                    planId:   plan.nombre,
-                    plan:     plan.nombre,
-                    monto:    prev.beca ? "0" : String(precio),
-                    planData: {
-                      id:               plan.nombre,
-                      nombre:           plan.nombre,
-                      precio_publico:   precio,
-                      ciclo_renovacion: ciclo,
-                      meses,
-                    },
-                  }));
-                }}
-                style={{
-                  width: "100%", padding: "14px 16px", marginBottom: 8,
-                  border: isSel
-                    ? "2px solid #6c63ff"
-                    : "1.5px solid var(--border-strong,#2e2e42)",
-                  borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-                  background: isSel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
-                  display: "flex", alignItems: "center", gap: 12,
-                  transition: "all .2s", textAlign: "left",
-                }}
-              >
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                  background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.05)",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                }}>
-                  {meses >= 12 ? "🏆" : meses >= 6 ? "🔥" : meses >= 3 ? "⚡" : "📅"}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{
-                    color: isSel ? "#a78bfa" : "var(--text-primary,#e8e8f0)",
-                    fontWeight: 700, fontSize: 14,
-                  }}>
-                    {plan.nombre}
-                  </p>
-                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
-                    Vigencia: {meses} {meses === 1 ? "mes" : "meses"}
-                  </p>
-                  {fM.beca && isSel && (
-                    <p style={{ color: "#4ade80", fontSize: 11, marginTop: 3 }}>🎓 Beca — sin costo</p>
-                  )}
-                </div>
-
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  {precio > 0 ? (
-                    <>
-                      <p style={{
-                        background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.07)",
-                        color: isSel ? "#a78bfa" : "var(--text-secondary,#9999b3)",
-                        borderRadius: 10, padding: "4px 12px",
-                        fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace",
-                      }}>
-                        {fM.beca && isSel
-                          ? <span style={{ color: "#4ade80" }}>$0</span>
-                          : `$${precio.toLocaleString("es-MX")}`}
-                      </p>
-                      {!fM.beca && (
-                        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 3 }}>
-                          / {CICLO_LABEL_GYM[ciclo] || ciclo}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p style={{
-                      background: "rgba(74,222,128,.1)", color: "#4ade80",
-                      borderRadius: 10, padding: "4px 12px", fontSize: 12, fontWeight: 700,
-                    }}>
-                      Gratuito
-                    </p>
-                  )}
-                </div>
-              </button>
-            );
-          })
+        {/* ── Sección: Planes del Gimnasio ── */}
+        {gymPlanes.length > 0 && (
+          <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
+            🏋️ Membresía del Gimnasio
+          </p>
         )}
 
-        {/* Monto editable cuando hay plan y no es beca */}
-        {fM.plan && !fM.beca && (
-          <div style={{
-            marginTop: 8, padding: "14px",
-            background: "rgba(108,99,255,.07)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14,
+        {/* Sin membresía */}
+        <button
+          onClick={() => setFM(p => ({ ...p, claseId:null, planId:null, plan:null, monto:null, planData:null }))}
+          style={{
+            width:"100%", padding:"12px 16px", marginBottom:8,
+            border: !fM.plan ? "2px solid rgba(167,139,250,.5)" : "1.5px solid var(--border-strong,#2e2e42)",
+            borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+            background: !fM.plan ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
+            display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left",
           }}>
-            <label style={{
-              color: "#a78bfa", fontSize: 11, fontWeight: 600,
-              textTransform: "uppercase", letterSpacing: .5, marginBottom: 6, display: "block",
-            }}>
-              💰 Monto a cobrar (editable)
-            </label>
-            <input
-              type="number" value={fM.monto || ""} min="0"
-              onChange={e => setFM(p => ({ ...p, monto: e.target.value }))}
-              placeholder="0" inputMode="numeric"
+          <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
+            background: !fM.plan ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>⏸️</div>
+          <div style={{ flex:1 }}>
+            <p style={{ color: !fM.plan ? "#c4b5fd" : "var(--text-secondary,#9999b3)", fontWeight: !fM.plan?700:500, fontSize:13 }}>
+              Sin membresía del gym
+            </p>
+            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Solo inscripción a clases</p>
+          </div>
+          {!fM.plan && <span style={{ color:"#a78bfa", fontSize:16 }}>✓</span>}
+        </button>
+
+        {/* Lista de planes del gym */}
+        {gymPlanes.map(plan => {
+          const isSel  = fM.plan === plan.nombre;
+          const precio = Number(plan.precio||0);
+          const ciclo  = plan.ciclo_renovacion || "mensual";
+          const meses  = plan.meses ?? MESES_MAP_G[ciclo] ?? 1;
+          return (
+            <button key={plan.nombre}
+              onClick={() => setFM(prev => ({
+                ...prev, claseId:null, planId:plan.nombre, plan:plan.nombre,
+                monto: prev.beca ? "0" : String(precio),
+                planData: { id:plan.nombre, nombre:plan.nombre, precio_publico:precio, ciclo_renovacion:ciclo, meses },
+              }))}
               style={{
-                width: "100%", background: "var(--bg-elevated,#1e1e2e)",
-                border: "1px solid var(--border-strong,#2e2e42)", borderRadius: 12,
-                padding: "12px 14px", color: "var(--text-primary,#e8e8f0)",
-                fontSize: 15, fontFamily: "'DM Mono',monospace",
-                fontWeight: 700, outline: "none", boxSizing: "border-box",
-              }}
-            />
+                width:"100%", padding:"12px 16px", marginBottom:8,
+                border: isSel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                background: isSel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left",
+              }}>
+              <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
+                background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.05)",
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
+                {meses>=12?"🏆":meses>=6?"🔥":meses>=3?"⚡":"📅"}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <p style={{ color: isSel?"#a78bfa":"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>{plan.nombre}</p>
+                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Vigencia: {meses} {meses===1?"mes":"meses"}</p>
+              </div>
+              <div style={{ textAlign:"right", flexShrink:0 }}>
+                {precio > 0 ? (
+                  <>
+                    <p style={{ background: isSel?"rgba(108,99,255,.2)":"rgba(255,255,255,.07)", color: isSel?"#a78bfa":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                      {fM.beca&&isSel ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                    </p>
+                    {!fM.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                  </>
+                ) : (
+                  <p style={{ background:"rgba(74,222,128,.1)", color:"#4ade80", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Gratuito</p>
+                )}
+              </div>
+            </button>
+          );
+        })}
+
+        {/* ── Sección: Clases disponibles ── */}
+        {clasesGym.length > 0 && (
+          <>
+            <div style={{ display:"flex", alignItems:"center", gap:8, margin:"14px 0 8px" }}>
+              <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
+              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
+                🗓️ Clases (selección múltiple)
+              </p>
+              <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
+            </div>
+
+            {clasesGym.map(clase => {
+              const planVinc = (planesMembresia||[]).find(p =>
+                (p.clases_vinculadas||[]).map(String).includes(String(clase.id))
+              );
+              const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+              const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
+              const horClase = (horarios||[]).filter(h => h.clase_id === clase.id && h.activo !== false);
+              const DIAS_S = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D" };
+              const diasStr = horClase.length > 0
+                ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].map(d=>DIAS_S[d]||d).join(" ")
+                : null;
+              const horaStr = horClase.length > 0 && horClase[0].hora_inicio
+                ? (() => { const [h,m]=horClase[0].hora_inicio.split(":"); const hr=parseInt(h); return `${hr%12||12}:${m} ${hr>=12?"p.m.":"a.m."}`; })()
+                : null;
+              const isSel = isExtraSelected(clase.id);
+
+              return (
+                <button key={clase.id} onClick={() => toggleClase(clase)}
+                  style={{
+                    width:"100%", padding:"12px 16px", marginBottom:8,
+                    border: isSel ? "2px solid #22d3ee" : "1.5px solid var(--border-strong,#2e2e42)",
+                    borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                    background: isSel ? "rgba(34,211,238,.1)" : "var(--bg-elevated,#1e1e2e)",
+                    display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left",
+                  }}>
+                  {/* Checkbox visual */}
+                  <div style={{ width:22, height:22, borderRadius:7, flexShrink:0,
+                    border: isSel ? "none" : "2px solid rgba(255,255,255,.2)",
+                    background: isSel ? "#22d3ee" : "transparent",
+                    display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>
+                    {isSel && "✓"}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ color: isSel?"#22d3ee":"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
+                    {(diasStr || horaStr) && (
+                      <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>
+                        {horaStr && `🕐 ${horaStr}`}{diasStr && `  ${diasStr}`}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ textAlign:"right", flexShrink:0 }}>
+                    {precio > 0 ? (
+                      <>
+                        <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                          {fM.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                        </p>
+                        {!fM.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                      </>
+                    ) : (
+                      <p style={{ background:"rgba(74,222,128,.1)", color:"#4ade80", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Incluida</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </>
+        )}
+
+        {/* Monto editable si hay plan principal y no es beca */}
+        {fM.plan && !fM.beca && (
+          <div style={{ marginTop:8, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14 }}>
+            <label style={{ color:"#a78bfa", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6, display:"block" }}>
+              💰 Monto membresía gym (editable)
+            </label>
+            <input type="number" value={fM.monto||""} min="0"
+              onChange={e => setFM(p => ({ ...p, monto:e.target.value }))}
+              placeholder="0" inputMode="numeric"
+              style={{ width:"100%", background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary,#e8e8f0)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+          </div>
+        )}
+
+        {/* Resumen de selección múltiple */}
+        {haySeleccion && (fM.planesExtra||[]).length > 0 && !fM.beca && (
+          <div style={{ marginTop:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
+            <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
+            {fM.plan && (
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12 }}>🏋️ {fM.plan}</span>
+                <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${Number(fM.monto||0).toLocaleString("es-MX")}</span>
+              </div>
+            )}
+            {(fM.planesExtra||[]).map(pe => (
+              <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12 }}>🗓️ {pe.nombre}</span>
+                <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+              </div>
+            ))}
+            <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between" }}>
+              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:13, fontWeight:700 }}>Total</span>
+              <span style={{ color:"#4ade80", fontSize:14, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${totalMonto.toLocaleString("es-MX")}</span>
+            </div>
           </div>
         )}
 
         {/* Aviso beca */}
         {fM.beca && (
-          <div style={{
-            marginTop: 10, padding: "10px 14px",
-            background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 12,
-            display: "flex", gap: 8, alignItems: "center",
-          }}>
-            <span style={{ fontSize: 16 }}>🎓</span>
-            <p style={{ color: "#fbbf24", fontSize: 11 }}>
-              Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.
-            </p>
+          <div style={{ marginTop:10, padding:"10px 14px", background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.3)", borderRadius:12, display:"flex", gap:8, alignItems:"center" }}>
+            <span style={{ fontSize:16 }}>🎓</span>
+            <p style={{ color:"#fbbf24", fontSize:11 }}>Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.</p>
           </div>
         )}
 
-        {!fM.plan && gymPlanes.length > 0 && (
-          <p style={{
-            color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, textAlign: "center",
-            marginTop: 14, lineHeight: 1.5,
-          }}>
-            Si no seleccionas un plan, el miembro se registrará{" "}
-            <strong style={{ color: "var(--text-secondary,#9999b3)" }}>sin membresía</strong>{" "}
-            y podrás asignarla después.
+        {!haySeleccion && gymPlanes.length > 0 && (
+          <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, textAlign:"center", marginTop:14, lineHeight:1.5 }}>
+            Si no seleccionas nada, el miembro se registrará{" "}
+            <strong style={{ color:"var(--text-secondary,#9999b3)" }}>sin membresía</strong> y podrás asignarla después.
           </p>
         )}
       </div>
     );
   }
+
 
   // ── DOJO: comportamiento original con clases y horarios ─────────
   return (
@@ -1478,7 +1516,7 @@ async function generarQRPNG(text) {
 // ══════════════════════════════════════════════════════════════════
 // ── PASO 3: Pago (bifurcado por forma de pago) ───────────────────
 // ══════════════════════════════════════════════════════════════════
-function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComprobantePNG, generandoComp, setGenerandoComp, infoBancoPNG, setInfoBancoPNG, generandoInfo, setGenerandoInfo }) {
+function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, comprobantePNG, setComprobantePNG, generandoComp, setGenerandoComp, infoBancoPNG, setInfoBancoPNG, generandoInfo, setGenerandoInfo }) {
   const gym     = gymConfig || {};
   const metodos = [
     { id: "Efectivo",      icon: "💵", label: "Efectivo" },
@@ -1591,18 +1629,36 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
       {/* Resumen */}
       <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
         <p style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen</p>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"4px 16px" }}>
-          {[["Alumno", fM.nombre||"—"], ["Plan", fM.plan||"Sin membresía"], ["Monto", fM.plan ? `$${Number(fM.monto||0).toLocaleString("es-MX")}` : "—"], ["Vence", fmtDateShort(venceISO)]].map(([l,v]) => (
-            <div key={l} style={{ display:"flex", justifyContent:"space-between" }}>
-              <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>{l}</span>
-              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{v}</span>
-            </div>
-          ))}
+        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Alumno</span>
+          <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{fM.nombre||"—"}</span>
+        </div>
+        {fM.plan && (
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+            <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>🏋️ {fM.plan}</span>
+            <span style={{ color:"#a78bfa", fontSize:11, fontWeight:600 }}>${Number(fM.monto||0).toLocaleString("es-MX")}</span>
+          </div>
+        )}
+        {(fM.planesExtra||[]).map(pe => (
+          <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+            <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>🗓️ {pe.nombre}</span>
+            <span style={{ color:"#22d3ee", fontSize:11, fontWeight:600 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+          </div>
+        ))}
+        {((fM.planesExtra||[]).length > 0 || fM.plan) && (
+          <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
+            <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Total</span>
+            <span style={{ color:"#4ade80", fontSize:12, fontWeight:700 }}>${montoTotal.toLocaleString("es-MX")}</span>
+          </div>
+        )}
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Vence</span>
+          <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{fmtDateShort(venceISO)}</span>
         </div>
       </div>
 
       {/* Selector forma de pago */}
-      {fM.plan && (
+      {hasPlan && (
         <>
           <p style={{ ...S.label, marginBottom:8 }}>Forma de pago</p>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
@@ -1625,7 +1681,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
       )}
 
       {/* ── Efectivo / Tarjeta → nota de que el comprobante se genera en paso 4 ── */}
-      {fM.plan && !esPorTransferencia && fM.formaPago && (
+      {hasPlan && !esPorTransferencia && fM.formaPago && (
         <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:12 }}>
           <span style={{ fontSize:18, flexShrink:0 }}>🧾</span>
           <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, lineHeight:1.4 }}>
@@ -1635,7 +1691,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
       )}
 
       {/* ── Transferencia → Info bancaria + aviso pendiente ── */}
-      {fM.plan && esPorTransferencia && (
+      {hasPlan && esPorTransferencia && (
         <>
           {/* Banner estado pendiente */}
           <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"12px 14px", background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.28)", borderRadius:12, marginBottom:12 }}>
@@ -1686,7 +1742,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
       )}
 
       {/* Sin plan → nota */}
-      {!fM.plan && (
+      {!hasPlan && (
         <div style={{ padding:"14px 16px", background:"rgba(107,114,128,.07)", border:"1px solid rgba(107,114,128,.2)", borderRadius:12, textAlign:"center" }}>
           <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:13 }}>Sin membresía seleccionada</p>
           <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:4 }}>El alumno se registrará sin plan activo. Podrás asignarle una membresía después.</p>
@@ -1895,6 +1951,7 @@ export default function NuevoMiembroWizard({
     notas:"", beca:false,
     tutor_nombre:"", tutor_telefono:"", tutor_parentesco:"",
     plan:null, monto:null, claseId:null, planData:null, planId:null,
+    planesExtra: [],
     formaPago:null,
     grado_actual:"", fecha_ultimo_examen:"", proximo_objetivo:"",
   });
@@ -1917,7 +1974,12 @@ export default function NuevoMiembroWizard({
   const tutorValido   = !esMenorWizard || (!!(fM.tutor_nombre||"").trim() && !!(fM.tutor_telefono||"").trim());
   const canNext1      = !!fM.nombre.trim() && tutorValido;
   const tutorError    = esMenorWizard && !tutorValido && fM.nombre.trim();
-  const hasPlan       = !!(fM.plan || fM.planId);
+  const hasPlan       = !!(fM.plan || fM.planId) || (fM.planesExtra||[]).length > 0;
+  const montoTotal    = (() => {
+    const base = fM.plan ? Number(fM.monto||0) : 0;
+    const extra = (fM.planesExtra||[]).reduce((s,p)=>s+Number(p.monto||0),0);
+    return base + extra;
+  })();
   const esPendiente   = fM.formaPago === "Transferencia";
 
   // ── Calcular vencimiento (compartido entre Step3 y Step4) ──
@@ -2015,18 +2077,28 @@ export default function NuevoMiembroWizard({
       })() : false;
       const telDestino = esMenorLocal && fM.tutor_telefono ? fM.tutor_telefono : fM.tel;
 
+      const totalMonto2 = (() => {
+        const base  = fM.plan ? Number(fM.monto||0) : 0;
+        const extra = (fM.planesExtra||[]).reduce((s,p)=>s+Number(p.monto||0),0);
+        return base + extra;
+      })();
+      const planesResumen = [
+        ...(fM.plan ? [`🏋️ ${fM.plan}`] : []),
+        ...(fM.planesExtra||[]).map(p => `🗓️ ${p.nombre}`),
+      ].join("\n");
+
       let waMsg = null;
-      if (fM.plan && !esPendienteLocal) {
-        waMsg = `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gymConfig?.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fM.fecha_incorporacion||todayISO())}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Pago: ${formaPagoFinal}\n\n¡Gracias por unirte! 💪`;
+      if ((fM.plan || (fM.planesExtra||[]).length > 0) && !esPendienteLocal) {
+        waMsg = `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu inscripción en *${gymConfig?.nombre||"el gym"}* ha sido registrada.\n\n${planesResumen}\n\n📅 Inicio: ${fmtDateShort(fM.fecha_incorporacion||todayISO())}${venceISO ? `\n📅 Vencimiento: ${fmtDateShort(venceISO)}` : ""}\n💰 Total: $${totalMonto2.toLocaleString("es-MX")}\n💳 Pago: ${formaPagoFinal}\n\n¡Gracias por unirte! 💪`;
       }
 
-      // Pasar estado, qr_token y formaPago final a GymApp via wizardFM
       const wizardFMExtended = {
         ...fM,
         formaPago:     formaPagoFinal,
         estado:        estadoInicial,
         qr_token:      qrToken,
         pago_pendiente: esPendienteLocal,
+        montoTotal:    totalMonto2,
       };
 
       const result = await onAdd(wizardFMExtended, {
@@ -2036,29 +2108,28 @@ export default function NuevoMiembroWizard({
         nombreMiembro: fM.nombre,
         venceISO,
         plan: fM.plan,
+        planesExtra: fM.planesExtra||[],
         formaPago: formaPagoFinal,
         monto: fM.monto,
+        montoTotal: totalMonto2,
         estadoInicial,
         qrToken,
       });
 
-      // Guardar el miembro devuelto para el paso 4
       setSavedMiembro({ qr_token: qrToken, ...result });
 
-      // Avanzar al paso 4 solo si pago fue confirmado (Efectivo/Tarjeta)
       if (!esPendienteLocal) {
-        // Auto-generar comprobante para mostrar en paso 4
         try {
+          const planLabel = fM.plan || (fM.planesExtra||[])[0]?.nombre || "Membresía";
           const png = await generarComprobantePagoPNG({
             gymConfig, miembro: { nombre: fM.nombre },
-            plan: fM.plan, monto: fM.monto,
+            plan: planLabel, monto: String(totalMonto2),
             formaPago: formaPagoFinal, venceISO,
           });
           setComprobantePNG(png);
         } catch(e) {}
         setStep(4);
       } else {
-        // Transferencia: cerrar wizard (alumno queda Pendiente)
         onClose();
       }
     } finally {
@@ -2131,6 +2202,7 @@ export default function NuevoMiembroWizard({
           {step===3 && (
             <Step3Pago
               fM={fM} setFM={setFM} gymConfig={gymConfig} venceISO={venceISO}
+              hasPlan={hasPlan} montoTotal={montoTotal}
               comprobantePNG={comprobantePNG} setComprobantePNG={setComprobantePNG}
               generandoComp={generandoComp} setGenerandoComp={setGenerandoComp}
               infoBancoPNG={infoBancoPNG} setInfoBancoPNG={setInfoBancoPNG}
