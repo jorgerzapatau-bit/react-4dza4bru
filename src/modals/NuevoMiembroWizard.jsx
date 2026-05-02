@@ -815,6 +815,29 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
           </div>
         )}
 
+        {/* Montos editables de clases seleccionadas */}
+        {(fM.planesExtra||[]).length > 0 && !fM.beca && (
+          <div style={{ marginTop:8, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.25)", borderRadius:14 }}>
+            <label style={{ color:"#22d3ee", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
+              🗓️ Monto clases (editable)
+            </label>
+            {(fM.planesExtra||[]).map(pe => (
+              <div key={pe.id} style={{ marginBottom:8 }}>
+                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
+                <input type="number" value={pe.monto||""} min="0"
+                  onChange={e => setFM(p => ({
+                    ...p,
+                    planesExtra: (p.planesExtra||[]).map(x =>
+                      x.id === pe.id ? { ...x, monto: e.target.value } : x
+                    )
+                  }))}
+                  placeholder="0" inputMode="numeric"
+                  style={{ width:"100%", background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary,#e8e8f0)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Resumen de selección múltiple */}
         {haySeleccion && (fM.planesExtra||[]).length > 0 && !fM.beca && (
           <div style={{ marginTop:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
