@@ -1635,19 +1635,31 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
     setCopiado(key); setTimeout(() => setCopiado(null), 2000);
   };
 
+  const extras3      = (fM.planesExtra || []).filter(p => p.nombre);
+  const hayExtras3   = extras3.length > 0;
+  const planesLineas = [
+    ...(fM.plan ? [`🏋️ *${fM.plan}* — $${Number(fM.monto||0).toLocaleString("es-MX")}`] : []),
+    ...extras3.map(pe => `🗓️ *${pe.nombre}* — $${Number(pe.monto||0).toLocaleString("es-MX")}`),
+  ].join("\n");
+
   const waMsg = fM.plan
-    ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gym.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fechaInicio)}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Pago: ${fM.formaPago||"—"}\n\n¡Gracias por unirte! 💪`
+    ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu inscripción en *${gym.nombre||"el gym"}* ha sido registrada.\n\n${planesLineas}\n\n📅 Inicio: ${fmtDateShort(fechaInicio)}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Total: $${montoTotal.toLocaleString("es-MX")}\n💳 Pago: ${fM.formaPago||"—"}\n\n¡Gracias por unirte! 💪`
     : null;
 
   // Mensaje con datos bancarios idéntico a lo que aparece en el recibo
+  const planesLineasBanco = [
+    ...(fM.plan ? [`🏋️ ${fM.plan}: $${Number(fM.monto||0).toLocaleString("es-MX")}`] : []),
+    ...extras3.map(pe => `🗓️ ${pe.nombre}: $${Number(pe.monto||0).toLocaleString("es-MX")}`),
+  ].join("\n");
+
   const waMsgBanco = fM.plan ? (
     `PARA TRANSFERENCIAS:\n` +
     `CLABE: ${gym.transferencia_clabe || "—"}\n` +
     `Beneficiario: ${gym.transferencia_titular || "—"}\n` +
     (gym.transferencia_banco ? `Banco: ${gym.transferencia_banco}\n` : "") +
     `\nALUMNO: ${(fM.nombre||"").toUpperCase()}\n` +
-    `Plan: ${fM.plan}\n` +
-    `Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n` +
+    planesLineasBanco + "\n" +
+    (hayExtras3 ? `Total: $${montoTotal.toLocaleString("es-MX")}\n` : "") +
     `\nFavor de enviar comprobante de transferencia al número de WhatsApp que aparece en la parte superior de este recibo.`
   ) : null;
 
@@ -1870,9 +1882,15 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
     if (!tel) return;
     const clean = tel.replace(/\D/g,"");
     const phone = clean.startsWith("52") ? clean : "52"+clean;
+    const extras4 = (fM.planesExtra || []).filter(p => p.nombre);
+    const totalFinal4 = Number(fM.monto||0) + extras4.reduce((s,p)=>s+Number(p.monto||0),0);
+    const planesLineas4 = [
+      ...(fM.plan ? [`🏋️ *${fM.plan}* — $${Number(fM.monto||0).toLocaleString("es-MX")}`] : []),
+      ...extras4.map(pe => `🗓️ *${pe.nombre}* — $${Number(pe.monto||0).toLocaleString("es-MX")}`),
+    ].join("\n");
     const msg = tipo === "id"
       ? `🥋 ¡Bienvenido/a a *${gym.nombre||"el Dojo"}*, ${(fM.nombre||"").split(" ")[0]}!\n\nTe compartimos tu Identificación Digital de acceso.\nCódigo: *${codigo}*\n\nPresénta tu QR en recepción para registrar tu asistencia. 💪`
-      : `🧾 Hola ${(fM.nombre||"").split(" ")[0]}, te compartimos tu comprobante de pago en *${gym.nombre||"el Dojo"}*.\n\nPlan: ${fM.plan||"—"} · $${Number(fM.monto||0).toLocaleString("es-MX")}\nVence: ${fmtDateShort(venceISO)}\n\n¡Gracias por tu pago! 💪`;
+      : `🧾 Hola ${(fM.nombre||"").split(" ")[0]}, te compartimos tu comprobante de pago en *${gym.nombre||"el Dojo"}*.\n\n${planesLineas4}\n\n💰 Total: $${totalFinal4.toLocaleString("es-MX")}\n📅 Vence: ${fmtDateShort(venceISO)}\n\n¡Gracias por tu pago! 💪`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
