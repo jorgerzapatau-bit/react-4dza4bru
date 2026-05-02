@@ -1397,9 +1397,14 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
 // ══════════════════════════════════════════════════════════════════
 // ── Generador 3: Información para Transferencia (canvas) ──────────
 // ══════════════════════════════════════════════════════════════════
-async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, venceISO }) {
+async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, planesExtra, montoTotal, venceISO }) {
   const gym = gymConfig || {};
   const W = 560;
+  const extras = (planesExtra || []).filter(p => p.nombre);
+  const hayDesglose = !!(plan && extras.length > 0);
+  const totalFinal = montoTotal != null
+    ? Number(montoTotal)
+    : (Number(monto||0) + extras.reduce((s,p)=>s+Number(p.monto||0),0));
 
   const hoyD = new Date();
   const DIAS  = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
@@ -1409,13 +1414,19 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, ve
     ? (() => { const d = new Date(venceISO+"T00:00:00"); return `${DIAS[d.getDay()]}, ${MESES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; })()
     : "—";
 
+  const DESGLOSE_ROW_H = 32;
   const tableRows = [
     ...(gym.facebook ? [{ label: "Facebook:", value: gym.facebook, span: true }] : []),
     { label: "Fecha:",        value: fechaHoy },
     { label: "ALUMNO",        value: (miembro.nombre || "—").toUpperCase(), bold: true },
     { label: "",              value: (MESES[hoyD.getMonth()]).toUpperCase() },
     { label: "Modo de Pago:", value: "TRANSFERENCIA" },
-    { label: "Cantidad:",     value: "$" + Number(monto||0).toLocaleString("es-MX"), big: true },
+    // Desglose si hay varios planes
+    ...(hayDesglose ? [
+      { label: `🏋️ ${plan}`, value: "$" + Number(monto||0).toLocaleString("es-MX"), desglose: true },
+      ...extras.map(pe => ({ label: `🗓️ ${pe.nombre}`, value: "$" + Number(pe.monto||0).toLocaleString("es-MX"), desglose: true })),
+    ] : []),
+    { label: hayDesglose ? "Total:" : "Cantidad:", value: "$" + totalFinal.toLocaleString("es-MX"), big: true },
     { label: "Vencimiento:",  value: venceLong, bold: true },
     { label: "Recibió:",      value: gym.propietario_nombre || gym.transferencia_titular || "—" },
   ];
@@ -1424,7 +1435,7 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, ve
   const ROW_H     = 36;
   const CLABE_H   = 100;
   const FOOTER_H  = 56;
-  const H = HEADER_H + tableRows.length * ROW_H + CLABE_H + FOOTER_H + 8;
+  const H = HEADER_H + tableRows.reduce((s,r) => s + (r.desglose ? DESGLOSE_ROW_H : ROW_H), 0) + CLABE_H + FOOTER_H + 8;
 
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
@@ -1465,27 +1476,33 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, ve
 
   let y = HEADER_H + 2;
   tableRows.forEach((row, i) => {
+    const rowH = row.desglose ? DESGLOSE_ROW_H : ROW_H;
     const bg = i % 2 === 0 ? "#fff" : "#f9fafb";
-    ctx.fillStyle = bg; ctx.fillRect(0, y, W, ROW_H);
+    ctx.fillStyle = bg; ctx.fillRect(0, y, W, rowH);
     ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(0, y + ROW_H - 0.5); ctx.lineTo(W, y + ROW_H - 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y + rowH - 0.5); ctx.lineTo(W, y + rowH - 0.5); ctx.stroke();
 
     if (row.span) {
       ctx.fillStyle = "#374151"; ctx.font = "12px Arial"; ctx.textAlign = "center";
-      ctx.fillText(`${row.label}  ${row.value}`, W/2, y + ROW_H - 10); ctx.textAlign = "left";
+      ctx.fillText(`${row.label}  ${row.value}`, W/2, y + rowH - 10); ctx.textAlign = "left";
+    } else if (row.desglose) {
+      ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial"; ctx.textAlign = "left";
+      ctx.fillText(row.label, 32, y + rowH - 9);
+      ctx.fillStyle = "#374151"; ctx.font = "bold 12px Arial"; ctx.textAlign = "right";
+      ctx.fillText(row.value, W - 24, y + rowH - 9); ctx.textAlign = "left";
     } else if (row.big) {
       ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial"; ctx.textAlign = "left";
-      ctx.fillText(row.label, 24, y + ROW_H - 10);
+      ctx.fillText(row.label, 24, y + rowH - 10);
       ctx.fillStyle = "#111827"; ctx.font = "bold 16px Arial"; ctx.textAlign = "right";
-      ctx.fillText(row.value, W - 24, y + ROW_H - 10); ctx.textAlign = "left";
+      ctx.fillText(row.value, W - 24, y + rowH - 10); ctx.textAlign = "left";
     } else {
       ctx.fillStyle = "#6b7280"; ctx.font = row.bold ? "bold 12px Arial" : "12px Arial";
-      ctx.fillText(row.label, 24, y + ROW_H - 10);
+      ctx.fillText(row.label, 24, y + rowH - 10);
       ctx.fillStyle = "#111827"; ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
-      ctx.textAlign = "right"; ctx.fillText(row.value, W - 24, y + ROW_H - 10);
+      ctx.textAlign = "right"; ctx.fillText(row.value, W - 24, y + rowH - 10);
       ctx.textAlign = "left";
     }
-    y += ROW_H;
+    y += rowH;
   });
 
   // CLABE section
@@ -1597,7 +1614,9 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
     try {
       const png = await generarInfoTransferenciaPNG({
         gymConfig, miembro: { nombre: fM.nombre },
-        plan: fM.plan, monto: fM.monto, venceISO,
+        plan: fM.plan, monto: fM.monto,
+        planesExtra: fM.planesExtra || [], montoTotal,
+        venceISO,
       });
       setInfoBancoPNG(png);
     } catch(e) { alert("No se pudo generar la info de transferencia."); }
