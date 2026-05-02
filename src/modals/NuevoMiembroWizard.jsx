@@ -2175,7 +2175,7 @@ export default function NuevoMiembroWizard({
 
       if (!esPendienteLocal) {
         try {
-          const planLabel = fM.plan || (fM.planesExtra||[])[0]?.nombre || "Membresía";
+          const _planLabel = fM.plan || (fM.planesExtra||[])[0]?.nombre || "Membresía"; // eslint-disable-line no-unused-vars
           const png = await generarComprobantePagoPNG({
             gymConfig, miembro: { nombre: fM.nombre },
             plan: fM.plan || null, monto: String(fM.plan ? Number(fM.monto||0) : 0),
