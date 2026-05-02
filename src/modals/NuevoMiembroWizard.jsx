@@ -574,7 +574,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
 // El precio real se resuelve igual que en ClasesScreen:
 //   planVinculado?.precio_publico ?? clase?.costo ?? 0
 // Seleccionar la clase = seleccionar la membresía.
-function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
+function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePlanes }) {
   const edad    = fM.fecha_nacimiento ? calcEdad(fM.fecha_nacimiento) : null;
   const esMenor = edad !== null && edad < 18;
 
@@ -617,6 +617,209 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia }) {
   const horariosDeClase = (claseId) =>
     (horarios || []).filter(h => h.clase_id === claseId && h.activo !== false);
 
+  // ── GIMNASIO: muestra planes directamente desde gymConfig ──────
+  if (!isDojo) {
+    const gymPlanes = (activePlanes || DEFAULT_PLANES).filter(p => p.activo !== false);
+    const CICLO_LABEL_GYM = { mensual: "mes", trimestral: "trimestre", semestral: "semestre", anual: "año" };
+    const MESES_MAP_GYM   = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
+
+    return (
+      <div>
+        {/* Sin membresía por ahora */}
+        <button
+          onClick={() => setFM(p => ({ ...p, claseId: null, planId: null, plan: null, monto: null, planData: null }))}
+          style={{
+            width: "100%", padding: "14px 16px", marginBottom: 10,
+            border: !fM.plan
+              ? "2px solid rgba(167,139,250,.5)"
+              : "1.5px solid var(--border-strong,#2e2e42)",
+            borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+            background: !fM.plan ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
+            display: "flex", alignItems: "center", gap: 12,
+            transition: "all .2s", textAlign: "left",
+          }}
+        >
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+            background: !fM.plan ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+          }}>⏸️</div>
+          <div style={{ flex: 1 }}>
+            <p style={{
+              color: !fM.plan ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+              fontWeight: !fM.plan ? 700 : 500, fontSize: 14,
+            }}>Sin membresía por ahora</p>
+            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
+              Se puede asignar después desde el perfil
+            </p>
+          </div>
+          {!fM.plan && <span style={{ color: "#a78bfa", fontSize: 18 }}>✓</span>}
+        </button>
+
+        {/* Lista de planes del gimnasio */}
+        {gymPlanes.length === 0 ? (
+          <div style={{
+            padding: "16px", borderRadius: 14, marginTop: 8,
+            background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)",
+            display: "flex", gap: 10, alignItems: "flex-start",
+          }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <div>
+              <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>No hay planes configurados</p>
+              <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 12, marginTop: 4 }}>
+                Ve a Configuración → Planes para activar los planes de membresía.
+              </p>
+            </div>
+          </div>
+        ) : (
+          gymPlanes.map((plan) => {
+            const isSel  = fM.plan === plan.nombre;
+            const precio = Number(plan.precio || 0);
+            const ciclo  = plan.ciclo_renovacion || "mensual";
+            const meses  = plan.meses ?? MESES_MAP_GYM[ciclo] ?? 1;
+
+            return (
+              <button
+                key={plan.nombre}
+                onClick={() => {
+                  setFM(prev => ({
+                    ...prev,
+                    claseId:  null,
+                    planId:   plan.nombre,
+                    plan:     plan.nombre,
+                    monto:    prev.beca ? "0" : String(precio),
+                    planData: {
+                      id:               plan.nombre,
+                      nombre:           plan.nombre,
+                      precio_publico:   precio,
+                      ciclo_renovacion: ciclo,
+                      meses,
+                    },
+                  }));
+                }}
+                style={{
+                  width: "100%", padding: "14px 16px", marginBottom: 8,
+                  border: isSel
+                    ? "2px solid #6c63ff"
+                    : "1.5px solid var(--border-strong,#2e2e42)",
+                  borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+                  background: isSel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                  display: "flex", alignItems: "center", gap: 12,
+                  transition: "all .2s", textAlign: "left",
+                }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                  background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.05)",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                }}>
+                  {meses >= 12 ? "🏆" : meses >= 6 ? "🔥" : meses >= 3 ? "⚡" : "📅"}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    color: isSel ? "#a78bfa" : "var(--text-primary,#e8e8f0)",
+                    fontWeight: 700, fontSize: 14,
+                  }}>
+                    {plan.nombre}
+                  </p>
+                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
+                    Vigencia: {meses} {meses === 1 ? "mes" : "meses"}
+                  </p>
+                  {fM.beca && isSel && (
+                    <p style={{ color: "#4ade80", fontSize: 11, marginTop: 3 }}>🎓 Beca — sin costo</p>
+                  )}
+                </div>
+
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  {precio > 0 ? (
+                    <>
+                      <p style={{
+                        background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.07)",
+                        color: isSel ? "#a78bfa" : "var(--text-secondary,#9999b3)",
+                        borderRadius: 10, padding: "4px 12px",
+                        fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace",
+                      }}>
+                        {fM.beca && isSel
+                          ? <span style={{ color: "#4ade80" }}>$0</span>
+                          : `$${precio.toLocaleString("es-MX")}`}
+                      </p>
+                      {!fM.beca && (
+                        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 3 }}>
+                          / {CICLO_LABEL_GYM[ciclo] || ciclo}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p style={{
+                      background: "rgba(74,222,128,.1)", color: "#4ade80",
+                      borderRadius: 10, padding: "4px 12px", fontSize: 12, fontWeight: 700,
+                    }}>
+                      Gratuito
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })
+        )}
+
+        {/* Monto editable cuando hay plan y no es beca */}
+        {fM.plan && !fM.beca && (
+          <div style={{
+            marginTop: 8, padding: "14px",
+            background: "rgba(108,99,255,.07)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14,
+          }}>
+            <label style={{
+              color: "#a78bfa", fontSize: 11, fontWeight: 600,
+              textTransform: "uppercase", letterSpacing: .5, marginBottom: 6, display: "block",
+            }}>
+              💰 Monto a cobrar (editable)
+            </label>
+            <input
+              type="number" value={fM.monto || ""} min="0"
+              onChange={e => setFM(p => ({ ...p, monto: e.target.value }))}
+              placeholder="0" inputMode="numeric"
+              style={{
+                width: "100%", background: "var(--bg-elevated,#1e1e2e)",
+                border: "1px solid var(--border-strong,#2e2e42)", borderRadius: 12,
+                padding: "12px 14px", color: "var(--text-primary,#e8e8f0)",
+                fontSize: 15, fontFamily: "'DM Mono',monospace",
+                fontWeight: 700, outline: "none", boxSizing: "border-box",
+              }}
+            />
+          </div>
+        )}
+
+        {/* Aviso beca */}
+        {fM.beca && (
+          <div style={{
+            marginTop: 10, padding: "10px 14px",
+            background: "rgba(251,191,36,.08)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 12,
+            display: "flex", gap: 8, alignItems: "center",
+          }}>
+            <span style={{ fontSize: 16 }}>🎓</span>
+            <p style={{ color: "#fbbf24", fontSize: 11 }}>
+              Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.
+            </p>
+          </div>
+        )}
+
+        {!fM.plan && gymPlanes.length > 0 && (
+          <p style={{
+            color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, textAlign: "center",
+            marginTop: 14, lineHeight: 1.5,
+          }}>
+            Si no seleccionas un plan, el miembro se registrará{" "}
+            <strong style={{ color: "var(--text-secondary,#9999b3)" }}>sin membresía</strong>{" "}
+            y podrás asignarla después.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // ── DOJO: comportamiento original con clases y horarios ─────────
   return (
     <div>
       {/* Banner menor de edad */}
@@ -1850,7 +2053,7 @@ export default function NuevoMiembroWizard({
             <Step1 fM={fM} setFM={setFM} showFotoModal={showFotoModal} setShowFotoModal={setShowFotoModal} PhotoModal={PhotoModal} isDojo={isDojo} />
           )}
           {step===2 && (
-            <Step2 fM={fM} setFM={setFM} clases={clases} horarios={horarios} planesMembresia={planes} />
+            <Step2 fM={fM} setFM={setFM} clases={clases} horarios={horarios} planesMembresia={planes} isDojo={isDojo} activePlanes={activePlanes} />
           )}
           {step===3 && (
             <Step3Pago
