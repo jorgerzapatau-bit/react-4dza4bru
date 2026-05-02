@@ -1527,11 +1527,7 @@ export default function MemberDetailModal({
                             ))}
                           </div>
                         )}
-                        {/* Monto único si no hay plan gym */}
-                        {!renovar.plan && (renovar.planesExtra||[]).length === 0 && (
-                          <Inp label="Monto ($)" type="number" value={renovar.monto}
-                            onChange={(v) => setRenovar(p => ({ ...p, monto:v }))} placeholder="0.00" />
-                        )}
+
                         {/* Resumen total cuando hay selección múltiple */}
                         {((renovar.planesExtra||[]).length > 0 || aplicaRecargo) && (
                           <div style={{ marginBottom:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
@@ -1724,11 +1720,17 @@ export default function MemberDetailModal({
                       style={{ flex:"0 0 auto", padding:"13px 18px", borderRadius:14, background:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-secondary)", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                       Cancelar
                     </button>
-                    <button onClick={handleRenovar} disabled={!renovar.inicio || renovarSaving}
+                    {!m.beca && (renovar.plan || (renovar.planesExtra||[]).length > 0) && montoTotalRenovacion <= 0 && (
+                      <p style={{ color:"#f59e0b", fontSize:11, fontWeight:600, textAlign:"center", marginBottom:8 }}>
+                        ⚠️ El monto no puede ser $0. Ingresa un monto para continuar.
+                      </p>
+                    )}
+                    <button onClick={handleRenovar}
+                      disabled={!renovar.inicio || renovarSaving || (!m.beca && (renovar.plan || (renovar.planesExtra||[]).length > 0) && montoTotalRenovacion <= 0)}
                       style={{ flex:1, padding:"13px", border:"none", borderRadius:14,
-                        cursor: (!renovar.inicio || renovarSaving) ? "not-allowed" : "pointer",
+                        cursor: (!renovar.inicio || renovarSaving || (!m.beca && (renovar.plan || (renovar.planesExtra||[]).length > 0) && montoTotalRenovacion <= 0)) ? "not-allowed" : "pointer",
                         fontFamily:"inherit", fontSize:13, fontWeight:700,
-                        opacity: (!renovar.inicio || renovarSaving) ? .5 : 1,
+                        opacity: (!renovar.inicio || renovarSaving || (!m.beca && (renovar.plan || (renovar.planesExtra||[]).length > 0) && montoTotalRenovacion <= 0)) ? .5 : 1,
                         background: m.beca ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
                           : esPendienteTransf ? "linear-gradient(135deg,#f59e0b,#d97706)"
                           : "linear-gradient(135deg,#22d3ee,#06b6d4)",
