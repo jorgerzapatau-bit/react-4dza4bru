@@ -1226,7 +1226,7 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
 // ══════════════════════════════════════════════════════════════════
 // ── Generador 2: Comprobante de Pago (mejorado) ───────────────────
 // ══════════════════════════════════════════════════════════════════
-async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, formaPago, venceISO, propietarioRecibio }) {
+async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, planesExtra, montoTotal, formaPago, venceISO, propietarioRecibio }) {
   const gym = gymConfig || {};
   const W = 560;
 
@@ -1238,12 +1238,32 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, form
     ? (() => { const d = new Date(venceISO+"T00:00:00"); return `${DIAS[d.getDay()]}, ${MESES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; })()
     : "—";
 
-  const planLabel = `Plan ${plan || "—"}`;
+  // Calcular total real
+  const extras = planesExtra || [];
+  const totalFinal = montoTotal != null
+    ? Number(montoTotal)
+    : (Number(monto||0) + extras.reduce((s,p)=>s+Number(p.monto||0),0));
+
+  // Construir filas de desglose (una por plan/clase)
+  const desglose = [];
+  if (plan) desglose.push({ label: `🏋️ ${plan}`, value: "$" + Number(monto||0).toLocaleString("es-MX") });
+  extras.forEach(pe => {
+    desglose.push({ label: `🗓️ ${pe.nombre}`, value: "$" + Number(pe.monto||0).toLocaleString("es-MX") });
+  });
+  const hayDesglose = desglose.length > 1; // solo mostrar desglose si hay más de un concepto
+
+  const planLabel = plan
+    ? (extras.length > 0 ? `${plan} + ${extras.length} clase${extras.length>1?"s":""}` : `Plan ${plan}`)
+    : (extras.length > 0 ? extras.map(p=>p.nombre).join(", ") : "—");
+
+  const DESGLOSE_ROW_H = 28;
+
   const rows = [
     { label: "Fecha:",        value: fechaHoy,                    bold: true },
     { type: "alumno",         nombre: (miembro.nombre || "—").toUpperCase(), plan: planLabel },
     { label: "Modo de Pago:", value: (formaPago || "—").toUpperCase(), bold: true },
-    { label: "Cantidad:",     value: "$" + Number(monto||0).toLocaleString("es-MX"), bold: true },
+    ...(hayDesglose ? desglose.map(d => ({ type: "desglose", label: d.label, value: d.value })) : []),
+    { label: hayDesglose ? "Total:" : "Cantidad:", value: "$" + totalFinal.toLocaleString("es-MX"), bold: true, highlight: hayDesglose },
     { label: "Vencimiento:",  value: venceLong,                   bold: true },
     { label: "Recibió:",      value: propietarioRecibio || gym.propietario_nombre || "—", bold: false },
   ];
@@ -1253,13 +1273,13 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, form
   const CLABE_H   = gym.transferencia_clabe ? 90 : 0;
   const FOOTER_H  = 60;
   const STAMP_H   = 50;
-  const H = HEADER_H + rows.length * ROW_H + CLABE_H + FOOTER_H + STAMP_H + 8;
+  // Las filas de desglose son más compactas
+  const totalRowsH = rows.reduce((s, r) => s + (r.type === "desglose" ? DESGLOSE_ROW_H : ROW_H), 0);
+  const H = HEADER_H + totalRowsH + CLABE_H + FOOTER_H + STAMP_H + 8;
 
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
-
-  // Fondo
   ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
   // Header bg
   ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
@@ -1314,27 +1334,37 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, form
   // Rows
   let y = HEADER_H + 2;
   rows.forEach((row, i) => {
+    const rh = row.type === "desglose" ? DESGLOSE_ROW_H : ROW_H;
     const bg = i % 2 === 0 ? "#ffffff" : "#f9fafb";
-    ctx.fillStyle = bg; ctx.fillRect(0, y, W, ROW_H);
+    ctx.fillStyle = row.highlight ? "#f0fdf4" : bg;
+    ctx.fillRect(0, y, W, rh);
     ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(0, y + ROW_H - 0.5); ctx.lineTo(W, y + ROW_H - 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y + rh - 0.5); ctx.lineTo(W, y + rh - 0.5); ctx.stroke();
 
     if (row.type === "alumno") {
       // Nombre alumno centrado grande
       ctx.fillStyle = "#111827"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
       ctx.fillText(row.nombre, W/2, y + 20);
       ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial";
-      ctx.fillText(row.plan, W/2, y + ROW_H - 6);
+      ctx.fillText(row.plan, W/2, y + rh - 6);
+      ctx.textAlign = "left";
+    } else if (row.type === "desglose") {
+      // Fila de desglose: label izquierda (gris), valor derecha
+      ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial"; ctx.textAlign = "left";
+      ctx.fillText(row.label, 32, y + rh - 8);
+      ctx.fillStyle = "#374151"; ctx.font = "bold 11px Arial"; ctx.textAlign = "right";
+      ctx.fillText(row.value, W - 24, y + rh - 8);
       ctx.textAlign = "left";
     } else {
       ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial";
-      ctx.fillText(row.label, 24, y + ROW_H - 12);
-      ctx.fillStyle = "#111827"; ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
+      ctx.fillText(row.label, 24, y + rh - 12);
+      ctx.fillStyle = row.highlight ? "#16a34a" : "#111827";
+      ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
       ctx.textAlign = "right";
-      ctx.fillText(row.value, W - 24, y + ROW_H - 12);
+      ctx.fillText(row.value, W - 24, y + rh - 12);
       ctx.textAlign = "left";
     }
-    y += ROW_H;
+    y += rh;
   });
 
   // CLABE section
@@ -1557,6 +1587,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
       const png = await generarComprobantePagoPNG({
         gymConfig, miembro: { nombre: fM.nombre },
         plan: fM.plan, monto: fM.monto,
+        planesExtra: fM.planesExtra||[], montoTotal,
         formaPago: fM.formaPago, venceISO,
       });
       setComprobantePNG(png);
@@ -2060,6 +2091,7 @@ export default function NuevoMiembroWizard({
         const png = await generarComprobantePagoPNG({
           gymConfig, miembro: { nombre: fM.nombre },
           plan: fM.plan, monto: fM.monto,
+          planesExtra: fM.planesExtra||[], montoTotal,
           formaPago: formaPagoFinal, venceISO,
         });
         setComprobantePNG(png);
@@ -2146,7 +2178,8 @@ export default function NuevoMiembroWizard({
           const planLabel = fM.plan || (fM.planesExtra||[])[0]?.nombre || "Membresía";
           const png = await generarComprobantePagoPNG({
             gymConfig, miembro: { nombre: fM.nombre },
-            plan: planLabel, monto: String(totalMonto2),
+            plan: fM.plan || null, monto: String(fM.plan ? Number(fM.monto||0) : 0),
+            planesExtra: fM.planesExtra||[], montoTotal: totalMonto2,
             formaPago: formaPagoFinal, venceISO,
           });
           setComprobantePNG(png);
