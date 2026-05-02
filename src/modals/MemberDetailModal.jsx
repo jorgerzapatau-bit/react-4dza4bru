@@ -481,7 +481,8 @@ export default function MemberDetailModal({
   const [planCambiado, setPlanCambiado] = useState(false);
   const [planOriginal, setPlanOriginal] = useState(null);
   const [comprobanteModal, setComprobanteModal] = useState(false);
-  const [comprobanteData, _setComprobanteData] = useState(null); // { tipo: "efectivo"|"transferencia", png, infoPNG, plan, monto, vence }
+  // eslint-disable-next-line no-unused-vars
+  const [comprobanteData, setComprobanteData] = useState(null); // { tipo: "efectivo"|"transferencia", png, infoPNG, plan, monto, vence }
   const [copiado, setCopiado] = useState(false);
   const [congelarModal, setCongelarModal] = useState(false);
   const [cobrarModal, setCobrarModal] = useState(false);
