@@ -433,6 +433,9 @@ export default function MemberDetailModal({
   onMemberUpdate,
   planesMembresia,
   isDojo,
+  activePlanes,
+  clases,
+  horarios,
 }) {
   const isDesktop = useIsDesktop();
   const [detTab, setDetTab] = useState("perfil");
@@ -508,6 +511,7 @@ export default function MemberDetailModal({
     vence: calcVence(todayISO(), defaultPlan),
     venceManual: false,
     formaPago: "Efectivo",
+    planesExtra: [],
   });
   const [pago, setPago] = useState({
     monto: String(defaultMonto),
@@ -626,18 +630,42 @@ export default function MemberDetailModal({
         miembroId: m.id, vence_manual: venceISO || null,
       });
 
+      // Registrar planesExtra (clases adicionales) como transacciones separadas
+      const extrasNoVacios = (renovar.planesExtra || []).filter(pe => pe.nombre);
+      for (const pe of extrasNoVacios) {
+        const montoExtra = m.beca ? 0 : (Number(pe.monto) || 0);
+        const descExtra = `Renovación ${pe.nombre} - ${m.nombre} [${fp}]${becaTag}${venceISO ? ` (vence:${venceISO})` : ""}`;
+        await onAddPago({
+          id: uid(), tipo: "ingreso", categoria: "Membresías",
+          desc: descExtra, descripcion: descExtra,
+          monto: montoExtra, fecha: fechaISO,
+          miembroId: m.id, vence_manual: null,
+        });
+      }
+
+      // Si es transferencia pendiente, marcar al miembro como pendiente
+      if (esPendienteTransf) {
+        try {
+          const planForToken = renovar.plan || "Membresía";
+          const updated = { ...m, pago_pendiente: true, plan_pendiente: planForToken, monto_pendiente: String(montoPagado), vence_pendiente: venceISO };
+          await onSave(updated);
+          if (onMemberUpdate) onMemberUpdate(updated);
+        } catch(e) { console.error(e); }
+      }
+
       // Si es beca, cerrar sin comprobante
       if (m.beca) { setRenovarModal(false); return; }
 
       // Generar imagen según forma de pago
+      const montoTotal = montoPagado + extrasNoVacios.reduce((s, pe) => s + (m.beca ? 0 : (Number(pe.monto) || 0)), 0);
       if (fp === "Efectivo" || fp === "Tarjeta") {
         try {
-          const png = await generarComprobantePNG({ gymConfig, miembro: m, plan: renovar.plan, monto: montoPagado, formaPago: fp, venceISO });
+          const png = await generarComprobantePNG({ gymConfig, miembro: m, plan: renovar.plan, monto: montoTotal, formaPago: fp, venceISO });
           setRenovarCompPNG(png);
         } catch(e) { console.error(e); }
       } else if (esPendienteTransf) {
         try {
-          const infoPNG = await generarInfoTransferenciaPNG({ gymConfig, miembro: m, plan: renovar.plan, monto: montoPagado, venceISO });
+          const infoPNG = await generarInfoTransferenciaPNG({ gymConfig, miembro: m, plan: renovar.plan, monto: montoTotal, venceISO });
           setRenovarInfoPNG(infoPNG);
         } catch(e) { console.error(e); }
       }
@@ -1137,6 +1165,52 @@ export default function MemberDetailModal({
         const waFull = waNum.startsWith("52") ? waNum : "52" + waNum;
         const planActualLabel = planOriginal || defaultPlan;
 
+        // ── Último pago del miembro ──
+        const ultimaMemTx = txs
+          .filter(t => t.categoria === "Membresías" && (String(t.miembroId) === String(m.id) || String(t.miembro_id) === String(m.id)))
+          .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
+        const ultimoPagoFmt = ultimaMemTx ? fmtDate(ultimaMemTx.fecha) : null;
+
+        // ── Calcular recargo por mora ──
+        const planActualData = (planesMembresia || []).find(p => p.nombre === planActualLabel);
+        const diasGracia = planActualData?.dias_gracia ?? 5;
+        const tipoPenalidad = planActualData?.tipo_penalidad || "ninguna";
+        const penalidad = Number(planActualData?.penalidad_mora || 0);
+        const diasVencido = memInfo.vence ? (() => {
+          const hoy = new Date();
+          const venceDate = parseDate(memInfo.vence);
+          if (!venceDate) return 0;
+          const diff = Math.floor((hoy - venceDate) / 86400000);
+          return diff > 0 ? diff : 0;
+        })() : 0;
+        const aplicaRecargo = !esPrimeraMembresía && !m.beca && diasVencido > diasGracia && tipoPenalidad !== "ninguna" && penalidad > 0;
+        const montoRecargo = aplicaRecargo
+          ? (tipoPenalidad === "porcentaje" ? Math.round((Number(renovar.monto) || 0) * penalidad / 100) : penalidad)
+          : 0;
+
+        // ── Clases disponibles para agregar ──
+        const MESES_MAP_R = { mensual:1, trimestral:3, semestral:6, anual:12 };
+        const clasesGym = (clases || []).filter(c => c.activo !== false);
+        const clasesDisponibles = clasesGym.length > 0 ? clasesGym : [];
+        const isExtraSelected = (claseId) => (renovar.planesExtra||[]).some(p => p.id === String(claseId));
+        const toggleClaseRenovar = (clase) => {
+          const id = String(clase.id);
+          const planVinc = (planesMembresia||[]).find(p => (p.clases_vinculadas||[]).map(String).includes(id));
+          const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+          const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
+          const meses  = planVinc?.meses ?? MESES_MAP_R[ciclo] ?? 1;
+          setRenovar(prev => {
+            const ya = (prev.planesExtra||[]).some(p => p.id === id);
+            const extras = ya
+              ? (prev.planesExtra||[]).filter(p => p.id !== id)
+              : [...(prev.planesExtra||[]), { id, nombre: clase.nombre, monto: m.beca ? 0 : precio, planData: { id, nombre: clase.nombre, precio_publico: precio, ciclo_renovacion: ciclo, meses } }];
+            return { ...prev, planesExtra: extras };
+          });
+        };
+
+        const montoExtraTotal = (renovar.planesExtra||[]).reduce((s, pe) => s + (m.beca ? 0 : Number(pe.monto||0)), 0);
+        const montoTotalRenovacion = montoPagado + montoExtraTotal + montoRecargo;
+
         const waMsgBanco = esPendienteTransf && gymConfig
           ? "PARA TRANSFERENCIAS:\n" +
             "CLABE: " + (gymConfig.transferencia_clabe || "—") + "\n" +
@@ -1144,13 +1218,13 @@ export default function MemberDetailModal({
             (gymConfig.transferencia_banco ? "Banco: " + gymConfig.transferencia_banco + "\n" : "") +
             "\nALUMNO: " + (m.nombre||"").toUpperCase() + "\n" +
             "Plan: " + renovar.plan + "\n" +
-            "Monto: $" + montoPagado.toLocaleString("es-MX") + "\n" +
+            "Monto: $" + montoTotalRenovacion.toLocaleString("es-MX") + "\n" +
             "Vence: " + venceFmt + "\n\n" +
             "Favor de enviar comprobante de transferencia a este número."
           : null;
 
         const waMsgComp = tel
-          ? "🧾 Hola " + m.nombre.split(" ")[0] + ", aquí está tu comprobante de renovación en *" + (gymConfig?.nombre || "el gym") + "*.\n\nPlan: " + renovar.plan + " · $" + montoPagado.toLocaleString("es-MX") + "\nVence: " + venceFmt + "\n\n¡Gracias por tu pago! 💪"
+          ? "🧾 Hola " + m.nombre.split(" ")[0] + ", aquí está tu comprobante de renovación en *" + (gymConfig?.nombre || "el gym") + "*.\n\nPlan: " + renovar.plan + " · $" + montoTotalRenovacion.toLocaleString("es-MX") + "\nVence: " + venceFmt + "\n\n¡Gracias por tu pago! 💪"
           : null;
 
         const descargarImg = (dataUrl, prefix) => {
@@ -1173,6 +1247,7 @@ export default function MemberDetailModal({
           setRenovarStep(1);
           setRenovarCompPNG(null);
           setRenovarInfoPNG(null);
+          setRenovar(prev => ({ ...prev, planesExtra: [] }));
         };
 
         return (
@@ -1230,6 +1305,14 @@ export default function MemberDetailModal({
                 {/* ═══ PASO 1: Formulario ═══ */}
                 {renovarStep === 1 && (
                   <>
+                    {/* Último pago */}
+                    {!esPrimeraMembresía && ultimoPagoFmt && (
+                      <div style={{ background:"rgba(34,211,238,.07)", border:"1px solid rgba(34,211,238,.2)", borderRadius:12, padding:"10px 14px", marginBottom:12, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <span style={{ color:"#8b949e", fontSize:11 }}>📅 Último pago</span>
+                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{ultimoPagoFmt}</span>
+                      </div>
+                    )}
+
                     <p style={{ color:"#8b949e", fontSize:12, marginBottom:14 }}>
                       {esPrimeraMembresía
                         ? "Primera membresía — puedes registrar una fecha de inicio pasada para reflejar el historial real del miembro."
@@ -1248,6 +1331,23 @@ export default function MemberDetailModal({
                           Estás registrando en un <strong>mes pasado</strong> — el movimiento aparecerá en el historial de{" "}
                           {new Date(renovar.inicio + "T00:00:00").toLocaleString("es-MX", { month:"long", year:"numeric" })}.
                         </p>
+                      </div>
+                    )}
+
+                    {/* Recargo por mora */}
+                    {aplicaRecargo && (
+                      <div style={{ background:"rgba(239,68,68,.08)", border:"1px solid rgba(239,68,68,.28)", borderRadius:12, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"flex-start" }}>
+                        <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
+                        <div style={{ flex:1 }}>
+                          <p style={{ color:"#f87171", fontSize:12, fontWeight:700, marginBottom:2 }}>Recargo por mora</p>
+                          <p style={{ color:"rgba(248,113,113,.85)", fontSize:11, lineHeight:1.5 }}>
+                            Vencido hace <strong>{diasVencido} días</strong> (gracia: {diasGracia} días).{" "}
+                            {tipoPenalidad === "porcentaje"
+                              ? `Recargo del ${penalidad}% = `
+                              : "Recargo fijo de "}
+                            <strong>${montoRecargo.toLocaleString("es-MX")}</strong> incluido en el total.
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -1395,6 +1495,108 @@ export default function MemberDetailModal({
                         })()}
                       </span>
                     </div>
+
+                    {/* ── Clases adicionales ── */}
+                    {clasesDisponibles.length > 0 && (
+                      <div style={{ marginTop:18 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                          <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
+                          <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
+                            🗓️ Agregar plan adicional
+                          </p>
+                          <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
+                        </div>
+                        {clasesDisponibles.map(clase => {
+                          const planVinc = (planesMembresia||[]).find(p => (p.clases_vinculadas||[]).map(String).includes(String(clase.id)));
+                          const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+                          const horClase = (horarios||[]).filter(h => h.clase_id === clase.id && h.activo !== false);
+                          const DIAS_S2 = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D", lunes:"L", martes:"M", miercoles:"X", miércoles:"X", jueves:"J", viernes:"V", sabado:"S", sábado:"S", domingo:"D" };
+                          const diasStr = horClase.length > 0
+                            ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ")
+                            : planVinc?.dias_semana ? planVinc.dias_semana.map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ") : null;
+                          const horaStr = (horClase.length > 0 && horClase[0].hora_inicio) || planVinc?.hora_inicio
+                            ? (() => { const t = (horClase[0]?.hora_inicio||planVinc?.hora_inicio||"").split(":"); const hr=parseInt(t[0]||0); return `${hr%12||12}:${t[1]||"00"} ${hr>=12?"p.m.":"a.m."}`; })()
+                            : null;
+                          const isSel = isExtraSelected(clase.id);
+                          return (
+                            <button key={clase.id} onClick={() => toggleClaseRenovar(clase)}
+                              style={{ width:"100%", padding:"12px 16px", marginBottom:8,
+                                border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                                borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                                background: isSel ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
+                                display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
+                              <div style={{ width:22, height:22, borderRadius:7, flexShrink:0,
+                                border: isSel ? "none" : "2px solid rgba(255,255,255,.2)",
+                                background: isSel ? "#22d3ee" : "transparent",
+                                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:"#1a1a2e" }}>
+                                {isSel && "✓"}
+                              </div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <p style={{ color: isSel?"#22d3ee":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
+                                {(diasStr||horaStr) && (
+                                  <p style={{ color:"#8b949e", fontSize:11, marginTop:1 }}>
+                                    {horaStr && `🕐 ${horaStr}`}{diasStr && `  ${diasStr}`}
+                                  </p>
+                                )}
+                              </div>
+                              <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:12, fontWeight:700, flexShrink:0 }}>
+                                {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : precio > 0 ? `$${precio.toLocaleString("es-MX")}` : "Incluida"}
+                              </p>
+                            </button>
+                          );
+                        })}
+
+                        {/* Montos editables de clases seleccionadas */}
+                        {(renovar.planesExtra||[]).length > 0 && !m.beca && (
+                          <div style={{ padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.25)", borderRadius:14, marginTop:4 }}>
+                            <label style={{ color:"#22d3ee", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
+                              🗓️ Monto clases (editable)
+                            </label>
+                            {(renovar.planesExtra||[]).map(pe => (
+                              <div key={pe.id} style={{ marginBottom:8 }}>
+                                <p style={{ color:"#8b949e", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
+                                <input type="number" value={pe.monto||""} min="0"
+                                  onChange={e => setRenovar(prev => ({
+                                    ...prev,
+                                    planesExtra: (prev.planesExtra||[]).map(x => x.id === pe.id ? { ...x, monto: e.target.value } : x)
+                                  }))}
+                                  placeholder="0" inputMode="numeric"
+                                  style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Resumen de cobro total */}
+                    {(!m.beca && ((renovar.planesExtra||[]).length > 0 || aplicaRecargo)) && (
+                      <div style={{ marginTop:12, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
+                        <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
+                        {renovar.plan && (
+                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                            <span style={{ color:"var(--text-secondary)", fontSize:12 }}>🏋️ {renovar.plan}</span>
+                            <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${montoPagado.toLocaleString("es-MX")}</span>
+                          </div>
+                        )}
+                        {(renovar.planesExtra||[]).map(pe => (
+                          <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                            <span style={{ color:"var(--text-secondary)", fontSize:12 }}>🗓️ {pe.nombre}</span>
+                            <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+                          </div>
+                        ))}
+                        {aplicaRecargo && (
+                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                            <span style={{ color:"#f87171", fontSize:12 }}>⚠️ Recargo mora</span>
+                            <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
+                          </div>
+                        )}
+                        <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between" }}>
+                          <span style={{ color:"var(--text-primary)", fontSize:13, fontWeight:700 }}>Total</span>
+                          <span style={{ color:"#4ade80", fontSize:14, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -1402,19 +1604,44 @@ export default function MemberDetailModal({
                 {renovarStep === 2 && (
                   <>
                     {/* Resumen */}
-                    <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:16, display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                      {[
-                        { label:"Alumno",     val: m.nombre,    full: true },
-                        { label:"Plan",       val: renovar.plan },
-                        { label:"Monto",      val: "$" + montoPagado.toLocaleString("es-MX") },
-                        { label:"Vence",      val: venceFmt },
-                        { label:"Forma pago", val: fp === "Transferencia" ? "📲 Transferencia" : fp === "Tarjeta" ? "💳 Tarjeta" : "💵 Efectivo" },
-                      ].map(r => (
-                        <div key={r.label} style={{ gridColumn: r.full ? "1/-1" : "auto" }}>
-                          <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>{r.label}</p>
-                          <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>{r.val}</p>
+                    <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
+                      <p style={{ color:"#8b949e", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen</p>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                        <span style={{ color:"#8b949e", fontSize:11 }}>Alumno</span>
+                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{m.nombre}</span>
+                      </div>
+                      {renovar.plan && (
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#8b949e", fontSize:11 }}>🏋️ {renovar.plan}</span>
+                          <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${montoPagado.toLocaleString("es-MX")}</span>
+                        </div>
+                      )}
+                      {(renovar.planesExtra||[]).map(pe => (
+                        <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#8b949e", fontSize:11 }}>🗓️ {pe.nombre}</span>
+                          <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
                         </div>
                       ))}
+                      {aplicaRecargo && (
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#f87171", fontSize:11 }}>⚠️ Recargo mora</span>
+                          <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
+                        </div>
+                      )}
+                      {montoTotalRenovacion !== montoPagado && (
+                        <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
+                          <span style={{ color:"#8b949e", fontSize:11 }}>Total</span>
+                          <span style={{ color:"#4ade80", fontSize:12, fontWeight:700 }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                        </div>
+                      )}
+                      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+                        <span style={{ color:"#8b949e", fontSize:11 }}>Vence</span>
+                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{venceFmt}</span>
+                      </div>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+                        <span style={{ color:"#8b949e", fontSize:11 }}>Forma pago</span>
+                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{fp === "Transferencia" ? "📲 Transferencia" : fp === "Tarjeta" ? "💳 Tarjeta" : "💵 Efectivo"}</span>
+                      </div>
                     </div>
 
                     {/* Imagen */}

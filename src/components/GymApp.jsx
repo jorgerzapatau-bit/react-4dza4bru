@@ -56,6 +56,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [miembros, setMiembros] = useState([]);
   const [txs, setTxs] = useState([]);
   const [planesMembresia, setPlanesMembresia] = useState([]);
+  const [clasesRaw, setClasesRaw] = useState([]);
+  const [horariosRaw, setHorariosRaw] = useState([]);
   const [modal, setModal] = useState(null);
   const [selM, setSelM] = useState(null);
   const [editTx, setEditTx] = useState(null);
@@ -186,6 +188,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             try {
               const [dbC, dbH] = await Promise.all([supabase.from("clases"), supabase.from("horarios")]);
               const [cData, hData] = await Promise.all([dbC.select(GYM_ID), dbH.select(GYM_ID)]);
+              setClasesRaw(cData || []);
+              setHorariosRaw(hData || []);
               const DL2S = { lunes:"Lun", martes:"Mar", miercoles:"Mié", miércoles:"Mié", jueves:"Jue", viernes:"Vie", sabado:"Sáb", sábado:"Sáb", domingo:"Dom" };
               const toS = d => DL2S[d?.toLowerCase()] || (d ? d.charAt(0).toUpperCase()+d.slice(1,3) : d);
               setPlanesMembresia(pmData.filter(p => p.activo !== false).map(plan => {
@@ -702,6 +706,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onMemberUpdate={(updated) => setMiembros(prev => prev.map(x => x.id === updated.id ? updated : x))}
             planesMembresia={planesMembresia}
             isDojo={isDojo}
+            activePlanes={activePlanes}
+            clases={clasesRaw}
+            horarios={horariosRaw}
           />
         )}
 
