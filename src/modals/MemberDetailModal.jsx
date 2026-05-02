@@ -1351,74 +1351,140 @@ export default function MemberDetailModal({
                       </div>
                     )}
 
-                    {/* Selector de plan */}
+                    {/* ── Selector unificado: Gym + Clases (igual que Nuevo Miembro) ── */}
                     {(() => {
                       const tieneMembresias = planesMembresia && planesMembresia.length > 0;
-                      const cambiandoPlan = !esPrimeraMembresía && planCambiado && renovar.plan !== planActualLabel;
-                      if (tieneMembresias) return (
+                      const CICLO_LBL_R = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
+                      const MESES_MAP_R2 = { mensual:1, trimestral:3, semestral:6, anual:12 };
+
+                      // Sin membresía gym — opción 0
+                      const sinGymSel = !renovar.plan;
+
+                      return (
                         <div style={{ marginBottom:14 }}>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-                            <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Plan</p>
-                            {!esPrimeraMembresía && !planCambiado && (
-                              <button onClick={() => setPlanCambiado(true)}
-                                style={{ border:"none", background:"rgba(255,255,255,.07)", color:"#8b949e", fontSize:10, fontWeight:600, padding:"4px 10px", borderRadius:8, cursor:"pointer", fontFamily:"inherit" }}>
-                                ✏️ Cambiar plan
-                              </button>
-                            )}
-                            {!esPrimeraMembresía && planCambiado && (
-                              <button onClick={() => {
-                                setPlanCambiado(false);
-                                const precio = m.beca ? "0" : String((planesMembresia.find(p => p.nombre === planActualLabel)||{}).precio_publico || "");
-                                setRenovar(p => ({ ...p, plan:planActualLabel, monto:precio||p.monto, vence:p.venceManual?p.vence:calcVence(p.inicio,planActualLabel) }));
-                              }}
-                                style={{ border:"none", background:"rgba(248,113,113,.12)", color:"#f87171", fontSize:10, fontWeight:600, padding:"4px 10px", borderRadius:8, cursor:"pointer", fontFamily:"inherit" }}>
-                                ↩ Cancelar cambio
-                              </button>
-                            )}
-                          </div>
-                          {!esPrimeraMembresía && !planCambiado ? (
-                            <div style={{ width:"100%", padding:"12px 14px", border:"2px solid #22d3ee", borderRadius:14, background:"rgba(34,211,238,.1)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                              <span style={{ color:"#22d3ee", fontSize:13, fontWeight:700 }}>🏷️ {planActualLabel}</span>
-                              <span style={{ background:"rgba(34,211,238,.2)", color:"#22d3ee", borderRadius:8, padding:"3px 10px", fontSize:12, fontWeight:700 }}>
-                                ${Number(renovar.monto||0).toLocaleString("es-MX")}
-                              </span>
-                            </div>
-                          ) : (
-                            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                              {cambiandoPlan && (
-                                <div style={{ background:"rgba(245,158,11,.08)", border:"1px solid rgba(245,158,11,.3)", borderRadius:12, padding:"10px 14px", display:"flex", gap:8 }}>
-                                  <span>⚠️</span>
-                                  <p style={{ color:"#f59e0b", fontSize:11 }}>Cambiarás el plan de <strong>{planActualLabel}</strong> a <strong>{renovar.plan}</strong>.</p>
+                          {/* ── Título sección gym ── */}
+                          {tieneMembresias && (
+                            <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
+                              🏋️ Membresía del Gimnasio
+                            </p>
+                          )}
+
+                          {/* Opción: Sin membresía del gym */}
+                          {tieneMembresias && (
+                            <button onClick={() => setRenovar(p => ({ ...p, plan:null, monto:"0" }))}
+                              style={{ width:"100%", padding:"12px 14px", marginBottom:8,
+                                border: sinGymSel ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
+                                borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                                background: sinGymSel ? "rgba(167,139,250,.1)" : "var(--bg-elevated)",
+                                display:"flex", alignItems:"center", justifyContent:"space-between", transition:"all .2s" }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                                <div style={{ width:34, height:34, borderRadius:10, background:"rgba(167,139,250,.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>⏸️</div>
+                                <div style={{ textAlign:"left" }}>
+                                  <p style={{ color: sinGymSel?"#a78bfa":"var(--text-primary)", fontWeight:700, fontSize:13 }}>Sin membresía del gym</p>
+                                  <p style={{ color:"#8b949e", fontSize:11 }}>Solo inscripción a clases</p>
                                 </div>
-                              )}
-                              {planesMembresia.map(pm => {
-                                const isSel = renovar.plan === pm.nombre;
+                              </div>
+                              {sinGymSel && <span style={{ color:"#a78bfa", fontSize:16 }}>✓</span>}
+                            </button>
+                          )}
+
+                          {/* Planes de gym */}
+                          {tieneMembresias ? planesMembresia.map(pm => {
+                            const isSel = renovar.plan === pm.nombre;
+                            const cicloLbl = CICLO_LBL_R[pm.ciclo_renovacion] || pm.ciclo_renovacion || "mes";
+                            return (
+                              <button key={pm.id||pm.nombre}
+                                onClick={() => {
+                                  const precio = m.beca ? "0" : String(pm.precio_publico || "");
+                                  setRenovar(p => ({ ...p, plan:pm.nombre, monto:precio, vence:p.venceManual?p.vence:calcVence(p.inicio,pm.nombre) }));
+                                }}
+                                style={{ width:"100%", padding:"12px 14px", marginBottom:8,
+                                  border: isSel ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
+                                  borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                                  background: isSel ? "rgba(167,139,250,.1)" : "var(--bg-elevated)",
+                                  display:"flex", alignItems:"center", gap:12, transition:"all .2s" }}>
+                                <div style={{ width:34, height:34, borderRadius:10, background:"rgba(167,139,250,.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🗓️</div>
+                                <div style={{ flex:1, textAlign:"left" }}>
+                                  <p style={{ color: isSel?"#a78bfa":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{pm.nombre}</p>
+                                  <p style={{ color:"#8b949e", fontSize:11 }}>Vigencia: {pm.meses||MESES_MAP_R2[pm.ciclo_renovacion]||1} {(pm.meses||1)===1?"mes":"meses"}</p>
+                                </div>
+                                <div style={{ textAlign:"right", flexShrink:0 }}>
+                                  <p style={{ background: isSel?"rgba(167,139,250,.2)":"rgba(255,255,255,.07)", color: isSel?"#a78bfa":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                                    {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${Number(pm.precio_publico||0).toLocaleString("es-MX")}`}
+                                  </p>
+                                  {!m.beca && <p style={{ color:"#8b949e", fontSize:10, marginTop:2 }}>/ {cicloLbl}</p>}
+                                </div>
+                              </button>
+                            );
+                          }) : (
+                            <Inp label="Plan" value={renovar.plan}
+                              onChange={(v) => setRenovar(p => ({ ...p, plan:v, monto:String((planPrecioActivo||{})[v]||p.monto), vence:p.venceManual?p.vence:calcVence(p.inicio,v) }))}
+                              options={planesActivos} />
+                          )}
+
+                          {/* ── Clases (selección múltiple) ── */}
+                          {clasesDisponibles.length > 0 && (
+                            <>
+                              <div style={{ display:"flex", alignItems:"center", gap:8, margin:"14px 0 10px" }}>
+                                <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
+                                <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
+                                  🗓️ Clases (selección múltiple)
+                                </p>
+                                <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
+                              </div>
+                              {clasesDisponibles.map(clase => {
+                                const planVinc = (planesMembresia||[]).find(p =>
+                                  (p.clases_vinculadas||[]).map(String).includes(String(clase.id)) ||
+                                  p.clase_nombre === clase.nombre || p.nombre === clase.nombre
+                                );
+                                const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+                                const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
+                                const horClase = (horarios||[]).filter(h => h.clase_id === clase.id && h.activo !== false);
+                                const DIAS_S2 = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D", lunes:"L", martes:"M", miercoles:"X", miércoles:"X", jueves:"J", viernes:"V", sabado:"S", sábado:"S", domingo:"D" };
+                                const diasStr = horClase.length > 0
+                                  ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ")
+                                  : planVinc?.dias_semana ? planVinc.dias_semana.map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ") : null;
+                                const horaStr = (horClase.length > 0 && horClase[0].hora_inicio) || planVinc?.hora_inicio
+                                  ? (() => { const t = (horClase[0]?.hora_inicio||planVinc?.hora_inicio||"").split(":"); const hr=parseInt(t[0]||0); return `${hr%12||12}:${t[1]||"00"} ${hr>=12?"p.m.":"a.m."}`; })()
+                                  : null;
+                                const isSel = isExtraSelected(clase.id);
                                 return (
-                                  <button key={pm.id||pm.nombre}
-                                    onClick={() => {
-                                      const precio = m.beca ? "0" : String(pm.precio_publico || "");
-                                      setRenovar(p => ({ ...p, plan:pm.nombre, monto:precio, vence:p.venceManual?p.vence:calcVence(p.inicio,pm.nombre) }));
-                                    }}
-                                    style={{ width:"100%", padding:"12px 14px", border:isSel?"2px solid #22d3ee":"1.5px solid rgba(255,255,255,.08)", borderRadius:14, cursor:"pointer", fontFamily:"inherit", background:isSel?"rgba(34,211,238,.1)":"var(--bg-elevated)", display:"flex", alignItems:"center", justifyContent:"space-between", transition:"all .2s" }}>
-                                    <span style={{ color:isSel?"#22d3ee":"var(--text-primary)", fontSize:13, fontWeight:600 }}>{pm.nombre}</span>
-                                    <span style={{ background:isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color:isSel?"#22d3ee":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:12, fontWeight:700 }}>
-                                      ${Number(pm.precio_publico||0).toLocaleString("es-MX")}
-                                    </span>
+                                  <button key={clase.id} onClick={() => toggleClaseRenovar(clase)}
+                                    style={{ width:"100%", padding:"12px 16px", marginBottom:8,
+                                      border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                                      borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                                      background: isSel ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
+                                      display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
+                                    <div style={{ width:22, height:22, borderRadius:7, flexShrink:0,
+                                      border: isSel ? "none" : "2px solid rgba(255,255,255,.2)",
+                                      background: isSel ? "#22d3ee" : "transparent",
+                                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:"#1a1a2e" }}>
+                                      {isSel && "✓"}
+                                    </div>
+                                    <div style={{ flex:1, minWidth:0 }}>
+                                      <p style={{ color: isSel?"#22d3ee":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
+                                      {(diasStr||horaStr) && (
+                                        <p style={{ color:"#8b949e", fontSize:11, marginTop:1 }}>
+                                          {horaStr && `🕐 ${horaStr}`}{diasStr && `  ${diasStr}`}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div style={{ textAlign:"right", flexShrink:0 }}>
+                                      <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                                        {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                                      </p>
+                                      {!m.beca && <p style={{ color:"#8b949e", fontSize:10, marginTop:2 }}>/ {CICLO_LBL_R[ciclo]||ciclo}</p>}
+                                    </div>
                                   </button>
                                 );
                               })}
-                            </div>
+                            </>
                           )}
                         </div>
                       );
-                      return (
-                        <Inp label="Plan" value={renovar.plan}
-                          onChange={(v) => setRenovar(p => ({ ...p, plan:v, monto:String((planPrecioActivo||{})[v]||p.monto), vence:p.venceManual?p.vence:calcVence(p.inicio,v) }))}
-                          options={planesActivos} />
-                      );
                     })()}
 
-                    {/* Monto */}
+                    {/* Montos editables */}
                     {m.beca ? (
                       <div style={{ marginBottom:14 }}>
                         <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6 }}>Monto ($)</p>
@@ -1428,8 +1494,73 @@ export default function MemberDetailModal({
                         </div>
                       </div>
                     ) : (
-                      <Inp label="Monto ($)" type="number" value={renovar.monto}
-                        onChange={(v) => setRenovar(p => ({ ...p, monto:v }))} placeholder="0.00" />
+                      <>
+                        {/* Monto gym editable */}
+                        {renovar.plan && (
+                          <div style={{ marginBottom:10, padding:"12px 14px", background:"rgba(167,139,250,.07)", border:"1px solid rgba(167,139,250,.2)", borderRadius:14 }}>
+                            <label style={{ color:"#a78bfa", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6, display:"block" }}>
+                              💰 Monto membresía gym (editable)
+                            </label>
+                            <input type="number" value={renovar.monto||""} min="0"
+                              onChange={e => setRenovar(p => ({ ...p, monto:e.target.value }))}
+                              placeholder="0" inputMode="numeric"
+                              style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+                          </div>
+                        )}
+                        {/* Montos editables de clases seleccionadas */}
+                        {(renovar.planesExtra||[]).length > 0 && (
+                          <div style={{ marginBottom:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.25)", borderRadius:14 }}>
+                            <label style={{ color:"#22d3ee", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
+                              🗓️ Monto clases (editable)
+                            </label>
+                            {(renovar.planesExtra||[]).map(pe => (
+                              <div key={pe.id} style={{ marginBottom:8 }}>
+                                <p style={{ color:"#8b949e", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
+                                <input type="number" value={pe.monto||""} min="0"
+                                  onChange={e => setRenovar(prev => ({
+                                    ...prev,
+                                    planesExtra: (prev.planesExtra||[]).map(x => x.id === pe.id ? { ...x, monto: e.target.value } : x)
+                                  }))}
+                                  placeholder="0" inputMode="numeric"
+                                  style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {/* Monto único si no hay plan gym */}
+                        {!renovar.plan && (renovar.planesExtra||[]).length === 0 && (
+                          <Inp label="Monto ($)" type="number" value={renovar.monto}
+                            onChange={(v) => setRenovar(p => ({ ...p, monto:v }))} placeholder="0.00" />
+                        )}
+                        {/* Resumen total cuando hay selección múltiple */}
+                        {((renovar.planesExtra||[]).length > 0 || aplicaRecargo) && (
+                          <div style={{ marginBottom:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
+                            <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
+                            {renovar.plan && (
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                                <span style={{ color:"var(--text-secondary)", fontSize:12 }}>🏋️ {renovar.plan}</span>
+                                <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${montoPagado.toLocaleString("es-MX")}</span>
+                              </div>
+                            )}
+                            {(renovar.planesExtra||[]).map(pe => (
+                              <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                                <span style={{ color:"var(--text-secondary)", fontSize:12 }}>🗓️ {pe.nombre}</span>
+                                <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+                              </div>
+                            ))}
+                            {aplicaRecargo && (
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                                <span style={{ color:"#f87171", fontSize:12 }}>⚠️ Recargo mora</span>
+                                <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
+                              </div>
+                            )}
+                            <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between" }}>
+                              <span style={{ color:"var(--text-primary)", fontSize:13, fontWeight:700 }}>Total</span>
+                              <span style={{ color:"#4ade80", fontSize:14, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* Forma de pago */}
@@ -1496,107 +1627,7 @@ export default function MemberDetailModal({
                       </span>
                     </div>
 
-                    {/* ── Clases adicionales ── */}
-                    {clasesDisponibles.length > 0 && (
-                      <div style={{ marginTop:18 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                          <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
-                          <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
-                            🗓️ Agregar plan adicional
-                          </p>
-                          <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
-                        </div>
-                        {clasesDisponibles.map(clase => {
-                          const planVinc = (planesMembresia||[]).find(p => (p.clases_vinculadas||[]).map(String).includes(String(clase.id)));
-                          const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
-                          const horClase = (horarios||[]).filter(h => h.clase_id === clase.id && h.activo !== false);
-                          const DIAS_S2 = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D", lunes:"L", martes:"M", miercoles:"X", miércoles:"X", jueves:"J", viernes:"V", sabado:"S", sábado:"S", domingo:"D" };
-                          const diasStr = horClase.length > 0
-                            ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ")
-                            : planVinc?.dias_semana ? planVinc.dias_semana.map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ") : null;
-                          const horaStr = (horClase.length > 0 && horClase[0].hora_inicio) || planVinc?.hora_inicio
-                            ? (() => { const t = (horClase[0]?.hora_inicio||planVinc?.hora_inicio||"").split(":"); const hr=parseInt(t[0]||0); return `${hr%12||12}:${t[1]||"00"} ${hr>=12?"p.m.":"a.m."}`; })()
-                            : null;
-                          const isSel = isExtraSelected(clase.id);
-                          return (
-                            <button key={clase.id} onClick={() => toggleClaseRenovar(clase)}
-                              style={{ width:"100%", padding:"12px 16px", marginBottom:8,
-                                border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
-                                borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                                background: isSel ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
-                                display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
-                              <div style={{ width:22, height:22, borderRadius:7, flexShrink:0,
-                                border: isSel ? "none" : "2px solid rgba(255,255,255,.2)",
-                                background: isSel ? "#22d3ee" : "transparent",
-                                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:"#1a1a2e" }}>
-                                {isSel && "✓"}
-                              </div>
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <p style={{ color: isSel?"#22d3ee":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
-                                {(diasStr||horaStr) && (
-                                  <p style={{ color:"#8b949e", fontSize:11, marginTop:1 }}>
-                                    {horaStr && `🕐 ${horaStr}`}{diasStr && `  ${diasStr}`}
-                                  </p>
-                                )}
-                              </div>
-                              <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:12, fontWeight:700, flexShrink:0 }}>
-                                {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : precio > 0 ? `$${precio.toLocaleString("es-MX")}` : "Incluida"}
-                              </p>
-                            </button>
-                          );
-                        })}
 
-                        {/* Montos editables de clases seleccionadas */}
-                        {(renovar.planesExtra||[]).length > 0 && !m.beca && (
-                          <div style={{ padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.25)", borderRadius:14, marginTop:4 }}>
-                            <label style={{ color:"#22d3ee", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
-                              🗓️ Monto clases (editable)
-                            </label>
-                            {(renovar.planesExtra||[]).map(pe => (
-                              <div key={pe.id} style={{ marginBottom:8 }}>
-                                <p style={{ color:"#8b949e", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
-                                <input type="number" value={pe.monto||""} min="0"
-                                  onChange={e => setRenovar(prev => ({
-                                    ...prev,
-                                    planesExtra: (prev.planesExtra||[]).map(x => x.id === pe.id ? { ...x, monto: e.target.value } : x)
-                                  }))}
-                                  placeholder="0" inputMode="numeric"
-                                  style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Resumen de cobro total */}
-                    {(!m.beca && ((renovar.planesExtra||[]).length > 0 || aplicaRecargo)) && (
-                      <div style={{ marginTop:12, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
-                        <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
-                        {renovar.plan && (
-                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                            <span style={{ color:"var(--text-secondary)", fontSize:12 }}>🏋️ {renovar.plan}</span>
-                            <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${montoPagado.toLocaleString("es-MX")}</span>
-                          </div>
-                        )}
-                        {(renovar.planesExtra||[]).map(pe => (
-                          <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                            <span style={{ color:"var(--text-secondary)", fontSize:12 }}>🗓️ {pe.nombre}</span>
-                            <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
-                          </div>
-                        ))}
-                        {aplicaRecargo && (
-                          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                            <span style={{ color:"#f87171", fontSize:12 }}>⚠️ Recargo mora</span>
-                            <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
-                          </div>
-                        )}
-                        <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ color:"var(--text-primary)", fontSize:13, fontWeight:700 }}>Total</span>
-                          <span style={{ color:"#4ade80", fontSize:14, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
 
