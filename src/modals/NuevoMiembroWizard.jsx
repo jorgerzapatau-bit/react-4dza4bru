@@ -1531,30 +1531,32 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
     ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Tu membresía *${fM.plan}* en *${gym.nombre||"el gym"}* ha sido registrada.\n\n📅 Inicio: ${fmtDateShort(fechaInicio)}\n📅 Vencimiento: ${fmtDateShort(venceISO)}\n💰 Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n💳 Pago: ${fM.formaPago||"—"}\n\n¡Gracias por unirte! 💪`
     : null;
 
-  // Mensaje con datos bancarios para enviar al alumno por WhatsApp
-  const waMsgBanco = (() => {
-    const telDest = fM.tel || fM.tutor_telefono || "";
-    if (!telDest || !fM.plan) return null;
-    return (
-      `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Aquí están los datos para realizar tu transferencia en *${gym.nombre||"el gym"}*.\n\n` +
-      `📋 *Datos bancarios:*\n` +
-      (gym.transferencia_clabe   ? `• CLABE: \`${gym.transferencia_clabe}\`\n`       : "") +
-      (gym.transferencia_titular ? `• Beneficiario: ${gym.transferencia_titular}\n`  : "") +
-      (gym.transferencia_banco   ? `• Banco: ${gym.transferencia_banco}\n`            : "") +
-      `\n💰 *Monto:* $${Number(fM.monto||0).toLocaleString("es-MX")}\n` +
-      `📦 *Plan:* ${fM.plan}\n\n` +
-      `Favor de enviar el comprobante a este número una vez realizado el pago. ¡Gracias! 💪`
-    );
-  })();
+  // Mensaje con datos bancarios idéntico a lo que aparece en el recibo
+  const waMsgBanco = fM.plan ? (
+    `PARA TRANSFERENCIAS:\n` +
+    `CLABE: ${gym.transferencia_clabe || "—"}\n` +
+    `Beneficiario: ${gym.transferencia_titular || "—"}\n` +
+    (gym.transferencia_banco ? `Banco: ${gym.transferencia_banco}\n` : "") +
+    `\nALUMNO: ${(fM.nombre||"").toUpperCase()}\n` +
+    `Plan: ${fM.plan}\n` +
+    `Monto: $${Number(fM.monto||0).toLocaleString("es-MX")}\n` +
+    `\nFavor de enviar comprobante de transferencia al número de WhatsApp que aparece en la parte superior de este recibo.`
+  ) : null;
 
   const abrirWABanco = () => {
-    const tel = fM.tel || fM.tutor_telefono || "";
-    if (!tel || !waMsgBanco) return;
-    const c = tel.replace(/\D/g, "");
-    window.open(`https://wa.me/${c.startsWith("52") ? c : "52"+c}?text=${encodeURIComponent(waMsgBanco)}`, "_blank");
+    // Usar teléfono del gym para abrir WhatsApp sin número pre-llenado
+    // (el alumno abrirá el chat del gym desde su propio WhatsApp)
+    const telGym = (gym.telefono || "").replace(/\D/g, "");
+    const tel    = (fM.tel || fM.tutor_telefono || "").replace(/\D/g, "");
+    // Preferir teléfono del alumno; si no hay, abrir wa.me sin número para que elija
+    const phone  = tel ? (tel.startsWith("52") ? tel : "52" + tel) : (telGym ? (telGym.startsWith("52") ? telGym : "52" + telGym) : "");
+    const url    = phone
+      ? `https://wa.me/${phone}?text=${encodeURIComponent(waMsgBanco)}`
+      : `https://wa.me/?text=${encodeURIComponent(waMsgBanco)}`;
+    window.open(url, "_blank");
   };
 
-  const BotonesAccion = ({ dataUrl, prefix, cKey, waM }) => (
+  const BotonesAccion = ({ dataUrl, prefix, cKey }) => (
     <div style={{ display:"flex", gap:7, marginTop:9, flexWrap:"wrap" }}>
       <button onClick={() => descargar(dataUrl, prefix)}
         style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
@@ -1572,13 +1574,8 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, comprobantePNG, setComproba
           display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
         {copiado===cKey ? "✓ Copiado" : "📋 Copiar"}
       </button>
-      {/* Botón WhatsApp: usa waMsgBanco si está disponible, si no usa waM genérico */}
-      {(waMsgBanco || waM) && (
-        <button
-          onClick={waMsgBanco ? abrirWABanco : () => {
-            const c = (fM.tel||"").replace(/\D/g,"");
-            window.open(`https://wa.me/${c.startsWith("52")?c:"52"+c}?text=${encodeURIComponent(waM)}`,"_blank");
-          }}
+      {waMsgBanco && (
+        <button onClick={abrirWABanco}
           style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
             background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
             color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
@@ -2111,55 +2108,6 @@ export default function NuevoMiembroWizard({
               <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>🎓 Becario — se registrará sin cobro y con membresía activa.</p>
             </div>
           )}
-
-          {/* Botón WhatsApp transferencia — solo en paso 3 con forma Transferencia */}
-          {step === 3 && esPendiente && (() => {
-            const gym = gymConfig || {};
-            const telAlumno = fM.tel || fM.tutor_telefono || "";
-            const telGym    = gym.telefono || "";
-            // Mensaje con datos bancarios para enviar al alumno
-            const msgAlumno = fM.plan
-              ? `¡Hola ${(fM.nombre||"").split(" ")[0]}! 🥋 Te compartimos los datos para tu transferencia en *${gym.nombre||"el gym"}*.\n\n` +
-                `📋 *Datos bancarios:*\n` +
-                (gym.transferencia_clabe   ? `• CLABE: \`${gym.transferencia_clabe}\`\n`   : "") +
-                (gym.transferencia_titular ? `• Beneficiario: ${gym.transferencia_titular}\n` : "") +
-                (gym.transferencia_banco   ? `• Banco: ${gym.transferencia_banco}\n`         : "") +
-                `\n💰 Monto a transferir: *$${Number(fM.monto||0).toLocaleString("es-MX")}*\n` +
-                `📦 Plan: ${fM.plan}\n\n` +
-                `Una vez realizada la transferencia, envía tu comprobante a este número. ¡Gracias! 💪`
-              : null;
-            // Mensaje corto para el gym con datos del alumno (recordatorio interno)
-            const msgGym = fM.plan
-              ? `🏦 *Transferencia pendiente*\n\nAlumno: ${fM.nombre||"—"}\nPlan: ${fM.plan}\nMonto: $${Number(fM.monto||0).toLocaleString("es-MX")}`
-              : null;
-            const abrirWA = (tel, msg) => {
-              if (!tel || !msg) return;
-              const c = tel.replace(/\D/g,"");
-              window.open(`https://wa.me/${c.startsWith("52")?c:"52"+c}?text=${encodeURIComponent(msg)}`,"_blank");
-            };
-            return (
-              <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-                {telAlumno && msgAlumno && (
-                  <button
-                    onClick={() => abrirWA(telAlumno, msgAlumno)}
-                    style={{ flex:1, minWidth:140, padding:"11px 10px", borderRadius:12, border:"1.5px solid rgba(37,211,102,.4)",
-                      background:"rgba(37,211,102,.1)", color:"#25d366", fontWeight:700, fontSize:12,
-                      cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                    📲 Enviar datos al alumno
-                  </button>
-                )}
-                {telGym && msgGym && (
-                  <button
-                    onClick={() => abrirWA(telGym, msgGym)}
-                    style={{ flex:1, minWidth:140, padding:"11px 10px", borderRadius:12, border:"1.5px solid rgba(37,211,102,.25)",
-                      background:"rgba(37,211,102,.06)", color:"#4ade80", fontWeight:700, fontSize:12,
-                      cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-                    🏪 Notificar al gym
-                  </button>
-                )}
-              </div>
-            );
-          })()}
 
           <div style={{ display:"flex", gap:10 }}>
             {/* Botón izquierdo */}
