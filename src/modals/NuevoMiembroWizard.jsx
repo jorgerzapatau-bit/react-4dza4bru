@@ -594,7 +594,8 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
   // no el nombre del plan contable interno. El plan vinculado solo aporta precio y ciclo.
   const resolverPrecio = (c) => {
     const planVinculado = (planesMembresia || []).find(p =>
-      (p.clases_vinculadas || []).map(String).includes(String(c.id))
+      (p.clases_vinculadas || []).map(String).includes(String(c.id)) ||
+      p.clase_nombre === c.nombre || p.nombre === c.nombre
     );
     const precio = Number(planVinculado?.precio_publico ?? c?.costo ?? 0);
     const ciclo  = planVinculado?.ciclo_renovacion || c?.ciclo_renovacion || "mensual";
@@ -631,7 +632,8 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
     const toggleClase = (clase) => {
       const id = String(clase.id);
       const planVinc = (planesMembresia||[]).find(p =>
-        (p.clases_vinculadas||[]).map(String).includes(id)
+        (p.clases_vinculadas||[]).map(String).includes(id) ||
+        p.clase_nombre === clase.nombre || p.nombre === clase.nombre
       );
       const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
       const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
@@ -746,7 +748,8 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
 
             {clasesGym.map(clase => {
               const planVinc = (planesMembresia||[]).find(p =>
-                (p.clases_vinculadas||[]).map(String).includes(String(clase.id))
+                (p.clases_vinculadas||[]).map(String).includes(String(clase.id)) ||
+                p.clase_nombre === clase.nombre || p.nombre === clase.nombre
               );
               const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
               const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
@@ -785,16 +788,10 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
                     )}
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0 }}>
-                    {precio > 0 ? (
-                      <>
-                        <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
-                          {fM.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
-                        </p>
-                        {!fM.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
-                      </>
-                    ) : (
-                      <p style={{ background:"rgba(74,222,128,.1)", color:"#4ade80", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Incluida</p>
-                    )}
+                    <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                      {fM.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                    </p>
+                    {!fM.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
                   </div>
                 </button>
               );
