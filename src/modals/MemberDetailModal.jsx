@@ -476,7 +476,7 @@ export default function MemberDetailModal({
 
   const [photoModal, setPhotoModal] = useState(false);
   const [renovarModal, setRenovarModal] = useState(false);
-  const [renovarStep, setRenovarStep] = useState(1); // 1 = formulario, 2 = comprobante
+  const [renovarStep, setRenovarStep] = useState(1); // 1 = membresía, 2 = pago, 3 = comprobante
   const [renovarCompPNG, setRenovarCompPNG] = useState(null);
   const [renovarInfoPNG, setRenovarInfoPNG] = useState(null);
   const [renovarCopiado, setRenovarCopiado] = useState(false);
@@ -669,8 +669,8 @@ export default function MemberDetailModal({
           setRenovarInfoPNG(infoPNG);
         } catch(e) { console.error(e); }
       }
-      // Avanzar al paso 2
-      setRenovarStep(2);
+      // Avanzar al paso 3 (comprobante)
+      setRenovarStep(3);
     } finally {
       setRenovarSaving(false);
     }
@@ -1261,42 +1261,66 @@ export default function MemberDetailModal({
 
               {/* ── Header fijo ── */}
               <div style={{ padding:"20px 24px 14px", borderBottom:"1px solid rgba(255,255,255,.06)", flexShrink:0 }}>
-                {/* Stepper */}
-                <div style={{ display:"flex", alignItems:"center", marginBottom:12 }}>
-                  {[{ n:1, label:"Renovación" }, { n:2, label:"Comprobante" }].map((s, i) => (
-                    <div key={s.n} style={{ display:"flex", alignItems:"center", flex: i < 1 ? "0 0 auto" : 1 }}>
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
-                        <div style={{
-                          width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
-                          background: renovarStep > s.n ? "#22c55e" : renovarStep === s.n ? "linear-gradient(135deg,#a78bfa,#7c3aed)" : "var(--bg-elevated)",
-                          border: renovarStep >= s.n ? "none" : "1.5px solid rgba(255,255,255,.15)",
-                          color: renovarStep >= s.n ? "#fff" : "#8b949e", fontSize:11, fontWeight:700, transition:"all .3s",
-                        }}>
-                          {renovarStep > s.n ? "✓" : s.n}
-                        </div>
-                        <span style={{ fontSize:9, color: renovarStep === s.n ? "#a78bfa" : renovarStep > s.n ? "#22c55e" : "#8b949e", fontWeight:600, whiteSpace:"nowrap" }}>
-                          {s.label}
-                        </span>
-                      </div>
-                      {i < 1 && (
-                        <div style={{ flex:1, height:2, margin:"0 8px 14px",
-                          background: renovarStep > 1 ? "#22c55e" : "rgba(255,255,255,.1)", borderRadius:2, transition:"all .4s" }} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <h2 style={{ color:"var(--text-primary)", fontSize:16, fontWeight:700, margin:0 }}>
-                    {renovarStep === 1
-                      ? (esPrimeraMembresía ? "📋 Registrar membresía" : "🔄 Renovar membresía")
-                      : (renovarCompPNG && !renovarInfoPNG ? "🧾 Comprobante de Pago" : "📲 Info para Transferencia")}
-                  </h2>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <span style={{ fontSize:18 }}>👤</span>
+                    <h2 style={{ color:"var(--text-primary)", fontSize:17, fontWeight:800, margin:0 }}>
+                      {esPrimeraMembresía ? "Registrar Membresía" : "Renovar Membresía"}
+                    </h2>
+                  </div>
                   <button onClick={cerrarWizard}
                     style={{ border:"none", background:"rgba(255,255,255,.1)", color:"#8b949e", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
                     ✕
                   </button>
                 </div>
+                {/* Stepper 3 pasos — estilo NuevoMiembro */}
+                {(() => {
+                  const STEPS = ["Membresía", "Pago", "Comprobante"];
+                  return (
+                    <div>
+                      <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:8 }}>
+                        {STEPS.map((_, i) => {
+                          const idx = i + 1;
+                          const done = renovarStep > idx;
+                          const active = renovarStep === idx;
+                          return (
+                            <div key={i} style={{ display:"flex", alignItems:"center", flex:1 }}>
+                              <div style={{
+                                width:28, height:28, borderRadius:"50%", flexShrink:0,
+                                display:"flex", alignItems:"center", justifyContent:"center",
+                                fontWeight:700, fontSize:12,
+                                background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                                color: done || active ? "#fff" : "#6b6b8a",
+                                border: active ? "none" : done ? "none" : "1.5px solid rgba(255,255,255,.15)",
+                                boxShadow: active ? "0 0 0 3px rgba(108,99,255,.25)" : "none",
+                                transition:"all .3s",
+                              }}>
+                                {done ? "✓" : idx}
+                              </div>
+                              {i < STEPS.length - 1 && (
+                                <div style={{
+                                  flex:1, height:2,
+                                  background: done ? "#4ade80" : "rgba(255,255,255,.1)",
+                                  margin:"0 2px", transition:"background .3s",
+                                }} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        {STEPS.map((l, i) => (
+                          <p key={i} style={{
+                            flex:1, textAlign: i === 0 ? "left" : i === STEPS.length-1 ? "right" : "center",
+                            fontSize:10, fontWeight: renovarStep === i+1 ? 700 : 400,
+                            color: renovarStep === i+1 ? "var(--text-primary)" : "#6b6b8a",
+                            margin:0, transition:"color .3s",
+                          }}>{l}</p>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* ── Body scrollable ── */}
@@ -1484,6 +1508,53 @@ export default function MemberDetailModal({
                       );
                     })()}
 
+                    {/* Nota — igual que NuevoMiembro */}
+                    <p style={{ color:"#8b949e", fontSize:11, textAlign:"center", marginTop:4 }}>
+                      Si no seleccionas nada, se renovará <strong style={{ color:"var(--text-primary)" }}>sin membresía</strong> y podrás asignarla después.
+                    </p>
+                  </>
+                )}
+
+                {/* ═══ PASO 2: Pago ═══ */}
+                {renovarStep === 2 && (
+                  <>
+                    {/* Resumen de membresía elegida */}
+                    <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
+                      <p style={{ color:"#8b949e", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen</p>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                        <span style={{ color:"#8b949e", fontSize:11 }}>Alumno</span>
+                        <span style={{ color:"var(--text-primary)", fontSize:12, fontWeight:700 }}>{m.nombre}</span>
+                      </div>
+                      {renovar.plan && (
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#8b949e", fontSize:11 }}>🏋️ {renovar.plan}</span>
+                          <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${(m.beca ? 0 : Number(renovar.monto||0)).toLocaleString("es-MX")}</span>
+                        </div>
+                      )}
+                      {(renovar.planesExtra||[]).map(pe => (
+                        <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#8b949e", fontSize:11 }}>🗓️ {pe.nombre}</span>
+                          <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${(m.beca ? 0 : Number(pe.monto||0)).toLocaleString("es-MX")}</span>
+                        </div>
+                      ))}
+                      {aplicaRecargo && (
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#f87171", fontSize:11 }}>⚠️ Recargo mora</span>
+                          <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
+                        </div>
+                      )}
+                      <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ color:"var(--text-primary)", fontSize:13, fontWeight:700 }}>Total</span>
+                        <span style={{ color:"#4ade80", fontSize:14, fontWeight:800, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                      </div>
+                      {renovar.vence && (
+                        <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+                          <span style={{ color:"#8b949e", fontSize:11 }}>Vence</span>
+                          <span style={{ color:"var(--text-primary)", fontSize:12, fontWeight:700 }}>{venceFmt}</span>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Montos editables */}
                     {m.beca ? (
                       <div style={{ marginBottom:14 }}>
@@ -1627,8 +1698,8 @@ export default function MemberDetailModal({
                   </>
                 )}
 
-                {/* ═══ PASO 2: Comprobante ═══ */}
-                {renovarStep === 2 && (
+                {/* ═══ PASO 3: Comprobante ═══ */}
+                {renovarStep === 3 && (
                   <>
                     {/* Resumen */}
                     <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
@@ -1714,11 +1785,27 @@ export default function MemberDetailModal({
 
               {/* ── Footer fijo ── */}
               <div style={{ padding:"14px 24px 28px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", gap:8 }}>
-                {renovarStep === 1 ? (
+                {renovarStep === 1 && (
                   <>
                     <button onClick={cerrarWizard}
                       style={{ flex:"0 0 auto", padding:"13px 18px", borderRadius:14, background:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-secondary)", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                       Cancelar
+                    </button>
+                    <button onClick={() => setRenovarStep(2)}
+                      style={{ flex:1, padding:"13px", border:"none", borderRadius:14, cursor:"pointer",
+                        fontFamily:"inherit", fontSize:13, fontWeight:700,
+                        background:"linear-gradient(135deg,#6c63ff,#e040fb)",
+                        color:"#fff", boxShadow:"0 4px 18px rgba(108,99,255,.35)",
+                        display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                      Siguiente →
+                    </button>
+                  </>
+                )}
+                {renovarStep === 2 && (
+                  <>
+                    <button onClick={() => setRenovarStep(1)}
+                      style={{ flex:"0 0 auto", padding:"13px 18px", borderRadius:14, background:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-secondary)", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
+                      ← Anterior
                     </button>
                     {!m.beca && (renovar.plan || (renovar.planesExtra||[]).length > 0) && montoTotalRenovacion <= 0 && (
                       <p style={{ color:"#f59e0b", fontSize:11, fontWeight:600, textAlign:"center", marginBottom:8 }}>
@@ -1740,16 +1827,17 @@ export default function MemberDetailModal({
                           : "0 4px 18px rgba(34,211,238,.35)",
                         display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       <span style={{ fontSize:16 }}>
-                        {m.beca ? "🎓" : esPendienteTransf ? "⏳" : "🔄"}
+                        {m.beca ? "🎓" : esPendienteTransf ? "⏳" : "✓"}
                       </span>
                       {renovarSaving ? "Guardando..." : m.beca
                         ? (esPrimeraMembresía ? "Registrar membresía (Beca)" : "Renovar (Beca — $0)")
                         : esPrimeraMembresía ? "Registrar membresía"
                         : esPendienteTransf ? "Registrar — pago pendiente"
-                        : "Confirmar renovación"}
+                        : "Registrar y confirmar pago"}
                     </button>
                   </>
-                ) : (
+                )}
+                {renovarStep === 3 && (
                   <button onClick={cerrarWizard}
                     style={{ flex:1, padding:"13px", borderRadius:14, background:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-secondary)", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
                     Cerrar
