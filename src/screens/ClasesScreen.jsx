@@ -174,7 +174,7 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, canManage, onS
 
       {/* Precio */}
       <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Membresía</p>
+        <p style={{ color: "var(--text-tertiary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Costo adicional</p>
         {precio !== null && precio > 0 ? (
           <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
             <span style={{ color: clase.color || "#6c63ff", fontSize: 15, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
@@ -183,7 +183,7 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, canManage, onS
             <span style={{ color: "var(--text-tertiary)", fontSize: 10 }}>/ {CICLO_LABEL[ciclo] || ciclo}</span>
           </div>
         ) : (
-          <span style={{ color: "#4ade80", fontSize: 12, fontWeight: 700 }}>Gratuita</span>
+          <span style={{ color: "var(--text-tertiary)", fontSize: 12, fontWeight: 600 }}>$0</span>
         )}
       </div>
     </div>
@@ -345,7 +345,7 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
             </span>
             {precio !== null && (
               <span style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                {precio > 0 ? `$${Number(precio).toLocaleString("es-MX")} / ${CICLO_LABEL[ciclo] || ciclo}` : "Gratuita"}
+                {precio > 0 ? `$${Number(precio).toLocaleString("es-MX")} / ${CICLO_LABEL[ciclo] || ciclo}` : "$0 adicional"}
               </span>
             )}
             {porVencer.length > 0 && (

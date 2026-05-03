@@ -1192,7 +1192,7 @@ export default function MemberDetailModal({
         const toggleClaseRenovar = (clase) => {
           const id = String(clase.id);
           const planVinc = (planesMembresia||[]).find(p => (p.clases_vinculadas||[]).map(String).includes(id));
-          const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+          const precio = Number(planVinc?.precio_publico ?? clase?.precio_membresia ?? 0);
           const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
           const meses  = planVinc?.meses ?? MESES_MAP_R[ciclo] ?? 1;
           setRenovar(prev => {
@@ -1395,7 +1395,7 @@ export default function MemberDetailModal({
                                   (p.clases_vinculadas||[]).map(String).includes(String(clase.id)) ||
                                   p.clase_nombre === clase.nombre || p.nombre === clase.nombre
                                 );
-                                const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
+                                const precio = Number(planVinc?.precio_publico ?? clase?.precio_membresia ?? 0);
                                 const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
                                 const horClase = (horarios||[]).filter(h => h.clase_id === clase.id && h.activo !== false);
                                 const diasStr = horClase.length > 0
