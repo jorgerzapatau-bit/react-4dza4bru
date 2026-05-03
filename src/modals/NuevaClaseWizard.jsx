@@ -38,19 +38,6 @@ const DIA_LONG_TO_SHORT = {
 const toShort = (d) => DIA_LONG_TO_SHORT[d?.toLowerCase()] || d;
 const toLong  = (d) => DIA_SHORT_TO_LONG[d?.toLowerCase()]  || d;
 
-const CICLOS = [
-  { value: "mensual",    label: "Mensual",    meses: 1  },
-  { value: "trimestral", label: "Trimestral", meses: 3  },
-  { value: "semestral",  label: "Semestral",  meses: 6  },
-  { value: "anual",      label: "Anual",      meses: 12 },
-];
-
-const MORA_TIPOS = [
-  { value: "ninguna",    label: "Sin penalidad",  desc: "No se cobra nada por atraso" },
-  { value: "fijo",       label: "Monto fijo",     desc: "Se suma un cargo fijo al renovar" },
-  { value: "porcentaje", label: "Porcentaje",      desc: "% del precio de la membresía" },
-];
-
 const S = {
   overlay: {
     position: "fixed", inset: 0, zIndex: 1000,
@@ -107,7 +94,7 @@ const S = {
 
 // ── Barra de progreso 3 pasos ──────────────────────────────────────
 function ProgressBar({ step }) {
-  const labels = ["Datos", "Horario", "Precio"];
+  const labels = ["Datos", "Horario"];
   return (
     <div style={{ paddingBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
@@ -323,35 +310,10 @@ function Step2Horario({ form, set }) {
       <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 8 }}>
         Deja "Hasta" vacío si la clase no tiene fecha de fin definida.
       </p>
-    </div>
-  );
-}
 
-// ── PASO 3: Precio y políticas de cobro ────────────────────────────
-function Step3Precio({ form, set, gymConfig }) {
-  const precioNum = Number(form.precio_membresia || 0);
-  const moraActual = form.mora_tipo || "ninguna";
-
-  // Filtrar ciclos según los planes activos en la Configuración del gym
-  const configPlanes = gymConfig?.planes || null;
-  const ciclosHabilitados = CICLOS.filter(c => {
-    if (!configPlanes) return true; // si no hay config, mostrar todos
-    return configPlanes.some(p => p.activo !== false && p.nombre?.toLowerCase() === c.label.toLowerCase());
-  });
-  // Si ninguno habilitado (config rara), mostrar todos como fallback
-  const ciclosVisibles = ciclosHabilitados.length > 0 ? ciclosHabilitados : CICLOS;
-
-  const cicloActual = ciclosVisibles.find(c => c.value === form.ciclo_renovacion) || ciclosVisibles[0];
-
-  // Si el ciclo seleccionado ya no está disponible, seleccionar el primero disponible
-  if (form.ciclo_renovacion !== cicloActual?.value && cicloActual) {
-    set("ciclo_renovacion", cicloActual.value);
-  }
-
-  return (
-    <div>
+      {/* ── Precio de la membresía ── */}
+      <div style={{ height: 1, background: "var(--border,#2a2a3e)", margin: "16px 0" }} />
       <p style={S.secTitle}>Precio de la membresía</p>
-
       <div style={S.field}>
         <label style={S.label}>Monto *</label>
         <div style={{ position: "relative" }}>
@@ -362,118 +324,12 @@ function Step3Precio({ form, set, gymConfig }) {
             style={{ ...S.inp, paddingLeft: 30, fontFamily: "'DM Mono',monospace", fontSize: 20, fontWeight: 700 }}
           />
         </div>
-        {precioNum === 0 && (
+        {Number(form.precio_membresia || 0) === 0 && (
           <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(74,222,128,.07)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10 }}>
             <p style={{ color: "#4ade80", fontSize: 12 }}>✓ Clase gratuita — los alumnos no pagarán membresía.</p>
           </div>
         )}
       </div>
-
-      <div style={S.field}>
-        <label style={S.label}>Ciclo de renovación</label>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {ciclosVisibles.map(c => {
-            const sel = form.ciclo_renovacion === c.value;
-            return (
-              <button key={c.value} onClick={() => set("ciclo_renovacion", c.value)} style={{
-                padding: "12px", border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
-                borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
-                transition: "all .15s", textAlign: "left",
-              }}>
-                <p style={{ color: sel ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontSize: 13, fontWeight: sel ? 700 : 500 }}>{c.label}</p>
-                <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 2 }}>Cada {c.meses === 1 ? "mes" : `${c.meses} meses`}</p>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={S.field}>
-        <label style={S.label}>Días de gracia</label>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input type="number" min={0} max={30} value={form.dias_gracia ?? 5}
-            onChange={e => set("dias_gracia", Number(e.target.value))}
-            style={{ ...S.inp, flex: 1 }}
-          />
-          <span style={{ color: "var(--text-secondary,#9999b3)", fontSize: 13, whiteSpace: "nowrap" }}>días</span>
-        </div>
-        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 5 }}>
-          Tolerancia después del vencimiento antes de marcar la membresía como vencida.
-        </p>
-      </div>
-
-      <div style={{ height: 1, background: "var(--border,#2a2a3e)", margin: "4px 0 16px" }} />
-      <p style={S.secTitle}>Política de cobro por atraso</p>
-
-      <div style={S.field}>
-        <label style={S.label}>Penalidad por mora</label>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {MORA_TIPOS.map(t => {
-            const sel = moraActual === t.value;
-            return (
-              <button key={t.value} onClick={() => set("mora_tipo", t.value)} style={{
-                padding: "12px 14px", border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
-                borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                background: sel ? "rgba(108,99,255,.1)" : "var(--bg-elevated,#1e1e2e)",
-                display: "flex", alignItems: "center", gap: 12,
-                transition: "all .15s", textAlign: "left",
-              }}>
-                <div style={{
-                  width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
-                  border: `2px solid ${sel ? "#6c63ff" : "rgba(255,255,255,.2)"}`,
-                  background: sel ? "#6c63ff" : "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  {sel && <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff" }} />}
-                </div>
-                <div>
-                  <p style={{ color: sel ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontSize: 13, fontWeight: sel ? 700 : 500 }}>{t.label}</p>
-                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 1 }}>{t.desc}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {moraActual !== "ninguna" && (
-        <div style={S.field}>
-          <label style={S.label}>{moraActual === "fijo" ? "Monto de penalidad ($)" : "Porcentaje de penalidad (%)"}</label>
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,#9999b3)", fontSize: 15, fontWeight: 700, pointerEvents: "none" }}>
-              {moraActual === "fijo" ? "$" : "%"}
-            </span>
-            <input type="number" min={0} value={form.mora_monto || ""}
-              onChange={e => set("mora_monto", e.target.value)}
-              placeholder="0"
-              style={{ ...S.inp, paddingLeft: 28 }}
-            />
-          </div>
-          {moraActual === "porcentaje" && Number(form.mora_monto) > 0 && precioNum > 0 && (
-            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 5 }}>
-              Equivale a ${Math.round(precioNum * Number(form.mora_monto) / 100).toLocaleString("es-MX")} por renovación atrasada.
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Resumen */}
-      {precioNum > 0 && (
-        <div style={{ padding: "14px 16px", borderRadius: 14, background: "rgba(108,99,255,.07)", border: "1px solid rgba(108,99,255,.18)", marginTop: 4 }}>
-          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 10 }}>Resumen de cobro</p>
-          {[
-            ["Membresía " + cicloActual.label.toLowerCase(), `$${precioNum.toLocaleString("es-MX")}`],
-            ["Días de gracia", `${form.dias_gracia ?? 5} días`],
-            ["Penalidad por mora", moraActual === "ninguna" ? "Sin penalidad" : moraActual === "fijo" ? `$${Number(form.mora_monto || 0).toLocaleString("es-MX")} fijo` : `${form.mora_monto || 0}% del monto`],
-          ].map(([k, v], i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 2 ? 6 : 0 }}>
-              <span style={{ color: "var(--text-secondary,#9999b3)", fontSize: 13 }}>{k}</span>
-              <span style={{ color: i === 0 ? "#c4b5fd" : i === 2 && moraActual !== "ninguna" ? "#f59e0b" : "var(--text-secondary,#9999b3)", fontSize: 13, fontWeight: i === 0 ? 700 : 400, fontFamily: i === 0 ? "'DM Mono',monospace" : "inherit" }}>{v}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -582,11 +438,8 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     try {
       const claseId = clase?.id;
       const precioNum = Number(form.precio_membresia || 0);
-      const diasGracia = (form.dias_gracia !== undefined && form.dias_gracia !== "")
-        ? Number(form.dias_gracia) : 5;
 
-      // ══ 1. GUARDAR CLASE (solo columnas reales de la tabla clases) ══
-      // dias_semana/hora_inicio/hora_fin NO existen en clases — van en tabla horarios
+      // ══ 1. GUARDAR CLASE ══════════════════════════════════════════
       const clasePayload = {
         nombre: form.nombre.trim(),
         descripcion: form.descripcion.trim() || null,
@@ -611,13 +464,13 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
 
       const finalClaseId = savedClase?.id || claseId;
 
-      // ══ 1b. GUARDAR HORARIO (tabla separada) ════════════════════
+      // ══ 1b. GUARDAR HORARIO ══════════════════════════════════════
       if (form.dias_semana?.length > 0 && form.hora_inicio && form.hora_fin) {
         const horarioPayload = {
           clase_id: finalClaseId,
           hora_inicio: form.hora_inicio,
           hora_fin: form.hora_fin,
-          dias_semana: form.dias_semana.map(toLong),  // DB espera formato largo
+          dias_semana: form.dias_semana.map(toLong),
           fecha_inicio: form.fecha_inicio || todayISO(),
           fecha_fin: form.fecha_fin || null,
           activo: true,
@@ -635,44 +488,24 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
         }
       }
 
-      // ══ 2. GUARDAR PLAN DE MEMBRESÍA ════════════════════════════
-      // Columnas REALES de planes_membresia:
-      //   nombre, precio_publico, ciclo_renovacion, activo, clases_vinculadas
-      // NO existen: dias_gracia, mora_tipo, mora_monto, penalidad_mora, cupo_clases
+      // ══ 2. GUARDAR PLAN DE MEMBRESÍA (solo precio) ═══════════════
       const planPayload = {
         nombre:            form.nombre.trim(),
         precio_publico:    precioNum,
-        ciclo_renovacion:  form.ciclo_renovacion || "mensual",
+        ciclo_renovacion:  "mensual",
         activo:            form.activo !== false,
         clases_vinculadas: [String(finalClaseId)],
       };
 
-      // ══ 3. POLÍTICA (tabla politicas_membresia) ═══════════════════
-      // dias_gracia, penalidad_mora y tipo_penalidad van aquí
-      const politicaPayload = {
-        dias_gracia:    diasGracia,
-        penalidad_mora: Number(form.mora_monto) || 0,
-        tipo_penalidad: form.mora_tipo === "porcentaje" ? "porcentaje" : "fijo",
-      };
-
-      const resolvedPlanId =
-        form.plan_id || planVinculado?.id || clase?.plan_id || null;
-
-      const dbP   = await supabase.from("planes_membresia");
-      const dbPol = await supabase.from("politicas_membresia");
+      const resolvedPlanId = form.plan_id || planVinculado?.id || clase?.plan_id || null;
+      const dbP = await supabase.from("planes_membresia");
 
       if (resolvedPlanId) {
         await dbP.update(resolvedPlanId, planPayload);
-        if (form.politica_id) {
-          await dbPol.update(form.politica_id, { ...politicaPayload, plan_id: resolvedPlanId });
-        } else {
-          await dbPol.insert({ gym_id: gymId, ...politicaPayload, plan_id: resolvedPlanId });
-        }
         savedClase = { ...savedClase, plan_id: resolvedPlanId };
       } else {
         const savedPlan = await dbP.insert({ gym_id: gymId, ...planPayload });
         if (savedPlan?.id) {
-          await dbPol.insert({ gym_id: gymId, ...politicaPayload, plan_id: savedPlan.id });
           const dbC2 = await supabase.from("clases");
           await dbC2.update(finalClaseId, { plan_id: savedPlan.id });
           savedClase = { ...savedClase, plan_id: savedPlan.id };
@@ -682,11 +515,8 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
       setSaving(false);
       onSave({
         ...savedClase,
-        precio_membresia:  precioNum,
-        ciclo_renovacion:  form.ciclo_renovacion || "mensual",
-        dias_gracia:       diasGracia,
-        mora_tipo:         form.mora_tipo || "ninguna",
-        mora_monto:        Number(form.mora_monto) || 0,
+        precio_membresia: precioNum,
+        ciclo_renovacion: "mensual",
       }, esEdicion);
     } catch (e) {
       console.error(e);
@@ -695,7 +525,7 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     }
   };
 
-  const TOTAL = 3;
+  const TOTAL = 2;
   const nextLabel = step < TOTAL ? "Siguiente →" : saving ? "Guardando..." : esEdicion ? "✓ Guardar cambios" : "✓ Crear clase";
 
   return (
@@ -718,7 +548,6 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
           {error && <div style={S.errorBox}>{error}</div>}
           {step === 1 && <Step1Datos form={form} set={set} miembros={miembros} instructores={instructores} esEdicion={esEdicion} />}
           {step === 2 && <Step2Horario form={form} set={set} />}
-          {step === 3 && <Step3Precio form={form} set={set} gymConfig={gymConfig} />}
         </div>
 
         <div style={S.footer}>
