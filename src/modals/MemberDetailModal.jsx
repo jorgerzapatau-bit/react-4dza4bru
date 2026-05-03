@@ -1165,12 +1165,6 @@ export default function MemberDetailModal({
         const waFull = waNum.startsWith("52") ? waNum : "52" + waNum;
         const planActualLabel = planOriginal || defaultPlan;
 
-        // ── Último pago del miembro ──
-        const ultimaMemTx = txs
-          .filter(t => t.categoria === "Membresías" && (String(t.miembroId) === String(m.id) || String(t.miembro_id) === String(m.id)))
-          .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
-        const ultimoPagoFmt = ultimaMemTx ? fmtDate(ultimaMemTx.fecha) : null;
-
         // ── Calcular recargo por mora ──
         const planActualData = (planesMembresia || []).find(p => p.nombre === planActualLabel);
         const diasGracia = planActualData?.dias_gracia ?? 5;
