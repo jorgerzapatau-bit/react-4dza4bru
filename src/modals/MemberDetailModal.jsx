@@ -1737,15 +1737,25 @@ export default function MemberDetailModal({
                   <>
                     <button onClick={cerrarWizard}
                       style={{ flex:"0 0 auto", padding:"13px 18px", borderRadius:14, background:"var(--bg-elevated)", border:"1px solid var(--border)", color:"var(--text-secondary)", fontWeight:600, fontSize:13, cursor:"pointer", fontFamily:"inherit" }}>
-                      Cancelar
+                      ← Anterior
                     </button>
-                    <button onClick={() => setRenovarStep(2)}
-                      style={{ flex:1, padding:"13px", border:"none", borderRadius:14, cursor:"pointer",
-                        fontFamily:"inherit", fontSize:13, fontWeight:700,
+                    <button onClick={() => {
+                        const sinPlan = !renovar.plan && (renovar.planesExtra||[]).length === 0;
+                        if (sinPlan || m.beca) { handleRenovar(); }
+                        else { setRenovarStep(2); }
+                      }}
+                      disabled={renovarSaving}
+                      style={{ flex:1, padding:"13px", border:"none", borderRadius:14, cursor: renovarSaving ? "not-allowed" : "pointer",
+                        fontFamily:"inherit", fontSize:13, fontWeight:700, opacity: renovarSaving ? .5 : 1,
                         background:"linear-gradient(135deg,#6c63ff,#e040fb)",
                         color:"#fff", boxShadow:"0 4px 18px rgba(108,99,255,.35)",
                         display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-                      Siguiente →
+                      {renovarSaving ? "Guardando..." :
+                        (!renovar.plan && (renovar.planesExtra||[]).length === 0)
+                          ? "✓ Renovar sin membresía"
+                          : m.beca
+                            ? (esPrimeraMembresía ? "🎓 Registrar (Beca — $0)" : "🎓 Renovar (Beca — $0)")
+                            : "Siguiente →"}
                     </button>
                   </>
                 )}
