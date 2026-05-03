@@ -1273,46 +1273,43 @@ export default function MemberDetailModal({
                 {(() => {
                   const STEPS = ["Membresía", "Pago", "Comprobante"];
                   return (
-                    <div>
-                      <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:8 }}>
-                        {STEPS.map((_, i) => {
+                    <div style={{ paddingBottom: 4 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:0 }}>
+                        {STEPS.map((label, i) => {
                           const idx = i + 1;
                           const done = renovarStep > idx;
                           const active = renovarStep === idx;
                           return (
                             <div key={i} style={{ display:"flex", alignItems:"center", flex:1 }}>
-                              <div style={{
-                                width:28, height:28, borderRadius:"50%", flexShrink:0,
-                                display:"flex", alignItems:"center", justifyContent:"center",
-                                fontWeight:700, fontSize:12,
-                                background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
-                                color: done || active ? "#fff" : "#6b6b8a",
-                                border: active ? "none" : done ? "none" : "1.5px solid rgba(255,255,255,.15)",
-                                boxShadow: active ? "0 0 0 3px rgba(108,99,255,.25)" : "none",
-                                transition:"all .3s",
-                              }}>
-                                {done ? "✓" : idx}
+                              <div style={{ display:"flex", flexDirection:"column", alignItems: i===0?"flex-start":i===STEPS.length-1?"flex-end":"center", flexShrink:0 }}>
+                                <div style={{
+                                  width:28, height:28, borderRadius:"50%",
+                                  display:"flex", alignItems:"center", justifyContent:"center",
+                                  fontWeight:700, fontSize:12,
+                                  background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                                  color: done || active ? "#fff" : "#6b6b8a",
+                                  border: active ? "none" : done ? "none" : "1.5px solid rgba(255,255,255,.15)",
+                                  boxShadow: active ? "0 0 0 3px rgba(108,99,255,.25)" : "none",
+                                  transition:"all .3s",
+                                }}>
+                                  {done ? "✓" : idx}
+                                </div>
+                                <p style={{
+                                  fontSize:10, fontWeight: renovarStep === idx ? 700 : 400,
+                                  color: renovarStep === idx ? "var(--text-primary)" : "#6b6b8a",
+                                  margin:"4px 0 0", transition:"color .3s", whiteSpace:"nowrap",
+                                }}>{label}</p>
                               </div>
                               {i < STEPS.length - 1 && (
                                 <div style={{
                                   flex:1, height:2,
                                   background: done ? "#4ade80" : "rgba(255,255,255,.1)",
-                                  margin:"0 2px", transition:"background .3s",
+                                  margin:"0 6px", marginBottom:18, transition:"background .3s",
                                 }} />
                               )}
                             </div>
                           );
                         })}
-                      </div>
-                      <div style={{ display:"flex", justifyContent:"space-between" }}>
-                        {STEPS.map((l, i) => (
-                          <p key={i} style={{
-                            flex:1, textAlign: i === 0 ? "left" : i === STEPS.length-1 ? "right" : "center",
-                            fontSize:10, fontWeight: renovarStep === i+1 ? 700 : 400,
-                            color: renovarStep === i+1 ? "var(--text-primary)" : "#6b6b8a",
-                            margin:0, transition:"color .3s",
-                          }}>{l}</p>
-                        ))}
                       </div>
                     </div>
                   );
@@ -1341,25 +1338,6 @@ export default function MemberDetailModal({
                               🏋️ Membresía del Gimnasio
                             </p>
                           )}
-
-                          {/* Sin membresía del gym */}
-                          <button onClick={() => setRenovar(p => ({ ...p, plan:null, monto:"0" }))}
-                            style={{ width:"100%", padding:"12px 16px", marginBottom:8,
-                              border: !renovar.plan ? "2px solid rgba(167,139,250,.5)" : "1.5px solid var(--border-strong,#2e2e42)",
-                              borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                              background: !renovar.plan ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
-                              display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
-                            <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
-                              background: !renovar.plan ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
-                              display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>⏸️</div>
-                            <div style={{ flex:1 }}>
-                              <p style={{ color: !renovar.plan ? "#c4b5fd" : "var(--text-secondary,#9999b3)", fontWeight: !renovar.plan?700:500, fontSize:13 }}>
-                                Sin membresía del gym
-                              </p>
-                              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Solo inscripción a clases</p>
-                            </div>
-                            {!renovar.plan && <span style={{ color:"#a78bfa", fontSize:16 }}>✓</span>}
-                          </button>
 
                           {/* Planes del gym */}
                           {gymPlanes.map(plan => {
@@ -1463,10 +1441,6 @@ export default function MemberDetailModal({
                       );
                     })()}
 
-                    {/* Nota — igual que NuevoMiembro */}
-                    <p style={{ color:"#8b949e", fontSize:11, textAlign:"center", marginTop:4 }}>
-                      Si no seleccionas nada, se renovará <strong style={{ color:"var(--text-primary)" }}>sin membresía</strong> y podrás asignarla después.
-                    </p>
                   </>
                 )}
 
@@ -1817,8 +1791,7 @@ export default function MemberDetailModal({
                       ← Anterior
                     </button>
                     <button onClick={() => {
-                        const sinPlan = !renovar.plan && (renovar.planesExtra||[]).length === 0;
-                        if (sinPlan || m.beca) { handleRenovar(); }
+                        if (m.beca) { handleRenovar(); }
                         else { setRenovarStep(2); }
                       }}
                       disabled={renovarSaving}
@@ -1828,11 +1801,9 @@ export default function MemberDetailModal({
                         color:"#fff", boxShadow:"0 4px 18px rgba(108,99,255,.35)",
                         display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       {renovarSaving ? "Guardando..." :
-                        (!renovar.plan && (renovar.planesExtra||[]).length === 0)
-                          ? "✓ Renovar sin membresía"
-                          : m.beca
-                            ? (esPrimeraMembresía ? "🎓 Registrar (Beca — $0)" : "🎓 Renovar (Beca — $0)")
-                            : "Siguiente →"}
+                        m.beca
+                          ? (esPrimeraMembresía ? "🎓 Registrar (Beca — $0)" : "🎓 Renovar (Beca — $0)")
+                          : "Siguiente →"}
                     </button>
                   </>
                 )}
