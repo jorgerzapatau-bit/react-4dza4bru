@@ -1162,13 +1162,16 @@ export default function MemberDetailModal({
         const tel = m.tel || m.tutor_telefono || "";
         const waNum = tel.replace(/\D/g,"");
         const waFull = waNum.startsWith("52") ? waNum : "52" + waNum;
-        const planActualLabel = planOriginal || defaultPlan;
+        // ── Último pago del miembro ──
+        const ultimaMemTx = txs
+          .filter(t => t.categoria === "Membresías" && (String(t.miembroId) === String(m.id) || String(t.miembro_id) === String(m.id)))
+          .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
+        const ultimoPagoFmt = ultimaMemTx ? fmtDate(ultimaMemTx.fecha) : null;
 
-        // ── Calcular recargo por mora ──
-        const planActualData = (planesMembresia || []).find(p => p.nombre === planActualLabel);
-        const diasGracia = planActualData?.dias_gracia ?? 5;
-        const tipoPenalidad = planActualData?.tipo_penalidad || "ninguna";
-        const penalidad = Number(planActualData?.penalidad_mora || 0);
+        // ── Calcular recargo por mora (usa gymConfig global) ──
+        const diasGracia    = Number(gymConfig?.dias_gracia ?? 5);
+        const tipoPenalidad = gymConfig?.mora_tipo || "ninguna";
+        const penalidad     = Number(gymConfig?.mora_monto || 0);
         const diasVencido = memInfo.vence ? (() => {
           const hoy = new Date();
           const venceDate = parseDate(memInfo.vence);
@@ -1504,6 +1507,63 @@ export default function MemberDetailModal({
                         <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{venceFmt}</span>
                       </div>
                     </div>
+
+                    {/* ── Último pago + política de mora ── */}
+                    {!esPrimeraMembresía && (
+                      <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:14, padding:"12px 16px", marginBottom:14 }}>
+                        {/* Último pago */}
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: diasVencido > 0 ? 10 : 0 }}>
+                          <span style={{ color:"#8b949e", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+                            📅 Último pago
+                          </span>
+                          <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>
+                            {ultimoPagoFmt || "—"}
+                          </span>
+                        </div>
+
+                        {/* Días de atraso */}
+                        {diasVencido > 0 && (
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: tipoPenalidad !== "ninguna" ? 10 : 0 }}>
+                            <span style={{ color: diasVencido > diasGracia ? "#f87171" : "#f59e0b", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
+                              ⏰ Días vencido
+                            </span>
+                            <span style={{ color: diasVencido > diasGracia ? "#f87171" : "#f59e0b", fontSize:12, fontWeight:700 }}>
+                              {diasVencido} días
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Política de mora desde Configuración */}
+                        {tipoPenalidad !== "ninguna" && penalidad > 0 && (
+                          <div style={{ borderTop:"1px solid rgba(255,255,255,.06)", paddingTop:10 }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                              <span style={{ color:"#8b949e", fontSize:11 }}>Días de gracia</span>
+                              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{diasGracia} días</span>
+                            </div>
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                              <span style={{ color:"#8b949e", fontSize:11 }}>Penalidad por mora</span>
+                              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>
+                                {tipoPenalidad === "porcentaje" ? `${penalidad}%` : `$${penalidad.toLocaleString("es-MX")}`}
+                              </span>
+                            </div>
+                            {aplicaRecargo ? (
+                              <div style={{ background:"rgba(239,68,68,.1)", border:"1px solid rgba(239,68,68,.3)", borderRadius:10, padding:"8px 12px", marginTop:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                                <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>⚠️ Recargo aplicado</span>
+                                <span style={{ color:"#f87171", fontSize:13, fontWeight:800, fontFamily:"'DM Mono',monospace" }}>
+                                  +${montoRecargo.toLocaleString("es-MX")}
+                                </span>
+                              </div>
+                            ) : diasVencido > 0 ? (
+                              <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.2)", borderRadius:10, padding:"8px 12px", marginTop:6 }}>
+                                <p style={{ color:"#4ade80", fontSize:11 }}>
+                                  ✓ Dentro del período de gracia ({diasGracia - diasVencido} días restantes)
+                                </p>
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Montos editables */}
                     {!m.beca && renovar.plan && (
