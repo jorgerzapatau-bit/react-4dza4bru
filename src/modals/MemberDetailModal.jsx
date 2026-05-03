@@ -1325,86 +1325,92 @@ export default function MemberDetailModal({
                   <>
                     {/* ── Selector unificado: Gym + Clases (igual que Nuevo Miembro) ── */}
                     {(() => {
-                      const tieneMembresias = planesMembresia && planesMembresia.length > 0;
-                      const CICLO_LBL_R = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
-                      const MESES_MAP_R2 = { mensual:1, trimestral:3, semestral:6, anual:12 };
-
-                      // Sin membresía gym — opción 0
-                      const sinGymSel = !renovar.plan;
+                      const gymPlanes = (activePlanes || []).filter(p => p.activo !== false);
+                      const clasesGym = (clasesDisponibles || []).filter(c => c.activo !== false);
+                      const CICLO_LBL = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
+                      const MESES_MAP_G = { mensual:1, trimestral:3, semestral:6, anual:12 };
+                      const DIAS_S = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D", lunes:"L", martes:"M", miercoles:"X", miércoles:"X", jueves:"J", viernes:"V", sabado:"S", sábado:"S", domingo:"D" };
 
                       return (
                         <div style={{ marginBottom:14 }}>
-                          {/* ── Título sección gym ── */}
-                          {tieneMembresias && (
-                            <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
+                          {/* ── Membresía del Gimnasio ── */}
+                          {gymPlanes.length > 0 && (
+                            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
                               🏋️ Membresía del Gimnasio
                             </p>
                           )}
 
-                          {/* Opción: Sin membresía del gym */}
-                          {tieneMembresias && (
-                            <button onClick={() => setRenovar(p => ({ ...p, plan:null, monto:"0" }))}
-                              style={{ width:"100%", padding:"12px 14px", marginBottom:8,
-                                border: sinGymSel ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
-                                borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                                background: sinGymSel ? "rgba(167,139,250,.1)" : "var(--bg-elevated)",
-                                display:"flex", alignItems:"center", justifyContent:"space-between", transition:"all .2s" }}>
-                              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                                <div style={{ width:34, height:34, borderRadius:10, background:"rgba(167,139,250,.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>⏸️</div>
-                                <div style={{ textAlign:"left" }}>
-                                  <p style={{ color: sinGymSel?"#a78bfa":"var(--text-primary)", fontWeight:700, fontSize:13 }}>Sin membresía del gym</p>
-                                  <p style={{ color:"#8b949e", fontSize:11 }}>Solo inscripción a clases</p>
-                                </div>
-                              </div>
-                              {sinGymSel && <span style={{ color:"#a78bfa", fontSize:16 }}>✓</span>}
-                            </button>
-                          )}
+                          {/* Sin membresía del gym */}
+                          <button onClick={() => setRenovar(p => ({ ...p, plan:null, monto:"0" }))}
+                            style={{ width:"100%", padding:"12px 16px", marginBottom:8,
+                              border: !renovar.plan ? "2px solid rgba(167,139,250,.5)" : "1.5px solid var(--border-strong,#2e2e42)",
+                              borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                              background: !renovar.plan ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
+                              display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
+                            <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
+                              background: !renovar.plan ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
+                              display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>⏸️</div>
+                            <div style={{ flex:1 }}>
+                              <p style={{ color: !renovar.plan ? "#c4b5fd" : "var(--text-secondary,#9999b3)", fontWeight: !renovar.plan?700:500, fontSize:13 }}>
+                                Sin membresía del gym
+                              </p>
+                              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Solo inscripción a clases</p>
+                            </div>
+                            {!renovar.plan && <span style={{ color:"#a78bfa", fontSize:16 }}>✓</span>}
+                          </button>
 
-                          {/* Planes de gym */}
-                          {tieneMembresias ? planesMembresia.map(pm => {
-                            const isSel = renovar.plan === pm.nombre;
-                            const cicloLbl = CICLO_LBL_R[pm.ciclo_renovacion] || pm.ciclo_renovacion || "mes";
+                          {/* Planes del gym */}
+                          {gymPlanes.map(plan => {
+                            const isSel = renovar.plan === plan.nombre;
+                            const precio = Number(plan.precio||0);
+                            const ciclo = plan.ciclo_renovacion || "mensual";
+                            const meses = plan.meses ?? MESES_MAP_G[ciclo] ?? 1;
                             return (
-                              <button key={pm.id||pm.nombre}
+                              <button key={plan.nombre}
                                 onClick={() => {
-                                  const precio = m.beca ? "0" : String(pm.precio_publico || "");
-                                  setRenovar(p => ({ ...p, plan:pm.nombre, monto:precio, vence:p.venceManual?p.vence:calcVence(p.inicio,pm.nombre) }));
+                                  setRenovar(p => ({ ...p, plan:plan.nombre, monto: m.beca?"0":String(precio), vence: p.venceManual?p.vence:calcVence(p.inicio,plan.nombre) }));
                                 }}
-                                style={{ width:"100%", padding:"12px 14px", marginBottom:8,
-                                  border: isSel ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
+                                style={{ width:"100%", padding:"12px 16px", marginBottom:8,
+                                  border: isSel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
                                   borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                                  background: isSel ? "rgba(167,139,250,.1)" : "var(--bg-elevated)",
-                                  display:"flex", alignItems:"center", gap:12, transition:"all .2s" }}>
-                                <div style={{ width:34, height:34, borderRadius:10, background:"rgba(167,139,250,.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>🗓️</div>
-                                <div style={{ flex:1, textAlign:"left" }}>
-                                  <p style={{ color: isSel?"#a78bfa":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{pm.nombre}</p>
-                                  <p style={{ color:"#8b949e", fontSize:11 }}>Vigencia: {pm.meses||MESES_MAP_R2[pm.ciclo_renovacion]||1} {(pm.meses||1)===1?"mes":"meses"}</p>
+                                  background: isSel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                                  display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
+                                <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
+                                  background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.05)",
+                                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
+                                  {meses>=12?"🏆":meses>=6?"🔥":meses>=3?"⚡":"📅"}
+                                </div>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ color: isSel?"#a78bfa":"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>{plan.nombre}</p>
+                                  <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Vigencia: {meses} {meses===1?"mes":"meses"}</p>
                                 </div>
                                 <div style={{ textAlign:"right", flexShrink:0 }}>
-                                  <p style={{ background: isSel?"rgba(167,139,250,.2)":"rgba(255,255,255,.07)", color: isSel?"#a78bfa":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
-                                    {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${Number(pm.precio_publico||0).toLocaleString("es-MX")}`}
-                                  </p>
-                                  {!m.beca && <p style={{ color:"#8b949e", fontSize:10, marginTop:2 }}>/ {cicloLbl}</p>}
+                                  {precio > 0 ? (
+                                    <>
+                                      <p style={{ background: isSel?"rgba(108,99,255,.2)":"rgba(255,255,255,.07)", color: isSel?"#a78bfa":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                                        {m.beca&&isSel ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                                      </p>
+                                      {!m.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                                    </>
+                                  ) : (
+                                    <p style={{ background:"rgba(74,222,128,.1)", color:"#4ade80", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Gratuito</p>
+                                  )}
                                 </div>
                               </button>
                             );
-                          }) : (
-                            <Inp label="Plan" value={renovar.plan}
-                              onChange={(v) => setRenovar(p => ({ ...p, plan:v, monto:String((planPrecioActivo||{})[v]||p.monto), vence:p.venceManual?p.vence:calcVence(p.inicio,v) }))}
-                              options={planesActivos} />
-                          )}
+                          })}
 
                           {/* ── Clases (selección múltiple) ── */}
-                          {clasesDisponibles.length > 0 && (
+                          {clasesGym.length > 0 && (
                             <>
-                              <div style={{ display:"flex", alignItems:"center", gap:8, margin:"14px 0 10px" }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:8, margin:"14px 0 8px" }}>
                                 <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
-                                <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
+                                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
                                   🗓️ Clases (selección múltiple)
                                 </p>
                                 <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
                               </div>
-                              {clasesDisponibles.map(clase => {
+                              {clasesGym.map(clase => {
                                 const planVinc = (planesMembresia||[]).find(p =>
                                   (p.clases_vinculadas||[]).map(String).includes(String(clase.id)) ||
                                   p.clase_nombre === clase.nombre || p.nombre === clase.nombre
@@ -1412,12 +1418,11 @@ export default function MemberDetailModal({
                                 const precio = Number(planVinc?.precio_publico ?? clase?.costo ?? 0);
                                 const ciclo  = planVinc?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
                                 const horClase = (horarios||[]).filter(h => h.clase_id === clase.id && h.activo !== false);
-                                const DIAS_S2 = { lun:"L", mar:"M", mie:"X", jue:"J", vie:"V", sab:"S", dom:"D", lunes:"L", martes:"M", miercoles:"X", miércoles:"X", jueves:"J", viernes:"V", sabado:"S", sábado:"S", domingo:"D" };
                                 const diasStr = horClase.length > 0
-                                  ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ")
-                                  : planVinc?.dias_semana ? planVinc.dias_semana.map(d=>DIAS_S2[d?.toLowerCase()]||d).join(" ") : null;
-                                const horaStr = (horClase.length > 0 && horClase[0].hora_inicio) || planVinc?.hora_inicio
-                                  ? (() => { const t = (horClase[0]?.hora_inicio||planVinc?.hora_inicio||"").split(":"); const hr=parseInt(t[0]||0); return `${hr%12||12}:${t[1]||"00"} ${hr>=12?"p.m.":"a.m."}`; })()
+                                  ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].map(d=>DIAS_S[d?.toLowerCase()]||d).join(" ")
+                                  : null;
+                                const horaStr = horClase.length > 0 && horClase[0].hora_inicio
+                                  ? (() => { const t = horClase[0].hora_inicio.split(":"); const hr=parseInt(t[0]||0); return `${hr%12||12}:${t[1]||"00"} ${hr>=12?"p.m.":"a.m."}`; })()
                                   : null;
                                 const isSel = isExtraSelected(clase.id);
                                 return (
@@ -1445,7 +1450,7 @@ export default function MemberDetailModal({
                                       <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
                                         {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
                                       </p>
-                                      {!m.beca && <p style={{ color:"#8b949e", fontSize:10, marginTop:2 }}>/ {CICLO_LBL_R[ciclo]||ciclo}</p>}
+                                      {!m.beca && <p style={{ color:"#8b949e", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
                                     </div>
                                   </button>
                                 );
