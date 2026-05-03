@@ -1326,55 +1326,9 @@ export default function MemberDetailModal({
               {/* ── Body scrollable ── */}
               <div style={{ flex:1, overflowY:"auto", padding:"18px 24px" }}>
 
-                {/* ═══ PASO 1: Formulario ═══ */}
+                {/* ═══ PASO 1: Membresía ═══ */}
                 {renovarStep === 1 && (
                   <>
-                    {/* Último pago */}
-                    {!esPrimeraMembresía && ultimoPagoFmt && (
-                      <div style={{ background:"rgba(34,211,238,.07)", border:"1px solid rgba(34,211,238,.2)", borderRadius:12, padding:"10px 14px", marginBottom:12, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ color:"#8b949e", fontSize:11 }}>📅 Último pago</span>
-                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{ultimoPagoFmt}</span>
-                      </div>
-                    )}
-
-                    <p style={{ color:"#8b949e", fontSize:12, marginBottom:14 }}>
-                      {esPrimeraMembresía
-                        ? "Primera membresía — puedes registrar una fecha de inicio pasada para reflejar el historial real del miembro."
-                        : (() => {
-                            const dias = diasParaVencer(m.vence);
-                            return dias !== null && dias > 0
-                              ? `¡Le quedan ${dias} día${dias !== 1 ? "s" : ""} a la membresía actual! El inicio sugerido es desde su fecha de vencimiento.`
-                              : "La membresía está vencida. El inicio sugerido es hoy.";
-                          })()}
-                    </p>
-
-                    {esMesPasado && (
-                      <div style={{ background:"rgba(245,158,11,.08)", border:"1px solid rgba(245,158,11,.25)", borderRadius:12, padding:"10px 14px", marginBottom:14, display:"flex", gap:8, alignItems:"center" }}>
-                        <span style={{ fontSize:16 }}>📅</span>
-                        <p style={{ color:"#f59e0b", fontSize:11 }}>
-                          Estás registrando en un <strong>mes pasado</strong> — el movimiento aparecerá en el historial de{" "}
-                          {new Date(renovar.inicio + "T00:00:00").toLocaleString("es-MX", { month:"long", year:"numeric" })}.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Recargo por mora */}
-                    {aplicaRecargo && (
-                      <div style={{ background:"rgba(239,68,68,.08)", border:"1px solid rgba(239,68,68,.28)", borderRadius:12, padding:"10px 14px", marginBottom:14, display:"flex", gap:10, alignItems:"flex-start" }}>
-                        <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
-                        <div style={{ flex:1 }}>
-                          <p style={{ color:"#f87171", fontSize:12, fontWeight:700, marginBottom:2 }}>Recargo por mora</p>
-                          <p style={{ color:"rgba(248,113,113,.85)", fontSize:11, lineHeight:1.5 }}>
-                            Vencido hace <strong>{diasVencido} días</strong> (gracia: {diasGracia} días).{" "}
-                            {tipoPenalidad === "porcentaje"
-                              ? `Recargo del ${penalidad}% = `
-                              : "Recargo fijo de "}
-                            <strong>${montoRecargo.toLocaleString("es-MX")}</strong> incluido en el total.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
                     {/* ── Selector unificado: Gym + Clases (igual que Nuevo Miembro) ── */}
                     {(() => {
                       const tieneMembresias = planesMembresia && planesMembresia.length > 0;
