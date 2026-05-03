@@ -2126,7 +2126,7 @@ export default function MemberDetailModal({
                 const dias = diasParaVencer(memInfo.vence);
                 const venceISO = (() => { const v = parseDate(memInfo.vence); if (!v) return todayISO(); v.setHours(0,0,0,0); return v.toISOString().split("T")[0]; })();
                 const sugerido = dias !== null && dias > 0 ? venceISO : todayISO();
-                setRenovar({ plan: memInfo.plan || defaultPlan, monto: String(memInfo.monto || (planPrecioActivo && planPrecioActivo[memInfo.plan || defaultPlan]) || defaultMonto || ""), inicio: sugerido, vence: calcVence(sugerido, memInfo.plan || defaultPlan), venceManual: false, formaPago: "Efectivo" });
+                setRenovar({ plan: null, monto: "0", inicio: sugerido, vence: calcVence(sugerido, null), venceManual: false, formaPago: "Efectivo", planesExtra: [] });
                 setPlanOriginal(memInfo.plan || defaultPlan);
                 setPlanCambiado(false);
                 setRenovarModal(true);
