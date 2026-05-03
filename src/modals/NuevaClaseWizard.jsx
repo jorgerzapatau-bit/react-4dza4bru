@@ -160,6 +160,22 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
           placeholder="Ej. Karate Infantil" style={S.inp} autoFocus />
       </div>
 
+      {/* ── Precio adicional de la clase ── */}
+      <div style={S.field}>
+        <label style={S.label}>Costo adicional de la clase</label>
+        <div style={{ position: "relative" }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,#9999b3)", fontSize: 18, fontWeight: 700, pointerEvents: "none" }}>$</span>
+          <input type="number" min={0} value={form.precio_membresia || ""}
+            onChange={e => set("precio_membresia", e.target.value)}
+            placeholder="0"
+            style={{ ...S.inp, paddingLeft: 30, fontFamily: "'DM Mono',monospace", fontSize: 20, fontWeight: 700 }}
+          />
+        </div>
+        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 5 }}>
+          Cobro adicional a la membresía del gym. Puede ser $0.
+        </p>
+      </div>
+
       <div style={S.field}>
         <label style={S.label}>Descripción</label>
         <input type="text" value={form.descripcion} onChange={e => set("descripcion", e.target.value)}
@@ -221,25 +237,6 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
         </div>
       )}
 
-      {/* ── Precio de la membresía (movido desde Step2) ── */}
-      <div style={{ height: 1, background: "var(--border,#2a2a3e)", margin: "16px 0" }} />
-      <p style={S.secTitle}>Precio de la membresía</p>
-      <div style={S.field}>
-        <label style={S.label}>Monto *</label>
-        <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,#9999b3)", fontSize: 18, fontWeight: 700, pointerEvents: "none" }}>$</span>
-          <input type="number" min={0} value={form.precio_membresia || ""}
-            onChange={e => set("precio_membresia", e.target.value)}
-            placeholder="0"
-            style={{ ...S.inp, paddingLeft: 30, fontFamily: "'DM Mono',monospace", fontSize: 20, fontWeight: 700 }}
-          />
-        </div>
-        {Number(form.precio_membresia || 0) === 0 && (
-          <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(74,222,128,.07)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10 }}>
-            <p style={{ color: "#4ade80", fontSize: 12 }}>✓ Clase gratuita — los alumnos no pagarán membresía.</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
