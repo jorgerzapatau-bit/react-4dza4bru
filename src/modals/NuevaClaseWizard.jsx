@@ -97,41 +97,37 @@ function ProgressBar({ step }) {
   const labels = ["Datos", "Horario"];
   return (
     <div style={{ paddingBottom: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
-        {labels.map((_, i) => {
+      <div style={{ display: "flex", alignItems: "center" }}>
+        {labels.map((label, i) => {
           const idx = i + 1;
           const done = step > idx; const active = step === idx;
           return (
             <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontWeight: 700, fontSize: 12,
-                background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#1e1e2e)",
-                color: done || active ? "#fff" : "var(--text-tertiary,#6b6b8a)",
-                border: active || done ? "none" : "1.5px solid var(--border-strong,#2e2e42)",
-                boxShadow: active ? "0 0 0 3px rgba(108,99,255,.22)" : "none",
-                transition: "all .3s",
-              }}>
-                {done ? "✓" : idx}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: i === 0 ? "flex-start" : i === labels.length - 1 ? "flex-end" : "center", flexShrink: 0 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: 700, fontSize: 12,
+                  background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#1e1e2e)",
+                  color: done || active ? "#fff" : "var(--text-tertiary,#6b6b8a)",
+                  border: active || done ? "none" : "1.5px solid var(--border-strong,#2e2e42)",
+                  boxShadow: active ? "0 0 0 3px rgba(108,99,255,.22)" : "none",
+                  transition: "all .3s",
+                }}>
+                  {done ? "✓" : idx}
+                </div>
+                <p style={{
+                  fontSize: 10, fontWeight: step === idx ? 700 : 400, marginTop: 4,
+                  color: step === idx ? "var(--text-primary,#e8e8f0)" : "var(--text-tertiary,#6b6b8a)",
+                  transition: "color .3s", whiteSpace: "nowrap",
+                }}>{label}</p>
               </div>
               {i < labels.length - 1 && (
-                <div style={{ flex: 1, height: 2, margin: "0 3px", background: done ? "#4ade80" : "var(--border-strong,#2e2e42)", transition: "background .3s" }} />
+                <div style={{ flex: 1, height: 2, margin: "0 6px", marginBottom: 18, background: done ? "#4ade80" : "var(--border-strong,#2e2e42)", transition: "background .3s" }} />
               )}
             </div>
           );
         })}
-      </div>
-      <div style={{ display: "flex" }}>
-        {labels.map((l, i) => (
-          <p key={i} style={{
-            flex: 1,
-            textAlign: i === 0 ? "left" : i === 2 ? "right" : "center",
-            fontSize: 10, fontWeight: step === i + 1 ? 700 : 400,
-            color: step === i + 1 ? "var(--text-primary,#e8e8f0)" : "var(--text-tertiary,#6b6b8a)",
-            transition: "color .3s",
-          }}>{l}</p>
-        ))}
       </div>
     </div>
   );
@@ -224,6 +220,26 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
           </div>
         </div>
       )}
+
+      {/* ── Precio de la membresía (movido desde Step2) ── */}
+      <div style={{ height: 1, background: "var(--border,#2a2a3e)", margin: "16px 0" }} />
+      <p style={S.secTitle}>Precio de la membresía</p>
+      <div style={S.field}>
+        <label style={S.label}>Monto *</label>
+        <div style={{ position: "relative" }}>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,#9999b3)", fontSize: 18, fontWeight: 700, pointerEvents: "none" }}>$</span>
+          <input type="number" min={0} value={form.precio_membresia || ""}
+            onChange={e => set("precio_membresia", e.target.value)}
+            placeholder="0"
+            style={{ ...S.inp, paddingLeft: 30, fontFamily: "'DM Mono',monospace", fontSize: 20, fontWeight: 700 }}
+          />
+        </div>
+        {Number(form.precio_membresia || 0) === 0 && (
+          <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(74,222,128,.07)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10 }}>
+            <p style={{ color: "#4ade80", fontSize: 12 }}>✓ Clase gratuita — los alumnos no pagarán membresía.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -311,25 +327,6 @@ function Step2Horario({ form, set }) {
         Deja "Hasta" vacío si la clase no tiene fecha de fin definida.
       </p>
 
-      {/* ── Precio de la membresía ── */}
-      <div style={{ height: 1, background: "var(--border,#2a2a3e)", margin: "16px 0" }} />
-      <p style={S.secTitle}>Precio de la membresía</p>
-      <div style={S.field}>
-        <label style={S.label}>Monto *</label>
-        <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,#9999b3)", fontSize: 18, fontWeight: 700, pointerEvents: "none" }}>$</span>
-          <input type="number" min={0} value={form.precio_membresia || ""}
-            onChange={e => set("precio_membresia", e.target.value)}
-            placeholder="0"
-            style={{ ...S.inp, paddingLeft: 30, fontFamily: "'DM Mono',monospace", fontSize: 20, fontWeight: 700 }}
-          />
-        </div>
-        {Number(form.precio_membresia || 0) === 0 && (
-          <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(74,222,128,.07)", border: "1px solid rgba(74,222,128,.2)", borderRadius: 10 }}>
-            <p style={{ color: "#4ade80", fontSize: 12 }}>✓ Clase gratuita — los alumnos no pagarán membresía.</p>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
@@ -402,12 +399,49 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
     politica_id:       politicaVinculada?.id || clase?.politica_id || null,
   }));
 
+  // Snapshot del estado inicial para detectar cambios (solo en edición)
+  const [formInicial] = useState(() => ({
+    nombre:            clase?.nombre            || "",
+    descripcion:       clase?.descripcion       || "",
+    instructor_id:     clase?.instructor_id     || "",
+    instructor_nombre: clase?.instructor_nombre || "",
+    edad_min:          String(clase?.edad_min   ?? 0),
+    edad_max:          String(clase?.edad_max   ?? 99),
+    cupo_max:          String(clase?.cupo_max   ?? 20),
+    activo:            clase?.activo !== false,
+    dias_semana:       (clase?.dias_semana || []).map(toShort),
+    hora_inicio:       clase?.hora_inicio        || "09:00",
+    hora_fin:          clase?.hora_fin           || "10:00",
+    fecha_inicio:      clase?.fecha_inicio       || todayISO(),
+    fecha_fin:         clase?.fecha_fin          || "",
+    precio_membresia:  String(planVinculado?.precio_publico || clase?.precio_membresia || ""),
+    ciclo_renovacion:  planVinculado?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual",
+    dias_gracia:       politicaVinculada?.dias_gracia ?? clase?.dias_gracia ?? 5,
+    mora_tipo:         politicaVinculada?.tipo_penalidad || "ninguna",
+    mora_monto:        String(politicaVinculada?.penalidad_mora || ""),
+    plan_id:           planVinculado?.id || clase?.plan_id || null,
+    politica_id:       politicaVinculada?.id || clase?.politica_id || null,
+  }));
+
   const [step, setStep]         = useState(1);
   const [error, setError]       = useState("");
   const [saving, setSaving]     = useState(false);
   const [confirmSalir, setConfirmSalir] = useState(false);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Detectar cambios respecto al estado inicial (solo relevante en edición)
+  const hasChanges = !esEdicion || (() => {
+    const keysToCompare = ["nombre","descripcion","instructor_id","edad_min","edad_max","cupo_max","activo","hora_inicio","hora_fin","fecha_inicio","fecha_fin","precio_membresia","ciclo_renovacion"];
+    for (const k of keysToCompare) {
+      if (String(form[k] ?? "") !== String(formInicial[k] ?? "")) return true;
+    }
+    // Comparar array dias_semana
+    const d1 = [...(form.dias_semana || [])].sort().join(",");
+    const d2 = [...(formInicial.dias_semana || [])].sort().join(",");
+    if (d1 !== d2) return true;
+    return false;
+  })();
 
   const hayDatos = !esEdicion && (
     form.nombre.trim() !== "" ||
@@ -526,6 +560,8 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
   };
 
   const TOTAL = 2;
+  const isLastStep = step === TOTAL;
+  const guardarDisabled = saving || (isLastStep && !hasChanges);
   const nextLabel = step < TOTAL ? "Siguiente →" : saving ? "Guardando..." : esEdicion ? "✓ Guardar cambios" : "✓ Crear clase";
 
   return (
@@ -558,8 +594,8 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
             }
             <button
               onClick={step < TOTAL ? () => { if (validar()) { setError(""); setStep(s => s + 1); } } : handleGuardar}
-              disabled={saving}
-              style={{ ...S.btnPrimary, opacity: saving ? 0.5 : 1, cursor: saving ? "not-allowed" : "pointer" }}
+              disabled={guardarDisabled}
+              style={{ ...S.btnPrimary, opacity: guardarDisabled ? 0.45 : 1, cursor: guardarDisabled ? "not-allowed" : "pointer" }}
             >
               {nextLabel}
             </button>
