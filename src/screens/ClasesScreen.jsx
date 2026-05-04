@@ -561,7 +561,7 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
 // ══════════════════════════════════════════════════════════════════
 //  COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════
-export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner, canManage = isOwner, planes: planesProp }) {
+export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx, isOwner, canManage = isOwner, planes: planesProp, onClaseUpdated }) {
   const [clases, setClases]               = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
   const [planes, setPlanes]               = useState(planesProp || []);
@@ -662,6 +662,7 @@ export default function ClasesScreen({ gymId, miembros, txs, gymConfig, onAddTx,
     } else {
       setClases(p => [...p, saved]);
     }
+    onClaseUpdated?.(saved, esEdicion);
     recargarPlanes();
     setModalClase(null);
   };

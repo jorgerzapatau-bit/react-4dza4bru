@@ -587,6 +587,13 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onAddTx={addPago}
             isOwner={isOwner}
             canManage={isOwner || userRole === "admin"}
+            onClaseUpdated={(saved, esEdicion) => {
+              setClasesRaw(prev =>
+                esEdicion
+                  ? prev.map(c => c.id === saved.id ? saved : c)
+                  : [...prev, saved]
+              );
+            }}
           />
         )}
 
