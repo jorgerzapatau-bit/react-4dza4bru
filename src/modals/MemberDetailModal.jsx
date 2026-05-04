@@ -2215,12 +2215,12 @@ export default function MemberDetailModal({
                 const dias = diasParaVencer(memInfo.vence);
                 const venceISO = (() => { const v = parseDate(memInfo.vence); if (!v) return todayISO(); v.setHours(0,0,0,0); return v.toISOString().split("T")[0]; })();
                 const sugerido = dias !== null && dias > 0 ? venceISO : todayISO();
-                const planesDisp = (planesMembresia || []).filter(p => p.activo !== false);
+                const planesDisp = (activePlanes || []).filter(p => p.activo !== false);
                 const planPresel = memInfo.plan
                   ? (planesDisp.find(p => p.nombre === memInfo.plan) || planesDisp[0] || null)
                   : (planesDisp.length === 1 ? planesDisp[0] : null);
                 const planNombre = planPresel?.nombre || null;
-                const planMonto  = m.beca ? "0" : String(planPresel?.precio_publico ?? planPresel?.monto ?? "0");
+                const planMonto  = m.beca ? "0" : String(Number(planPresel?.precio ?? 0));
                 setRenovar({ plan: planNombre, monto: planMonto, inicio: sugerido, vence: calcVence(sugerido, planNombre), venceManual: false, formaPago: "Efectivo", planesExtra: [] });
                 setPlanOriginal(memInfo.plan || defaultPlan);
                 setPlanCambiado(false);
