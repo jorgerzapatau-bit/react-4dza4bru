@@ -618,26 +618,28 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
   const horariosDeClase = (claseId) =>
     (horarios || []).filter(h => h.clase_id === claseId && h.activo !== false);
 
+  // Auto-seleccionar el primer plan del gym al montar (solo modo gimnasio)
+  const MESES_MAP_AUTO = { mensual:1, trimestral:3, semestral:6, anual:12 };
+  useEffect(() => {
+    if (isDojo) return;
+    const gymPlanesAuto = (activePlanes || DEFAULT_PLANES).filter(p => p.activo !== false);
+    if (!fM.plan && gymPlanesAuto.length > 0) {
+      const plan   = gymPlanesAuto[0];
+      const precio = Number(plan.precio||0);
+      const ciclo  = plan.ciclo_renovacion || "mensual";
+      const meses  = plan.meses ?? MESES_MAP_AUTO[ciclo] ?? 1;
+      setFM(prev => ({
+        ...prev, claseId:null, planId:plan.nombre, plan:plan.nombre,
+        monto: prev.beca ? "0" : String(precio),
+        planData: { id:plan.nombre, nombre:plan.nombre, precio_publico:precio, ciclo_renovacion:ciclo, meses },
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── GIMNASIO: planes del gym + clases disponibles ──────────────
   if (!isDojo) {
     const gymPlanes   = (activePlanes || DEFAULT_PLANES).filter(p => p.activo !== false);
-    const MESES_MAP_AUTO = { mensual:1, trimestral:3, semestral:6, anual:12 };
-
-    // Auto-seleccionar el primer plan si no hay ninguno seleccionado
-    useEffect(() => {
-      if (!fM.plan && gymPlanes.length > 0) {
-        const plan = gymPlanes[0];
-        const precio = Number(plan.precio||0);
-        const ciclo  = plan.ciclo_renovacion || "mensual";
-        const meses  = plan.meses ?? MESES_MAP_AUTO[ciclo] ?? 1;
-        setFM(prev => ({
-          ...prev, claseId:null, planId:plan.nombre, plan:plan.nombre,
-          monto: prev.beca ? "0" : String(precio),
-          planData: { id:plan.nombre, nombre:plan.nombre, precio_publico:precio, ciclo_renovacion:ciclo, meses },
-        }));
-      }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
     const clasesGym   = (clases || []).filter(c => c.activo !== false);
     const CICLO_LBL   = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
     const MESES_MAP_G = MESES_MAP_AUTO;
