@@ -259,29 +259,58 @@ export default function ConfigScreen({ gymConfig, gymConfigRef: GYM_ID, formCfg,
   const handleSaveCfg = async () => {
     if (!formCfg.nombre) return;
     setSaving(true); setSaveError(null); setSaveOk(false);
-    const payload = { ...formCfg, id: GYM_ID };
+
+    // Separar campos de política de los datos del gimnasio
+    const { dias_gracia, mora_tipo, mora_monto, ...gymData } = formCfg;
+    const payload = { ...gymData, id: GYM_ID };
+
+    // 1. Guardar datos del gimnasio (sin campos de política)
     const ok = await supabase.saveGym(payload);
-    if (ok) {
-      setGymConfig({ ...formCfg, id: GYM_ID });
-      setSaving(false); setSaveOk(true);
-      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
-      return;
+    if (!ok) {
+      // Fallback a POST si el registro no existe aún
+      const url = `${supabase.url}/rest/v1/gimnasios`;
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) {
+        setSaving(false);
+        let detail = "";
+        try { const j = await r.json(); detail = j?.message || j?.error || ""; } catch {}
+        setSaveError(detail || "Error al guardar. Verifica tu conexión e intenta de nuevo.");
+        return;
+      }
     }
-    const url = `${supabase.url}/rest/v1/gimnasios`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
-      body: JSON.stringify(payload),
-    });
+
+    // 2. Guardar políticas en politicas_membresia (upsert por gym_id, sin plan_id = política global)
+    try {
+      const polPayload = {
+        gym_id:         GYM_ID,
+        dias_gracia:    Number(dias_gracia ?? 5),
+        tipo_penalidad: mora_tipo || "ninguna",
+        penalidad_mora: Number(mora_monto || 0),
+      };
+
+      // Buscar si ya existe una política global (sin plan_id) para este gym
+      const dbPol = await supabase.from("politicas_membresia");
+      const existentes = await dbPol.select(GYM_ID, "&plan_id=is.null");
+      const polExistente = Array.isArray(existentes) ? existentes[0] : null;
+
+      if (polExistente?.id) {
+        await dbPol.update(polExistente.id, polPayload);
+      } else {
+        await dbPol.insert(polPayload);
+      }
+    } catch (e) {
+      console.error("❌ Error guardando política global:", e);
+      // No bloquear el guardado del gimnasio si falla la política
+    }
+
     setSaving(false);
-    if (r.ok) {
-      setGymConfig({ ...formCfg, id: GYM_ID }); setSaveOk(true);
-      setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
-    } else {
-      let detail = "";
-      try { const j = await r.json(); detail = j?.message || j?.error || ""; } catch {}
-      setSaveError(detail || "Error al guardar. Verifica tu conexión e intenta de nuevo.");
-    }
+    setGymConfig({ ...formCfg, id: GYM_ID });
+    setSaveOk(true);
+    setTimeout(() => { setSaveOk(false); setConfigScreen(false); }, 1200);
   };
 
   return (

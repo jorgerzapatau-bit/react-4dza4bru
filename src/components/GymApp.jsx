@@ -157,7 +157,16 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           let lsData = {};
           try { lsData = JSON.parse(localStorage.getItem(lsKey) || "{}"); } catch(e) {}
           setGymConfig({ ...gym, ...lsData });
-          setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES, propietario_nombre: gym.propietario_nombre || "", propietario_titulo: gym.propietario_titulo || "", transferencia_clabe: gym.transferencia_clabe || "", transferencia_titular: gym.transferencia_titular || "", transferencia_banco: gym.transferencia_banco || "", recordatorio_tpl: gym.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL, tipo_negocio: gym.tipo_negocio || "gimnasio", termino_miembros: gym.termino_miembros || "", dias_gracia: gym.dias_gracia ?? 5, mora_tipo: gym.mora_tipo || "ninguna", mora_monto: gym.mora_monto != null ? String(gym.mora_monto) : "" });
+
+          // Cargar política global (sin plan_id) desde politicas_membresia
+          let polGlobal = null;
+          try {
+            const dbPol = await supabase.from("politicas_membresia");
+            const pols = await dbPol.select(GYM_ID, "&plan_id=is.null");
+            polGlobal = Array.isArray(pols) ? pols[0] : null;
+          } catch(e) { console.warn("No se pudo cargar política global:", e); }
+
+          setFormCfg({ nombre: gym.nombre || "", slogan: gym.slogan || "", telefono: gym.telefono || "", direccion: gym.direccion || "", zona_horaria: gym.zona_horaria || "America/Merida", logo: gym.logo || null, planes: gym.planes || DEFAULT_PLANES, propietario_nombre: gym.propietario_nombre || "", propietario_titulo: gym.propietario_titulo || "", transferencia_clabe: gym.transferencia_clabe || "", transferencia_titular: gym.transferencia_titular || "", transferencia_banco: gym.transferencia_banco || "", recordatorio_tpl: gym.recordatorio_tpl || DEFAULT_RECORDATORIO_TPL, tipo_negocio: gym.tipo_negocio || "gimnasio", termino_miembros: gym.termino_miembros || "", dias_gracia: polGlobal?.dias_gracia ?? 5, mora_tipo: polGlobal?.tipo_penalidad || "ninguna", mora_monto: polGlobal?.penalidad_mora != null ? String(polGlobal.penalidad_mora) : "" });
           // Si el gym no tiene nombre configurado todavía → mostrar pantalla de configuración
           if (!gym.nombre) {
             setLoading(false);
