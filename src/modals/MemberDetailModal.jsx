@@ -1903,7 +1903,8 @@ export default function MemberDetailModal({
       {/* ══════════ HERO CARD ══════════ */}
       {(() => {
         // ── Buscar plan vinculado en planesMembresia para obtener horario real
-        const planNombreActual = memInfo.plan || "";
+        // Si no tiene membresía activa, no mostrar horario del plan (evita mostrar datos de un plan anterior)
+        const planNombreActual = (memInfo.estado === "Sin membresía") ? "" : (memInfo.plan || "");
         const planVinculado = (planesMembresia || []).find(p => {
           const pn = (p.nombre || "").toLowerCase().trim();
           const cn = (p.clase_nombre || "").toLowerCase().trim();
