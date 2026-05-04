@@ -426,6 +426,7 @@ export default function MemberDetailModal({
   planPrecioActivo,
   onEditTx,
   gymConfig,
+  formCfg,
   onUpdatePlantillas,
   onDelete,
   onGoToMensajes,
@@ -1168,10 +1169,10 @@ export default function MemberDetailModal({
           .sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
         const ultimoPagoFmt = ultimaMemTx ? fmtDate(ultimaMemTx.fecha) : null;
 
-        // ── Calcular recargo por mora (usa gymConfig global) ──
-        const diasGracia    = Number(gymConfig?.dias_gracia ?? 5);
-        const tipoPenalidad = gymConfig?.mora_tipo || "ninguna";
-        const penalidad     = Number(gymConfig?.mora_monto || 0);
+        // ── Calcular recargo por mora (usa formCfg que tiene el mapeo correcto desde polGlobal) ──
+        const diasGracia    = Number(formCfg?.dias_gracia ?? gymConfig?.dias_gracia ?? 5);
+        const tipoPenalidad = formCfg?.mora_tipo || gymConfig?.mora_tipo || "ninguna";
+        const penalidad     = Number(formCfg?.mora_monto || gymConfig?.mora_monto || 0);
         const diasVencido = memInfo.vence ? (() => {
           const hoy = new Date();
           const venceDate = parseDate(memInfo.vence);

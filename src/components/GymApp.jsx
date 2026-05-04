@@ -713,7 +713,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             onSave={saveMiembro} onToggleEstado={() => {}} onAddPago={addPago}
             onDone={() => { setSelM(null); setModal(null); }}
             planesActivos={PLANES_ACTIVOS}
-            planPrecioActivo={PLAN_PRECIO_ACTIVO} gymConfig={gymConfig}
+            planPrecioActivo={PLAN_PRECIO_ACTIVO} gymConfig={gymConfig} formCfg={formCfg}
             onEditTx={tx => { setEditTx(tx); setModal("editTx"); }}
             onUpdatePlantillas={updatePlantillas}
             onDelete={deleteMiembro}
