@@ -621,9 +621,26 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
   // ── GIMNASIO: planes del gym + clases disponibles ──────────────
   if (!isDojo) {
     const gymPlanes   = (activePlanes || DEFAULT_PLANES).filter(p => p.activo !== false);
+    const MESES_MAP_AUTO = { mensual:1, trimestral:3, semestral:6, anual:12 };
+
+    // Auto-seleccionar el primer plan si no hay ninguno seleccionado
+    useEffect(() => {
+      if (!fM.plan && gymPlanes.length > 0) {
+        const plan = gymPlanes[0];
+        const precio = Number(plan.precio||0);
+        const ciclo  = plan.ciclo_renovacion || "mensual";
+        const meses  = plan.meses ?? MESES_MAP_AUTO[ciclo] ?? 1;
+        setFM(prev => ({
+          ...prev, claseId:null, planId:plan.nombre, plan:plan.nombre,
+          monto: prev.beca ? "0" : String(precio),
+          planData: { id:plan.nombre, nombre:plan.nombre, precio_publico:precio, ciclo_renovacion:ciclo, meses },
+        }));
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const clasesGym   = (clases || []).filter(c => c.activo !== false);
     const CICLO_LBL   = { mensual:"mes", trimestral:"trimestre", semestral:"semestre", anual:"año" };
-    const MESES_MAP_G = { mensual:1, trimestral:3, semestral:6, anual:12 };
+    const MESES_MAP_G = MESES_MAP_AUTO;
 
     // Helpers de toggle para planesExtra (clases)
     const isExtraSelected = (claseId) =>
@@ -667,28 +684,6 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
             🏋️ Membresía del Gimnasio
           </p>
         )}
-
-        {/* Sin membresía */}
-        <button
-          onClick={() => setFM(p => ({ ...p, claseId:null, planId:null, plan:null, monto:null, planData:null }))}
-          style={{
-            width:"100%", padding:"12px 16px", marginBottom:8,
-            border: !fM.plan ? "2px solid rgba(167,139,250,.5)" : "1.5px solid var(--border-strong,#2e2e42)",
-            borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-            background: !fM.plan ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
-            display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left",
-          }}>
-          <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
-            background: !fM.plan ? "rgba(167,139,250,.18)" : "rgba(255,255,255,.05)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>⏸️</div>
-          <div style={{ flex:1 }}>
-            <p style={{ color: !fM.plan ? "#c4b5fd" : "var(--text-secondary,#9999b3)", fontWeight: !fM.plan?700:500, fontSize:13 }}>
-              Sin membresía del gym
-            </p>
-            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Solo inscripción a clases</p>
-          </div>
-          {!fM.plan && <span style={{ color:"#a78bfa", fontSize:16 }}>✓</span>}
-        </button>
 
         {/* Lista de planes del gym */}
         {gymPlanes.map(plan => {
@@ -866,12 +861,6 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
           </div>
         )}
 
-        {!haySeleccion && gymPlanes.length > 0 && (
-          <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, textAlign:"center", marginTop:14, lineHeight:1.5 }}>
-            Si no seleccionas nada, el miembro se registrará{" "}
-            <strong style={{ color:"var(--text-secondary,#9999b3)" }}>sin membresía</strong> y podrás asignarla después.
-          </p>
-        )}
       </div>
     );
   }
@@ -2234,8 +2223,8 @@ export default function NuevoMiembroWizard({
   // ── Etiqueta del botón principal ──
   const nextLabel = (() => {
     if (step === 1) return "Siguiente →";
-    if (step === 2 && !hasPlan) return "✓ Registrar sin membresía";
     if (step === 2 && hasPlan && fM.beca) return saving ? "Guardando..." : "🎓 Registrar (Beca — $0)";
+    if (step === 2) return "Siguiente →";
     if (step === 3) {
       if (saving) return "Guardando...";
       if (esPendiente) return "⏳ Registrar — pago pendiente";
@@ -2248,7 +2237,7 @@ export default function NuevoMiembroWizard({
 
   const goNext = () => {
     if (step === 1 && !canNext1) return;
-    if (step === 2 && (!hasPlan || fM.beca)) { handleAdd(); return; }
+    if (step === 2 && fM.beca) { handleAdd(); return; }
     if (step === 3) {
       if (hasPlan && !fM.formaPago) return; // debe elegir forma de pago
       handleAdd();
@@ -2364,15 +2353,15 @@ export default function NuevoMiembroWizard({
                 )}
                 <button
                   onClick={goNext}
-                  disabled={(step===1 && !canNext1) || (step===3 && !canNext3) || saving}
+                  disabled={(step===1 && !canNext1) || (step===2 && !isDojo && !hasPlan) || (step===3 && !canNext3) || saving}
                   style={{
                     ...S.btnPrimary,
                     flex:1,
                     background: esPendiente && step===3
                       ? "linear-gradient(135deg,#f59e0b,#d97706)"
                       : S.btnPrimary.background,
-                    opacity: ((step===1 && !canNext1) || (step===3 && !canNext3) || saving) ? 0.5 : 1,
-                    cursor:  ((step===1 && !canNext1) || (step===3 && !canNext3) || saving) ? "not-allowed" : "pointer",
+                    opacity: ((step===1 && !canNext1) || (step===2 && !isDojo && !hasPlan) || (step===3 && !canNext3) || saving) ? 0.5 : 1,
+                    cursor:  ((step===1 && !canNext1) || (step===2 && !isDojo && !hasPlan) || (step===3 && !canNext3) || saving) ? "not-allowed" : "pointer",
                   }}>
                   {nextLabel}
                 </button>
