@@ -1783,7 +1783,13 @@ export default function MemberDetailModal({
               </div>
 
               {/* ── Footer fijo ── */}
-              <div style={{ padding:"14px 24px 28px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", gap:8 }}>
+              <div style={{ padding:"14px 24px 28px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", flexDirection:"column", gap:0 }}>
+                {renovarStep === 1 && !renovar.plan && !m.beca && (
+                  <p style={{ color:"#f87171", fontSize:11, textAlign:"center", marginBottom:8 }}>
+                    ⚠️ Selecciona una membresía para continuar
+                  </p>
+                )}
+                <div style={{ display:"flex", gap:8 }}>
                 {renovarStep === 1 && (
                   <>
                     <button onClick={cerrarWizard}
@@ -1794,9 +1800,12 @@ export default function MemberDetailModal({
                         if (m.beca) { handleRenovar(); }
                         else { setRenovarStep(2); }
                       }}
-                      disabled={renovarSaving}
-                      style={{ flex:1, padding:"13px", border:"none", borderRadius:14, cursor: renovarSaving ? "not-allowed" : "pointer",
-                        fontFamily:"inherit", fontSize:13, fontWeight:700, opacity: renovarSaving ? .5 : 1,
+                      disabled={renovarSaving || (!m.beca && !renovar.plan)}
+                      title={!renovar.plan ? "Selecciona una membresía para continuar" : ""}
+                      style={{ flex:1, padding:"13px", border:"none", borderRadius:14,
+                        cursor: (renovarSaving || (!m.beca && !renovar.plan)) ? "not-allowed" : "pointer",
+                        fontFamily:"inherit", fontSize:13, fontWeight:700,
+                        opacity: (renovarSaving || (!m.beca && !renovar.plan)) ? 0.4 : 1,
                         background:"linear-gradient(135deg,#6c63ff,#e040fb)",
                         color:"#fff", boxShadow:"0 4px 18px rgba(108,99,255,.35)",
                         display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
@@ -1880,6 +1889,7 @@ export default function MemberDetailModal({
                     Cerrar
                   </button>
                 )}
+                </div>
               </div>
             </div>
           </div>
