@@ -2939,18 +2939,18 @@ export default function MemberDetailModal({
                 <Btn full outline color="#8b949e" onClick={() => setEditing(false)}>Cancelar</Btn>
                 <button
                   onClick={handleSave}
-                  disabled={!hasChangesPersonales}
+                  disabled={!hasChanges}
                   style={{
                     flex: 1, padding: "13px 20px", border: "none", borderRadius: 14,
-                    cursor: hasChangesPersonales ? "pointer" : "not-allowed", fontFamily: "inherit",
+                    cursor: hasChanges ? "pointer" : "not-allowed", fontFamily: "inherit",
                     fontSize: 14, fontWeight: 700,
-                    background: hasChangesPersonales ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
-                    color: hasChangesPersonales ? "#fff" : "#8b949e",
-                    boxShadow: hasChangesPersonales ? "0 4px 18px rgba(108,99,255,.4)" : "none",
+                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                    color: hasChanges ? "#fff" : "#8b949e",
+                    boxShadow: hasChanges ? "0 4px 18px rgba(108,99,255,.4)" : "none",
                     transition: "all .3s",
                   }}
                 >
-                  {hasChangesPersonales ? "Guardar datos ✓" : "Sin cambios"}
+                  {hasChanges ? "Guardar ✓" : "Sin cambios"}
                 </button>
               </div>
 
