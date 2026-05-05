@@ -220,10 +220,8 @@ export function getInscripcionesActivas(miembroId, inscripciones, miembro) {
       : null;
 
     const diasRestantes = venceISO ? diasParaVencer(
-      // diasParaVencer espera formato "DD Mes YYYY" o ISO — pasamos ISO directo
       (() => {
         const [y, m, d] = venceISO.split("-").map(Number);
-        const v = new Date(y, m - 1, d);
         return `${String(d).padStart(2,"0")} ${MESES_N[m-1]} ${y}`;
       })()
     ) : null;
