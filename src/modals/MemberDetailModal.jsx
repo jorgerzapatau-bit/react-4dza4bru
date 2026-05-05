@@ -542,6 +542,7 @@ export default function MemberDetailModal({
             monto: montoTotal,
             fecha: todayISO(),
             miembroId: m.id,
+            formaPago: formaPagoClases,
           });
 
           // Generar PNG de comprobante y abrir modal
