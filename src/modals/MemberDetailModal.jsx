@@ -2133,7 +2133,7 @@ export default function MemberDetailModal({
                   </div>
                 </div>
                 <div style={{ textAlign:"right" }}>
-                  <p style={{ color:"var(--text-tertiary,#64748b)", fontSize:9, margin:0 }}>Vence</p>
+                  <p style={{ color:"var(--text-tertiary,#64748b)", fontSize:9, margin:0 }}>{diasR !== null && diasR < 0 ? "Venció" : "Vence"}</p>
                   <p style={{ color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:700, margin:0 }}>{fmtDate(memInfo.vence) || "—"}</p>
                 </div>
               </div>
@@ -2673,7 +2673,7 @@ export default function MemberDetailModal({
                   [
                     { label: "📋 Plan", val: memInfo.plan || "—" },
                     { label: "📅 Inicio", val: fmtDate(memInfo.inicio) || "—" },
-                    { label: "⏰ Vence", val: memInfo.congelado ? `${fmtDate(memInfo.vence)} (+congelado)` : fmtDate(memInfo.vence) || "—" },
+                    { label: (() => { const dR = diasParaVencer(memInfo.vence); return dR !== null && dR < 0 ? "⏰ Venció" : "⏰ Vence"; })(), val: memInfo.congelado ? `${fmtDate(memInfo.vence)} (+congelado)` : fmtDate(memInfo.vence) || "—" },
                     { label: "💰 Último pago", val: memInfo.esGratis ? "Cortesía 🎁" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—") },
                     ...(memInfo.formaPago
                       ? [{ label: "💳 Forma de pago", val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transferencia" : "💳 Tarjeta" }]
