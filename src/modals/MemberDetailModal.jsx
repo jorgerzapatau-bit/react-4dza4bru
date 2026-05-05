@@ -476,25 +476,87 @@ export default function MemberDetailModal({
     clasesEdit.some(id => !clasesDelMiembro.includes(id))
   );
 
-  const guardarClasesMiembro = async (nuevasIds) => {
+  const guardarClasesMiembro = async (nuevasIds, clasesAnteriores) => {
     if (!gymId) return;
     try {
-      const db = await import("../supabase.js").then(m => m.default.from("miembro_clases"));
-      // Borrar las actuales del miembro
-      const existentes = (miembroClases || []).filter(mc => String(mc.miembro_id) === String(m.id));
-      for (const mc of existentes) {
-        await db.delete(mc.id);
-      }
-      // Insertar las nuevas
+      const supabaseLib = await import("../supabase.js").then(mod => mod.default);
+      const db = await supabaseLib.from("miembro_clases");
+
+      // ── Solo insertar clases que no existían antes (nunca borrar las anteriores) ──
+      const clasesAntIds = (clasesAnteriores || []).map(String);
+      const clasesSoloNuevas = nuevasIds.filter(id => !clasesAntIds.includes(String(id)));
+      // Clases que se desmarcaron → eliminar solo esas
+      const clasesEliminadas = clasesAntIds.filter(id => !nuevasIds.map(String).includes(id));
+
+      // Insertar nuevas
       const insertadas = [];
-      for (const claseId of nuevasIds) {
+      for (const claseId of clasesSoloNuevas) {
         const saved = await db.insert({ gym_id: gymId, miembro_id: m.id, clase_id: claseId });
         if (saved) insertadas.push(saved);
       }
+      // Eliminar solo las desmarcadas
+      for (const claseId of clasesEliminadas) {
+        const mc = (miembroClases || []).find(x =>
+          String(x.miembro_id) === String(m.id) && String(x.clase_id) === claseId
+        );
+        if (mc?.id) await db.delete(mc.id);
+      }
+
       // Actualizar estado global
       if (onUpdateMiembroClases) {
-        const sinEste = (miembroClases || []).filter(mc => String(mc.miembro_id) !== String(m.id));
-        onUpdateMiembroClases([...sinEste, ...insertadas]);
+        const eliminadasSet = new Set(clasesEliminadas);
+        const sinEliminadas = (miembroClases || []).filter(mc =>
+          !(String(mc.miembro_id) === String(m.id) && eliminadasSet.has(String(mc.clase_id)))
+        );
+        onUpdateMiembroClases([...sinEliminadas, ...insertadas]);
+      }
+
+      // ── Generar transacción + comprobante por cada clase nueva con costo ──
+      if (!m.beca && onAddPago && clasesSoloNuevas.length > 0) {
+        const getPrecio = (c) => {
+          const planVinc = (planesMembresia||[]).find(p =>
+            (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
+            p.clase_nombre === c.nombre || p.nombre === c.nombre
+          );
+          return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
+        };
+
+        // Acumular clases con costo para un solo comprobante
+        const clasesConCosto = clasesSoloNuevas
+          .map(id => (clases||[]).find(c => String(c.id) === String(id)))
+          .filter(c => c && getPrecio(c) > 0);
+
+        if (clasesConCosto.length > 0) {
+          const montoTotal = clasesConCosto.reduce((s, c) => s + getPrecio(c), 0);
+          const nombresClases = clasesConCosto.map(c => c.nombre).join(", ");
+          const desc = `Clase${clasesConCosto.length > 1 ? "s" : ""}: ${nombresClases} - ${m.nombre}`;
+
+          await onAddPago({
+            tipo: "ingreso",
+            categoria: "Clases",
+            desc,
+            descripcion: desc,
+            monto: montoTotal,
+            fecha: todayISO(),
+            miembroId: m.id,
+          });
+
+          // Generar PNG de comprobante y abrir modal
+          try {
+            const png = await generarComprobantePNG({
+              gymConfig,
+              miembro: m,
+              plan: nombresClases,
+              monto: montoTotal,
+              formaPago: "Efectivo",
+              venceISO: null,
+            });
+            setComprobanteData({ tipo: "efectivo", png, plan: nombresClases, monto: montoTotal, formaPago: "Efectivo", vence: null });
+            setComprobanteModal(true);
+          } catch(e) {
+            console.warn("No se pudo generar comprobante de clase:", e);
+          }
+        }
       }
     } catch(e) {
       console.error("❌ Error guardando clases del miembro:", e);
@@ -626,7 +688,7 @@ export default function MemberDetailModal({
       ...tutorData,
     });
     // Guardar clases si cambiaron
-    if (clasesHanCambiado) guardarClasesMiembro(clasesEdit);
+    if (clasesHanCambiado) guardarClasesMiembro(clasesEdit, clasesDelMiembro);
     setEditing(false);
   };
 
@@ -2493,64 +2555,117 @@ export default function MemberDetailModal({
               )}
 
               {/* ── Clases asignadas (multi-selección, gym y dojo) ── */}
-              {clases && clases.filter(c => c.activo !== false).length > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    🏋️ Clases asignadas
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {clases.filter(c => c.activo !== false).map(c => {
-                      const isSel = clasesEdit.map(String).includes(String(c.id));
-                      const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
-                      const horStr = horClase.length > 0
-                        ? horClase.map(h => {
-                            const dias = (h.dias_semana||[]).join(", ");
-                            return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
-                          }).join(" | ")
-                        : null;
-                      return (
-                        <button
-                          key={c.id}
-                          onClick={() => setClasesEdit(prev =>
-                            prev.map(String).includes(String(c.id))
-                              ? prev.filter(id => String(id) !== String(c.id))
-                              : [...prev, String(c.id)]
-                          )}
-                          style={{
-                            padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-                            fontFamily: "inherit", textAlign: "left",
-                            border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
-                            background: isSel ? "rgba(34,211,238,.10)" : "var(--bg-elevated)",
-                            transition: "all .2s", display: "flex", alignItems: "center", gap: 10,
-                          }}
-                        >
-                          <div style={{
-                            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                            border: `2px solid ${isSel ? "#22d3ee" : "rgba(255,255,255,.2)"}`,
-                            background: isSel ? "#22d3ee" : "transparent",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>
-                            {isSel && <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
-                          </div>
-                          <div>
-                            <p style={{ color: isSel ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSel ? 700 : 500, margin: 0 }}>
-                              {c.nombre}
-                            </p>
-                            {horStr && (
-                              <p style={{ color: "#8b949e", fontSize: 11, margin: "2px 0 0" }}>🗓️ {horStr}</p>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {clasesEdit.length === 0 && (
-                    <p style={{ color: "#8b949e", fontSize: 11, marginTop: 6, paddingLeft: 2 }}>
-                      Sin clases asignadas
+              {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
+                // Resolver precio de una clase
+                const getPrecioClase = (c) => {
+                  const planVinc = (planesMembresia||[]).find(p =>
+                    (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
+                    p.clase_nombre === c.nombre || p.nombre === c.nombre
+                  );
+                  return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
+                };
+                // Clases recién agregadas (no estaban antes)
+                const clasesNuevas = clasesEdit.filter(id => !clasesDelMiembro.includes(String(id)));
+                // Cargo total de clases nuevas con costo (si el miembro no tiene beca)
+                const cargoTotal = m.beca ? 0 : clasesNuevas.reduce((sum, id) => {
+                  const c = (clases||[]).find(x => String(x.id) === String(id));
+                  return sum + (c ? getPrecioClase(c) : 0);
+                }, 0);
+
+                return (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      🏋️ Clases asignadas
                     </p>
-                  )}
-                </div>
-              )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {clases.filter(c => c.activo !== false).map(c => {
+                        const isSel = clasesEdit.map(String).includes(String(c.id));
+                        const isNueva = isSel && !clasesDelMiembro.includes(String(c.id));
+                        const precio = getPrecioClase(c);
+                        const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
+                        const horStr = horClase.length > 0
+                          ? horClase.map(h => {
+                              const dias = (h.dias_semana||[]).join(", ");
+                              return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
+                            }).join(" | ")
+                          : null;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => setClasesEdit(prev =>
+                              prev.map(String).includes(String(c.id))
+                                ? prev.filter(id => String(id) !== String(c.id))
+                                : [...prev, String(c.id)]
+                            )}
+                            style={{
+                              padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+                              fontFamily: "inherit", textAlign: "left",
+                              border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                              background: isSel ? "rgba(34,211,238,.10)" : "var(--bg-elevated)",
+                              transition: "all .2s", display: "flex", alignItems: "center", gap: 10,
+                            }}
+                          >
+                            <div style={{
+                              width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                              border: `2px solid ${isSel ? "#22d3ee" : "rgba(255,255,255,.2)"}`,
+                              background: isSel ? "#22d3ee" : "transparent",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                              {isSel && <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <p style={{ color: isSel ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSel ? 700 : 500, margin: 0 }}>
+                                  {c.nombre}
+                                </p>
+                                {precio > 0 && (
+                                  <span style={{
+                                    fontSize: 12, fontWeight: 700,
+                                    color: isNueva ? "#4ade80" : (isSel ? "#22d3ee" : "#8b949e"),
+                                  }}>
+                                    {isNueva ? "+ " : ""}${precio.toLocaleString("es-MX")}/mes
+                                  </span>
+                                )}
+                              </div>
+                              {horStr && (
+                                <p style={{ color: "#8b949e", fontSize: 11, margin: "2px 0 0" }}>🗓️ {horStr}</p>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {clasesEdit.length === 0 && (
+                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 6, paddingLeft: 2 }}>
+                        Sin clases asignadas
+                      </p>
+                    )}
+                    {/* ── Resumen de cargo por clases nuevas ── */}
+                    {!m.beca && cargoTotal > 0 && (
+                      <div style={{
+                        marginTop: 10, padding: "10px 14px", borderRadius: 12,
+                        background: "rgba(74,222,128,.08)", border: "1.5px solid rgba(74,222,128,.3)",
+                      }}>
+                        <p style={{ color: "#4ade80", fontSize: 12, fontWeight: 700, margin: "0 0 2px" }}>
+                          💰 Cargo inmediato al guardar
+                        </p>
+                        {clasesNuevas.map(id => {
+                          const c = (clases||[]).find(x => String(x.id) === String(id));
+                          const p = c ? getPrecioClase(c) : 0;
+                          return p > 0 ? (
+                            <p key={id} style={{ color: "#86efac", fontSize: 11, margin: "1px 0" }}>
+                              · {c?.nombre}: ${p.toLocaleString("es-MX")}
+                            </p>
+                          ) : null;
+                        })}
+                        <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 800, margin: "6px 0 0", borderTop: "1px solid rgba(74,222,128,.2)", paddingTop: 6 }}>
+                          Total: ${cargoTotal.toLocaleString("es-MX")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 📝 Notas internas{" "}
