@@ -437,8 +437,10 @@ export default function MemberDetailModal({
   activePlanes,
   clases,
   horarios,
-  miembroClases,
-  onUpdateMiembroClases,
+  inscripciones,          // fuente de verdad: tabla inscripciones (estado=activa)
+  onUpdateInscripciones,  // actualiza el array global en GymApp
+  miembroClases,          // deprecated — mantenido para compatibilidad temporal
+  onUpdateMiembroClases,  // deprecated
 }) {
   const isDesktop = useIsDesktop();
   const [detTab, setDetTab] = useState("perfil");
@@ -468,19 +470,20 @@ export default function MemberDetailModal({
   const [clasesPagoSaving, setClasesPagoSaving] = useState(false);
 
   // ── Clases múltiples asignadas al miembro ──
-  const clasesDelMiembro = (miembroClases || [])
-    .filter(mc => String(mc.miembro_id) === String(m.id))
-    .map(mc => String(mc.clase_id));
+  // Clases en las que el miembro está inscrito actualmente — desde inscripciones (fuente de verdad)
+  const clasesDelMiembro = (inscripciones || [])
+    .filter(i => String(i.miembro_id) === String(m.id) && i.estado === "activa" && i.clase_id)
+    .map(i => String(i.clase_id));
 
   const [clasesEdit, setClasesEdit] = useState(clasesDelMiembro);
 
-  // Sincronizar clasesEdit cuando miembroClases cambia desde el padre (ej. después de guardar)
+  // Sincronizar clasesEdit cuando inscripciones cambia desde el padre
   useEffect(() => {
     if (!editing) {
       setClasesEdit(clasesDelMiembro);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [miembroClases]);
+  }, [inscripciones]);
 
   const clasesHanCambiado = editing && (
     clasesEdit.length !== clasesDelMiembro.length ||
@@ -491,91 +494,65 @@ export default function MemberDetailModal({
     if (!gymId) return;
     try {
       const supabaseLib = await import("../supabase.js").then(mod => mod.supabase);
-      const dbMC = await supabaseLib.from("miembro_clases");
-      const dbI  = await supabaseLib.from("inscripciones");
+      const SUPABASE_URL = supabaseLib.url;
+      const ANON_KEY     = supabaseLib.key;
+      let token = ANON_KEY;
+      try { const s = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (s?.access_token) token = s.access_token; } catch(_){}
+      const headers = {
+        "apikey": ANON_KEY,
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+      };
 
-      const clasesAntIds    = (clasesAnteriores || []).map(String);
+      const clasesAntIds     = (clasesAnteriores || []).map(String);
       const clasesSoloNuevas = nuevasIds.filter(id => !clasesAntIds.includes(String(id)));
       const clasesEliminadas = clasesAntIds.filter(id => !nuevasIds.map(String).includes(id));
 
-      // ── Insertar en miembro_clases E inscripciones (fuente de verdad de ClasesScreen) ──
+      // ── INSERTAR: nueva inscripción activa por cada clase nueva ──
       const insertadas = [];
       for (const claseId of clasesSoloNuevas) {
-        // 1. miembro_clases (para el perfil del miembro)
-        const saved = await dbMC.insert({ gym_id: gymId, miembro_id: m.id, clase_id: claseId });
-        if (saved) insertadas.push(saved);
+        // Verificar que no exista una inscripción activa ya
+        const checkR = await fetch(
+          `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa&select=id&limit=1`,
+          { headers }
+        );
+        const existing = checkR.ok ? await checkR.json() : [];
+        if (existing.length) continue; // ya existe, no duplicar
 
-        // 2. inscripciones (para ClasesScreen — evitar duplicados)
-        try {
-          const SUPABASE_URL  = supabaseLib.url;
-          const ANON_KEY      = supabaseLib.key;
-          // Obtener token activo desde localStorage (igual que getAuthHeaders interno)
-          let token = ANON_KEY;
-          try { const s = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (s?.access_token) token = s.access_token; } catch(_){}
-          const headers = {
-            "apikey": ANON_KEY,
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation,resolution=ignore-duplicates",
-          };
-          // Verificar si ya existe una inscripción activa
-          const checkUrl = `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa&select=id&limit=1`;
-          const checkR   = await fetch(checkUrl, { headers });
-          const existing = checkR.ok ? await checkR.json() : [];
-          if (!existing.length) {
-            await fetch(`${SUPABASE_URL}/rest/v1/inscripciones`, {
-              method: "POST",
-              headers,
-              body: JSON.stringify({
-                gym_id:            gymId,
-                miembro_id:        m.id,
-                clase_id:          claseId,
-                estado:            "activa",
-                fecha_inscripcion: new Date().toISOString().split("T")[0],
-              }),
-            });
-          }
-        } catch(eI) {
-          console.warn("No se pudo insertar en inscripciones:", eI);
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/inscripciones`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            gym_id:            gymId,
+            miembro_id:        m.id,
+            clase_id:          claseId,
+            estado:            "activa",
+            fecha_inscripcion: new Date().toISOString().split("T")[0],
+          }),
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const saved = Array.isArray(data) ? data[0] : data;
+          if (saved) insertadas.push(saved);
         }
       }
 
-      // ── Eliminar de miembro_clases Y marcar como 'cancelada' en inscripciones ──
+      // ── CANCELAR: marcar como cancelada (conserva historial) ──
       for (const claseId of clasesEliminadas) {
-        // 1. miembro_clases
-        const mc = (miembroClases || []).find(x =>
-          String(x.miembro_id) === String(m.id) && String(x.clase_id) === claseId
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa`,
+          { method: "PATCH", headers, body: JSON.stringify({ estado: "cancelada" }) }
         );
-        if (mc?.id) await dbMC.delete(mc.id);
-
-        // 2. inscripciones → marcar cancelada (no borrar para conservar historial)
-        try {
-          const SUPABASE_URL = supabaseLib.url;
-          const ANON_KEY     = supabaseLib.key;
-          let token = ANON_KEY;
-          try { const s = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (s?.access_token) token = s.access_token; } catch(_){}
-          const headers = {
-            "apikey": ANON_KEY,
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-          };
-          await fetch(
-            `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa`,
-            { method: "PATCH", headers, body: JSON.stringify({ estado: "cancelada" }) }
-          );
-        } catch(eI) {
-          console.warn("No se pudo actualizar inscripciones:", eI);
-        }
       }
 
-      // Actualizar estado global de miembro_clases en memoria
-      if (onUpdateMiembroClases) {
+      // ── Actualizar estado global en memoria ──
+      if (onUpdateInscripciones) {
         const eliminadasSet = new Set(clasesEliminadas);
-        const sinEliminadas = (miembroClases || []).filter(mc =>
-          !(String(mc.miembro_id) === String(m.id) && eliminadasSet.has(String(mc.clase_id)))
+        const sinCanceladas = (inscripciones || []).filter(i =>
+          !(String(i.miembro_id) === String(m.id) && eliminadasSet.has(String(i.clase_id)))
         );
-        onUpdateMiembroClases([...sinEliminadas, ...insertadas]);
+        onUpdateInscripciones([...sinCanceladas, ...insertadas]);
       }
 
       // ── Generar transacción + comprobante por cada clase nueva con costo ──

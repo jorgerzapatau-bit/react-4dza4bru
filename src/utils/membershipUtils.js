@@ -191,3 +191,61 @@ export function buildWAUrl(tel, msg) {
   const phone = clean.startsWith("52") ? clean : `52${clean}`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
+
+/**
+ * Devuelve todas las inscripciones activas de un miembro con estado calculado.
+ * Usa la tabla `inscripciones` como fuente de verdad.
+ *
+ * @param {string|number} miembroId
+ * @param {Array} inscripciones  - array global cargado desde la tabla inscripciones
+ * @param {Object} miembro       - objeto miembro (para beca, congelado)
+ * @returns {Array<{
+ *   id, clase_id, plan_id,
+ *   inicio: string, vence: string,
+ *   monto: number, formaPago: string,
+ *   estado: "Activo"|"Vencido"|"Congelado",
+ *   diasRestantes: number|null,
+ * }>}
+ */
+export function getInscripcionesActivas(miembroId, inscripciones, miembro) {
+  const rows = (inscripciones || []).filter(
+    i => String(i.miembro_id) === String(miembroId) && i.estado === "activa"
+  );
+
+  return rows.map(i => {
+    const venceISO = i.fecha_vencimiento
+      ? (typeof i.fecha_vencimiento === "string"
+          ? i.fecha_vencimiento.split("T")[0]
+          : new Date(i.fecha_vencimiento).toISOString().split("T")[0])
+      : null;
+
+    const diasRestantes = venceISO ? diasParaVencer(
+      // diasParaVencer espera formato "DD Mes YYYY" o ISO — pasamos ISO directo
+      (() => {
+        const [y, m, d] = venceISO.split("-").map(Number);
+        const v = new Date(y, m - 1, d);
+        return `${String(d).padStart(2,"0")} ${MESES_N[m-1]} ${y}`;
+      })()
+    ) : null;
+
+    const congelado = !!(miembro?.congelado);
+    const estado = congelado
+      ? "Congelado"
+      : diasRestantes !== null && diasRestantes >= 0
+      ? "Activo"
+      : "Vencido";
+
+    return {
+      id:            i.id,
+      clase_id:      i.clase_id   || null,
+      plan_id:       i.plan_id    || null,
+      inicio:        i.fecha_inscripcion || null,
+      vence:         venceISO,
+      monto:         Number(i.monto_pagado || 0),
+      formaPago:     i.forma_pago || null,
+      estado,
+      diasRestantes,
+      raw:           i,
+    };
+  });
+}

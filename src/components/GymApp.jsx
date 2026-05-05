@@ -58,7 +58,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [planesMembresia, setPlanesMembresia] = useState([]);
   const [clasesRaw, setClasesRaw] = useState([]);
   const [horariosRaw, setHorariosRaw] = useState([]);
-  const [miembroClasesRaw, setMiembroClasesRaw] = useState([]); // { miembro_id, clase_id }
+  const [inscripcionesRaw, setInscripcionesRaw] = useState([]); // fuente de verdad: tabla inscripciones
   const [modal, setModal] = useState(null);
   const [selM, setSelM] = useState(null);
   const [editTx, setEditTx] = useState(null);
@@ -200,11 +200,12 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           const pmData = await dbPM.select(GYM_ID);
           if (pmData) {
             try {
-              const [dbC, dbH, dbMC] = await Promise.all([supabase.from("clases"), supabase.from("horarios"), supabase.from("miembro_clases")]);
-              const [cData, hData, mcData] = await Promise.all([dbC.select(GYM_ID), dbH.select(GYM_ID), dbMC.select(GYM_ID)]);
+              const [dbC, dbH, dbI2] = await Promise.all([supabase.from("clases"), supabase.from("horarios"), supabase.from("inscripciones")]);
+              const [cData, hData, i2Data] = await Promise.all([dbC.select(GYM_ID), dbH.select(GYM_ID), dbI2.select(GYM_ID)]);
               setClasesRaw(cData || []);
               setHorariosRaw(hData || []);
-              setMiembroClasesRaw(mcData || []);
+              // Solo inscripciones activas para el perfil del miembro
+              setInscripcionesRaw((i2Data || []).filter(i => i.estado === "activa"));
               const DL2S = { lunes:"Lun", martes:"Mar", miercoles:"Mié", miércoles:"Mié", jueves:"Jue", viernes:"Vie", sabado:"Sáb", sábado:"Sáb", domingo:"Dom" };
               const toS = d => DL2S[d?.toLowerCase()] || (d ? d.charAt(0).toUpperCase()+d.slice(1,3) : d);
               setPlanesMembresia(pmData.filter(p => p.activo !== false).map(plan => {
@@ -731,8 +732,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             activePlanes={activePlanes}
             clases={clasesRaw}
             horarios={horariosRaw}
-            miembroClases={miembroClasesRaw}
-            onUpdateMiembroClases={setMiembroClasesRaw}
+            inscripciones={inscripcionesRaw}
+            onUpdateInscripciones={setInscripcionesRaw}
           />
         )}
 
