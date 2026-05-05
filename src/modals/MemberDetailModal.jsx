@@ -2527,28 +2527,63 @@ export default function MemberDetailModal({
 
 
       {/* ── Tabs ── */}
-      <div style={{ display: "flex", background: "var(--bg-elevated)", borderBottom: "1px solid var(--border)" }}>
+      <div style={{
+        display: "flex", gap: 6, padding: "8px 16px",
+        background: "var(--bg-elevated,#f1f5f9)",
+        borderBottom: "1px solid var(--border,rgba(0,0,0,.08))",
+      }}>
         {[
-          { k: "perfil",    label: "Perfil" },
-          { k: "historial", label: `Historial${historial.length > 0 ? ` (${historial.length})` : ""}` },
-          ...(isDojo ? [{ k: "dojo", label: "🥋 Dojo" }] : []),
-          { k: "qr",        label: "QR" },
-        ].map((t) => (
-          <button
-            key={t.k}
-            onClick={() => setDetTab(t.k)}
-            style={{
-              flex: 1, padding: "11px 0", border: "none", cursor: "pointer",
-              fontFamily: "inherit", background: "transparent",
-              color: detTab === t.k ? "var(--brand-accent,#2563EB)" : "var(--text-secondary,#475569)",
-              fontSize: 12, fontWeight: detTab === t.k ? 700 : 500,
-              borderBottom: detTab === t.k ? "2px solid var(--brand-accent,#2563EB)" : "2px solid transparent",
-              transition: "all .15s",
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+          { k: "perfil",    label: "Perfil",    icon: "👤" },
+          { k: "historial", label: "Historial", icon: "📋", badge: historial.length > 0 ? historial.length : null },
+          ...(isDojo ? [{ k: "dojo", label: "Dojo", icon: "🥋" }] : []),
+          { k: "qr",        label: "QR",        icon: "⬛" },
+        ].map((t) => {
+          const active = detTab === t.k;
+          return (
+            <button
+              key={t.k}
+              onClick={() => setDetTab(t.k)}
+              style={{
+                flex: 1,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                padding: "7px 10px",
+                border: active ? "none" : "1px solid var(--border,rgba(0,0,0,.1))",
+                borderRadius: 8,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: 12,
+                fontWeight: active ? 700 : 500,
+                background: active
+                  ? "var(--bg-card,#ffffff)"
+                  : "transparent",
+                color: active
+                  ? "var(--brand-accent,#2563EB)"
+                  : "var(--text-secondary,#64748b)",
+                boxShadow: active
+                  ? "0 1px 4px rgba(0,0,0,.1), 0 0 0 1px var(--brand-accent,#2563EB)"
+                  : "none",
+                transition: "all .15s",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ fontSize: 13 }}>{t.icon}</span>
+              <span>{t.label}</span>
+              {t.badge && (
+                <span style={{
+                  background: active ? "var(--brand-accent,#2563EB)" : "var(--text-secondary,#94a3b8)",
+                  color: "#fff",
+                  borderRadius: 10,
+                  padding: "1px 6px",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                }}>
+                  {t.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* ══════════ TAB: PERFIL ══════════ */}
