@@ -523,7 +523,8 @@ export default function MemberDetailModal({
       }
 
       // ── Generar transacción + comprobante por cada clase nueva con costo ──
-      if (!m.beca && onAddPago && clasesSoloNuevas.length > 0) {
+      // Solo si al menos una clase fue insertada exitosamente en la BD
+      if (!m.beca && onAddPago && insertadas.length > 0) {
         const getPrecio = (c) => {
           const planVinc = (planesMembresia||[]).find(p =>
             (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
