@@ -3446,8 +3446,8 @@ export default function MemberDetailModal({
                 ))}
               </div>
 
-              {/* ── 4. TUTOR RESPONSABLE (solo menores, solo en tab Perfil cuando no es dojo) ── */}
-              {!isDojo && esMenorDeEdad(m.fecha_nacimiento) && (() => {
+              {/* ── 4. TUTOR RESPONSABLE (solo menores de edad) ── */}
+              {esMenorDeEdad(m.fecha_nacimiento) && (() => {
                 const tieneTutor = m.tutor_nombre && m.tutor_nombre.trim();
                 const waNumTutor = (m.tutor_telefono || "").replace(/\D/g, "");
                 const waFullTutor = waNumTutor.startsWith("52") ? waNumTutor : "52" + waNumTutor;
@@ -3552,85 +3552,6 @@ export default function MemberDetailModal({
       {/* ══════════ TAB: DOJO ══════════ */}
       {detTab === "dojo" && isDojo && (
         <div style={{ padding: "18px 20px 0" }}>
-
-          {/* ── TUTOR RESPONSABLE (solo menores) ── */}
-          {esMenorDeEdad(m.fecha_nacimiento) && (() => {
-            const tieneTutor = m.tutor_nombre && m.tutor_nombre.trim();
-            const waNumTutor = (m.tutor_telefono || "").replace(/\D/g, "");
-            const waFullTutor = waNumTutor.startsWith("52") ? waNumTutor : "52" + waNumTutor;
-            return (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    👨‍👧 Tutor responsable
-                  </p>
-                  {tieneTutor && (
-                    <button
-                      onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
-                      style={{ background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "3px 10px", color: "#f59e0b", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                    >
-                      Editar
-                    </button>
-                  )}
-                </div>
-
-                {tieneTutor ? (
-                  <div style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 14, overflow: "hidden" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(251,191,36,.15)" }}>
-                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(251,191,36,.15)", border: "1.5px solid rgba(251,191,36,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                        👤
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                          {m.tutor_nombre}
-                        </p>
-                        {m.tutor_parentesco && (
-                          <p style={{ color: "#92400e", fontSize: 11, margin: "1px 0 0" }}>{m.tutor_parentesco}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ padding: "0 14px" }}>
-                      {m.tutor_telefono && (
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid rgba(251,191,36,.1)" }}>
-                          <span style={{ color: "#8b949e", fontSize: 12 }}>Teléfono</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{m.tutor_telefono}</span>
-                            {waNumTutor.length >= 10 && (
-                              <button
-                                onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")}
-                                style={{ background: "#EAF3DE", border: "0.5px solid #C0DD97", borderRadius: 6, padding: "2px 8px", color: "#3B6D11", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                              >
-                                WA
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {m.tutor_parentesco && (
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
-                          <span style={{ color: "#8b949e", fontSize: 12 }}>Parentesco</span>
-                          <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{m.tutor_parentesco}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
-                    style={{ background: "rgba(244,63,94,.06)", border: "1px dashed rgba(244,63,94,.4)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                  >
-                    <span style={{ fontSize: 24, flexShrink: 0 }}>⚠️</span>
-                    <div>
-                      <p style={{ color: "#f87171", fontSize: 13, fontWeight: 700, margin: 0 }}>Tutor no registrado</p>
-                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 3, lineHeight: 1.5 }}>
-                        Este alumno es menor de edad. Toca para agregar datos del tutor responsable.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
 
           {/* ── GRADO Y CINTURÓN ── */}
           <div style={{ marginBottom: 16 }}>
