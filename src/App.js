@@ -56,6 +56,36 @@ export default function App() {
     checkSession().finally(() => clearTimeout(safetyTimer));
   }, []); // eslint-disable-line
 
+  // ── Auto-refresh: renueva el token cada 50 min mientras la pestaña esté abierta ──
+  // Se activa solo cuando el usuario está logueado (authState === "app")
+  useEffect(() => {
+    if (authState !== "app") return;
+
+    const INTERVAL_MS = 50 * 60 * 1000; // 50 minutos
+
+    const interval = setInterval(async () => {
+      try {
+        const raw = localStorage.getItem("gymfit_session");
+        if (!raw) return;
+        const session = JSON.parse(raw);
+        if (!session?.refresh_token) return;
+
+        const refreshed = await auth.refreshSession(session.refresh_token);
+        if (!refreshed) {
+          // Refresh falló (token revocado o expirado) → forzar login
+          console.warn("[GymFit] Auto-refresh falló — sesión expirada, cerrando sesión.");
+          setCurrentUser(null);
+          setUserRole(null);
+          setAuthState("login");
+        }
+      } catch (e) {
+        console.error("[GymFit] Error en auto-refresh:", e);
+      }
+    }, INTERVAL_MS);
+
+    return () => clearInterval(interval); // limpia al desloguear o desmontar
+  }, [authState]);
+
   const handleLogin = (user, role) => {
     setCurrentUser(user);
     setUserRole(role || "admin");
