@@ -3122,9 +3122,7 @@ export default function MemberDetailModal({
               )}
 
               
-              {/* ══════════════════════════════════════════
-                  MEJORAS: Stats · Alertas · Fidelidad · Historial rápido
-              ══════════════════════════════════════════ */}
+              {/* ══ Alertas operativas + Stats de resumen ══ */}
               {(() => {
                 const txMiembro = txs.filter(t =>
                   String(t.miembroId) === String(m.id) || String(t.miembro_id) === String(m.id)
@@ -3138,16 +3136,14 @@ export default function MemberDetailModal({
                 const mesesCliente = fechaInicio
                   ? Math.max(1, Math.round((new Date() - fechaInicio) / (1000 * 60 * 60 * 24 * 30)))
                   : null;
-                const promMensual = mesesCliente ? Math.round(totalPagado / mesesCliente) : null;
 
-                // Badge fidelidad
                 const badge = mesesCliente === null ? null
-                  : mesesCliente < 2   ? { label: "Nuevo",    emoji: "🌱", color: "#22c55e", bg: "rgba(34,197,94,.1)"   }
-                  : mesesCliente < 6   ? { label: "Regular",  emoji: "⭐", color: "#f59e0b", bg: "rgba(245,158,11,.1)"  }
-                  : mesesCliente < 12  ? { label: "Frecuente",emoji: "🏅", color: "#6366f1", bg: "rgba(99,102,241,.1)"  }
-                  :                      { label: "VIP",       emoji: "👑", color: "#e040fb", bg: "rgba(224,64,251,.12)" };
+                  : mesesCliente < 2   ? { label: "Nuevo",     emoji: "🌱", color: "#22c55e", bg: "rgba(34,197,94,.1)"   }
+                  : mesesCliente < 6   ? { label: "Regular",   emoji: "⭐", color: "#f59e0b", bg: "rgba(245,158,11,.1)"  }
+                  : mesesCliente < 12  ? { label: "Frecuente", emoji: "🏅", color: "#6366f1", bg: "rgba(99,102,241,.1)"  }
+                  :                      { label: "VIP",        emoji: "👑", color: "#e040fb", bg: "rgba(224,64,251,.12)" };
 
-                // Alertas
+                // Solo alertas que requieren acción inmediata
                 const alertas = [];
                 const diasVence = diasParaVencer(memInfo.vence);
                 if (diasVence !== null && diasVence <= 5 && diasVence >= 0)
@@ -3160,15 +3156,10 @@ export default function MemberDetailModal({
                 if (m.pago_pendiente)
                   alertas.push({ emoji: "💸", msg: "Transferencia pendiente de confirmar", color: "#f59e0b" });
 
-                // Últimos 3 pagos
-                const ultPagos = [...txMiembro]
-                  .sort((a, b) => (b.created_at || b.fecha || "").localeCompare(a.created_at || a.fecha || ""))
-                  .slice(0, 3);
-
                 return (
                   <div style={{ marginBottom: 14 }}>
 
-                    {/* ── Alertas ── */}
+                    {/* Alertas que requieren acción */}
                     {alertas.length > 0 && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
                         {alertas.map((a, i) => (
@@ -3184,77 +3175,25 @@ export default function MemberDetailModal({
                       </div>
                     )}
 
-                    {/* ── Mini stats + Badge fidelidad ── */}
+                    {/* Stats: Total pagado · Antigüedad · Fidelidad */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-                      <div style={{
-                        background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px",
-                        border: "1px solid var(--border)",
-                      }}>
+                      <div style={{ background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", border: "1px solid var(--border)" }}>
                         <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Total pagado</p>
                         <p style={{ color: "#22c55e", fontSize: 15, fontWeight: 800, margin: 0 }}>${totalPagado.toLocaleString("es-MX")}</p>
                       </div>
-                      <div style={{
-                        background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px",
-                        border: "1px solid var(--border)",
-                      }}>
+                      <div style={{ background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", border: "1px solid var(--border)" }}>
                         <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Antigüedad</p>
                         <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 15, fontWeight: 800, margin: 0 }}>
                           {mesesCliente !== null ? `${mesesCliente} mes${mesesCliente === 1 ? "" : "es"}` : "—"}
                         </p>
                       </div>
-                      <div style={{
-                        background: badge ? badge.bg : "var(--bg-elevated)",
-                        borderRadius: 12, padding: "10px 12px",
-                        border: `1px solid ${badge ? badge.color + "44" : "var(--border)"}`,
-                      }}>
+                      <div style={{ background: badge ? badge.bg : "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", border: `1px solid ${badge ? badge.color + "44" : "var(--border)"}` }}>
                         <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Fidelidad</p>
                         <p style={{ color: badge ? badge.color : "var(--text-primary)", fontSize: 13, fontWeight: 800, margin: 0 }}>
                           {badge ? `${badge.emoji} ${badge.label}` : "—"}
                         </p>
                       </div>
                     </div>
-
-                    {/* ── Promedio mensual ── */}
-                    {promMensual !== null && promMensual > 0 && (
-                      <div style={{
-                        background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 14px",
-                        border: "1px solid var(--border)", marginBottom: 12,
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                      }}>
-                        <span style={{ color: "var(--text-secondary,#64748b)", fontSize: 11, fontWeight: 600 }}>💳 Promedio mensual</span>
-                        <span style={{ color: "var(--text-primary,#0F172A)", fontSize: 13, fontWeight: 800 }}>${promMensual.toLocaleString("es-MX")}/mes</span>
-                      </div>
-                    )}
-
-                    {/* ── Historial rápido (últimos 3 pagos) ── */}
-                    {ultPagos.length > 0 && (
-                      <div style={{ marginBottom: 4 }}>
-                        <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
-                          Últimos pagos
-                        </p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {ultPagos.map((t, i) => (
-                            <div key={t.id || i} style={{
-                              display: "flex", alignItems: "center", justifyContent: "space-between",
-                              background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px",
-                              border: "1px solid var(--border)",
-                            }}>
-                              <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-                                <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 11, fontWeight: 600, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {t.descripcion || t.desc || "Pago"}
-                                </p>
-                                <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, margin: 0 }}>
-                                  {fmtDate(t.fecha)} {t.forma_pago ? `· ${t.forma_pago}` : ""}
-                                </p>
-                              </div>
-                              <span style={{ color: "#22c55e", fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
-                                +${Number(t.monto || 0).toLocaleString("es-MX")}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                   </div>
                 );
