@@ -437,6 +437,8 @@ export default function MemberDetailModal({
   activePlanes,
   clases,
   horarios,
+  miembroClases,
+  onUpdateMiembroClases,
 }) {
   const isDesktop = useIsDesktop();
   const [detTab, setDetTab] = useState("perfil");
@@ -461,6 +463,43 @@ export default function MemberDetailModal({
   });
   const [tutorErrores, setTutorErrores] = useState({});
   const [pagoModal, setPagoModal] = useState(false);
+
+  // ── Clases múltiples asignadas al miembro ──
+  const clasesDelMiembro = (miembroClases || [])
+    .filter(mc => String(mc.miembro_id) === String(m.id))
+    .map(mc => String(mc.clase_id));
+
+  const [clasesEdit, setClasesEdit] = useState(clasesDelMiembro);
+
+  const clasesHanCambiado = editing && (
+    clasesEdit.length !== clasesDelMiembro.length ||
+    clasesEdit.some(id => !clasesDelMiembro.includes(id))
+  );
+
+  const guardarClasesMiembro = async (nuevasIds) => {
+    if (!gymId) return;
+    try {
+      const db = await import("../supabase.js").then(m => m.default.from("miembro_clases"));
+      // Borrar las actuales del miembro
+      const existentes = (miembroClases || []).filter(mc => String(mc.miembro_id) === String(m.id));
+      for (const mc of existentes) {
+        await db.delete(mc.id);
+      }
+      // Insertar las nuevas
+      const insertadas = [];
+      for (const claseId of nuevasIds) {
+        const saved = await db.insert({ gym_id: gymId, miembro_id: m.id, clase_id: claseId });
+        if (saved) insertadas.push(saved);
+      }
+      // Actualizar estado global
+      if (onUpdateMiembroClases) {
+        const sinEste = (miembroClases || []).filter(mc => String(mc.miembro_id) !== String(m.id));
+        onUpdateMiembroClases([...sinEste, ...insertadas]);
+      }
+    } catch(e) {
+      console.error("❌ Error guardando clases del miembro:", e);
+    }
+  };
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmDelete2, setConfirmDelete2] = useState(false);
 
@@ -546,7 +585,8 @@ export default function MemberDetailModal({
     form.beca !== (m.beca || false) ||
     form.grado_actual        !== (m.grado_actual        || "") ||
     form.fecha_ultimo_examen !== (m.fecha_ultimo_examen || "") ||
-    form.proximo_objetivo    !== (m.proximo_objetivo    || "");
+    form.proximo_objetivo    !== (m.proximo_objetivo    || "") ||
+    clasesHanCambiado;
 
   const handleSave = () => {
     if (!hasChanges) return;
@@ -585,6 +625,8 @@ export default function MemberDetailModal({
       proximo_objetivo:    form.proximo_objetivo,
       ...tutorData,
     });
+    // Guardar clases si cambiaron
+    if (clasesHanCambiado) guardarClasesMiembro(clasesEdit);
     setEditing(false);
   };
 
@@ -2194,7 +2236,7 @@ export default function MemberDetailModal({
                 }}>👨‍👧 WA tutor</button>
               )}
               {esMenor && !tieneTutor && (
-                <button onClick={() => setEditing(true)} style={{
+                <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
                   flex:1, padding:"9px 8px",
                   border:"1px solid rgba(220,38,38,.3)", borderRadius:8,
                   cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600,
@@ -2206,7 +2248,7 @@ export default function MemberDetailModal({
 
             {/* Acciones: Editar · Renovar · Cobrar · Congelar */}
             <div style={{ display:"flex", gap:6, paddingBottom:14 }}>
-              <button onClick={() => setEditing(true)} style={{
+              <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
                 flex:1, padding:"9px 4px", borderRadius:8,
                 border:"1px solid var(--border)", background:"var(--bg-elevated)",
                 color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
@@ -2447,6 +2489,66 @@ export default function MemberDetailModal({
                     options={GRADOS_NOMBRES}
                     placeholder="Ej: Verde"
                   />
+                </div>
+              )}
+
+              {/* ── Clases asignadas (multi-selección, gym y dojo) ── */}
+              {clases && clases.filter(c => c.activo !== false).length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    🏋️ Clases asignadas
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {clases.filter(c => c.activo !== false).map(c => {
+                      const isSel = clasesEdit.map(String).includes(String(c.id));
+                      const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
+                      const horStr = horClase.length > 0
+                        ? horClase.map(h => {
+                            const dias = (h.dias_semana||[]).join(", ");
+                            return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
+                          }).join(" | ")
+                        : null;
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => setClasesEdit(prev =>
+                            prev.map(String).includes(String(c.id))
+                              ? prev.filter(id => String(id) !== String(c.id))
+                              : [...prev, String(c.id)]
+                          )}
+                          style={{
+                            padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+                            fontFamily: "inherit", textAlign: "left",
+                            border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                            background: isSel ? "rgba(34,211,238,.10)" : "var(--bg-elevated)",
+                            transition: "all .2s", display: "flex", alignItems: "center", gap: 10,
+                          }}
+                        >
+                          <div style={{
+                            width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                            border: `2px solid ${isSel ? "#22d3ee" : "rgba(255,255,255,.2)"}`,
+                            background: isSel ? "#22d3ee" : "transparent",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            {isSel && <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                          </div>
+                          <div>
+                            <p style={{ color: isSel ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSel ? 700 : 500, margin: 0 }}>
+                              {c.nombre}
+                            </p>
+                            {horStr && (
+                              <p style={{ color: "#8b949e", fontSize: 11, margin: "2px 0 0" }}>🗓️ {horStr}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {clasesEdit.length === 0 && (
+                    <p style={{ color: "#8b949e", fontSize: 11, marginTop: 6, paddingLeft: 2 }}>
+                      Sin clases asignadas
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -2759,7 +2861,7 @@ export default function MemberDetailModal({
                       </p>
                       {tieneTutor && (
                         <button
-                          onClick={() => setEditing(true)}
+                          onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                           style={{ background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "3px 10px", color: "#f59e0b", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                         >
                           Editar
@@ -2809,7 +2911,7 @@ export default function MemberDetailModal({
                       </div>
                     ) : (
                       <div
-                        onClick={() => setEditing(true)}
+                        onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                         style={{ background: "rgba(244,63,94,.06)", border: "1px dashed rgba(244,63,94,.4)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
                       >
                         <span style={{ fontSize: 24, flexShrink: 0 }}>⚠️</span>
@@ -2856,7 +2958,7 @@ export default function MemberDetailModal({
                             </p>
                           </div>
                           <button
-                            onClick={() => setEditing(true)}
+                            onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                             style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 10, padding: "6px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                           >
                             Editar
@@ -2880,7 +2982,7 @@ export default function MemberDetailModal({
                     );
                   })() : (
                     <div
-                      onClick={() => setEditing(true)}
+                      onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                       style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(167,139,250,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
                     >
                       <p style={{ fontSize: 28, marginBottom: 6 }}>🥋</p>
@@ -2902,7 +3004,7 @@ export default function MemberDetailModal({
                   </div>
                 ) : (
                   <div
-                    onClick={() => setEditing(true)}
+                    onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                     style={{ background: "var(--bg-elevated)", border: "1px dashed var(--border)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}
                   >
                     <p style={{ color: "#8b949e", fontSize: 12 }}>Sin notas — toca para agregar</p>

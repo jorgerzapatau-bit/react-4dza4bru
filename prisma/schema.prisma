@@ -583,6 +583,7 @@ model miembros {
   fecha_ultimo_examen  DateTime?              @db.Date
   proximo_objetivo     String?
   accesos              accesos[]
+  miembro_clases       miembro_clases[]
   gimnasios            gimnasios?             @relation(fields: [gym_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_reservations product_reservations[]
   transacciones        transacciones[]
@@ -750,22 +751,23 @@ model product_stock_entries {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model clases {
-  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   gym_id            String
   nombre            String
   descripcion       String?
-  instructor_id     String?         @db.Uuid
+  instructor_id     String?          @db.Uuid
   instructor_nombre String?
-  edad_min          Int?            @default(0)
-  edad_max          Int?            @default(99)
-  cupo_max          Int             @default(20)
-  costo             Decimal         @default(0) @db.Decimal(10, 2)
-  duracion_meses    Int             @default(1)
-  color             String?         @default("#6c63ff")
-  activo            Boolean         @default(true)
-  created_at        DateTime        @default(now()) @db.Timestamptz(6)
+  edad_min          Int?             @default(0)
+  edad_max          Int?             @default(99)
+  cupo_max          Int              @default(20)
+  costo             Decimal          @default(0) @db.Decimal(10, 2)
+  duracion_meses    Int              @default(1)
+  color             String?          @default("#6c63ff")
+  activo            Boolean          @default(true)
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
   horarios          horarios[]
   inscripciones     inscripciones[]
+  miembro_clases    miembro_clases[]
 
   @@index([gym_id, activo], map: "idx_clases_gym_activo")
   @@index([gym_id], map: "idx_clases_gym_id")
@@ -881,6 +883,20 @@ model instructores {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([gym_id], map: "idx_instructores_gym_id")
+  @@schema("public")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model miembro_clases {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gym_id     String
+  miembro_id String?   @db.Uuid
+  clase_id   String?   @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  clases     clases?   @relation(fields: [clase_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  miembros   miembros? @relation(fields: [miembro_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([miembro_id, clase_id])
   @@schema("public")
 }
 
