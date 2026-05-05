@@ -793,11 +793,31 @@ export default function MemberDetailModal({
         });
       }
 
-      // Si es transferencia pendiente, marcar al miembro como pendiente
+      // Actualizar datos del miembro según forma de pago
       if (esPendienteTransf) {
+        // Transferencia pendiente: marcar como pendiente sin activar aún
         try {
           const planForToken = renovar.plan || "Membresía";
           const updated = { ...m, pago_pendiente: true, plan_pendiente: planForToken, monto_pendiente: String(montoPagado), vence_pendiente: venceISO };
+          await onSave(updated);
+          if (onMemberUpdate) onMemberUpdate(updated);
+        } catch(e) { console.error(e); }
+      } else {
+        // Efectivo o Tarjeta: actualizar membresía inmediatamente
+        try {
+          const qrToken = m.qr_token || ("DZ-" + Math.random().toString(36).toUpperCase().slice(2,6) + Math.random().toString(36).toUpperCase().slice(2,4));
+          const updated = {
+            ...m,
+            estado: "Activo",
+            plan: renovar.plan,
+            fecha_inicio: fechaISO,
+            fecha_vencimiento: venceISO,
+            ultimo_pago: fechaISO,
+            monto_ultimo_pago: montoPagado,
+            forma_pago: fp,
+            pago_pendiente: false,
+            qr_token: qrToken,
+          };
           await onSave(updated);
           if (onMemberUpdate) onMemberUpdate(updated);
         } catch(e) { console.error(e); }
