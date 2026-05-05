@@ -637,7 +637,7 @@ export default function MemberDetailModal({
 
   const esEdicionMenor = esMenorDeEdad(form.fecha_nacimiento);
 
-  const hasChanges =
+  const hasChangesPersonales =
     form.nombre !== m.nombre ||
     form.tel !== (m.tel || "") ||
     form.fecha_incorporacion !== (m.fecha_incorporacion || "") ||
@@ -650,8 +650,10 @@ export default function MemberDetailModal({
     form.beca !== (m.beca || false) ||
     form.grado_actual        !== (m.grado_actual        || "") ||
     form.fecha_ultimo_examen !== (m.fecha_ultimo_examen || "") ||
-    form.proximo_objetivo    !== (m.proximo_objetivo    || "") ||
-    clasesHanCambiado;
+    form.proximo_objetivo    !== (m.proximo_objetivo    || "");
+
+  // clasesHanCambiado ya existe — hasChanges incluye ambos para saber si hay ALGO diferente
+  const hasChanges = hasChangesPersonales || clasesHanCambiado;
 
   const handleSave = () => {
     if (!hasChanges) return;
@@ -690,10 +692,9 @@ export default function MemberDetailModal({
       proximo_objetivo:    form.proximo_objetivo,
       ...tutorData,
     });
-    // Guardar clases si cambiaron
+    // Guardar clases SOLO si hay cambios que no implican cobro
+    // (clases con costo se manejan con su propio botón en la sección de clases)
     if (clasesHanCambiado) {
-      // Calcular si hay clases nuevas con costo
-      const clasesSoloNuevas = clasesEdit.filter(id => !clasesDelMiembro.includes(String(id)));
       const getPrecioClase = (c) => {
         const planVinc = (planesMembresia||[]).find(p =>
           (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
@@ -701,17 +702,27 @@ export default function MemberDetailModal({
         );
         return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
       };
+      const clasesSoloNuevas = clasesEdit.filter(id => !clasesDelMiembro.includes(String(id)));
       const hayCargoNuevo = !m.beca && clasesSoloNuevas.some(id => {
         const c = (clases||[]).find(x => String(x.id) === String(id));
         return c && getPrecioClase(c) > 0;
       });
       if (hayCargoNuevo) {
-        // Abrir modal de forma de pago antes de guardar
-        setClasesPagoFormaPago("Efectivo");
-        setClasesPagoModal(true);
-        return; // No cerrar edición todavía — lo cierra el modal de pago
+        // Clases con costo NO se guardan desde aquí — tienen su propio botón
+        // Solo guardar las clases sin costo que cambien (quitar, o agregar gratuitas)
+        const clasesEditSinCobro = [
+          // Clases que ya tenía (se mantienen si no se quitaron)
+          ...clasesDelMiembro.filter(id => clasesEdit.map(String).includes(id)),
+          // Clases nuevas SIN costo
+          ...clasesSoloNuevas.filter(id => {
+            const c = (clases||[]).find(x => String(x.id) === String(id));
+            return c && getPrecioClase(c) === 0;
+          }),
+        ];
+        guardarClasesMiembro(clasesEditSinCobro, clasesDelMiembro, "Efectivo");
+      } else {
+        guardarClasesMiembro(clasesEdit, clasesDelMiembro, "Efectivo");
       }
-      guardarClasesMiembro(clasesEdit, clasesDelMiembro, "Efectivo");
     }
     setEditing(false);
   };
@@ -2801,83 +2812,98 @@ export default function MemberDetailModal({
                             const horStr = getHorStr(c);
                             const seleccionada = clasesEdit.map(String).includes(String(c.id));
                             return (
-                              <button
-                                key={c.id}
-                                onClick={() => setClasesEdit(prev =>
-                                  prev.map(String).includes(String(c.id))
-                                    ? prev.filter(id => String(id) !== String(c.id))
-                                    : [...prev, String(c.id)]
-                                )}
-                                style={{
-                                  padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-                                  fontFamily: "inherit", textAlign: "left",
-                                  border: seleccionada ? "2px solid #4ade80" : "1.5px solid rgba(255,255,255,.1)",
-                                  background: seleccionada ? "rgba(74,222,128,.08)" : "var(--bg-elevated)",
-                                  display: "flex", alignItems: "center", gap: 10, transition: "all .2s",
-                                }}
-                              >
-                                <div style={{
-                                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                                  border: `2px solid ${seleccionada ? "#4ade80" : "rgba(255,255,255,.2)"}`,
-                                  background: seleccionada ? "#4ade80" : "transparent",
-                                  display: "flex", alignItems: "center", justifyContent: "center",
-                                }}>
-                                  {seleccionada
-                                    ? <span style={{ color: "#0f172a", fontSize: 13, fontWeight: 900 }}>✓</span>
-                                    : <span style={{ color: "#6b7280", fontSize: 14, fontWeight: 400 }}>+</span>
-                                  }
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <p style={{ color: seleccionada ? "#4ade80" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionada ? 700 : 500, margin: 0 }}>
-                                    {c.nombre}
-                                  </p>
-                                  {horStr && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
-                                </div>
-                                {/* Precio — solo si tiene costo extra */}
-                                {precio > 0 ? (
-                                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                                {/* Fila de selección */}
+                                <button
+                                  onClick={() => setClasesEdit(prev =>
+                                    prev.map(String).includes(String(c.id))
+                                      ? prev.filter(id => String(id) !== String(c.id))
+                                      : [...prev, String(c.id)]
+                                  )}
+                                  style={{
+                                    padding: "10px 14px", borderRadius: seleccionada && precio > 0 ? "12px 12px 0 0" : 12,
+                                    cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                                    border: seleccionada ? "2px solid #4ade80" : "1.5px solid rgba(255,255,255,.1)",
+                                    borderBottom: seleccionada && precio > 0 ? "none" : undefined,
+                                    background: seleccionada ? "rgba(74,222,128,.08)" : "var(--bg-elevated)",
+                                    display: "flex", alignItems: "center", gap: 10, transition: "all .2s",
+                                  }}
+                                >
+                                  <div style={{
+                                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                                    border: `2px solid ${seleccionada ? "#4ade80" : "rgba(255,255,255,.2)"}`,
+                                    background: seleccionada ? "#4ade80" : "transparent",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                  }}>
+                                    {seleccionada
+                                      ? <span style={{ color: "#0f172a", fontSize: 13, fontWeight: 900 }}>✓</span>
+                                      : <span style={{ color: "#6b7280", fontSize: 16, lineHeight: 1 }}>+</span>
+                                    }
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ color: seleccionada ? "#4ade80" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionada ? 700 : 500, margin: 0 }}>
+                                      {c.nombre}
+                                    </p>
+                                    {horStr && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
+                                  </div>
+                                  {precio > 0 ? (
                                     <span style={{
-                                      display: "block",
                                       background: seleccionada ? "rgba(74,222,128,.2)" : "rgba(255,255,255,.07)",
                                       color: seleccionada ? "#4ade80" : "#8b949e",
-                                      borderRadius: 8, padding: "3px 9px", fontSize: 12, fontWeight: 700,
+                                      borderRadius: 8, padding: "3px 9px", fontSize: 12, fontWeight: 700, flexShrink: 0,
                                     }}>
-                                      +${precio.toLocaleString("es-MX")}/mes
+                                      ${precio.toLocaleString("es-MX")}/mes
                                     </span>
-                                    <span style={{ color: "#6b7280", fontSize: 10 }}>costo extra</span>
-                                  </div>
-                                ) : (
-                                  <span style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-                                    Sin costo
-                                  </span>
+                                  ) : (
+                                    <span style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                                      Sin costo
+                                    </span>
+                                  )}
+                                </button>
+
+                                {/* Botón de acción explícito — SOLO si seleccionada y tiene costo */}
+                                {seleccionada && precio > 0 && (
+                                  <button
+                                    onClick={() => {
+                                      setClasesPagoFormaPago("Efectivo");
+                                      setClasesPagoModal(true);
+                                    }}
+                                    style={{
+                                      padding: "11px 14px", borderRadius: "0 0 12px 12px",
+                                      border: "2px solid #4ade80", borderTop: "1px solid rgba(74,222,128,.3)",
+                                      background: "linear-gradient(135deg,#16a34a,#22c55e)",
+                                      cursor: "pointer", fontFamily: "inherit",
+                                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                                      transition: "all .2s",
+                                    }}
+                                  >
+                                    <span style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>
+                                      💳 Inscribir y cobrar ${precio.toLocaleString("es-MX")}
+                                    </span>
+                                    <span style={{ color: "rgba(255,255,255,.8)", fontSize: 11 }}>
+                                      Elige forma de pago →
+                                    </span>
+                                  </button>
                                 )}
-                              </button>
+                              </div>
                             );
                           })}
                         </div>
                       </div>
                     )}
 
-                    {/* ── Aviso de cobro: solo aparece si se seleccionó agregar clases con costo ── */}
-                    {!m.beca && cargoTotal > 0 && (
-                      <div style={{
-                        marginTop: 12, padding: "12px 14px", borderRadius: 12,
-                        background: "rgba(251,191,36,.07)", border: "1.5px solid rgba(251,191,36,.35)",
-                      }}>
-                        <p style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700, margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
-                          ⚠️ Al guardar se registrará un cobro de:
-                        </p>
-                        {clasesAAgregar.filter(c => getPrecioClase(c) > 0).map(c => (
-                          <p key={c.id} style={{ color: "#d97706", fontSize: 12, margin: "2px 0", paddingLeft: 4 }}>
-                            · {c.nombre}: ${getPrecioClase(c).toLocaleString("es-MX")}
+                    {/* Aviso solo para clases GRATUITAS nuevas seleccionadas (se guardan con el botón Guardar) */}
+                    {(() => {
+                      const clasesGratisNuevas = clasesAAgregar.filter(c => getPrecioClase(c) === 0);
+                      if (clasesGratisNuevas.length === 0) return null;
+                      return (
+                        <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(34,211,238,.06)", border: "1px solid rgba(34,211,238,.2)" }}>
+                          <p style={{ color: "#22d3ee", fontSize: 12, fontWeight: 600, margin: 0 }}>
+                            ℹ️ {clasesGratisNuevas.map(c => c.nombre).join(", ")} se inscribirá al guardar (sin costo)
                           </p>
-                        ))}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(251,191,36,.2)" }}>
-                          <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 800 }}>Total: ${cargoTotal.toLocaleString("es-MX")}</span>
-                          <span style={{ color: "#d97706", fontSize: 11 }}>Se pedirá forma de pago</span>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })()}
@@ -2903,18 +2929,18 @@ export default function MemberDetailModal({
                 <Btn full outline color="#8b949e" onClick={() => setEditing(false)}>Cancelar</Btn>
                 <button
                   onClick={handleSave}
-                  disabled={!hasChanges}
+                  disabled={!hasChangesPersonales}
                   style={{
                     flex: 1, padding: "13px 20px", border: "none", borderRadius: 14,
-                    cursor: hasChanges ? "pointer" : "not-allowed", fontFamily: "inherit",
+                    cursor: hasChangesPersonales ? "pointer" : "not-allowed", fontFamily: "inherit",
                     fontSize: 14, fontWeight: 700,
-                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
-                    color: hasChanges ? "#fff" : "#8b949e",
-                    boxShadow: hasChanges ? "0 4px 18px rgba(108,99,255,.4)" : "none",
+                    background: hasChangesPersonales ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                    color: hasChangesPersonales ? "#fff" : "#8b949e",
+                    boxShadow: hasChangesPersonales ? "0 4px 18px rgba(108,99,255,.4)" : "none",
                     transition: "all .3s",
                   }}
                 >
-                  {hasChanges ? "Guardar ✓" : "Sin cambios"}
+                  {hasChangesPersonales ? "Guardar datos ✓" : "Sin cambios"}
                 </button>
               </div>
 
@@ -3006,7 +3032,82 @@ export default function MemberDetailModal({
                 </div>
               )}
 
-              {/* ── 1. MEMBRESÍA ACTUAL ── */}
+              {/* ── 1. CLASES (LO MÁS IMPORTANTE para el admin/dueño) ── */}
+              {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
+                const todasLasClases = clases.filter(c => c.activo !== false);
+                const getPrecioClase = (c) => {
+                  const planVinc = (planesMembresia||[]).find(p =>
+                    (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
+                    p.clase_nombre === c.nombre || p.nombre === c.nombre
+                  );
+                  return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
+                };
+                const clasesAsignadas = todasLasClases.filter(c => clasesDelMiembro.includes(String(c.id)));
+                const clasesDisponibles = todasLasClases.filter(c => !clasesDelMiembro.includes(String(c.id)));
+                const getHorStr = (c) => {
+                  const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
+                  return horClase.length > 0
+                    ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].join(" · ") +
+                      (horClase[0]?.hora_inicio ? ` · ${horClase[0].hora_inicio.slice(0,5)}–${(horClase[0].hora_fin||"").slice(0,5)}` : "")
+                    : null;
+                };
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
+                        🏋️ Clases inscritas
+                      </p>
+                      {clasesDisponibles.length > 0 && (
+                        <button
+                          onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
+                          style={{ background: "rgba(108,99,255,.12)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 8, padding: "4px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+                        >
+                          + Agregar clase
+                        </button>
+                      )}
+                    </div>
+
+                    {clasesAsignadas.length === 0 ? (
+                      <div
+                        onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
+                        style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
+                      >
+                        <p style={{ fontSize: 22, marginBottom: 4 }}>🏋️</p>
+                        <p style={{ color: "#8b949e", fontSize: 13, fontWeight: 600 }}>Sin clases asignadas</p>
+                        <p style={{ color: "#a78bfa", fontSize: 11, marginTop: 3 }}>Toca para inscribir en una clase</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {clasesAsignadas.map(c => {
+                          const horStr = getHorStr(c);
+                          const precio = getPrecioClase(c);
+                          return (
+                            <div key={c.id} style={{
+                              background: "var(--bg-elevated)",
+                              border: "1px solid rgba(34,211,238,.2)",
+                              borderLeft: "3px solid #22d3ee",
+                              borderRadius: 12, padding: "12px 14px",
+                              display: "flex", alignItems: "center", gap: 12,
+                            }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, margin: 0 }}>{c.nombre}</p>
+                                {horStr && <p style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>🗓️ {horStr}</p>}
+                              </div>
+                              {precio > 0 && (
+                                <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                                  ${precio.toLocaleString("es-MX")}/mes
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* ── 2. MEMBRESÍA ACTUAL ── */}
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Membresía actual
               </p>
@@ -3322,43 +3423,6 @@ export default function MemberDetailModal({
                   )}
                 </div>
               )}
-
-              {/* ── 6. CLASES ASIGNADAS (solo lectura) ── */}
-              {clases && clases.filter(c => c.activo !== false).length > 0 && clasesDelMiembro.length > 0 && (() => {
-                const clasesAsignadas = clases.filter(c => c.activo !== false && clasesDelMiembro.includes(String(c.id)));
-                if (clasesAsignadas.length === 0) return null;
-                return (
-                  <div style={{ marginBottom: 16 }}>
-                    <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
-                      🏋️ Clases asignadas
-                    </p>
-                    <div style={{ background: "var(--bg-elevated)", borderRadius: 14, padding: "0 14px" }}>
-                      {clasesAsignadas.map((c, i) => {
-                        const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
-                        const horStr = horClase.length > 0
-                          ? horClase.map(h => {
-                              const dias = (h.dias_semana||[]).join(", ");
-                              return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
-                            }).join(" | ")
-                          : null;
-                        return (
-                          <div key={c.id} style={{
-                            display: "flex", alignItems: "center", gap: 10,
-                            padding: "11px 0",
-                            borderBottom: i < clasesAsignadas.length - 1 ? "1px solid var(--border)" : "none",
-                          }}>
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3ee", flexShrink: 0 }} />
-                            <div style={{ flex: 1 }}>
-                              <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, margin: 0 }}>{c.nombre}</p>
-                              {horStr && <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* ── 7. NOTAS INTERNAS ── */}
               <div style={{ marginBottom: 16 }}>
