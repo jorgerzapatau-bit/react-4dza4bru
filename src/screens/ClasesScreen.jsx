@@ -54,15 +54,19 @@ function ClaseCard({ clase, inscripciones, miembros, txs, planes, canManage, onS
   const precio = planVinculado?.precio_publico ?? clase?.precio_membresia ?? null;
   const ciclo  = planVinculado?.ciclo_renovacion || clase?.ciclo_renovacion || "mensual";
 
-  const inscritos = planVinculado
-    ? (miembros || []).filter(m => {
+  const inscripcionesDeClase = (inscripciones || []).filter(
+    i => String(i.clase_id) === String(clase.id) && i.estado === "activa"
+  );
+
+  const inscritos = inscripcionesDeClase.length > 0 || !planVinculado
+    ? inscripcionesDeClase.length
+    : (miembros || []).filter(m => {
         const info = getMembershipInfo(m.id, txs || [], m);
         if (info.estado !== "Activo") return false;
         const pn = (planVinculado.nombre || "").toLowerCase().trim();
         const ip = (info.plan || "").toLowerCase().trim();
         return pn === ip || pn.includes(ip) || ip.includes(pn);
-      }).length
-    : inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa").length;
+      }).length;
 
   const cupoEstado = getCupoEstado(inscritos, clase.cupo_max);
   const sinHorario = !clase.hora_inicio || (clase.dias_semana || []).length === 0;
@@ -216,15 +220,22 @@ function ModalDetalle({ clase, inscripciones, miembros, txs, gymId, canManage, p
 
   const alumnos = useMemo(() => {
     let lista;
-    if (!planVinculado) {
-      lista = inscripciones
-        .filter(i => i.clase_id === clase.id && i.estado === "activa")
+    // ── Siempre usar inscripciones como fuente de verdad ──
+    // Si hay inscripciones explícitas para esta clase, usarlas siempre.
+    // Solo hacer fallback al matching por plan si no hay ninguna inscripción.
+    const inscripcionesDeClase = inscripciones
+      .filter(i => String(i.clase_id) === String(clase.id) && i.estado === "activa");
+
+    if (inscripcionesDeClase.length > 0 || !planVinculado) {
+      // Fuente de verdad: tabla inscripciones
+      lista = inscripcionesDeClase
         .map(ins => {
           const m = miembros.find(m => String(m.id) === String(ins.miembro_id));
           if (!m) return null;
           return { miembro: m, info: getMembershipInfo(m.id, txs || [], m) };
         }).filter(Boolean);
     } else {
+      // Fallback legacy: matching por nombre de plan (para datos anteriores sin inscripciones)
       lista = miembros.map(m => {
         const info = getMembershipInfo(m.id, txs || [], m);
         if (info.estado !== "Activo") return null;
