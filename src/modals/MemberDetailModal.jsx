@@ -3386,19 +3386,19 @@ export default function MemberDetailModal({
                         </div>
                       )}
 
-                      {/* ══ CLASES — hijas visibles de la membresía ══
-                          Aparecen DENTRO de la misma tarjeta con sangría y
-                          un conector visual (línea izquierda) que dice:
-                          "estas clases son parte de esta membresía" */}
+                      {/* ══ CLASES — hijas visibles SOLO si hay membresía activa ══
+                          Sin membresía: se muestra bloqueado (candado).
+                          Con membresía: se listan dentro de la misma tarjeta. */}
                       {todasLasClases.length > 0 && (
-                        <div style={{ padding: "10px 16px 14px" }}>
+                        <div style={{ padding: "10px 16px 14px", borderTop: "1px solid var(--border,rgba(255,255,255,.08))" }}>
 
-                          {/* Label "Clases incluidas" con botón agregar */}
+                          {/* Label "Clases inscritas" con botón agregar (solo si hay membresía) */}
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                             <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: 0 }}>
                               Clases inscritas
                             </p>
-                            {clasesDisponibles.length > 0 && (
+                            {/* Botón agregar: solo visible si hay membresía activa */}
+                            {!esSinMem && !isPagoPendiente && clasesDisponibles.length > 0 && (
                               <button
                                 onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                                 style={{ background: "transparent", border: "1px solid var(--border,rgba(255,255,255,.15))", borderRadius: 6, padding: "3px 8px", color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
@@ -3408,8 +3408,24 @@ export default function MemberDetailModal({
                             )}
                           </div>
 
-                          {clasesAsignadas.length === 0 ? (
-                            /* Sin clases — mensaje dentro del contexto de la membresía */
+                          {/* ── SIN MEMBRESÍA: bloque bloqueado ── */}
+                          {(esSinMem || isPagoPendiente) ? (
+                            <div style={{
+                              display: "flex", alignItems: "center", gap: 8,
+                              padding: "8px 12px", borderRadius: 8,
+                              background: "var(--bg-elevated,rgba(0,0,0,.03))",
+                              border: "1px dashed var(--border,rgba(0,0,0,.1))",
+                              opacity: 0.6,
+                            }}>
+                              <span style={{ fontSize: 13 }}>🔒</span>
+                              <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 12, margin: 0 }}>
+                                {isPagoPendiente
+                                  ? "Disponible al confirmar el pago"
+                                  : "Requiere membresía activa"}
+                              </p>
+                            </div>
+                          ) : clasesAsignadas.length === 0 ? (
+                            /* Con membresía pero sin clases aún */
                             <div
                               onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                               style={{
@@ -3423,7 +3439,7 @@ export default function MemberDetailModal({
                                 Sin clases asignadas
                               </p>
                               <p style={{ color: "var(--brand-accent,#2563EB)", fontSize: 11, marginTop: 2 }}>
-                                Toca para inscribir en una clase →
+                                Toca para inscribir →
                               </p>
                             </div>
                           ) : (
