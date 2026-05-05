@@ -3225,128 +3225,16 @@ export default function MemberDetailModal({
                 );
               })()}
 
-              {/* ── 1. MEMBRESÍA ACTUAL (lo más importante primero) ── */}
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
-                Membresía actual
-              </p>
+              {/* ══════════════════════════════════════════════════════
+                  BLOQUE UNIFICADO: Membresía → Clases (jerarquía visual)
+                  La membresía es el contenedor; las clases son sus hijas.
+              ══════════════════════════════════════════════════════ */}
+              {(() => {
+                const esActiva = (memInfo.estado === "Activo" || memInfo.congelado) && !isPagoPendiente;
+                const esSinMem = memInfo.estado === "Sin membresía" && !isPagoPendiente;
 
-              {/* ── Banner: Pago Pendiente ── */}
-              {isPagoPendiente && (
-                <div style={{
-                  background:"rgba(251,191,36,.08)", border:"1.5px solid rgba(251,191,36,.35)",
-                  borderRadius:16, padding:"16px", marginBottom:14,
-                }}>
-                  <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:14 }}>
-                    <span style={{ fontSize:28, flexShrink:0 }}>⏳</span>
-                    <div>
-                      <p style={{ color:"#fbbf24", fontWeight:700, fontSize:14 }}>Pago por transferencia pendiente</p>
-                      <p style={{ color:"rgba(251,191,36,.75)", fontSize:12, marginTop:4, lineHeight:1.5 }}>
-                        Este alumno se registró pero aún no se ha confirmado la recepción de su transferencia bancaria. Confirma el pago para activar su membresía y su ID Digital.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setConfirmarDatos({ monto:"", plan:"", fecha:todayISO(), formaPago:"Transferencia" });
-                      setConfirmarModal(true);
-                    }}
-                    style={{
-                      width:"100%", padding:"13px", borderRadius:12, border:"none",
-                      background:"linear-gradient(135deg,#22c55e,#4ade80)",
-                      color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit",
-                      boxShadow:"0 4px 14px rgba(74,222,128,.35)",
-                      display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-                    }}
-                  >
-                    ✅ Confirmar pago recibido
-                  </button>
-                </div>
-              )}
-
-              {memInfo.congelado && (
-                <div style={{ background: "rgba(96,165,250,.1)", border: "1px solid rgba(96,165,250,.3)", borderRadius: 14, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 22 }}>🧊</span>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ color: "#60a5fa", fontSize: 13, fontWeight: 700 }}>Membresía congelada</p>
-                    <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>
-                      {memInfo.fechaDescongelar
-                        ? `Se descongela el ${fmtDate(memInfo.fechaDescongelar)}`
-                        : "Se descongela manualmente"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const inicioCongelado = m.fecha_congelado
-                        ? new Date(m.fecha_congelado + "T00:00:00")
-                        : null;
-                      const hoy = new Date();
-                      hoy.setHours(0, 0, 0, 0);
-                      const diasNuevos = inicioCongelado
-                        ? Math.round((hoy - inicioCongelado) / (1000 * 60 * 60 * 24))
-                        : 0;
-                      const updated = {
-                        ...m,
-                        congelado: false,
-                        fecha_descongelar: null,
-                        fecha_congelado: null,
-                        dias_congelados: (m.dias_congelados || 0) + diasNuevos,
-                      };
-                      onSave(updated);
-                    }}
-                    style={{
-                      background: "rgba(96,165,250,.2)", border: "1px solid rgba(96,165,250,.4)",
-                      borderRadius: 10, padding: "6px 12px", color: "#60a5fa",
-                      fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                    }}
-                  >
-                    Descongelar
-                  </button>
-                </div>
-              )}
-
-              {memInfo.esGratis && memInfo.estado !== "Sin membresía" && (
-                <div style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.3)", borderRadius: 14, padding: "10px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 18 }}>🎁</span>
-                  <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700 }}>Membresía en cortesía (sin costo)</p>
-                </div>
-              )}
-
-              <div
-                style={{
-                  background: memInfo.estado === "Activo" || memInfo.congelado
-                    ? "rgba(34,211,238,.05)" : "rgba(248,113,113,.05)",
-                  border: `1px solid ${memInfo.estado === "Activo" || memInfo.congelado
-                    ? "rgba(34,211,238,.15)" : "rgba(248,113,113,.15)"}`,
-                  borderRadius: 14, padding: "0 14px", marginBottom: 14,
-                }}
-              >
-                {memInfo.estado !== "Sin membresía" ? (
-                  [
-                    { label: "📋 Plan", val: memInfo.plan || "—" },
-                    { label: "📅 Inicio", val: fmtDate(memInfo.inicio) || "—" },
-                    { label: (() => { const dR = diasParaVencer(memInfo.vence); return dR !== null && dR < 0 ? "⏰ Venció" : "⏰ Vence"; })(), val: memInfo.congelado ? `${fmtDate(memInfo.vence)} (+congelado)` : fmtDate(memInfo.vence) || "—" },
-                    { label: "💰 Último pago", val: memInfo.esGratis ? "Cortesía 🎁" : (memInfo.monto ? `$${Number(memInfo.monto).toLocaleString("es-MX")}` : "—") },
-                    ...(memInfo.formaPago
-                      ? [{ label: "💳 Forma de pago", val: memInfo.formaPago === "Efectivo" ? "💵 Efectivo" : memInfo.formaPago === "Transferencia" ? "📲 Transferencia" : "💳 Tarjeta" }]
-                      : []),
-                  ].map((row, i, arr) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none" }}>
-                      <span style={{ color: "#8b949e", fontSize: 13 }}>{row.label}</span>
-                      <span style={{ color: "#22d3ee", fontSize: 13, fontWeight: 600 }}>{row.val}</span>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ padding: "18px 0", textAlign: "center" }}>
-                    <p style={{ fontSize: 24, marginBottom: 6 }}>📋</p>
-                    <p style={{ color: "#8b949e", fontSize: 13, fontWeight: 600 }}>Sin membresía registrada</p>
-                    <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>Usa Renovar para registrar un nuevo pago</p>
-                  </div>
-                )}
-              </div>
-
-              {/* ── 2. CLASES INSCRITAS (vinculadas a la membresía) ── */}
-              {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
-                const todasLasClases = clases.filter(c => c.activo !== false);
+                // Helpers clases
+                const todasLasClases = (clases || []).filter(c => c.activo !== false);
                 const getPrecioClase = (c) => {
                   const planVinc = (planesMembresia||[]).find(p =>
                     (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
@@ -3363,58 +3251,222 @@ export default function MemberDetailModal({
                       (horClase[0]?.hora_inicio ? ` · ${horClase[0].hora_inicio.slice(0,5)}–${(horClase[0].hora_fin||"").slice(0,5)}` : "")
                     : null;
                 };
+
+                // Color del estado
+                const accentBorder = isPagoPendiente ? "rgba(251,191,36,.5)"
+                  : esActiva    ? "rgba(34,197,94,.4)"
+                  : memInfo.estado === "Vencido" ? "rgba(239,68,68,.4)"
+                  : "rgba(100,116,139,.25)";
+                const accentBg = isPagoPendiente ? "rgba(251,191,36,.04)"
+                  : esActiva    ? "rgba(34,197,94,.04)"
+                  : memInfo.estado === "Vencido" ? "rgba(239,68,68,.04)"
+                  : "var(--bg-elevated)";
+
                 return (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
-                        🏋️ Clases inscritas
-                      </p>
-                      {clasesDisponibles.length > 0 && (
-                        <button
-                          onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                          style={{ background: "rgba(108,99,255,.12)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 8, padding: "4px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
-                        >
-                          + Agregar clase
-                        </button>
+                  <div style={{ marginBottom: 18 }}>
+
+                    {/* ── TARJETA MEMBRESÍA (contenedor padre) ── */}
+                    <div style={{
+                      border: `1.5px solid ${accentBorder}`,
+                      borderRadius: 16,
+                      background: accentBg,
+                      overflow: "hidden",
+                    }}>
+
+                      {/* Cabecera de la tarjeta: Plan + Estado */}
+                      <div style={{
+                        padding: "14px 16px",
+                        borderBottom: todasLasClases.length > 0 ? "1px solid var(--border,rgba(255,255,255,.08))" : "none",
+                        display: "flex", alignItems: "center", gap: 12,
+                      }}>
+                        {/* Ícono estado */}
+                        <div style={{
+                          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                          background: isPagoPendiente ? "rgba(251,191,36,.15)"
+                            : esActiva ? "rgba(34,197,94,.15)"
+                            : memInfo.estado === "Vencido" ? "rgba(239,68,68,.12)"
+                            : "rgba(100,116,139,.1)",
+                          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                        }}>
+                          {isPagoPendiente ? "⏳" : esActiva ? "✅" : memInfo.estado === "Vencido" ? "⚠️" : memInfo.congelado ? "🧊" : "📋"}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {/* Label de sección */}
+                          <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: "0 0 2px" }}>
+                            Membresía
+                          </p>
+                          {/* Nombre del plan o estado */}
+                          <p style={{
+                            color: isPagoPendiente ? "#fbbf24"
+                              : esActiva ? "var(--text-primary,#0F172A)"
+                              : memInfo.estado === "Vencido" ? "#ef4444"
+                              : "var(--text-secondary,#475569)",
+                            fontSize: 15, fontWeight: 700, margin: 0,
+                            overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
+                          }}>
+                            {esSinMem ? "Sin membresía activa"
+                              : isPagoPendiente ? (memInfo.plan || "Pago pendiente")
+                              : memInfo.plan || "—"}
+                          </p>
+                          {/* Fechas o estado secundario */}
+                          {!esSinMem && memInfo.vence && (
+                            <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 11, margin: "2px 0 0" }}>
+                              {(() => {
+                                const dR = diasParaVencer(memInfo.vence);
+                                if (dR === null) return `Vence ${fmtDate(memInfo.vence)}`;
+                                if (dR < 0)  return `⛔ Venció hace ${Math.abs(dR)} días`;
+                                if (dR === 0) return "⚠️ Vence hoy";
+                                if (dR <= 5)  return `⚠️ Vence en ${dR} días · ${fmtDate(memInfo.vence)}`;
+                                return `Vence ${fmtDate(memInfo.vence)}`;
+                              })()}
+                            </p>
+                          )}
+                          {memInfo.esGratis && memInfo.estado !== "Sin membresía" && (
+                            <p style={{ color: "#a78bfa", fontSize: 11, margin: "2px 0 0" }}>🎁 Cortesía</p>
+                          )}
+                          {m.beca && (
+                            <p style={{ color: "#fbbf24", fontSize: 11, margin: "2px 0 0" }}>🎓 Beca</p>
+                          )}
+                        </div>
+
+                        {/* Monto del último pago */}
+                        {!esSinMem && memInfo.monto && (
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, margin: 0 }}>Último pago</p>
+                            <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 14, fontWeight: 800, margin: "1px 0 0", fontFamily: "'DM Mono',monospace" }}>
+                              {memInfo.esGratis ? "—" : `$${Number(memInfo.monto).toLocaleString("es-MX")}`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Congelado banner (dentro de la tarjeta) ── */}
+                      {memInfo.congelado && (
+                        <div style={{ background: "rgba(96,165,250,.08)", borderBottom: "1px solid var(--border,rgba(255,255,255,.08))", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{ fontSize: 16 }}>🧊</span>
+                          <p style={{ color: "#60a5fa", fontSize: 12, fontWeight: 600, flex: 1 }}>
+                            Congelada · {memInfo.fechaDescongelar ? `Se descongela el ${fmtDate(memInfo.fechaDescongelar)}` : "Descongelar manualmente"}
+                          </p>
+                          <button
+                            onClick={() => {
+                              const inicioCongelado = m.fecha_congelado ? new Date(m.fecha_congelado + "T00:00:00") : null;
+                              const hoy = new Date(); hoy.setHours(0,0,0,0);
+                              const diasNuevos = inicioCongelado ? Math.round((hoy - inicioCongelado) / (1000*60*60*24)) : 0;
+                              onSave({ ...m, congelado: false, fecha_descongelar: null, fecha_congelado: null, dias_congelados: (m.dias_congelados||0) + diasNuevos });
+                            }}
+                            style={{ background: "rgba(96,165,250,.2)", border: "1px solid rgba(96,165,250,.4)", borderRadius: 8, padding: "5px 10px", color: "#60a5fa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+                          >
+                            Descongelar
+                          </button>
+                        </div>
+                      )}
+
+                      {/* ── Pago pendiente banner (dentro de la tarjeta) ── */}
+                      {isPagoPendiente && (
+                        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(251,191,36,.2)" }}>
+                          <p style={{ color: "rgba(251,191,36,.8)", fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>
+                            Transferencia bancaria pendiente de confirmación. Confirma para activar la membresía.
+                          </p>
+                          <button
+                            onClick={() => { setConfirmarDatos({ monto:"", plan:"", fecha:todayISO(), formaPago:"Transferencia" }); setConfirmarModal(true); }}
+                            style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#22c55e,#4ade80)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
+                          >
+                            ✅ Confirmar pago recibido
+                          </button>
+                        </div>
+                      )}
+
+                      {/* ── Sin membresía — CTA directo ── */}
+                      {esSinMem && (
+                        <div style={{ padding: "12px 16px", borderBottom: todasLasClases.length > 0 ? "1px solid var(--border,rgba(255,255,255,.08))" : "none" }}>
+                          <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 12, margin: "0 0 8px" }}>
+                            Sin membresía activa. Usa "Renovar" para registrar un pago.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* ══ CLASES — hijas visibles de la membresía ══
+                          Aparecen DENTRO de la misma tarjeta con sangría y
+                          un conector visual (línea izquierda) que dice:
+                          "estas clases son parte de esta membresía" */}
+                      {todasLasClases.length > 0 && (
+                        <div style={{ padding: "10px 16px 14px" }}>
+
+                          {/* Label "Clases incluidas" con botón agregar */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: 0 }}>
+                              Clases inscritas
+                            </p>
+                            {clasesDisponibles.length > 0 && (
+                              <button
+                                onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
+                                style={{ background: "transparent", border: "1px solid var(--border,rgba(255,255,255,.15))", borderRadius: 6, padding: "3px 8px", color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                              >
+                                + Agregar
+                              </button>
+                            )}
+                          </div>
+
+                          {clasesAsignadas.length === 0 ? (
+                            /* Sin clases — mensaje dentro del contexto de la membresía */
+                            <div
+                              onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
+                              style={{
+                                marginLeft: 12,
+                                borderLeft: "2px solid var(--border,rgba(255,255,255,.1))",
+                                paddingLeft: 12,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 12 }}>
+                                Sin clases asignadas
+                              </p>
+                              <p style={{ color: "var(--brand-accent,#2563EB)", fontSize: 11, marginTop: 2 }}>
+                                Toca para inscribir en una clase →
+                              </p>
+                            </div>
+                          ) : (
+                            /* Con clases — cada fila sangrada con conector visual */
+                            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                              {clasesAsignadas.map((c, idx) => {
+                                const horStr = getHorStr(c);
+                                const precio = getPrecioClase(c);
+                                const isLast = idx === clasesAsignadas.length - 1;
+                                return (
+                                  <div key={c.id} style={{ display: "flex", gap: 0 }}>
+                                    {/* Conector jerárquico */}
+                                    <div style={{ width: 24, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 2 }}>
+                                      <div style={{ width: 2, flex: isLast ? "0 0 14px" : 1, background: "var(--border,rgba(255,255,255,.1))" }} />
+                                      <div style={{ width: 10, height: 2, background: "var(--border,rgba(255,255,255,.1))", alignSelf: "flex-start", marginTop: 12 }} />
+                                      {!isLast && <div style={{ width: 2, flex: 1, background: "var(--border,rgba(255,255,255,.1))" }} />}
+                                    </div>
+                                    {/* Chip de clase */}
+                                    <div style={{
+                                      flex: 1,
+                                      background: "var(--bg-elevated,rgba(255,255,255,.04))",
+                                      border: "1px solid var(--border,rgba(255,255,255,.08))",
+                                      borderRadius: 10, padding: "8px 12px",
+                                      display: "flex", alignItems: "center", gap: 8,
+                                    }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 12, fontWeight: 600, margin: 0 }}>{c.nombre}</p>
+                                        {horStr && <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 11, marginTop: 2 }}>{horStr}</p>}
+                                      </div>
+                                      {precio > 0 && (
+                                        <span style={{ color: "var(--text-tertiary,#64748b)", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+                                          ${precio.toLocaleString("es-MX")}/mes
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-
-                    {clasesAsignadas.length === 0 ? (
-                      <div
-                        onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                        style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
-                      >
-                        <p style={{ fontSize: 22, marginBottom: 4 }}>🏋️</p>
-                        <p style={{ color: "#8b949e", fontSize: 13, fontWeight: 600 }}>Sin clases asignadas</p>
-                        <p style={{ color: "#a78bfa", fontSize: 11, marginTop: 3 }}>Toca para inscribir en una clase</p>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {clasesAsignadas.map(c => {
-                          const horStr = getHorStr(c);
-                          const precio = getPrecioClase(c);
-                          return (
-                            <div key={c.id} style={{
-                              background: "var(--bg-elevated)",
-                              border: "1px solid rgba(34,211,238,.2)",
-                              borderLeft: "3px solid #22d3ee",
-                              borderRadius: 12, padding: "12px 14px",
-                              display: "flex", alignItems: "center", gap: 12,
-                            }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, margin: 0 }}>{c.nombre}</p>
-                                {horStr && <p style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>🗓️ {horStr}</p>}
-                              </div>
-                              {precio > 0 && (
-                                <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                                  ${precio.toLocaleString("es-MX")}/mes
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 );
               })()}
