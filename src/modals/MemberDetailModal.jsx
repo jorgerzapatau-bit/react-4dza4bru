@@ -2159,18 +2159,20 @@ export default function MemberDetailModal({
           : null;
         const diasStr = diasPlan.length > 0 ? diasPlan.join(" · ") : null;
 
-        // Fallback: extraer de notas si no hay plan vinculado con horario
+        // Fallback desde notas: SOLO si tiene membresía activa (evita mostrar datos viejos/confusos)
         const notas = m.notas || "";
-        const horarioFallback = !horarioStr
+        const tieneMembresia = memInfo.estado !== "Sin membresía" && memInfo.estado !== "Vencido";
+        const horarioFallback = (!horarioStr && tieneMembresia)
           ? notas.match(/(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i)?.[1] || null
           : null;
-        const diasFallback = !diasStr
+        const diasFallback = (!diasStr && tieneMembresia)
           ? (notas.match(/(?:plan[:\s]+)([A-ZÁÉÍÓÚ/]+)/i)?.[1] || notas.match(/\b(MAR|LUN|MIÉ|JUE|VIE|SÁB|DOM)(?:\/[A-ZÁÉÍÓÚ]+)*/i)?.[0] || null)
           : null;
 
         const horarioFinal = horarioStr || horarioFallback;
         const diasFinal    = diasStr    || diasFallback;
-        const claseFinal   = planVinculado?.clase_nombre || memInfo.plan;
+        // Chip de clase: solo mostrar si hay membresía activa
+        const claseFinal   = tieneMembresia ? (planVinculado?.clase_nombre || memInfo.plan) : null;
 
         // ── Estado
         const esActivo    = !isPagoPendiente && memInfo.estado === "Activo";
