@@ -491,29 +491,85 @@ export default function MemberDetailModal({
     if (!gymId) return;
     try {
       const supabaseLib = await import("../supabase.js").then(mod => mod.supabase);
-      const db = await supabaseLib.from("miembro_clases");
+      const dbMC = await supabaseLib.from("miembro_clases");
+      const dbI  = await supabaseLib.from("inscripciones");
 
-      // ── Solo insertar clases que no existían antes (nunca borrar las anteriores) ──
-      const clasesAntIds = (clasesAnteriores || []).map(String);
+      const clasesAntIds    = (clasesAnteriores || []).map(String);
       const clasesSoloNuevas = nuevasIds.filter(id => !clasesAntIds.includes(String(id)));
-      // Clases que se desmarcaron → eliminar solo esas
       const clasesEliminadas = clasesAntIds.filter(id => !nuevasIds.map(String).includes(id));
 
-      // Insertar nuevas
+      // ── Insertar en miembro_clases E inscripciones (fuente de verdad de ClasesScreen) ──
       const insertadas = [];
       for (const claseId of clasesSoloNuevas) {
-        const saved = await db.insert({ gym_id: gymId, miembro_id: m.id, clase_id: claseId });
+        // 1. miembro_clases (para el perfil del miembro)
+        const saved = await dbMC.insert({ gym_id: gymId, miembro_id: m.id, clase_id: claseId });
         if (saved) insertadas.push(saved);
+
+        // 2. inscripciones (para ClasesScreen — evitar duplicados)
+        try {
+          const SUPABASE_URL  = supabaseLib.url;
+          const ANON_KEY      = supabaseLib.key;
+          // Obtener token activo desde localStorage (igual que getAuthHeaders interno)
+          let token = ANON_KEY;
+          try { const s = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (s?.access_token) token = s.access_token; } catch(_){}
+          const headers = {
+            "apikey": ANON_KEY,
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation,resolution=ignore-duplicates",
+          };
+          // Verificar si ya existe una inscripción activa
+          const checkUrl = `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa&select=id&limit=1`;
+          const checkR   = await fetch(checkUrl, { headers });
+          const existing = checkR.ok ? await checkR.json() : [];
+          if (!existing.length) {
+            await fetch(`${SUPABASE_URL}/rest/v1/inscripciones`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                gym_id:            gymId,
+                miembro_id:        m.id,
+                clase_id:          claseId,
+                estado:            "activa",
+                fecha_inscripcion: new Date().toISOString().split("T")[0],
+              }),
+            });
+          }
+        } catch(eI) {
+          console.warn("No se pudo insertar en inscripciones:", eI);
+        }
       }
-      // Eliminar solo las desmarcadas
+
+      // ── Eliminar de miembro_clases Y marcar como 'cancelada' en inscripciones ──
       for (const claseId of clasesEliminadas) {
+        // 1. miembro_clases
         const mc = (miembroClases || []).find(x =>
           String(x.miembro_id) === String(m.id) && String(x.clase_id) === claseId
         );
-        if (mc?.id) await db.delete(mc.id);
+        if (mc?.id) await dbMC.delete(mc.id);
+
+        // 2. inscripciones → marcar cancelada (no borrar para conservar historial)
+        try {
+          const SUPABASE_URL = supabaseLib.url;
+          const ANON_KEY     = supabaseLib.key;
+          let token = ANON_KEY;
+          try { const s = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (s?.access_token) token = s.access_token; } catch(_){}
+          const headers = {
+            "apikey": ANON_KEY,
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+          };
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa`,
+            { method: "PATCH", headers, body: JSON.stringify({ estado: "cancelada" }) }
+          );
+        } catch(eI) {
+          console.warn("No se pudo actualizar inscripciones:", eI);
+        }
       }
 
-      // Actualizar estado global
+      // Actualizar estado global de miembro_clases en memoria
       if (onUpdateMiembroClases) {
         const eliminadasSet = new Set(clasesEliminadas);
         const sinEliminadas = (miembroClases || []).filter(mc =>
