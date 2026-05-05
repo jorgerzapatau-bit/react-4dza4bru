@@ -2710,7 +2710,7 @@ export default function MemberDetailModal({
                 const clasesAAgregar = clasesDisponibles.filter(c => clasesEdit.map(String).includes(String(c.id)));
                 // De las actuales, cuáles marcó para QUITAR
                 const clasesAQuitar = clasesActuales.filter(c => !clasesEdit.map(String).includes(String(c.id)));
-                const cargoTotal = m.beca ? 0 : clasesAAgregar.reduce((s, c) => s + getPrecioClase(c), 0);
+                // cargoTotal ya no se usa aquí — cada clase con costo tiene su propio botón de acción
 
                 const getHorStr = (c) => {
                   const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
