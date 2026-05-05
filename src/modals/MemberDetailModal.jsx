@@ -2368,10 +2368,12 @@ export default function MemberDetailModal({
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontFamily: "inherit", marginTop: 4,
               }}>←</button>
-              {/* Avatar */}
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{
-                  width: 72, height: 72, borderRadius: 20,
+              {/* Avatar — redondo, clickeable para cambiar foto */}
+              <div
+                onClick={() => setPhotoModal(true)}
+                style={{
+                  position: "relative", flexShrink: 0,
+                  width: 72, height: 72, borderRadius: "50%",
                   background: isPagoPendiente ? "linear-gradient(135deg,#f59e0b,#d97706)"
                     : esActivo   ? "linear-gradient(135deg,#6c63ff,#e040fb)"
                     : esVencido  ? "linear-gradient(135deg,#f43f5e,#fb923c)"
@@ -2379,19 +2381,23 @@ export default function MemberDetailModal({
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 26, color: "#fff", fontWeight: 800, overflow: "hidden",
                   boxShadow: `0 0 0 2.5px ${accentColor}55, 0 6px 20px rgba(0,0,0,.25)`,
-                }}>
-                  {m.foto
-                    ? <img src={m.foto} alt={m.nombre} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                    : m.nombre.charAt(0)}
-                </div>
-                <button onClick={() => setPhotoModal(true)} style={{
-                  position:"absolute", bottom:-4, right:-4,
-                  width:22, height:22, borderRadius:7,
-                  background:"linear-gradient(135deg,#6c63ff,#e040fb)",
-                  border:"2px solid var(--bg-card)", cursor:"pointer",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:10, boxShadow:"0 2px 6px rgba(108,99,255,.5)",
-                }}>📷</button>
+                  cursor: "pointer",
+                }}
+              >
+                {m.foto
+                  ? <img src={m.foto} alt={m.nombre} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:"50%" }} />
+                  : m.nombre.charAt(0)}
+                {/* Overlay sutil al hover para indicar que es clickeable */}
+                <div style={{
+                  position: "absolute", inset: 0, borderRadius: "50%",
+                  background: "rgba(0,0,0,.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 18, opacity: 0,
+                  transition: "opacity .2s",
+                }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                  onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                >📷</div>
               </div>
 
               {/* Nombre + chips */}
@@ -2548,8 +2554,8 @@ export default function MemberDetailModal({
                 border:"1px solid var(--border)", background:"var(--bg-elevated)",
                 color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
                 cursor:"pointer", fontFamily:"inherit",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-              }}>✏️ Editar</button>
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
+              }}><span style={{fontSize:14}}>✏️</span><span>Editar</span></button>
               <button onClick={() => {
                 const dias = diasParaVencer(memInfo.vence);
                 const venceISO = (() => { const v = parseDate(memInfo.vence); if (!v) return todayISO(); v.setHours(0,0,0,0); return v.toISOString().split("T")[0]; })();
@@ -2569,15 +2575,15 @@ export default function MemberDetailModal({
                 border:"none", background:"var(--brand-accent,#2563EB)",
                 color:"#fff", fontSize:11, fontWeight:700,
                 cursor:"pointer", fontFamily:"inherit",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-              }}>🔄 Renovar</button>
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
+              }}><span style={{fontSize:14}}>🔄</span><span>Renovar</span></button>
               <button onClick={() => { setCobro({ tipo:"libre", desc:"", monto:"", fecha:todayISO(), formaPago:"Efectivo" }); setCobrarModal(true); }} style={{
                 flex:1, padding:"9px 4px", borderRadius:8,
                 border:"1px solid var(--border)", background:"var(--bg-elevated)",
                 color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
                 cursor:"pointer", fontFamily:"inherit",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-              }}>💰 Cobrar</button>
+              }}><span style={{fontSize:14}}>💰</span><span>Cobrar</span></button>
               {m.tel && onGoToMensajes && (
                 <button onClick={() => onGoToMensajes(m)} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
@@ -2586,7 +2592,8 @@ export default function MemberDetailModal({
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:4,
                 }}>
-                  💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "WA"}
+                  <span style={{fontSize:14}}>💬</span>
+                  <span>{waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "WA"}</span>
                 </button>
               )}
               {esMenor && tieneTutor && waNumTutor.length >= 10 && (
@@ -2596,7 +2603,7 @@ export default function MemberDetailModal({
                   color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-                }}>👨‍👧 Tutor</button>
+                }}><span style={{fontSize:14}}>👨‍👧</span><span>Tutor</span></button>
               )}
               {esMenor && !tieneTutor && (
                 <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
@@ -2605,16 +2612,16 @@ export default function MemberDetailModal({
                   color:"#b91c1c", fontSize:10, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:3,
-                }}>⚠️ Tutor</button>
+                }}><span style={{fontSize:14}}>⚠️</span><span>Tutor</span></button>
               )}
               {memInfo.estado === "Activo" && !memInfo.congelado && (
                 <button onClick={() => setCongelarModal(true)} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
-                  border:"1px solid var(--border)", background:"var(--bg-elevated)",
-                  color:"var(--text-secondary,#475569)", fontSize:11, fontWeight:600,
+                  border:"1px solid rgba(96,165,250,.3)", background:"rgba(96,165,250,.06)",
+                  color:"#3b82f6", fontSize:11, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:4,
-                }}>🧊</button>
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
+                }}><span style={{fontSize:14}}>🧊</span><span>Congelar</span></button>
               )}
             </div>
           </div>
