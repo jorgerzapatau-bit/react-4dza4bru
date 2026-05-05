@@ -474,6 +474,14 @@ export default function MemberDetailModal({
 
   const [clasesEdit, setClasesEdit] = useState(clasesDelMiembro);
 
+  // Sincronizar clasesEdit cuando miembroClases cambia desde el padre (ej. después de guardar)
+  useEffect(() => {
+    if (!editing) {
+      setClasesEdit(clasesDelMiembro);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [miembroClases]);
+
   const clasesHanCambiado = editing && (
     clasesEdit.length !== clasesDelMiembro.length ||
     clasesEdit.some(id => !clasesDelMiembro.includes(id))

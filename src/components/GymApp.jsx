@@ -521,7 +521,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const addPago = async (pagoData) => {
     const db = await supabase.from("transacciones");
     const descFinal = pagoData.desc || pagoData.descripcion || "-";
-    const saved = await db.insert({ gym_id: GYM_ID, tipo: pagoData.tipo, categoria: pagoData.categoria, descripcion: descFinal, monto: pagoData.monto, fecha: pagoData.fecha, miembro_id: pagoData.miembroId || null, forma_pago: pagoData.formaPago || pagoData.forma_pago || null });
+    const saved = await db.insert({ gym_id: GYM_ID, tipo: pagoData.tipo, categoria: pagoData.categoria, descripcion: descFinal, monto: pagoData.monto, fecha: pagoData.fecha, miembro_id: pagoData.miembroId || null });
     if (saved) setTxs(p => [...p, { id: saved.id, tipo: pagoData.tipo, categoria: pagoData.categoria, desc: descFinal, descripcion: descFinal, monto: pagoData.monto, fecha: pagoData.fecha, miembroId: pagoData.miembroId || null, miembro_id: pagoData.miembroId || null, vence_manual: pagoData.vence_manual || null, forma_pago: pagoData.formaPago || pagoData.forma_pago || null }]);
   };
 
