@@ -137,6 +137,10 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     const d = parseDate(t.fecha);
     if (!d) return false;
     return d.getFullYear() === selMes.year && d.getMonth() === selMes.month;
+  }).sort((a, b) => {
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
   }), [txs, selMes]);
 
   const txsPrevMes = useMemo(() => txs.filter(t => {
