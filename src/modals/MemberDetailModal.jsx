@@ -826,6 +826,61 @@ export default function MemberDetailModal({
         });
       }
 
+      // ── Inscribir las clases extra en la tabla inscripciones ──
+      // El pago ya quedó en transacciones; ahora hay que reflejar la inscripción
+      if (extrasNoVacios.length > 0 && gymId) {
+        try {
+          const supabaseLib = await import("../supabase.js").then(mod => mod.supabase);
+          const SUPABASE_URL = supabaseLib.url;
+          const ANON_KEY     = supabaseLib.key;
+          let token = ANON_KEY;
+          try { const s = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (s?.access_token) token = s.access_token; } catch(_){}
+          const headers = {
+            "apikey": ANON_KEY,
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+          };
+
+          const nuevasIds = extrasNoVacios.map(pe => pe.id);
+          const insertadas = [];
+
+          for (const claseId of nuevasIds) {
+            // Evitar duplicados
+            const checkR = await fetch(
+              `${SUPABASE_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${claseId}&estado=eq.activa&select=id&limit=1`,
+              { headers }
+            );
+            const existing = checkR.ok ? await checkR.json() : [];
+            if (existing.length) continue;
+
+            const r = await fetch(`${SUPABASE_URL}/rest/v1/inscripciones`, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                gym_id:            gymId,
+                miembro_id:        m.id,
+                clase_id:          claseId,
+                estado:            "activa",
+                fecha_inscripcion: fechaISO,
+              }),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              const saved = Array.isArray(data) ? data[0] : data;
+              if (saved) insertadas.push(saved);
+            }
+          }
+
+          // Actualizar estado global en memoria
+          if (onUpdateInscripciones && insertadas.length > 0) {
+            onUpdateInscripciones(prev => [...(prev || []), ...insertadas]);
+          }
+        } catch(eInsc) {
+          console.warn("[handleRenovar] No se pudieron guardar inscripciones de clases extra:", eInsc);
+        }
+      }
+
       // Actualizar datos del miembro según forma de pago
       if (esPendienteTransf) {
         // Transferencia pendiente: marcar como pendiente sin activar aún
@@ -2144,6 +2199,25 @@ export default function MemberDetailModal({
                               for (const pe of (renovar.planesExtra||[]).filter(p=>p.nombre)) {
                                 const montoExtra = m.beca?0:(Number(pe.monto)||0);
                                 await onAddPago({ id:uid(), tipo:"ingreso", categoria:"Membresías", desc:`Renovación ${pe.nombre} - ${m.nombre} [Transferencia]${becaTag}`, descripcion:`Renovación ${pe.nombre} - ${m.nombre}`, monto:montoExtra, fecha:fechaISO, miembroId:m.id, vence_manual:null });
+                              }
+                              // ── Inscribir clases extra en inscripciones ──
+                              const extrasTransf = (renovar.planesExtra||[]).filter(p=>p.nombre && p.id);
+                              if (extrasTransf.length > 0 && gymId) {
+                                try {
+                                  const sbLib = await import("../supabase.js").then(mod => mod.supabase);
+                                  const SB_URL = sbLib.url; const SB_KEY = sbLib.key;
+                                  let tok = SB_KEY;
+                                  try { const ss = JSON.parse(localStorage.getItem("gymfit_session")||"{}"); if (ss?.access_token) tok = ss.access_token; } catch(_){}
+                                  const hdrs = { "apikey":SB_KEY, "Authorization":`Bearer ${tok}`, "Content-Type":"application/json", "Prefer":"return=representation" };
+                                  const inserts = [];
+                                  for (const pe of extrasTransf) {
+                                    const chk = await fetch(`${SB_URL}/rest/v1/inscripciones?gym_id=eq.${gymId}&miembro_id=eq.${m.id}&clase_id=eq.${pe.id}&estado=eq.activa&select=id&limit=1`, { headers: hdrs });
+                                    if (chk.ok && (await chk.json()).length) continue;
+                                    const r = await fetch(`${SB_URL}/rest/v1/inscripciones`, { method:"POST", headers:hdrs, body:JSON.stringify({ gym_id:gymId, miembro_id:m.id, clase_id:pe.id, estado:"activa", fecha_inscripcion:fechaISO }) });
+                                    if (r.ok) { const d = await r.json(); const sv = Array.isArray(d)?d[0]:d; if (sv) inserts.push(sv); }
+                                  }
+                                  if (onUpdateInscripciones && inserts.length > 0) onUpdateInscripciones(prev => [...(prev||[]), ...inserts]);
+                                } catch(eT) { console.warn("[transferencia] inscripciones clases extra:", eT); }
                               }
                               const qrToken = m.qr_token||("DZ-"+Math.random().toString(36).toUpperCase().slice(2,6)+Math.random().toString(36).toUpperCase().slice(2,4));
                               const updated = { ...m, estado:"Activo", qr_token:qrToken, pago_pendiente:false };
