@@ -2176,13 +2176,14 @@ export default function MemberDetailModal({
       {(() => {
         // ── Buscar plan vinculado en planesMembresia para obtener horario real
         // Si no tiene membresía activa, no mostrar horario del plan (evita mostrar datos de un plan anterior)
-        const planNombreActual = (memInfo.estado === "Sin membresía") ? "" : (memInfo.plan || "");
-        const planVinculado = (planesMembresia || []).find(p => {
+        const tieneMembresia = memInfo.estado !== "Sin membresía" && memInfo.estado !== "Vencido";
+        const planNombreActual = tieneMembresia ? (memInfo.plan || "") : "";
+        const planVinculado = tieneMembresia ? (planesMembresia || []).find(p => {
           const pn = (p.nombre || "").toLowerCase().trim();
           const cn = (p.clase_nombre || "").toLowerCase().trim();
           const mn = planNombreActual.toLowerCase().trim();
           return pn === mn || cn === mn || pn.includes(mn) || mn.includes(pn) || cn.includes(mn) || mn.includes(cn);
-        });
+        }) : null;
         const horasRaw = planVinculado?.hora_inicio || null;
         const horaFin  = planVinculado?.hora_fin || null;
         const diasPlan = planVinculado?.dias_semana || [];
@@ -2202,7 +2203,6 @@ export default function MemberDetailModal({
 
         // Fallback desde notas: SOLO si tiene membresía activa (evita mostrar datos viejos/confusos)
         const notas = m.notas || "";
-        const tieneMembresia = memInfo.estado !== "Sin membresía" && memInfo.estado !== "Vencido";
         const horarioFallback = (!horarioStr && tieneMembresia)
           ? notas.match(/(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i)?.[1] || null
           : null;
