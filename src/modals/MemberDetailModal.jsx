@@ -482,7 +482,7 @@ export default function MemberDetailModal({
   const guardarClasesMiembro = async (nuevasIds, clasesAnteriores, formaPagoClases = "Efectivo") => {
     if (!gymId) return;
     try {
-      const supabaseLib = await import("../supabase.js").then(mod => mod.default);
+      const supabaseLib = await import("../supabase.js").then(mod => mod.supabase);
       const db = await supabaseLib.from("miembro_clases");
 
       // ── Solo insertar clases que no existían antes (nunca borrar las anteriores) ──
