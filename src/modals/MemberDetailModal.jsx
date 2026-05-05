@@ -2707,6 +2707,7 @@ export default function MemberDetailModal({
                       {clases.filter(c => c.activo !== false).map(c => {
                         const isSel = clasesEdit.map(String).includes(String(c.id));
                         const isNueva = isSel && !clasesDelMiembro.includes(String(c.id));
+                        const isYaInscrito = clasesDelMiembro.includes(String(c.id));
                         const precio = getPrecioClase(c);
                         const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
                         const horStr = horClase.length > 0
@@ -2715,6 +2716,11 @@ export default function MemberDetailModal({
                               return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
                             }).join(" | ")
                           : null;
+                        // Color del borde: azul=ya inscrito, verde=recién añadido, gris=sin seleccionar
+                        const borderColor = isSel ? (isYaInscrito ? "#22d3ee" : "#4ade80") : "rgba(255,255,255,.08)";
+                        const bgColor = isSel ? (isYaInscrito ? "rgba(34,211,238,.08)" : "rgba(74,222,128,.08)") : "var(--bg-elevated)";
+                        const checkColor = isSel ? (isYaInscrito ? "#22d3ee" : "#4ade80") : "rgba(255,255,255,.2)";
+                        const textColor = isSel ? (isYaInscrito ? "#22d3ee" : "#4ade80") : "var(--text-primary)";
                         return (
                           <button
                             key={c.id}
@@ -2726,30 +2732,44 @@ export default function MemberDetailModal({
                             style={{
                               padding: "10px 14px", borderRadius: 12, cursor: "pointer",
                               fontFamily: "inherit", textAlign: "left",
-                              border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
-                              background: isSel ? "rgba(34,211,238,.10)" : "var(--bg-elevated)",
+                              border: isSel ? `2px solid ${borderColor}` : `1.5px solid ${borderColor}`,
+                              background: bgColor,
                               transition: "all .2s", display: "flex", alignItems: "center", gap: 10,
                             }}
                           >
                             <div style={{
                               width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                              border: `2px solid ${isSel ? "#22d3ee" : "rgba(255,255,255,.2)"}`,
-                              background: isSel ? "#22d3ee" : "transparent",
+                              border: `2px solid ${checkColor}`,
+                              background: isSel ? checkColor : "transparent",
                               display: "flex", alignItems: "center", justifyContent: "center",
                             }}>
                               {isSel && <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
                             </div>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <p style={{ color: isSel ? "#22d3ee" : "var(--text-primary)", fontSize: 13, fontWeight: isSel ? 700 : 500, margin: 0 }}>
-                                  {c.nombre}
-                                </p>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <p style={{ color: textColor, fontSize: 13, fontWeight: isSel ? 700 : 500, margin: 0 }}>
+                                    {c.nombre}
+                                  </p>
+                                  {/* Badge de estado: "Ya inscrito" vs "Por añadir" */}
+                                  {isSel && isYaInscrito && (
+                                    <span style={{ background: "rgba(34,211,238,.15)", color: "#22d3ee", borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
+                                      Ya inscrito
+                                    </span>
+                                  )}
+                                  {isSel && isNueva && (
+                                    <span style={{ background: "rgba(74,222,128,.15)", color: "#4ade80", borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
+                                      + Nuevo
+                                    </span>
+                                  )}
+                                </div>
                                 {precio > 0 && (
                                   <span style={{
                                     fontSize: 12, fontWeight: 700,
-                                    color: isNueva ? "#4ade80" : (isSel ? "#22d3ee" : "#8b949e"),
+                                    // Solo mostrar precio verde con "+" si es una clase NUEVA, no si ya estaba
+                                    color: isNueva ? "#4ade80" : "#8b949e",
                                   }}>
-                                    {isNueva ? "+ " : ""}${precio.toLocaleString("es-MX")}/mes
+                                    {isNueva ? `+$${precio.toLocaleString("es-MX")}/mes` : `$${precio.toLocaleString("es-MX")}/mes`}
                                   </span>
                                 )}
                               </div>
@@ -3234,7 +3254,44 @@ export default function MemberDetailModal({
                 </div>
               )}
 
-              {/* ── 6. NOTAS INTERNAS ── */}
+              {/* ── 6. CLASES ASIGNADAS (solo lectura) ── */}
+              {clases && clases.filter(c => c.activo !== false).length > 0 && clasesDelMiembro.length > 0 && (() => {
+                const clasesAsignadas = clases.filter(c => c.activo !== false && clasesDelMiembro.includes(String(c.id)));
+                if (clasesAsignadas.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                      🏋️ Clases asignadas
+                    </p>
+                    <div style={{ background: "var(--bg-elevated)", borderRadius: 14, padding: "0 14px" }}>
+                      {clasesAsignadas.map((c, i) => {
+                        const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
+                        const horStr = horClase.length > 0
+                          ? horClase.map(h => {
+                              const dias = (h.dias_semana||[]).join(", ");
+                              return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
+                            }).join(" | ")
+                          : null;
+                        return (
+                          <div key={c.id} style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "11px 0",
+                            borderBottom: i < clasesAsignadas.length - 1 ? "1px solid var(--border)" : "none",
+                          }}>
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22d3ee", flexShrink: 0 }} />
+                            <div style={{ flex: 1 }}>
+                              <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, margin: 0 }}>{c.nombre}</p>
+                              {horStr && <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── 7. NOTAS INTERNAS ── */}
               <div style={{ marginBottom: 16 }}>
                 <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                   📝 Notas internas
