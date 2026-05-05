@@ -463,6 +463,9 @@ export default function MemberDetailModal({
   });
   const [tutorErrores, setTutorErrores] = useState({});
   const [pagoModal, setPagoModal] = useState(false);
+  const [clasesPagoModal, setClasesPagoModal] = useState(false); // modal forma de pago al asignar clases con costo
+  const [clasesPagoFormaPago, setClasesPagoFormaPago] = useState("Efectivo");
+  const [clasesPagoSaving, setClasesPagoSaving] = useState(false);
 
   // ── Clases múltiples asignadas al miembro ──
   const clasesDelMiembro = (miembroClases || [])
@@ -476,7 +479,7 @@ export default function MemberDetailModal({
     clasesEdit.some(id => !clasesDelMiembro.includes(id))
   );
 
-  const guardarClasesMiembro = async (nuevasIds, clasesAnteriores) => {
+  const guardarClasesMiembro = async (nuevasIds, clasesAnteriores, formaPagoClases = "Efectivo") => {
     if (!gymId) return;
     try {
       const supabaseLib = await import("../supabase.js").then(mod => mod.default);
@@ -548,10 +551,10 @@ export default function MemberDetailModal({
               miembro: m,
               plan: nombresClases,
               monto: montoTotal,
-              formaPago: "Efectivo",
+              formaPago: formaPagoClases,
               venceISO: null,
             });
-            setComprobanteData({ tipo: "efectivo", png, plan: nombresClases, monto: montoTotal, formaPago: "Efectivo", vence: null });
+            setComprobanteData({ tipo: "efectivo", png, plan: nombresClases, monto: montoTotal, formaPago: formaPagoClases, vence: null });
             setComprobanteModal(true);
           } catch(e) {
             console.warn("No se pudo generar comprobante de clase:", e);
@@ -688,7 +691,28 @@ export default function MemberDetailModal({
       ...tutorData,
     });
     // Guardar clases si cambiaron
-    if (clasesHanCambiado) guardarClasesMiembro(clasesEdit, clasesDelMiembro);
+    if (clasesHanCambiado) {
+      // Calcular si hay clases nuevas con costo
+      const clasesSoloNuevas = clasesEdit.filter(id => !clasesDelMiembro.includes(String(id)));
+      const getPrecioClase = (c) => {
+        const planVinc = (planesMembresia||[]).find(p =>
+          (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
+          p.clase_nombre === c.nombre || p.nombre === c.nombre
+        );
+        return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
+      };
+      const hayCargoNuevo = !m.beca && clasesSoloNuevas.some(id => {
+        const c = (clases||[]).find(x => String(x.id) === String(id));
+        return c && getPrecioClase(c) > 0;
+      });
+      if (hayCargoNuevo) {
+        // Abrir modal de forma de pago antes de guardar
+        setClasesPagoFormaPago("Efectivo");
+        setClasesPagoModal(true);
+        return; // No cerrar edición todavía — lo cierra el modal de pago
+      }
+      guardarClasesMiembro(clasesEdit, clasesDelMiembro, "Efectivo");
+    }
     setEditing(false);
   };
 
@@ -873,6 +897,108 @@ export default function MemberDetailModal({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, background: "var(--bg-main)", overflow: "hidden" }}>
+
+      {/* ══ MODAL: Forma de Pago — Clases nuevas con costo ══ */}
+      {clasesPagoModal && (() => {
+        // Calcular clases nuevas con costo
+        const getPrecioClase = (c) => {
+          const planVinc = (planesMembresia||[]).find(p =>
+            (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
+            p.clase_nombre === c.nombre || p.nombre === c.nombre
+          );
+          return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
+        };
+        const clasesSoloNuevas = clasesEdit.filter(id => !clasesDelMiembro.includes(String(id)));
+        const clasesConCosto = clasesSoloNuevas
+          .map(id => (clases||[]).find(c => String(c.id) === String(id)))
+          .filter(c => c && getPrecioClase(c) > 0);
+        const montoTotal = clasesConCosto.reduce((s, c) => s + getPrecioClase(c), 0);
+
+        const confirmarPago = async () => {
+          setClasesPagoSaving(true);
+          await guardarClasesMiembro(clasesEdit, clasesDelMiembro, clasesPagoFormaPago);
+          setClasesPagoModal(false);
+          setClasesPagoSaving(false);
+          setEditing(false);
+        };
+
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.92)", backdropFilter:"blur(12px)", zIndex:500, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+            <div style={{ background:"var(--bg-card)", borderRadius:24, padding:24, width:"100%", maxWidth:420, border:"1px solid rgba(255,255,255,.08)" }}>
+
+              {/* Header */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                <div>
+                  <h2 style={{ color:"var(--text-primary)", fontSize:17, fontWeight:700, margin:0 }}>💰 Cobro de Clase</h2>
+                  <p style={{ color:"#8b949e", fontSize:12, marginTop:4 }}>Selecciona la forma de pago</p>
+                </div>
+                <button onClick={() => setClasesPagoModal(false)}
+                  style={{ border:"none", background:"rgba(255,255,255,.1)", color:"#8b949e", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  ✕
+                </button>
+              </div>
+
+              {/* Resumen de clases */}
+              <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:18 }}>
+                <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
+                {clasesConCosto.map(c => (
+                  <div key={c.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                    <span style={{ color:"var(--text-secondary)", fontSize:13 }}>🏋️ {c.nombre}</span>
+                    <span style={{ color:"#22d3ee", fontSize:13, fontWeight:700 }}>${getPrecioClase(c).toLocaleString("es-MX")}</span>
+                  </div>
+                ))}
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, paddingTop:8, borderTop:"1px solid rgba(34,211,238,.15)" }}>
+                  <span style={{ color:"var(--text-primary)", fontSize:14, fontWeight:700 }}>Total</span>
+                  <span style={{ color:"#22d3ee", fontSize:14, fontWeight:800 }}>${montoTotal.toLocaleString("es-MX")}</span>
+                </div>
+              </div>
+
+              {/* Selector forma de pago */}
+              <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:20 }}>
+                {[{id:"Efectivo",icon:"💵"},{id:"Transferencia",icon:"🏦"},{id:"Tarjeta",icon:"💳"}].map(op => {
+                  const sel = clasesPagoFormaPago === op.id;
+                  return (
+                    <button key={op.id} onClick={() => setClasesPagoFormaPago(op.id)}
+                      style={{ padding:"13px 6px", borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                        border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                        background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                        display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all .2s" }}>
+                      <span style={{ fontSize:22 }}>{op.icon}</span>
+                      <span style={{ color: sel?"#c4b5fd":"var(--text-primary)", fontSize:12, fontWeight:sel?700:500 }}>{op.id}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Nota */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:12, marginBottom:18 }}>
+                <span style={{ fontSize:18, flexShrink:0 }}>🧾</span>
+                <p style={{ color:"var(--text-secondary)", fontSize:12, lineHeight:1.4 }}>
+                  Se generará un <strong style={{ color:"var(--text-primary)" }}>comprobante de pago</strong> automáticamente.
+                </p>
+              </div>
+
+              {/* Botones */}
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setClasesPagoModal(false)}
+                  style={{ flex:1, padding:"13px", border:"1px solid var(--border)", borderRadius:14, background:"transparent", color:"#8b949e", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                  Cancelar
+                </button>
+                <button onClick={confirmarPago} disabled={clasesPagoSaving}
+                  style={{ flex:2, padding:"13px", border:"none", borderRadius:14, cursor:clasesPagoSaving?"not-allowed":"pointer", fontFamily:"inherit",
+                    fontSize:14, fontWeight:700,
+                    background: clasesPagoSaving ? "var(--bg-elevated)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
+                    color: clasesPagoSaving ? "#8b949e" : "#fff",
+                    boxShadow: clasesPagoSaving ? "none" : "0 4px 18px rgba(108,99,255,.4)",
+                    transition:"all .3s" }}>
+                  {clasesPagoSaving ? "⏳ Guardando..." : `✅ Confirmar $${montoTotal.toLocaleString("es-MX")}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══ MODAL: Comprobante de Renovación ══ */}
       {comprobanteModal && comprobanteData && (() => {
