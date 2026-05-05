@@ -282,7 +282,7 @@ export default function DashboardScreen({
                       <button onClick={() => setTab(3)} style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Ver todos</button>
                     </div>
                     {txsMes.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Sin movimientos este mes</p>}
-                    {[...txsMes].sort((a, b) => (b.created_at || b.fecha || "").localeCompare(a.created_at || a.fecha || "")).slice(0, 5).map(t => (
+                    {[...txsMes].sort((a, b) => { const ta = a.created_at ? new Date(a.created_at).getTime() : new Date(a.fecha || 0).getTime(); const tb = b.created_at ? new Date(b.created_at).getTime() : new Date(b.fecha || 0).getTime(); return tb - ta; }).slice(0, 5).map(t => (
                       {(() => {
                         const miembro = (t.miembroId || t.miembro_id) ? miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id)) : null;
                         const mFoto = miembro?.foto || null;

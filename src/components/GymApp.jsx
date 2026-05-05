@@ -183,7 +183,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const mData = await db.select(GYM_ID);
         const txDb = await supabase.from("transacciones");
         const txData = await txDb.select(GYM_ID);
-        setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null })));
+        setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, descripcion: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null, miembro_id: t.miembro_id || null, forma_pago: t.forma_pago || null, created_at: t.created_at || null })));
         setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, beca: m.beca || false,
           // ── Estado y QR ──
           estado: m.estado || "Activo",
