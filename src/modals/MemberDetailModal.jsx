@@ -2358,8 +2358,16 @@ export default function MemberDetailModal({
               pointerEvents: "none",
             }} />
 
-            {/* Fila superior: Avatar + Info principal */}
+            {/* Fila superior: Botón volver + Avatar + Info principal */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
+              {/* Botón ← volver */}
+              <button onClick={onClose} style={{
+                background: "var(--bg-elevated)", border: "1px solid var(--border)",
+                borderRadius: 10, width: 36, height: 36, cursor: "pointer",
+                color: "var(--text-primary)", fontSize: 18, flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "inherit", marginTop: 4,
+              }}>←</button>
               {/* Avatar */}
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{
