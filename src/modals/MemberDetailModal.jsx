@@ -1377,13 +1377,7 @@ export default function MemberDetailModal({
               </div>
             )}
 
-            {/* Botones de acción */}
-            <div style={{ display: "flex", gap: 6, padding: "0 16px 12px" }}>
-              <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>✏️ Editar</button>
-              <button onClick={() => { setRenovarStep(1); setRenovarModal(true); }} style={{ flex: 2, padding: "8px 4px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#3b82f6,#2563eb)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>🔄 Renovar</button>
-              <button onClick={() => setCobrarModal(true)} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-elevated)", color: "var(--text-primary)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>🔥 Cobrar</button>
-              <button onClick={() => { const n = (m.tel||"").replace(/\D/g,""); const w = n.startsWith("52") ? n : "52"+n; window.open(`https://wa.me/${w}`,"_blank"); }} style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#22c55e,#16a34a)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>💬 WA</button>
-            </div>
+            {/* Botones de acción — solo en el Hero Card del MAIN BODY (abajo) */}
           </div>
         );
       })()}
@@ -2431,20 +2425,14 @@ export default function MemberDetailModal({
           <div style={{
             background: "var(--bg-card)",
             borderBottom: `2px solid ${accentColor}44`,
-            padding: "20px 20px 0",
+            padding: "10px 20px 0",
             position: "relative",
             overflow: "hidden",
           }}>
-            {/* Glow de acento — sutil, funciona en dark y light */}
-            <div style={{
-              position: "absolute", top: -60, right: -60,
-              width: 200, height: 200, borderRadius: "50%",
-              background: `radial-gradient(circle, ${accentColor}14 0%, transparent 70%)`,
-              pointerEvents: "none",
-            }} />
-
-            {/* Fila superior: Avatar + Info principal */}
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
+            {/* Avatar + Nombre: ocultos — ya se muestran en el header superior */}
+            <div style={{ display: "none" }}>
+              {/* Fila superior: Avatar + Info principal */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 12 }}>
               {/* Avatar */}
               <div style={{ position: "relative", flexShrink: 0 }}>
                 <div style={{
@@ -2560,6 +2548,7 @@ export default function MemberDetailModal({
                 )}
               </div>
             </div>
+            </div> {/* fin display:none — avatar+nombre */}
 
             {/* Barra de urgencia — días restantes */}
             {diasLabel && (
