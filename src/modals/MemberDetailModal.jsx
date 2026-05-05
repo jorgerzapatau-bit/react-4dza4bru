@@ -2680,9 +2680,8 @@ export default function MemberDetailModal({
                 </div>
               )}
 
-              {/* ── Clases asignadas (multi-selección, gym y dojo) ── */}
+              {/* ── Clases asignadas (rediseño claro) ── */}
               {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
-                // Resolver precio de una clase
                 const getPrecioClase = (c) => {
                   const planVinc = (planesMembresia||[]).find(p =>
                     (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
@@ -2690,123 +2689,191 @@ export default function MemberDetailModal({
                   );
                   return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
                 };
-                // Clases recién agregadas (no estaban antes)
-                const clasesNuevas = clasesEdit.filter(id => !clasesDelMiembro.includes(String(id)));
-                // Cargo total de clases nuevas con costo (si el miembro no tiene beca)
-                const cargoTotal = m.beca ? 0 : clasesNuevas.reduce((sum, id) => {
-                  const c = (clases||[]).find(x => String(x.id) === String(id));
-                  return sum + (c ? getPrecioClase(c) : 0);
-                }, 0);
+                const todasLasClases = clases.filter(c => c.activo !== false);
+                // Separar en dos grupos: las que ya tiene vs las que NO tiene
+                const clasesActuales = todasLasClases.filter(c => clasesDelMiembro.includes(String(c.id)));
+                const clasesDisponibles = todasLasClases.filter(c => !clasesDelMiembro.includes(String(c.id)));
+                // De las disponibles, cuáles seleccionó para AGREGAR en esta sesión
+                const clasesAAgregar = clasesDisponibles.filter(c => clasesEdit.map(String).includes(String(c.id)));
+                // De las actuales, cuáles marcó para QUITAR
+                const clasesAQuitar = clasesActuales.filter(c => !clasesEdit.map(String).includes(String(c.id)));
+                const cargoTotal = m.beca ? 0 : clasesAAgregar.reduce((s, c) => s + getPrecioClase(c), 0);
+
+                const getHorStr = (c) => {
+                  const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
+                  return horClase.length > 0
+                    ? horClase.map(h => `${(h.dias_semana||[]).join(", ")} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim()).join(" | ")
+                    : null;
+                };
 
                 return (
-                  <div style={{ marginBottom: 14 }}>
-                    <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      🏋️ Clases asignadas
+                  <div style={{ marginBottom: 18 }}>
+                    <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      🏋️ Clases
                     </p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {clases.filter(c => c.activo !== false).map(c => {
-                        const isSel = clasesEdit.map(String).includes(String(c.id));
-                        const isNueva = isSel && !clasesDelMiembro.includes(String(c.id));
-                        const isYaInscrito = clasesDelMiembro.includes(String(c.id));
-                        const precio = getPrecioClase(c);
-                        const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
-                        const horStr = horClase.length > 0
-                          ? horClase.map(h => {
-                              const dias = (h.dias_semana||[]).join(", ");
-                              return `${dias} ${h.hora_inicio||""}–${h.hora_fin||""}`.trim();
-                            }).join(" | ")
-                          : null;
-                        // Color del borde: azul=ya inscrito, verde=recién añadido, gris=sin seleccionar
-                        const borderColor = isSel ? (isYaInscrito ? "#22d3ee" : "#4ade80") : "rgba(255,255,255,.08)";
-                        const bgColor = isSel ? (isYaInscrito ? "rgba(34,211,238,.08)" : "rgba(74,222,128,.08)") : "var(--bg-elevated)";
-                        const checkColor = isSel ? (isYaInscrito ? "#22d3ee" : "#4ade80") : "rgba(255,255,255,.2)";
-                        const textColor = isSel ? (isYaInscrito ? "#22d3ee" : "#4ade80") : "var(--text-primary)";
-                        return (
-                          <button
-                            key={c.id}
-                            onClick={() => setClasesEdit(prev =>
-                              prev.map(String).includes(String(c.id))
-                                ? prev.filter(id => String(id) !== String(c.id))
-                                : [...prev, String(c.id)]
-                            )}
-                            style={{
-                              padding: "10px 14px", borderRadius: 12, cursor: "pointer",
-                              fontFamily: "inherit", textAlign: "left",
-                              border: isSel ? `2px solid ${borderColor}` : `1.5px solid ${borderColor}`,
-                              background: bgColor,
-                              transition: "all .2s", display: "flex", alignItems: "center", gap: 10,
-                            }}
-                          >
-                            <div style={{
-                              width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                              border: `2px solid ${checkColor}`,
-                              background: isSel ? checkColor : "transparent",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}>
-                              {isSel && <span style={{ color: "#0f172a", fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <p style={{ color: textColor, fontSize: 13, fontWeight: isSel ? 700 : 500, margin: 0 }}>
+
+                    {/* ── BLOQUE 1: Clases en las que YA ESTÁ inscrito ── */}
+                    <div style={{ marginBottom: 10 }}>
+                      <p style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                        Actualmente inscrito
+                      </p>
+                      {clasesActuales.length === 0 ? (
+                        <div style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(255,255,255,.1)", borderRadius: 10, padding: "10px 14px" }}>
+                          <p style={{ color: "#6b7280", fontSize: 12 }}>Sin clases asignadas</p>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          {clasesActuales.map(c => {
+                            const precio = getPrecioClase(c);
+                            const horStr = getHorStr(c);
+                            const marcadoParaQuitar = clasesAQuitar.some(x => String(x.id) === String(c.id));
+                            return (
+                              <div key={c.id} style={{
+                                padding: "10px 14px", borderRadius: 12,
+                                border: marcadoParaQuitar ? "2px solid rgba(248,113,113,.5)" : "1.5px solid rgba(34,211,238,.3)",
+                                background: marcadoParaQuitar ? "rgba(248,113,113,.06)" : "rgba(34,211,238,.06)",
+                                display: "flex", alignItems: "center", gap: 10,
+                                opacity: marcadoParaQuitar ? 0.7 : 1,
+                                transition: "all .2s",
+                              }}>
+                                {/* Ícono de estado */}
+                                <div style={{
+                                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                                  background: marcadoParaQuitar ? "rgba(248,113,113,.15)" : "rgba(34,211,238,.15)",
+                                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+                                }}>
+                                  {marcadoParaQuitar ? "✕" : "✓"}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                    <p style={{ color: marcadoParaQuitar ? "#f87171" : "#22d3ee", fontSize: 13, fontWeight: 700, margin: 0, textDecoration: marcadoParaQuitar ? "line-through" : "none" }}>
+                                      {c.nombre}
+                                    </p>
+                                    {!marcadoParaQuitar && (
+                                      <span style={{ background: "rgba(34,211,238,.15)", color: "#22d3ee", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
+                                        Inscrito
+                                      </span>
+                                    )}
+                                    {marcadoParaQuitar && (
+                                      <span style={{ background: "rgba(248,113,113,.15)", color: "#f87171", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
+                                        Se quitará al guardar
+                                      </span>
+                                    )}
+                                  </div>
+                                  {horStr && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
+                                  {precio > 0 && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 1 }}>${precio.toLocaleString("es-MX")}/mes</p>}
+                                </div>
+                                {/* Botón quitar */}
+                                <button
+                                  onClick={() => setClasesEdit(prev =>
+                                    prev.map(String).includes(String(c.id))
+                                      ? prev.filter(id => String(id) !== String(c.id))
+                                      : [...prev, String(c.id)]
+                                  )}
+                                  style={{
+                                    flexShrink: 0, padding: "5px 10px", borderRadius: 8,
+                                    border: marcadoParaQuitar ? "1px solid rgba(34,211,238,.3)" : "1px solid rgba(248,113,113,.3)",
+                                    background: marcadoParaQuitar ? "rgba(34,211,238,.1)" : "rgba(248,113,113,.08)",
+                                    color: marcadoParaQuitar ? "#22d3ee" : "#f87171",
+                                    fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+                                  }}
+                                >
+                                  {marcadoParaQuitar ? "Deshacer" : "Quitar"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── BLOQUE 2: Clases disponibles para AGREGAR ── */}
+                    {clasesDisponibles.length > 0 && (
+                      <div>
+                        <p style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                          Agregar clase
+                        </p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          {clasesDisponibles.map(c => {
+                            const precio = getPrecioClase(c);
+                            const horStr = getHorStr(c);
+                            const seleccionada = clasesEdit.map(String).includes(String(c.id));
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => setClasesEdit(prev =>
+                                  prev.map(String).includes(String(c.id))
+                                    ? prev.filter(id => String(id) !== String(c.id))
+                                    : [...prev, String(c.id)]
+                                )}
+                                style={{
+                                  padding: "10px 14px", borderRadius: 12, cursor: "pointer",
+                                  fontFamily: "inherit", textAlign: "left",
+                                  border: seleccionada ? "2px solid #4ade80" : "1.5px solid rgba(255,255,255,.1)",
+                                  background: seleccionada ? "rgba(74,222,128,.08)" : "var(--bg-elevated)",
+                                  display: "flex", alignItems: "center", gap: 10, transition: "all .2s",
+                                }}
+                              >
+                                <div style={{
+                                  width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                                  border: `2px solid ${seleccionada ? "#4ade80" : "rgba(255,255,255,.2)"}`,
+                                  background: seleccionada ? "#4ade80" : "transparent",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                  {seleccionada
+                                    ? <span style={{ color: "#0f172a", fontSize: 13, fontWeight: 900 }}>✓</span>
+                                    : <span style={{ color: "#6b7280", fontSize: 14, fontWeight: 400 }}>+</span>
+                                  }
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ color: seleccionada ? "#4ade80" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionada ? 700 : 500, margin: 0 }}>
                                     {c.nombre}
                                   </p>
-                                  {/* Badge de estado: "Ya inscrito" vs "Por añadir" */}
-                                  {isSel && isYaInscrito && (
-                                    <span style={{ background: "rgba(34,211,238,.15)", color: "#22d3ee", borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
-                                      Ya inscrito
-                                    </span>
-                                  )}
-                                  {isSel && isNueva && (
-                                    <span style={{ background: "rgba(74,222,128,.15)", color: "#4ade80", borderRadius: 6, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
-                                      + Nuevo
-                                    </span>
-                                  )}
+                                  {horStr && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
                                 </div>
-                                {precio > 0 && (
-                                  <span style={{
-                                    fontSize: 12, fontWeight: 700,
-                                    // Solo mostrar precio verde con "+" si es una clase NUEVA, no si ya estaba
-                                    color: isNueva ? "#4ade80" : "#8b949e",
-                                  }}>
-                                    {isNueva ? `+$${precio.toLocaleString("es-MX")}/mes` : `$${precio.toLocaleString("es-MX")}/mes`}
+                                {/* Precio — solo si tiene costo extra */}
+                                {precio > 0 ? (
+                                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                    <span style={{
+                                      display: "block",
+                                      background: seleccionada ? "rgba(74,222,128,.2)" : "rgba(255,255,255,.07)",
+                                      color: seleccionada ? "#4ade80" : "#8b949e",
+                                      borderRadius: 8, padding: "3px 9px", fontSize: 12, fontWeight: 700,
+                                    }}>
+                                      +${precio.toLocaleString("es-MX")}/mes
+                                    </span>
+                                    <span style={{ color: "#6b7280", fontSize: 10 }}>costo extra</span>
+                                  </div>
+                                ) : (
+                                  <span style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                                    Sin costo
                                   </span>
                                 )}
-                              </div>
-                              {horStr && (
-                                <p style={{ color: "#8b949e", fontSize: 11, margin: "2px 0 0" }}>🗓️ {horStr}</p>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {clasesEdit.length === 0 && (
-                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 6, paddingLeft: 2 }}>
-                        Sin clases asignadas
-                      </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     )}
-                    {/* ── Resumen de cargo por clases nuevas ── */}
+
+                    {/* ── Aviso de cobro: solo aparece si se seleccionó agregar clases con costo ── */}
                     {!m.beca && cargoTotal > 0 && (
                       <div style={{
-                        marginTop: 10, padding: "10px 14px", borderRadius: 12,
-                        background: "rgba(74,222,128,.08)", border: "1.5px solid rgba(74,222,128,.3)",
+                        marginTop: 12, padding: "12px 14px", borderRadius: 12,
+                        background: "rgba(251,191,36,.07)", border: "1.5px solid rgba(251,191,36,.35)",
                       }}>
-                        <p style={{ color: "#4ade80", fontSize: 12, fontWeight: 700, margin: "0 0 2px" }}>
-                          💰 Cargo inmediato al guardar
+                        <p style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700, margin: "0 0 6px", display: "flex", alignItems: "center", gap: 6 }}>
+                          ⚠️ Al guardar se registrará un cobro de:
                         </p>
-                        {clasesNuevas.map(id => {
-                          const c = (clases||[]).find(x => String(x.id) === String(id));
-                          const p = c ? getPrecioClase(c) : 0;
-                          return p > 0 ? (
-                            <p key={id} style={{ color: "#86efac", fontSize: 11, margin: "1px 0" }}>
-                              · {c?.nombre}: ${p.toLocaleString("es-MX")}
-                            </p>
-                          ) : null;
-                        })}
-                        <p style={{ color: "#4ade80", fontSize: 13, fontWeight: 800, margin: "6px 0 0", borderTop: "1px solid rgba(74,222,128,.2)", paddingTop: 6 }}>
-                          Total: ${cargoTotal.toLocaleString("es-MX")}
-                        </p>
+                        {clasesAAgregar.filter(c => getPrecioClase(c) > 0).map(c => (
+                          <p key={c.id} style={{ color: "#d97706", fontSize: 12, margin: "2px 0", paddingLeft: 4 }}>
+                            · {c.nombre}: ${getPrecioClase(c).toLocaleString("es-MX")}
+                          </p>
+                        ))}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(251,191,36,.2)" }}>
+                          <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 800 }}>Total: ${cargoTotal.toLocaleString("es-MX")}</span>
+                          <span style={{ color: "#d97706", fontSize: 11 }}>Se pedirá forma de pago</span>
+                        </div>
                       </div>
                     )}
                   </div>
