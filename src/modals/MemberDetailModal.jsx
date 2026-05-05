@@ -2445,39 +2445,7 @@ export default function MemberDetailModal({
               </div>
             )}
 
-            {/* Botones de acción principales: WA alumno + WA tutor */}
-            <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-              {m.tel && onGoToMensajes && (
-                <button onClick={() => onGoToMensajes(m)} style={{
-                  flex:1, padding:"9px 8px", border:"none", borderRadius:8,
-                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600,
-                  background:"#25d366", color:"#fff",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-                }}>
-                  💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "Mensaje WA"}
-                </button>
-              )}
-              {esMenor && tieneTutor && waNumTutor.length >= 10 && (
-                <button onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")} style={{
-                  flex:1, padding:"9px 8px",
-                  border:"1px solid var(--border)", borderRadius:8,
-                  cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600,
-                  background:"var(--bg-elevated)", color:"var(--text-primary,#0F172A)",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-                }}>👨‍👧 WA tutor</button>
-              )}
-              {esMenor && !tieneTutor && (
-                <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
-                  flex:1, padding:"9px 8px",
-                  border:"1px solid rgba(220,38,38,.3)", borderRadius:8,
-                  cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:600,
-                  background:"rgba(220,38,38,.06)", color:"#b91c1c",
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
-                }}>⚠️ Registrar tutor</button>
-              )}
-            </div>
-
-            {/* Acciones: Editar · Renovar · Cobrar · Congelar */}
+            {/* Acciones: Editar · Renovar · Cobrar · WA · Congelar */}
             <div style={{ display:"flex", gap:6, paddingBottom:14 }}>
               <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
                 flex:1, padding:"9px 4px", borderRadius:8,
@@ -2514,6 +2482,35 @@ export default function MemberDetailModal({
                 cursor:"pointer", fontFamily:"inherit",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:4,
               }}>💰 Cobrar</button>
+              {m.tel && onGoToMensajes && (
+                <button onClick={() => onGoToMensajes(m)} style={{
+                  flex:1, padding:"9px 4px", borderRadius:8,
+                  border:"none", background:"#25d366",
+                  color:"#fff", fontSize:11, fontWeight:600,
+                  cursor:"pointer", fontFamily:"inherit",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+                }}>
+                  💬 {waUmbral !== null ? `WA (${diasR === 0 ? "hoy" : diasR === 1 ? "mañana" : `${diasR}d`})` : "WA"}
+                </button>
+              )}
+              {esMenor && tieneTutor && waNumTutor.length >= 10 && (
+                <button onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")} style={{
+                  flex:1, padding:"9px 4px", borderRadius:8,
+                  border:"1px solid var(--border)", background:"var(--bg-elevated)",
+                  color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
+                  cursor:"pointer", fontFamily:"inherit",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+                }}>👨‍👧 Tutor</button>
+              )}
+              {esMenor && !tieneTutor && (
+                <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
+                  flex:1, padding:"9px 4px", borderRadius:8,
+                  border:"1px solid rgba(220,38,38,.3)", background:"rgba(220,38,38,.06)",
+                  color:"#b91c1c", fontSize:10, fontWeight:600,
+                  cursor:"pointer", fontFamily:"inherit",
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:3,
+                }}>⚠️ Tutor</button>
+              )}
               {memInfo.estado === "Activo" && !memInfo.congelado && (
                 <button onClick={() => setCongelarModal(true)} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
