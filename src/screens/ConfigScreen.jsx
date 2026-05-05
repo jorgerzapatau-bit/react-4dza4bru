@@ -265,22 +265,13 @@ export default function ConfigScreen({ gymConfig, gymConfigRef: GYM_ID, formCfg,
     const payload = { ...gymData, id: GYM_ID };
 
     // 1. Guardar datos del gimnasio (sin campos de política)
+    // saveGym ya maneja PATCH + fallback a POST (upsert) internamente.
+    // No hacer un segundo POST aquí — usaría la apikey pública y violaría RLS.
     const ok = await supabase.saveGym(payload);
     if (!ok) {
-      // Fallback a POST si el registro no existe aún
-      const url = `${supabase.url}/rest/v1/gimnasios`;
-      const r = await fetch(url, {
-        method: "POST",
-        headers: { "apikey": supabase.key, "Authorization": `Bearer ${supabase.key}`, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
-        body: JSON.stringify(payload),
-      });
-      if (!r.ok) {
-        setSaving(false);
-        let detail = "";
-        try { const j = await r.json(); detail = j?.message || j?.error || ""; } catch {}
-        setSaveError(detail || "Error al guardar. Verifica tu conexión e intenta de nuevo.");
-        return;
-      }
+      setSaving(false);
+      setSaveError("No se pudo guardar el gimnasio. Verifica tu conexión e intenta de nuevo.");
+      return;
     }
 
     // 2. Guardar políticas en politicas_membresia (upsert por gym_id, sin plan_id = política global)

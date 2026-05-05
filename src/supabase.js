@@ -235,19 +235,24 @@ export const supabase = {
     const url = `${SUPABASE_URL}/rest/v1/gimnasios?id=eq.${gym.id}`;
     const r = await fetch(url, {
       method: "PATCH",
-      headers: getAuthHeaders(),
+      headers: { ...getAuthHeaders(), "Prefer": "return=representation" },
       body: JSON.stringify(gym),
     });
-    if (r.ok) return true;
 
-    // Log del error real para diagnóstico
-    const err = await r.json().catch(() => ({}));
-    console.error("❌ PATCH gimnasios falló:", r.status, JSON.stringify(err));
+    // PATCH exitoso con filas afectadas → listo
+    if (r.ok) {
+      const data = await r.json().catch(() => []);
+      if (Array.isArray(data) && data.length > 0) return true;
+      // PATCH devolvió 200 pero 0 rows → el registro aún no existe, hacer INSERT
+    } else {
+      // Log del error real para diagnóstico
+      const err = await r.json().catch(() => ({}));
+      console.error("❌ PATCH gimnasios falló:", r.status, JSON.stringify(err));
+      // No hacer fallback a POST si es error de permisos (RLS)
+      if (r.status === 401 || r.status === 403 || r.status === 422) return false;
+    }
 
-    // No hacer fallback a POST si es error de permisos (RLS)
-    if (r.status === 401 || r.status === 403) return false;
-
-    // Fallback a upsert solo si el registro no existe (404)
+    // Fallback a upsert cuando el registro no existe (siempre con JWT, no apikey)
     const r2 = await fetch(`${SUPABASE_URL}/rest/v1/gimnasios`, {
       method: "POST",
       headers: { ...getAuthHeaders(), "Prefer": "resolution=merge-duplicates" },
