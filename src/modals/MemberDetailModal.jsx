@@ -2531,6 +2531,7 @@ export default function MemberDetailModal({
         {[
           { k: "perfil",    label: "Perfil" },
           { k: "historial", label: `Historial${historial.length > 0 ? ` (${historial.length})` : ""}` },
+          ...(isDojo ? [{ k: "dojo", label: "🥋 Dojo" }] : []),
           { k: "qr",        label: "QR" },
         ].map((t) => (
           <button
@@ -3445,8 +3446,8 @@ export default function MemberDetailModal({
                 ))}
               </div>
 
-              {/* ── 4. TUTOR RESPONSABLE (solo menores) ── */}
-              {esMenorDeEdad(m.fecha_nacimiento) && (() => {
+              {/* ── 4. TUTOR RESPONSABLE (solo menores, solo en tab Perfil cuando no es dojo) ── */}
+              {!isDojo && esMenorDeEdad(m.fecha_nacimiento) && (() => {
                 const tieneTutor = m.tutor_nombre && m.tutor_nombre.trim();
                 const waNumTutor = (m.tutor_telefono || "").replace(/\D/g, "");
                 const waFullTutor = waNumTutor.startsWith("52") ? waNumTutor : "52" + waNumTutor;
@@ -3524,72 +3525,6 @@ export default function MemberDetailModal({
                 );
               })()}
 
-              {/* ── 5. DOJO: Tarjeta de Grado (solo en modo dojo) ── */}
-              {isDojo && (
-                <div style={{ marginBottom: 16 }}>
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-                    🥋 Grado y cinturón
-                  </p>
-                  {m.grado_actual ? (() => {
-                    const gInfo = getGradoInfo(m.grado_actual);
-                    const esNegro = m.grado_actual.includes("Negro");
-                    return (
-                      <div style={{
-                        background: esNegro ? "rgba(168,85,247,.08)" : "rgba(255,255,255,.04)",
-                        border: `1px solid ${esNegro ? "rgba(168,85,247,.3)" : "rgba(255,255,255,.1)"}`,
-                        borderRadius: 14, padding: "14px 16px",
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                          <div style={{
-                            width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                            background: gInfo.kyu < 0 ? "linear-gradient(135deg,#1a1a2e,#2d1b69)" : `${gInfo.color}22`,
-                            border: `2px solid ${gInfo.kyu < 0 ? "#a855f7" : gInfo.color}`,
-                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
-                          }}>
-                            {gInfo.emoji}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <p style={{ color: "#e5e7eb", fontSize: 14, fontWeight: 700 }}>{m.grado_actual}</p>
-                            <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>
-                              {gInfo.kyu > 0 ? `${gInfo.kyu}° Kyu` : `${Math.abs(gInfo.kyu)}er Dan`}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                            style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 10, padding: "6px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                          >
-                            Editar
-                          </button>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                          {m.fecha_ultimo_examen && (
-                            <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
-                              <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Último examen</p>
-                              <p style={{ color: "#e5e7eb", fontSize: 12, fontWeight: 600, marginTop: 2 }}>{fmtDate(m.fecha_ultimo_examen)}</p>
-                            </div>
-                          )}
-                          {m.proximo_objetivo && (
-                            <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
-                              <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Próximo objetivo</p>
-                              <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 600, marginTop: 2 }}>→ {m.proximo_objetivo}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })() : (
-                    <div
-                      onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                      style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(167,139,250,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
-                    >
-                      <p style={{ fontSize: 28, marginBottom: 6 }}>🥋</p>
-                      <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 600 }}>Sin grado asignado</p>
-                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>Toca para asignar cinturón</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* ── 7. NOTAS INTERNAS ── */}
               <div style={{ marginBottom: 16 }}>
                 <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
@@ -3611,6 +3546,160 @@ export default function MemberDetailModal({
 
             </>
           )}
+        </div>
+      )}
+
+      {/* ══════════ TAB: DOJO ══════════ */}
+      {detTab === "dojo" && isDojo && (
+        <div style={{ padding: "18px 20px 0" }}>
+
+          {/* ── TUTOR RESPONSABLE (solo menores) ── */}
+          {esMenorDeEdad(m.fecha_nacimiento) && (() => {
+            const tieneTutor = m.tutor_nombre && m.tutor_nombre.trim();
+            const waNumTutor = (m.tutor_telefono || "").replace(/\D/g, "");
+            const waFullTutor = waNumTutor.startsWith("52") ? waNumTutor : "52" + waNumTutor;
+            return (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    👨‍👧 Tutor responsable
+                  </p>
+                  {tieneTutor && (
+                    <button
+                      onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
+                      style={{ background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "3px 10px", color: "#f59e0b", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      Editar
+                    </button>
+                  )}
+                </div>
+
+                {tieneTutor ? (
+                  <div style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 14, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(251,191,36,.15)" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(251,191,36,.15)", border: "1.5px solid rgba(251,191,36,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+                        👤
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                          {m.tutor_nombre}
+                        </p>
+                        {m.tutor_parentesco && (
+                          <p style={{ color: "#92400e", fontSize: 11, margin: "1px 0 0" }}>{m.tutor_parentesco}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ padding: "0 14px" }}>
+                      {m.tutor_telefono && (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid rgba(251,191,36,.1)" }}>
+                          <span style={{ color: "#8b949e", fontSize: 12 }}>Teléfono</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{m.tutor_telefono}</span>
+                            {waNumTutor.length >= 10 && (
+                              <button
+                                onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")}
+                                style={{ background: "#EAF3DE", border: "0.5px solid #C0DD97", borderRadius: 6, padding: "2px 8px", color: "#3B6D11", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                              >
+                                WA
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {m.tutor_parentesco && (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
+                          <span style={{ color: "#8b949e", fontSize: 12 }}>Parentesco</span>
+                          <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{m.tutor_parentesco}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
+                    style={{ background: "rgba(244,63,94,.06)", border: "1px dashed rgba(244,63,94,.4)", borderRadius: 14, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                  >
+                    <span style={{ fontSize: 24, flexShrink: 0 }}>⚠️</span>
+                    <div>
+                      <p style={{ color: "#f87171", fontSize: 13, fontWeight: 700, margin: 0 }}>Tutor no registrado</p>
+                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 3, lineHeight: 1.5 }}>
+                        Este alumno es menor de edad. Toca para agregar datos del tutor responsable.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ── GRADO Y CINTURÓN ── */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                🥋 Grado y cinturón
+              </p>
+              {m.grado_actual && (
+                <button
+                  onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
+                  style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 8, padding: "3px 10px", color: "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Editar
+                </button>
+              )}
+            </div>
+            {m.grado_actual ? (() => {
+              const gInfo = getGradoInfo(m.grado_actual);
+              const esNegro = m.grado_actual.includes("Negro");
+              return (
+                <div style={{
+                  background: esNegro ? "rgba(168,85,247,.08)" : "rgba(255,255,255,.04)",
+                  border: `1px solid ${esNegro ? "rgba(168,85,247,.3)" : "rgba(255,255,255,.1)"}`,
+                  borderRadius: 14, padding: "14px 16px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 14, flexShrink: 0,
+                      background: gInfo.kyu < 0 ? "linear-gradient(135deg,#1a1a2e,#2d1b69)" : `${gInfo.color}22`,
+                      border: `2px solid ${gInfo.kyu < 0 ? "#a855f7" : gInfo.color}`,
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+                    }}>
+                      {gInfo.emoji}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ color: "#e5e7eb", fontSize: 14, fontWeight: 700 }}>{m.grado_actual}</p>
+                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>
+                        {gInfo.kyu > 0 ? `${gInfo.kyu}° Kyu` : `${Math.abs(gInfo.kyu)}er Dan`}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {m.fecha_ultimo_examen && (
+                      <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
+                        <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Último examen</p>
+                        <p style={{ color: "#e5e7eb", fontSize: 12, fontWeight: 600, marginTop: 2 }}>{fmtDate(m.fecha_ultimo_examen)}</p>
+                      </div>
+                    )}
+                    {m.proximo_objetivo && (
+                      <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
+                        <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Próximo objetivo</p>
+                        <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 600, marginTop: 2 }}>→ {m.proximo_objetivo}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })() : (
+              <div
+                onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
+                style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(167,139,250,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
+              >
+                <p style={{ fontSize: 28, marginBottom: 6 }}>🥋</p>
+                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 600 }}>Sin grado asignado</p>
+                <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>Toca para asignar cinturón</p>
+              </div>
+            )}
+          </div>
+
         </div>
       )}
 
