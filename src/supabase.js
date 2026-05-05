@@ -268,7 +268,7 @@ export const supabase = {
 
 // ── GYM ID: siempre prioriza la URL ?gym=xxx
 // Si hay gym en URL → úsalo y guárdalo (sobreescribe cualquier valor previo)
-// Si no hay gym en URL → NO hacer fallback al localStorage (evita contaminación cruzada entre gyms)
+// Si no hay gym en URL → recuperar del localStorage para mantener la sesión al navegar dentro de la app
 export function getGymId() {
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("gym");
@@ -285,6 +285,10 @@ export function getGymId() {
     } catch(e) {}
     return fromUrl;
   }
-  // Sin ?gym= en la URL: NO recuperar del localStorage para evitar mostrar datos de otro gym
+  // Sin ?gym= en la URL: recuperar del localStorage para no perder el contexto al navegar dentro de la app
+  try {
+    const saved = localStorage.getItem("gymfit_gym_id");
+    if (saved) return saved;
+  } catch(e) {}
   return null;
 }

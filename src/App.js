@@ -13,35 +13,47 @@ export default function App() {
   const GYM_ID_URL = getGymId();
 
   useEffect(() => {
-    async function checkSession() {
-      if (!GYM_ID_URL) {
-        setAuthState("login");
-        return;
-      }
-      const gymData = await supabase.getGym(GYM_ID_URL);
-      if (!gymData) {
-        setGymIdNoExiste(true);
-        setAuthState("login");
-        return;
-      }
-      setGymConfigForLogin(gymData);
-      setGymIdForLogin(GYM_ID_URL);
+    // Timeout de seguridad: si checkSession tarda más de 8 segundos, ir al login
+    const safetyTimer = setTimeout(() => {
+      setAuthState(prev => prev === "checking" ? "login" : prev);
+    }, 8000);
 
-      const session = await auth.getSession();
-      if (session?.user) {
-        const userGymId = await getUserGymId(session.user.id, GYM_ID_URL);
-        if (userGymId === GYM_ID_URL) {
-          setCurrentUser(session.user);
-          const role = await getUserRole(session.user.id, GYM_ID_URL);
-          setUserRole(role || "admin");
-          setAuthState("app");
+    async function checkSession() {
+      try {
+        if (!GYM_ID_URL) {
+          setAuthState("login");
           return;
         }
-        await auth.signOut();
+        const gymData = await supabase.getGym(GYM_ID_URL);
+        if (!gymData) {
+          setGymIdNoExiste(true);
+          setAuthState("login");
+          return;
+        }
+        setGymConfigForLogin(gymData);
+        setGymIdForLogin(GYM_ID_URL);
+
+        const session = await auth.getSession();
+        if (session?.user) {
+          const userGymId = await getUserGymId(session.user.id, GYM_ID_URL);
+          if (userGymId === GYM_ID_URL) {
+            setCurrentUser(session.user);
+            const role = await getUserRole(session.user.id, GYM_ID_URL);
+            setUserRole(role || "admin");
+            setAuthState("app");
+            return;
+          }
+          await auth.signOut();
+        }
+        setAuthState("login");
+      } catch (err) {
+        // Si algo falla inesperadamente, ir al login en lugar de quedarse en pantalla negra
+        console.error("[GymFit] Error al verificar sesión:", err);
+        setAuthState("login");
       }
-      setAuthState("login");
     }
-    checkSession();
+
+    checkSession().finally(() => clearTimeout(safetyTimer));
   }, []); // eslint-disable-line
 
   const handleLogin = (user, role) => {
