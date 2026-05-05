@@ -2661,6 +2661,18 @@ export default function MemberDetailModal({
                 />
               )}
 
+              {/* ── DIVIDER: Sección Membresía ── */}
+              <div style={{ height: 1, background: "var(--border,rgba(255,255,255,.08))", margin: "18px 0 16px" }} />
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+                Membresía
+              </p>
+              <div style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.15)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14 }}>ℹ️</span>
+                <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
+                  Los planes de membresía se configuran en <strong style={{ color: "#fbbf24" }}>Configuración</strong>. Aquí solo activas o desactivas la beca para este miembro.
+                </p>
+              </div>
+
               {/* ── Beca ── */}
               <div
                 onClick={() => setForm(p => ({ ...p, beca: !p.beca }))}
@@ -2720,6 +2732,18 @@ export default function MemberDetailModal({
                   />
                 </div>
               )}
+
+              {/* ── DIVIDER: Sección Clases ── */}
+              <div style={{ height: 1, background: "var(--border,rgba(255,255,255,.08))", margin: "18px 0 16px" }} />
+              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+                Clases inscritas
+              </p>
+              <div style={{ background: "rgba(34,211,238,.05)", border: "1px solid rgba(34,211,238,.15)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14 }}>ℹ️</span>
+                <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
+                  Las clases disponibles dependen de los planes activos en <strong style={{ color: "#22d3ee" }}>Configuración</strong>.
+                </p>
+              </div>
 
               {/* ── Clases asignadas (rediseño claro) ── */}
               {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
@@ -2936,6 +2960,8 @@ export default function MemberDetailModal({
                 );
               })()}
 
+              {/* ── DIVIDER: Notas internas ── */}
+              <div style={{ height: 1, background: "var(--border,rgba(255,255,255,.08))", margin: "18px 0 16px" }} />
               <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 📝 Notas internas{" "}
                 <span style={{ color: "#8b949e", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span>
@@ -3199,82 +3225,7 @@ export default function MemberDetailModal({
                 );
               })()}
 
-              {/* ── 1. CLASES (LO MÁS IMPORTANTE para el admin/dueño) ── */}
-              {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
-                const todasLasClases = clases.filter(c => c.activo !== false);
-                const getPrecioClase = (c) => {
-                  const planVinc = (planesMembresia||[]).find(p =>
-                    (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
-                    p.clase_nombre === c.nombre || p.nombre === c.nombre
-                  );
-                  return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
-                };
-                const clasesAsignadas = todasLasClases.filter(c => clasesDelMiembro.includes(String(c.id)));
-                const clasesDisponibles = todasLasClases.filter(c => !clasesDelMiembro.includes(String(c.id)));
-                const getHorStr = (c) => {
-                  const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
-                  return horClase.length > 0
-                    ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].join(" · ") +
-                      (horClase[0]?.hora_inicio ? ` · ${horClase[0].hora_inicio.slice(0,5)}–${(horClase[0].hora_fin||"").slice(0,5)}` : "")
-                    : null;
-                };
-                return (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
-                        🏋️ Clases inscritas
-                      </p>
-                      {clasesDisponibles.length > 0 && (
-                        <button
-                          onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                          style={{ background: "rgba(108,99,255,.12)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 8, padding: "4px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
-                        >
-                          + Agregar clase
-                        </button>
-                      )}
-                    </div>
-
-                    {clasesAsignadas.length === 0 ? (
-                      <div
-                        onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                        style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
-                      >
-                        <p style={{ fontSize: 22, marginBottom: 4 }}>🏋️</p>
-                        <p style={{ color: "#8b949e", fontSize: 13, fontWeight: 600 }}>Sin clases asignadas</p>
-                        <p style={{ color: "#a78bfa", fontSize: 11, marginTop: 3 }}>Toca para inscribir en una clase</p>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {clasesAsignadas.map(c => {
-                          const horStr = getHorStr(c);
-                          const precio = getPrecioClase(c);
-                          return (
-                            <div key={c.id} style={{
-                              background: "var(--bg-elevated)",
-                              border: "1px solid rgba(34,211,238,.2)",
-                              borderLeft: "3px solid #22d3ee",
-                              borderRadius: 12, padding: "12px 14px",
-                              display: "flex", alignItems: "center", gap: 12,
-                            }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, margin: 0 }}>{c.nombre}</p>
-                                {horStr && <p style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>🗓️ {horStr}</p>}
-                              </div>
-                              {precio > 0 && (
-                                <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
-                                  ${precio.toLocaleString("es-MX")}/mes
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* ── 2. MEMBRESÍA ACTUAL ── */}
+              {/* ── 1. MEMBRESÍA ACTUAL (lo más importante primero) ── */}
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Membresía actual
               </p>
@@ -3392,6 +3343,82 @@ export default function MemberDetailModal({
                   </div>
                 )}
               </div>
+
+              {/* ── 2. CLASES INSCRITAS (vinculadas a la membresía) ── */}
+              {clases && clases.filter(c => c.activo !== false).length > 0 && (() => {
+                const todasLasClases = clases.filter(c => c.activo !== false);
+                const getPrecioClase = (c) => {
+                  const planVinc = (planesMembresia||[]).find(p =>
+                    (p.clases_vinculadas||[]).map(String).includes(String(c.id)) ||
+                    p.clase_nombre === c.nombre || p.nombre === c.nombre
+                  );
+                  return Number(planVinc?.precio_publico ?? c?.precio_membresia ?? c?.costo ?? 0);
+                };
+                const clasesAsignadas = todasLasClases.filter(c => clasesDelMiembro.includes(String(c.id)));
+                const clasesDisponibles = todasLasClases.filter(c => !clasesDelMiembro.includes(String(c.id)));
+                const getHorStr = (c) => {
+                  const horClase = (horarios||[]).filter(h => h.clase_id === c.id && h.activo !== false);
+                  return horClase.length > 0
+                    ? [...new Set(horClase.flatMap(h => h.dias_semana||[]))].join(" · ") +
+                      (horClase[0]?.hora_inicio ? ` · ${horClase[0].hora_inicio.slice(0,5)}–${(horClase[0].hora_fin||"").slice(0,5)}` : "")
+                    : null;
+                };
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, margin: 0 }}>
+                        🏋️ Clases inscritas
+                      </p>
+                      {clasesDisponibles.length > 0 && (
+                        <button
+                          onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
+                          style={{ background: "rgba(108,99,255,.12)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 8, padding: "4px 10px", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }}
+                        >
+                          + Agregar clase
+                        </button>
+                      )}
+                    </div>
+
+                    {clasesAsignadas.length === 0 ? (
+                      <div
+                        onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
+                        style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
+                      >
+                        <p style={{ fontSize: 22, marginBottom: 4 }}>🏋️</p>
+                        <p style={{ color: "#8b949e", fontSize: 13, fontWeight: 600 }}>Sin clases asignadas</p>
+                        <p style={{ color: "#a78bfa", fontSize: 11, marginTop: 3 }}>Toca para inscribir en una clase</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {clasesAsignadas.map(c => {
+                          const horStr = getHorStr(c);
+                          const precio = getPrecioClase(c);
+                          return (
+                            <div key={c.id} style={{
+                              background: "var(--bg-elevated)",
+                              border: "1px solid rgba(34,211,238,.2)",
+                              borderLeft: "3px solid #22d3ee",
+                              borderRadius: 12, padding: "12px 14px",
+                              display: "flex", alignItems: "center", gap: 12,
+                            }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700, margin: 0 }}>{c.nombre}</p>
+                                {horStr && <p style={{ color: "#6b7280", fontSize: 12, marginTop: 3 }}>🗓️ {horStr}</p>}
+                              </div>
+                              {precio > 0 && (
+                                <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                                  ${precio.toLocaleString("es-MX")}/mes
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
 
               {/* ── 3. DATOS PERSONALES ── */}
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
