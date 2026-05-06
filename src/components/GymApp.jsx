@@ -372,7 +372,6 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         tutor_telefono:   esMenor ? (data.tutor_telefono || null) : null,
         tutor_parentesco: esMenor ? (data.tutor_parentesco || null) : null,
         tutor_foto:        esMenor ? (data.tutor_foto || null)       : null,
-      tutor_foto:        esMenor ? (data.tutor_foto || null)       : null,
       }, ...p]);
 
       // ── Registrar membresía inicial si se eligió un plan y NO es pendiente ──

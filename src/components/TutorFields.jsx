@@ -58,7 +58,7 @@ function CustomSelect({ value, onChange }) {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <div role="combobox" aria-expanded={open} tabIndex={0}
+      <div role="combobox" aria-controls="tutor-parentesco-listbox" aria-expanded={open} tabIndex={0}
         style={{ ...INPUT_STYLE(false), display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none" }}
         onClick={() => setOpen(o => !o)}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(o => !o); } if (e.key === "Escape") setOpen(false); }}
@@ -69,7 +69,7 @@ function CustomSelect({ value, onChange }) {
         </svg>
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--bg-elevated, #1e1e2e)", border: "1px solid var(--border, #333)", borderRadius: 10, zIndex: 9999, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }} role="listbox">
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--bg-elevated, #1e1e2e)", border: "1px solid var(--border, #333)", borderRadius: 10, zIndex: 9999, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }} id="tutor-parentesco-listbox" role="listbox">
           {PARENTESCO_OPCIONES.map((op) => {
             const isActive = op.value === value;
             return (
