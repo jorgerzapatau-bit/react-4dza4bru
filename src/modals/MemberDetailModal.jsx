@@ -458,6 +458,7 @@ export default function MemberDetailModal({
     tutor_nombre:     m.tutor_nombre     || "",
     tutor_telefono:   m.tutor_telefono   || "",
     tutor_parentesco: m.tutor_parentesco || "",
+    tutor_foto:       m.tutor_foto       || null,
     // ── DOJO: Grado y cinturón ──
     grado_actual:        m.grado_actual        || "",
     fecha_ultimo_examen: m.fecha_ultimo_examen || "",
@@ -690,6 +691,7 @@ export default function MemberDetailModal({
     form.tutor_nombre     !== (m.tutor_nombre     || "") ||
     form.tutor_telefono   !== (m.tutor_telefono   || "") ||
     form.tutor_parentesco !== (m.tutor_parentesco || "") ||
+    form.tutor_foto      !== (m.tutor_foto      || null) ||
     form.beca !== (m.beca || false) ||
     form.grado_actual        !== (m.grado_actual        || "") ||
     form.fecha_ultimo_examen !== (m.fecha_ultimo_examen || "") ||
@@ -717,8 +719,9 @@ export default function MemberDetailModal({
           tutor_nombre:     form.tutor_nombre     || null,
           tutor_telefono:   form.tutor_telefono   || null,
           tutor_parentesco: form.tutor_parentesco || null,
+          tutor_foto:       form.tutor_foto       || null,
         }
-      : { tutor_nombre: null, tutor_telefono: null, tutor_parentesco: null };
+      : { tutor_nombre: null, tutor_telefono: null, tutor_parentesco: null, tutor_foto: null };
 
     onSave({
       ...m,
@@ -790,6 +793,7 @@ export default function MemberDetailModal({
   };
 
   const handlePhoto = (dataUrl) => {
+    setPhotoModal(false);
     onSave({ ...m, foto: dataUrl });
   };
 
@@ -2801,6 +2805,7 @@ export default function MemberDetailModal({
                     tutor_nombre:     form.tutor_nombre,
                     tutor_telefono:   form.tutor_telefono,
                     tutor_parentesco: form.tutor_parentesco,
+                    tutor_foto:       form.tutor_foto || null,
                   }}
                   onChange={(campo, valor) => {
                     setForm(p => ({ ...p, [campo]: valor }));

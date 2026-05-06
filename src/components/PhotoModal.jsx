@@ -107,7 +107,7 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
   };
 
   // ── Acciones ─────────────────────────────────
-  const handleConfirm = () => { stopCamera(); onCapture(preview); onClose(); };
+  const handleConfirm = () => { stopCamera(); onCapture(preview); };
   const handleClose   = () => { stopCamera(); onClose(); };
 
   // ── Estilos reutilizados ─────────────────────

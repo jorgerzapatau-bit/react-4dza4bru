@@ -150,7 +150,10 @@ function TutorFotoSelector({ foto, onCapture }) {
       {showModal && (
         <PhotoModal
           onClose={() => setShowModal(false)}
-          onCapture={(dataUrl) => { onCapture(dataUrl); setShowModal(false); }}
+          onCapture={(dataUrl) => {
+            onCapture(dataUrl);
+            setShowModal(false);
+          }}
           titulo="📸 Foto del tutor"
         />
       )}
