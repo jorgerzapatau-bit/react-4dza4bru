@@ -351,6 +351,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
       tutor_nombre:     esMenor ? (data.tutor_nombre || null)     : null,
       tutor_telefono:   esMenor ? (data.tutor_telefono || null)   : null,
       tutor_parentesco: esMenor ? (data.tutor_parentesco || null) : null,
+      tutor_foto:       esMenor ? (data.tutor_foto || null)        : null,
     });
     if (savedM) {
       setMiembros(p => [{

@@ -478,7 +478,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
 
       {esMenor && (
         <TutorFields
-          tutor={{ tutor_nombre: fM.tutor_nombre || "", tutor_telefono: fM.tutor_telefono || "", tutor_parentesco: fM.tutor_parentesco || "" }}
+          tutor={{ tutor_nombre: fM.tutor_nombre || "", tutor_telefono: fM.tutor_telefono || "", tutor_parentesco: fM.tutor_parentesco || "", tutor_foto: fM.tutor_foto || null }}
           onChange={(campo, valor) => setFM(p => ({ ...p, [campo]: valor }))}
           errores={{}}
           compact
@@ -2028,7 +2028,7 @@ export default function NuevoMiembroWizard({
     sexo:"", fecha_nacimiento:"",
     fecha_incorporacion: todayISO(),
     notas:"", beca:false,
-    tutor_nombre:"", tutor_telefono:"", tutor_parentesco:"",
+    tutor_nombre:"", tutor_telefono:"", tutor_parentesco:"", tutor_foto:null,
     plan:null, monto:null, claseId:null, planData:null, planId:null,
     planesExtra: [],
     formaPago:null,
