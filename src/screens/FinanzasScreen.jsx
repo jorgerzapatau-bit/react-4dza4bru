@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { fmt, fmtDate, todayISO, parseDate } from "../utils/dateUtils";
 import { calcEdad } from "../utils/dateUtils";
-import { CAT_ICON as CAT_ICON_CONST } from "../utils/constants";
+
 
 const CAT_ICON = {
   "Membresías": "👥", "Clases extras": "🏋️", "Tienda": "🛍️", "Personal trainer": "💪",
