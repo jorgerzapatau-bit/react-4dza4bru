@@ -1,5 +1,7 @@
+import { useState, useMemo } from "react";
 import { fmt, fmtDate, todayISO, parseDate } from "../utils/dateUtils";
 import { calcEdad } from "../utils/dateUtils";
+import { CAT_ICON as CAT_ICON_CONST } from "../utils/constants";
 
 const CAT_ICON = {
   "Membresías": "👥", "Clases extras": "🏋️", "Tienda": "🛍️", "Personal trainer": "💪",
@@ -33,7 +35,90 @@ export default function FinanzasScreen({
   filtroHasta, setFiltroHasta,
   setEditTx,
 }) {
-  const TABS = ["Resumen", "Ingresos", "Gastos", "Historial"];
+  const TABS = ["Resumen", "Ingresos", "Gastos", "Historial", "📅 Calendario"];
+
+  // ── Calendario: estado ──
+  const hoyISO = todayISO();
+  const [calMes, setCalMes] = useState(() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth() };
+  });
+  const [calDiaSelec, setCalDiaSelec] = useState(null);
+  const [calDesde, setCalDesde] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [calHasta, setCalHasta] = useState(() => todayISO());
+
+  // Datos agrupados por día
+  const datosPorDia = useMemo(() => {
+    const map = {};
+    (txs || []).forEach(t => {
+      const iso = (() => {
+        const f = t.fecha;
+        if (!f) return null;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(f)) return f;
+        const d = parseDate(f);
+        if (!d) return null;
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      })();
+      if (!iso) return;
+      if (!map[iso]) map[iso] = { ingresos: [], gastos: [], totalIng: 0, totalGas: 0 };
+      if (t.tipo === "ingreso") { map[iso].ingresos.push(t); map[iso].totalIng += Number(t.monto || 0); }
+      else { map[iso].gastos.push(t); map[iso].totalGas += Number(t.monto || 0); }
+    });
+    return map;
+  }, [txs]);
+
+  // Sumar en rango seleccionado
+  const calRangeData = useMemo(() => {
+    const desde = calDesde ? new Date(calDesde + "T00:00:00") : null;
+    const hasta  = calHasta ? new Date(calHasta  + "T23:59:59") : null;
+    let totalIng = 0, totalGas = 0, ef = 0, tr = 0, ta = 0;
+    Object.entries(datosPorDia).forEach(([iso, d]) => {
+      const date = new Date(iso + "T00:00:00");
+      if (desde && date < desde) return;
+      if (hasta && date > hasta) return;
+      totalIng += d.totalIng; totalGas += d.totalGas;
+      d.ingresos.forEach(t => {
+        const desc = t.desc || t.descripcion || "";
+        const m = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+        const fp = m ? m[1] : null;
+        if (fp === "Efectivo") ef += Number(t.monto || 0);
+        else if (fp === "Transferencia") tr += Number(t.monto || 0);
+        else if (fp === "Tarjeta") ta += Number(t.monto || 0);
+      });
+    });
+    return { totalIng, totalGas, utilidad: totalIng - totalGas, efectivo: ef, transferencia: tr, tarjeta: ta };
+  }, [datosPorDia, calDesde, calHasta]);
+
+  // Datos del día seleccionado
+  const diaData = useMemo(() => {
+    if (!calDiaSelec) return null;
+    const d = datosPorDia[calDiaSelec];
+    if (!d) return { ingresos: [], gastos: [], totalIng: 0, totalGas: 0, efectivo: 0, transferencia: 0, tarjeta: 0 };
+    let ef = 0, tr = 0, ta = 0;
+    d.ingresos.forEach(t => {
+      const desc = t.desc || t.descripcion || "";
+      const m = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+      const fp = m ? m[1] : null;
+      if (fp === "Efectivo") ef += Number(t.monto || 0);
+      else if (fp === "Transferencia") tr += Number(t.monto || 0);
+      else if (fp === "Tarjeta") ta += Number(t.monto || 0);
+    });
+    return { ...d, efectivo: ef, transferencia: tr, tarjeta: ta };
+  }, [calDiaSelec, datosPorDia]);
+
+  const limpiarDesc = (desc) => (desc || "")
+    .replace(/\s*\[(?:Efectivo|Transferencia|Tarjeta)\]/g, "")
+    .replace(/\s*\(vence:\d{4}-\d{2}-\d{2}\)/, "")
+    .trim();
+
+  const extraerFP = (t) => {
+    const desc = t.desc || t.descripcion || "";
+    const m = desc.match(/\[(Efectivo|Transferencia|Tarjeta)\]/);
+    return m ? m[1] : null;
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -453,6 +538,227 @@ export default function FinanzasScreen({
               );
             })()}
           </>}
+
+          {/* ════ TAB 4: CALENDARIO ════ */}
+          {tab === 4 && (() => {
+            const DIAS_SEMANA = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
+            const MESES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+            const { y, m } = calMes;
+            const primerDia = new Date(y, m, 1);
+            const ultimoDia = new Date(y, m + 1, 0);
+            // Lunes=0 … Domingo=6
+            let startDow = primerDia.getDay() - 1;
+            if (startDow < 0) startDow = 6;
+            const totalCeldas = startDow + ultimoDia.getDate();
+            const filas = Math.ceil(totalCeldas / 7);
+            const celdas = Array.from({ length: filas * 7 }, (_, i) => {
+              const dayNum = i - startDow + 1;
+              if (dayNum < 1 || dayNum > ultimoDia.getDate()) return null;
+              const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(dayNum).padStart(2, "0")}`;
+              return { dayNum, iso };
+            });
+
+            const fmtMoney = n => "$" + Number(n).toLocaleString("es-MX");
+
+            return (
+              <div>
+                {/* Filtros de fecha + totales del rango */}
+                <div style={{ background: "linear-gradient(135deg,rgba(108,99,255,.15),rgba(224,64,251,.1))", border: "1px solid rgba(108,99,255,.3)", borderRadius: 20, padding: "16px 18px", marginBottom: 16 }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>📆 Rango de fechas</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                    <div>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Desde</p>
+                      <input type="date" value={calDesde} onChange={e => setCalDesde(e.target.value)}
+                        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 10px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                    <div>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 4 }}>Hasta</p>
+                      <input type="date" value={calHasta} onChange={e => setCalHasta(e.target.value)}
+                        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 10, padding: "9px 10px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                  </div>
+                  {/* Totales del rango */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                    {[
+                      { label: "Ingresos", val: calRangeData.totalIng, color: "#4ade80", bg: "rgba(74,222,128,.1)", border: "rgba(74,222,128,.2)" },
+                      { label: "Gastos",   val: calRangeData.totalGas, color: "#f87171", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
+                      { label: "Utilidad", val: calRangeData.utilidad, color: calRangeData.utilidad >= 0 ? "#4ade80" : "#f87171", bg: calRangeData.utilidad >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: calRangeData.utilidad >= 0 ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)" },
+                    ].map(c => (
+                      <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{c.label}</p>
+                        <p style={{ color: c.color, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{c.label === "Utilidad" && c.val > 0 ? "+" : ""}{fmtMoney(Math.abs(c.val))}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Formas de pago en rango */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {[
+                      { label: "Efectivo", val: calRangeData.efectivo, icon: "💵", color: "#4ade80" },
+                      { label: "Transfer.", val: calRangeData.transferencia, icon: "📲", color: "#38bdf8" },
+                      { label: "Tarjeta", val: calRangeData.tarjeta, icon: "💳", color: "#a78bfa" },
+                    ].map(fp => (
+                      <div key={fp.label} style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 10, padding: "8px 6px", textAlign: "center" }}>
+                        <p style={{ fontSize: 14, marginBottom: 2 }}>{fp.icon}</p>
+                        <p style={{ color: fp.color, fontSize: 11, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmtMoney(fp.val)}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 9, marginTop: 1 }}>{fp.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Calendario */}
+                <div style={{ background: "var(--bg-card)", borderRadius: 20, border: "1px solid var(--border)", padding: "14px", marginBottom: 16 }}>
+                  {/* Navegación mes */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <button onClick={() => setCalMes(prev => {
+                      const d = new Date(prev.y, prev.m - 1, 1);
+                      return { y: d.getFullYear(), m: d.getMonth() };
+                    })} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 34, height: 34, cursor: "pointer", color: "var(--text-primary)", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+                    <p style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 700 }}>{MESES_ES[m]} {y}</p>
+                    <button onClick={() => setCalMes(prev => {
+                      const d = new Date(prev.y, prev.m + 1, 1);
+                      return { y: d.getFullYear(), m: d.getMonth() };
+                    })} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 34, height: 34, cursor: "pointer", color: "var(--text-primary)", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>
+                  </div>
+                  {/* Días semana */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3, marginBottom: 6 }}>
+                    {DIAS_SEMANA.map(d => (
+                      <div key={d} style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, padding: "4px 0" }}>{d}</div>
+                    ))}
+                  </div>
+                  {/* Celdas */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 }}>
+                    {celdas.map((celda, idx) => {
+                      if (!celda) return <div key={idx} />;
+                      const { dayNum, iso } = celda;
+                      const data = datosPorDia[iso];
+                      const esHoy = iso === hoyISO;
+                      const esSelec = iso === calDiaSelec;
+                      const tieneIng = data && data.totalIng > 0;
+                      const tieneGas = data && data.totalGas > 0;
+                      const enRango = calDesde && calHasta && iso >= calDesde && iso <= calHasta;
+                      return (
+                        <div key={idx} onClick={() => setCalDiaSelec(prev => prev === iso ? null : iso)}
+                          style={{ borderRadius: 10, padding: "6px 4px 5px", textAlign: "center", cursor: data ? "pointer" : "default", position: "relative", transition: "all .15s",
+                            background: esSelec ? "linear-gradient(135deg,#6c63ff,#e040fb)" : esHoy ? "rgba(108,99,255,.2)" : enRango && data ? "rgba(108,99,255,.08)" : "transparent",
+                            border: esSelec ? "1px solid rgba(108,99,255,.8)" : esHoy ? "1px solid rgba(108,99,255,.4)" : "1px solid transparent",
+                            boxShadow: esSelec ? "0 2px 12px rgba(108,99,255,.4)" : "none",
+                            opacity: data || esHoy ? 1 : 0.4 }}>
+                          <p style={{ color: esSelec ? "#fff" : esHoy ? "#a78bfa" : "var(--text-primary)", fontSize: 12, fontWeight: esHoy || esSelec ? 700 : 400, marginBottom: 3 }}>{dayNum}</p>
+                          {tieneIng && <div style={{ height: 3, borderRadius: 2, background: esSelec ? "rgba(255,255,255,.7)" : "#4ade80", marginBottom: 1 }} />}
+                          {tieneGas && <div style={{ height: 3, borderRadius: 2, background: esSelec ? "rgba(255,255,255,.5)" : "#f87171" }} />}
+                          {data && !tieneIng && !tieneGas && <div style={{ height: 3 }} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 10 }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-secondary)", fontSize: 10 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: "#4ade80", display: "inline-block" }} /> Ingresos</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-secondary)", fontSize: 10 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: "#f87171", display: "inline-block" }} /> Gastos</span>
+                  </div>
+                </div>
+
+                {/* Detalle del día seleccionado */}
+                {calDiaSelec && diaData && (
+                  <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 20, padding: "18px", marginBottom: 16, animation: "fadeUp .25s ease" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div>
+                        <p style={{ color: "#a78bfa", fontSize: 14, fontWeight: 700 }}>📅 {fmtDate(calDiaSelec)}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>Corte de caja del día</p>
+                      </div>
+                      <button onClick={() => setCalDiaSelec(null)} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 30, height: 30, cursor: "pointer", color: "var(--text-secondary)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                    </div>
+
+                    {/* Resumen del día */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+                      {[
+                        { label: "Ingresos", val: diaData.totalIng, color: "#4ade80", bg: "rgba(74,222,128,.1)", border: "rgba(74,222,128,.2)" },
+                        { label: "Gastos",   val: diaData.totalGas, color: "#f87171", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
+                        { label: "Utilidad", val: diaData.totalIng - diaData.totalGas, color: (diaData.totalIng - diaData.totalGas) >= 0 ? "#4ade80" : "#f87171", bg: (diaData.totalIng - diaData.totalGas) >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: (diaData.totalIng - diaData.totalGas) >= 0 ? "rgba(74,222,128,.15)" : "rgba(248,113,113,.15)" },
+                      ].map(c => (
+                        <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
+                          <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{c.label}</p>
+                          <p style={{ color: c.color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{c.label === "Utilidad" && c.val > 0 ? "+" : ""}{fmtMoney(Math.abs(c.val))}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Formas de pago del día */}
+                    {(diaData.efectivo > 0 || diaData.transferencia > 0 || diaData.tarjeta > 0) && (
+                      <div style={{ background: "rgba(167,139,250,.07)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
+                        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💳 Ingresos por forma de pago</p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {[
+                            { label: "Efectivo", val: diaData.efectivo, icon: "💵", color: "#4ade80" },
+                            { label: "Transfer.", val: diaData.transferencia, icon: "📲", color: "#38bdf8" },
+                            { label: "Tarjeta", val: diaData.tarjeta, icon: "💳", color: "#a78bfa" },
+                          ].map(fp => fp.val > 0 ? (
+                            <div key={fp.label} style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "10px 6px", textAlign: "center" }}>
+                              <p style={{ fontSize: 18, marginBottom: 4 }}>{fp.icon}</p>
+                              <p style={{ color: fp.color, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmtMoney(fp.val)}</p>
+                              <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 2 }}>{fp.label}</p>
+                            </div>
+                          ) : null)}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Lista de movimientos del día */}
+                    {diaData.ingresos.length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💰 Ingresos del día</p>
+                        {diaData.ingresos.map(t => {
+                          const fp = extraerFP(t);
+                          const fpIcon = fp === "Efectivo" ? "💵" : fp === "Transferencia" ? "📲" : fp === "Tarjeta" ? "💳" : null;
+                          const mFoto = (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
+                          return (
+                            <div key={t.id} onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, marginBottom: 6, background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.12)", cursor: "pointer" }}>
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden", border: "1.5px solid rgba(74,222,128,.25)" }}>
+                                {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || "💰"}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{limpiarDesc(t.desc || t.descripcion) || t.categoria || "Ingreso"}</p>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                                  <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700 }}>{t.categoria}</span>
+                                  {fp && <span style={{ color: "var(--text-secondary)", fontSize: 10 }}>{fpIcon} {fp}</span>}
+                                </div>
+                              </div>
+                              <p style={{ color: "#4ade80", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>+{fmtMoney(t.monto)}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {diaData.gastos.length > 0 && (
+                      <div>
+                        <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💸 Gastos del día</p>
+                        {diaData.gastos.map(t => (
+                          <div key={t.id} onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, marginBottom: 6, background: "rgba(248,113,113,.05)", border: "1px solid rgba(248,113,113,.12)", cursor: "pointer" }}>
+                            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(248,113,113,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, border: "1.5px solid rgba(248,113,113,.25)" }}>
+                              {CAT_ICON[t.categoria] || "💸"}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{limpiarDesc(t.desc || t.descripcion) || t.categoria || "Gasto"}</p>
+                              <span style={{ background: "rgba(248,113,113,.12)", color: "#f87171", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700 }}>{t.categoria}</span>
+                            </div>
+                            <p style={{ color: "#f87171", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>-{fmtMoney(t.monto)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {diaData.ingresos.length === 0 && diaData.gastos.length === 0 && (
+                      <div style={{ textAlign: "center", padding: "24px 0" }}>
+                        <p style={{ fontSize: 28, marginBottom: 6 }}>📭</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Sin movimientos este día</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
         </div>
       </div>

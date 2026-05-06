@@ -66,18 +66,33 @@ export const auth = {
       const raw = localStorage.getItem("gymfit_session");
       if (!raw) return null;
       const session = JSON.parse(raw);
-      if (!session?.access_token || !session?.expires_at) return null;
+      if (!session?.access_token) return null;
+
+      // Si no hay expires_at, intentar refresh directamente
+      if (!session.expires_at) {
+        if (!session.refresh_token) { _clearSession(); return null; }
+        return await auth.refreshSession(session.refresh_token);
+      }
 
       // Verificar si el token sigue vigente (con 60s de margen)
       const expiresAt = session.expires_at * 1000;
-      if (Date.now() > expiresAt - 60000) {
-        // Intentar refresh
-        const refreshed = await auth.refreshSession(session.refresh_token);
-        return refreshed;
+      if (Date.now() < expiresAt - 60000) {
+        // Token aún válido
+        _accessToken = session.access_token;
+        return session;
       }
-      _accessToken = session.access_token;
-      return session;
+
+      // Token expirado → intentar refresh
+      if (!session.refresh_token) { _clearSession(); return null; }
+      const refreshed = await auth.refreshSession(session.refresh_token);
+      if (!refreshed) {
+        _clearSession(); // limpia sesión corrupta para no quedar en loop
+        return null;
+      }
+      return refreshed;
+
     } catch(e) {
+      _clearSession();
       return null;
     }
   },
