@@ -3658,8 +3658,11 @@ export default function MemberDetailModal({
                     {tieneTutor ? (
                       <div style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 14, overflow: "hidden" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(251,191,36,.15)" }}>
-                          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(251,191,36,.15)", border: "1.5px solid rgba(251,191,36,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                            👤
+                          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(251,191,36,.15)", border: "1.5px solid rgba(251,191,36,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, overflow: "hidden" }}>
+                            {m.tutor_foto
+                              ? <img src={m.tutor_foto} alt={m.tutor_nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              : "👤"
+                            }
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
