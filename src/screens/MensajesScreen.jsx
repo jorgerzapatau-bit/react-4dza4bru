@@ -1,23 +1,26 @@
 // ─────────────────────────────────────────────
-//  screens/MensajesScreen.jsx  —  REFACTORIZADO
-//  Centro de Comunicación: 4 tabs
-//    1. Vencimientos   (usa plantillas del sistema)
-//    2. Individual     (+ sección Plantillas del sistema)
-//    3. Masivo         (sin cambios de UX)
-//    4. Mensajes del sistema  ← NUEVO
+//  screens/MensajesScreen.jsx  —  v3  "Bandeja Inteligente"
 //
-//  Props: (mismas que antes, + gymId)
-//    miembros, txs, gymConfig, gymId
-//    onBack, onUpdatePlantillas
-//    miembroInicial, modoInicial
-//    recordatoriosEnviados, onMarcarRecordatorio
+//  Tabs:
+//    1. 📬 Bandeja     — cola inteligente del día, sin mensajes obsoletos
+//    2. 👤 Individual  — mensaje a un miembro específico
+//    3. 📢 Masivo      — mensaje a todos
+//    4. ⚙️ Sistema     — configuración de plantillas automáticas
+//
+//  Lógica de caducidad y deduplicación:
+//    • Recordatorios de pago: solo el MÁS URGENTE por alumno (nunca dos)
+//      Si no enviaste el de 5 días y ya son 3 días, solo muestra el de 3.
+//    • Cumpleaños: solo aparecen hoy (caducan al día siguiente)
+//    • Cola WA (bienvenidas, recibos): caducan a los 3 días del timestamp
+//    • Enviados se recuerdan durante el día (localStorage), se limpian al día siguiente
 // ─────────────────────────────────────────────
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   getMembershipInfo,
   diasParaVencer,
-  buildWAUrl,           // helper original — se mantiene para compatibilidad
+  diasParaCumple,
+  buildWAUrl,
 } from "../utils/constants";
 import {
   replaceTemplateVars,
@@ -29,53 +32,180 @@ import {
 import { useCommunication } from "../hooks/useCommunication";
 
 // ─────────────────────────────────────────────
-//  Sub-componente: GuardarEnSlot  (sin cambios)
+//  Helpers
 // ─────────────────────────────────────────────
-// eslint-disable-next-line no-unused-vars
-function GuardarEnSlot({ tplsCustom, onGuardar }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen(p => !p)}
-        title="Guardar en mis mensajes"
-        style={{
-          width: 36, height: 36,
-          border: "1px solid rgba(108,99,255,.3)", borderRadius: 10,
-          background: open ? "rgba(108,99,255,.2)" : "transparent",
-          cursor: "pointer", color: "#a78bfa", fontSize: 15,
-          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        }}
-      >💾</button>
+function fmtFecha(iso) {
+  if (!iso) return "—";
+  const [y, mo, d] = iso.split("-");
+  const M = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  return `${parseInt(d)} ${M[parseInt(mo)-1]} ${y}`;
+}
 
-      {open && (
-        <div style={{
-          position: "absolute", right: 0, top: 42, zIndex: 50,
-          background: "#1e1e30", border: "1px solid rgba(108,99,255,.3)",
-          borderRadius: 14, padding: 10, width: 220,
-          boxShadow: "0 8px 32px rgba(0,0,0,.5)",
-        }}>
-          <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 8 }}>
-            Guardar en...
+function AvatarCircle({ nombre, foto, size = 44, color = "#6c63ff" }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%", flexShrink: 0,
+      background: `linear-gradient(135deg, ${color}44, ${color}22)`,
+      border: `2px solid ${color}55`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      overflow: "hidden", fontSize: size * 0.4, fontWeight: 700, color,
+    }}>
+      {foto
+        ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : (nombre || "?").charAt(0).toUpperCase()
+      }
+    </div>
+  );
+}
+
+function UrgBadge({ dias, tipo }) {
+  if (tipo === "birthday") return <span style={chip("#f59e0b")}>🎂 HOY</span>;
+  if (tipo === "welcome")  return <span style={chip("#22d3ee")}>🎉 Nuevo</span>;
+  if (tipo === "waQueue")  return <span style={chip("#a78bfa")}>📬 Cola</span>;
+  if (dias === 0) return <span style={chip("#f43f5e")}>🚨 HOY</span>;
+  if (dias === 1) return <span style={chip("#f97316")}>⚡ 1 día</span>;
+  if (dias <= 3)  return <span style={chip("#f59e0b")}>⏰ {dias}d</span>;
+  return              <span style={chip("#22d3ee")}>📅 {dias}d</span>;
+}
+const chip = (color) => ({
+  background: `${color}20`, color, borderRadius: 8,
+  padding: "3px 8px", fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
+});
+
+const urgColor = (tipo, dias) => {
+  if (tipo === "birthday") return "#f59e0b";
+  if (tipo === "waQueue")  return "#a78bfa";
+  if (tipo === "welcome")  return "#22d3ee";
+  if (dias === 0) return "#f43f5e";
+  if (dias === 1) return "#f97316";
+  if (dias <= 3)  return "#f59e0b";
+  return "#22d3ee";
+};
+
+const navBtn = {
+  background: "var(--bg-elevated)", border: "1px solid var(--border)",
+  borderRadius: 8, width: 28, height: 28, padding: 0,
+  cursor: "pointer", fontFamily: "inherit", fontSize: 16, color: "var(--text-primary)",
+  display: "flex", alignItems: "center", justifyContent: "center",
+};
+const btnSec = {
+  flex: 1, padding: "9px 12px",
+  border: "1px solid var(--border-strong)", borderRadius: 10,
+  cursor: "pointer", fontFamily: "inherit", fontSize: 12,
+  background: "var(--bg-elevated)", color: "var(--text-secondary)",
+};
+
+// ─────────────────────────────────────────────
+//  TarjetaCola
+// ─────────────────────────────────────────────
+function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEditMsg }) {
+  const [editando, setEditando] = useState(false);
+  const [texto,    setTexto]    = useState(item.msg);
+
+  useEffect(() => { setTexto(item.msg); }, [item.msg]);
+
+  const col = urgColor(item.tipo, item.diasReales);
+
+  const enviarWA = () => {
+    const clean = (item.tel || "").replace(/\D/g, "");
+    const phone = clean.startsWith("52") ? clean : `52${clean}`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(texto)}`, "_blank");
+    onEnviado(item.id);
+  };
+
+  return (
+    <div style={{
+      background: item.enviado ? "rgba(74,222,128,.04)" : isCurrent ? `${col}0d` : "var(--bg-card)",
+      border: `1px solid ${item.enviado ? "rgba(74,222,128,.2)" : isCurrent ? col + "40" : "var(--border)"}`,
+      borderRadius: 18, padding: 16, transition: "all .3s",
+      opacity: item.enviado ? 0.65 : 1,
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <AvatarCircle nombre={item.miembro?.nombre || item.nombreMiembro} foto={item.miembro?.foto} color={col} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+            {item.miembro?.nombre || item.nombreMiembro}
           </p>
-          {tplsCustom.map((slot, i) => {
-            const ocupado = slot.label.trim() || slot.msg.trim();
-            return (
-              <button key={i} onClick={() => { onGuardar(i); setOpen(false); }}
-                style={{ width: "100%", padding: "9px 12px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", textAlign: "left", background: "transparent", display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 14 }}>{ocupado ? "⭐" : "○"}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: ocupado ? "#fff" : "#8b949e", fontSize: 12, fontWeight: ocupado ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {ocupado ? slot.label || `Mensaje ${i + 1}` : `Slot ${i + 1} — vacío`}
-                  </p>
-                  {ocupado && <p style={{ color: "#f59e0b", fontSize: 10, marginTop: 1 }}>⚠️ se sobreescribirá</p>}
-                </div>
-              </button>
-            );
-          })}
-          <button onClick={() => setOpen(false)} style={{ width: "100%", padding: "7px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "#1c2128", color: "#8b949e", marginTop: 4 }}>
-            Cancelar
-          </button>
+          <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 1 }}>{item.tel || "Sin número"}</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <UrgBadge dias={item.diasReales} tipo={item.tipo} />
+          {item.enviado
+            ? <span style={{ color: "#4ade80", fontSize: 10, fontWeight: 700 }}>✓ Enviado</span>
+            : isCurrent && <span style={{ color: col, fontSize: 10, fontWeight: 700 }}>{index + 1}/{total}</span>
+          }
+        </div>
+      </div>
+
+      {/* Datos de membresía */}
+      {item.memInfo && item.tipo === "pago" && (
+        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+          {[
+            item.memInfo.plan  && ["Plan",  item.memInfo.plan],
+            item.memInfo.monto && ["Monto", "$" + Number(item.memInfo.monto || 0).toLocaleString("es-MX")],
+            item.memInfo.vence && ["Vence", fmtFecha(item.memInfo.vence)],
+          ].filter(Boolean).map(([l, v]) => (
+            <div key={l}>
+              <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>{l}</p>
+              <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{v}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mensaje */}
+      {editando ? (
+        <div style={{ marginBottom: 10 }}>
+          <textarea value={texto} onChange={e => setTexto(e.target.value)} rows={4} autoFocus
+            style={{ width: "100%", background: "var(--bg-elevated)", border: `1px solid ${col}60`, borderRadius: 12, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6 }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            <button onClick={() => { setTexto(item.msg); setEditando(false); }} style={btnSec}>Cancelar</button>
+            <button onClick={() => { onEditMsg(item.id, texto); setEditando(false); }}
+              style={{ flex: 2, padding: "9px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: `linear-gradient(135deg,${col},${col}cc)`, color: "#fff" }}>
+              💾 Guardar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", marginBottom: 10, position: "relative" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+            {texto.length > 200 ? texto.slice(0, 200) + "…" : texto}
+          </p>
+          {!item.enviado && (
+            <button onClick={() => setEditando(true)}
+              style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#8b949e", fontSize: 13, padding: 2 }}>
+              ✏️
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Botones de acción */}
+      {!editando && (
+        <div style={{ display: "flex", gap: 8 }}>
+          {item.tel ? (
+            <button onClick={enviarWA} style={{
+              flex: 2, padding: "11px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, border: "none",
+              background: item.enviado ? "rgba(37,211,102,.12)" : "linear-gradient(135deg,#25d366,#128c7e)",
+              color: item.enviado ? "#4ade80" : "#fff",
+              boxShadow: item.enviado ? "none" : "0 4px 14px rgba(37,211,102,.3)",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+            }}>
+              <span style={{ fontSize: 16 }}>💬</span>
+              {item.enviado ? "Reenviar" : "Abrir en WhatsApp →"}
+            </button>
+          ) : (
+            <div style={{ flex: 2, padding: "11px", borderRadius: 12, background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>Sin número registrado</span>
+            </div>
+          )}
+          {!item.enviado && onSaltar && (
+            <button onClick={() => onSaltar(item.id)}
+              style={{ padding: "11px 14px", border: "1px solid var(--border-strong)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
+              Saltar
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -83,7 +213,159 @@ function GuardarEnSlot({ tplsCustom, onGuardar }) {
 }
 
 // ─────────────────────────────────────────────
-//  Sub-componente: PlantillaCustom  (sin cambios)
+//  BandejaTab — la cola inteligente
+// ─────────────────────────────────────────────
+function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg }) {
+  const [grupoAbierto, setGrupoAbierto] = useState(null);
+  const [currentIdx,   setCurrentIdx]   = useState({});
+
+  const GRUPOS = [
+    { key: "hoy",      label: "Vence HOY",       icon: "🚨", color: "#f43f5e", filter: i => i.tipo === "pago" && i.diasReales === 0 },
+    { key: "manana",   label: "Vence mañana",     icon: "⚡", color: "#f97316", filter: i => i.tipo === "pago" && i.diasReales === 1 },
+    { key: "tres",     label: "En 3 días",         icon: "⏰", color: "#f59e0b", filter: i => i.tipo === "pago" && i.diasReales > 1 && i.diasReales <= 3 },
+    { key: "cinco",    label: "En 5 días",         icon: "📅", color: "#22d3ee", filter: i => i.tipo === "pago" && i.diasReales > 3 },
+    { key: "birthday", label: "Cumpleaños hoy",   icon: "🎂", color: "#f59e0b", filter: i => i.tipo === "birthday" },
+    { key: "waQueue",  label: "Cola pendiente",    icon: "📬", color: "#a78bfa", filter: i => i.tipo === "waQueue" },
+  ];
+
+  const grupos = useMemo(() =>
+    GRUPOS.map(g => ({ ...g, items: items.filter(i => g.filter(i) && !saltados[i.id]) }))
+          .filter(g => g.items.length > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, saltados]
+  );
+
+  const totalPend     = items.filter(i => !enviados[i.id] && !saltados[i.id]).length;
+  const totalEnviados = items.filter(i =>  enviados[i.id]).length;
+  const totalSaltados = Object.keys(saltados).length;
+
+  if (items.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 0" }}>
+        <p style={{ fontSize: 48, marginBottom: 12 }}>🎉</p>
+        <p style={{ color: "#4ade80", fontSize: 16, fontWeight: 700 }}>¡Bandeja vacía!</p>
+        <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>No hay mensajes pendientes para hoy.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Resumen global */}
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "14px 16px", marginBottom: 16 }}>
+        <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, marginBottom: 10 }}>
+          📋 Bandeja de hoy
+        </p>
+
+        {/* Chips de grupos */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          {grupos.map(g => {
+            const pendG = g.items.filter(i => !enviados[i.id]).length;
+            const envG  = g.items.filter(i =>  enviados[i.id]).length;
+            const activo = grupoAbierto === g.key;
+            return (
+              <button key={g.key} onClick={() => setGrupoAbierto(activo ? null : g.key)}
+                style={{ display: "flex", alignItems: "center", gap: 6,
+                  background: activo ? `${g.color}18` : "var(--bg-elevated)",
+                  border: `1px solid ${activo ? g.color + "50" : "var(--border)"}`,
+                  borderRadius: 12, padding: "7px 12px",
+                  cursor: "pointer", fontFamily: "inherit", transition: "all .2s" }}>
+                <span style={{ fontSize: 14 }}>{g.icon}</span>
+                <span style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{g.label}</span>
+                <span style={{ background: pendG > 0 ? `${g.color}25` : "rgba(74,222,128,.15)", color: pendG > 0 ? g.color : "#4ade80", borderRadius: 8, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+                  {pendG > 0 ? pendG : `✓${envG}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Barra de progreso */}
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+          <span style={{ color: "#8b949e", fontSize: 11 }}>
+            {totalEnviados} enviados · {totalPend} pendientes{totalSaltados > 0 ? ` · ${totalSaltados} saltados` : ""}
+          </span>
+          <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>
+            {items.length > 0 ? Math.round((totalEnviados / items.length) * 100) : 0}%
+          </span>
+        </div>
+        <div style={{ background: "var(--bg-elevated)", borderRadius: 99, height: 6, overflow: "hidden" }}>
+          <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#25d366,#128c7e)", width: `${items.length > 0 ? (totalEnviados / items.length) * 100 : 0}%`, transition: "width .5s ease" }} />
+        </div>
+      </div>
+
+      {/* Grupos visibles */}
+      {grupos.map(g => {
+        // Si hay un filtro activo, solo mostrar ese grupo
+        if (grupoAbierto && grupoAbierto !== g.key) return null;
+
+        const cidx       = currentIdx[g.key] ?? 0;
+        const gItems     = g.items;
+        const pendCount  = gItems.filter(i => !enviados[i.id]).length;
+
+        // Encontrar el primer no-enviado si el current ya fue enviado
+        const effectiveCidx = enviados[gItems[cidx]?.id]
+          ? (gItems.findIndex((i, idx) => idx >= cidx && !enviados[i.id]) >= 0
+              ? gItems.findIndex((i, idx) => idx >= cidx && !enviados[i.id])
+              : cidx)
+          : cidx;
+
+        const avanzar    = () => setCurrentIdx(p => ({ ...p, [g.key]: Math.min(cidx + 1, gItems.length - 1) }));
+        const retroceder = () => setCurrentIdx(p => ({ ...p, [g.key]: Math.max(cidx - 1, 0) }));
+
+        return (
+          <div key={g.key} style={{ marginBottom: 20 }}>
+            {/* Header del grupo */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 18 }}>{g.icon}</span>
+              <p style={{ color: g.color, fontSize: 13, fontWeight: 700, flex: 1 }}>{g.label}</p>
+              <span style={{ color: "#8b949e", fontSize: 11 }}>{pendCount} pendiente{pendCount !== 1 ? "s" : ""}</span>
+              {gItems.length > 1 && (
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                  <button onClick={retroceder} disabled={cidx === 0} style={{ ...navBtn, opacity: cidx === 0 ? .3 : 1 }}>‹</button>
+                  <span style={{ color: "#8b949e", fontSize: 11, minWidth: 40, textAlign: "center" }}>{effectiveCidx + 1}/{gItems.length}</span>
+                  <button onClick={avanzar} disabled={cidx >= gItems.length - 1} style={{ ...navBtn, opacity: cidx >= gItems.length - 1 ? .3 : 1 }}>›</button>
+                </div>
+              )}
+            </div>
+
+            {/* Tarjeta activa */}
+            {gItems[effectiveCidx] && (
+              <TarjetaCola
+                key={gItems[effectiveCidx].id}
+                item={gItems[effectiveCidx]}
+                index={effectiveCidx}
+                total={gItems.length}
+                isCurrent={true}
+                onEnviado={(id) => { onEnviado(id); if (effectiveCidx < gItems.length - 1) avanzar(); }}
+                onSaltar={(id)  => { onSaltar(id);  if (effectiveCidx < gItems.length - 1) avanzar(); }}
+                onEditMsg={onEditMsg}
+              />
+            )}
+
+            {/* Enviados colapsados */}
+            {grupoAbierto === g.key && gItems.filter(i => enviados[i.id]).length > 0 && (
+              <details style={{ marginTop: 8 }}>
+                <summary style={{ color: "#8b949e", fontSize: 11, cursor: "pointer", padding: "6px 0", listStyle: "none" }}>
+                  ✓ {gItems.filter(i => enviados[i.id]).length} ya enviados — ver
+                </summary>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                  {gItems.filter(i => enviados[i.id]).map((item, idx) => (
+                    <TarjetaCola key={item.id} item={item} index={idx} total={gItems.length} isCurrent={false}
+                      onEnviado={onEnviado} onSaltar={null} onEditMsg={onEditMsg} />
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────
+//  PlantillaCustom
 // ─────────────────────────────────────────────
 function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar }) {
   const [editando,  setEditando]  = useState(false);
@@ -96,58 +378,54 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
   const handleGuardar = async () => {
     setGuardando(true);
     await onGuardar({ icon: "⭐", label: form.label, msg: form.msg });
-    setGuardando(false);
-    setEditando(false);
+    setGuardando(false); setEditando(false);
   };
 
-  if (editando) {
-    return (
-      <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: 14 }}>
-        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Mensaje {index + 1}</p>
-        <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Nombre del mensaje" style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 8 }} />
-        <textarea value={form.msg} onChange={e => setForm(p => ({ ...p, msg: e.target.value }))} placeholder={`Escribe el mensaje. Usa {student_name} para el nombre. — ${gymNom}`} rows={4}
-          style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 8 }} />
-        {form.msg.trim() && (
-          <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
-            <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
-          </div>
-        )}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }}
-            style={{ flex: 1, padding: "10px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-            Cancelar
-          </button>
-          <button onClick={handleGuardar} disabled={!form.label.trim() || !form.msg.trim() || guardando}
-            style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: form.label.trim() && form.msg.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d", color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e" }}>
-            {guardando ? "Guardando…" : "💾 Guardar"}
-          </button>
+  if (editando) return (
+    <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: 14 }}>
+      <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Mensaje {index + 1}</p>
+      <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Nombre del mensaje"
+        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 8 }} />
+      <textarea value={form.msg} onChange={e => setForm(p => ({ ...p, msg: e.target.value }))}
+        placeholder={`Mensaje. Usa {student_name} para el nombre. — ${gymNom}`} rows={4}
+        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 8 }} />
+      {form.msg.trim() && (
+        <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
+          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
+          <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
         </div>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }} style={btnSec}>Cancelar</button>
+        <button onClick={handleGuardar} disabled={!form.label.trim() || !form.msg.trim() || guardando}
+          style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+            background: form.label.trim() && form.msg.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+            color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e" }}>
+          {guardando ? "Guardando…" : "💾 Guardar"}
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (tieneContenido) {
-    return (
-      <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 18 }}>⭐</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
-          <p style={{ color: "#8b949e", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
-        </div>
-        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro), tpl.label)}
-            style={{ padding: "6px 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff" }}>
-            Usar
-          </button>
-          <button onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
-            style={{ padding: "6px 10px", border: "1px solid var(--border-strong)", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-            ✏️
-          </button>
-        </div>
+  if (tieneContenido) return (
+    <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 18 }}>⭐</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
+        <p style={{ color: "#8b949e", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
       </div>
-    );
-  }
+      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+        <button onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro), tpl.label)}
+          style={{ padding: "6px 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff" }}>
+          Usar
+        </button>
+        <button onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
+          style={{ padding: "6px 10px", border: "1px solid var(--border-strong)", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
+          ✏️
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <button onClick={() => { setForm({ label: "", msg: "" }); setEditando(true); }}
@@ -159,92 +437,44 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
 }
 
 // ─────────────────────────────────────────────
-//  Sub-componente: SystemMessageCard
-//  Tarjeta individual en el tab "Mensajes del sistema"
+//  SystemMessageCard
 // ─────────────────────────────────────────────
 function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChange, onSave, onReset }) {
-  const [editing,   setEditing]  = useState(false);
-  const [editText,  setEditText] = useState("");
-  const [saving,    setSaving]   = useState(false);
+  const [editing,   setEditing]   = useState(false);
+  const [editText,  setEditText]  = useState("");
+  const [saving,    setSaving]    = useState(false);
   const [resetting, setResetting] = useState(false);
 
-  const isActive    = automation?.is_active ?? false;
-  const offsetDays  = automation?.trigger_offset_days ?? 1;
-  const bodyText    = template?.body_text || "";
-  const preview     = bodyText.length > 90 ? bodyText.slice(0, 90) + "…" : bodyText;
-
-  const handleEdit = () => {
-    setEditText(bodyText);
-    setEditing(true);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await onSave(template?.id, editText);
-    setSaving(false);
-    setEditing(false);
-  };
-
-  const handleReset = async () => {
-    setResetting(true);
-    await onReset(meta.key);
-    setResetting(false);
-    setEditing(false);
-  };
+  const isActive   = automation?.is_active ?? false;
+  const offsetDays = automation?.trigger_offset_days ?? 1;
+  const bodyText   = template?.body_text || "";
+  const preview    = bodyText.length > 90 ? bodyText.slice(0, 90) + "…" : bodyText;
 
   return (
-    <div style={{
-      background: "var(--bg-card)",
-      border: `1px solid ${isActive ? "rgba(108,99,255,.3)" : "var(--border)"}`,
-      borderRadius: 16, padding: 14, marginBottom: 10,
-      transition: "border .2s",
-    }}>
-      {/* Header: icono + nombre + switch */}
+    <div style={{ background: "var(--bg-card)", border: `1px solid ${isActive ? "rgba(108,99,255,.3)" : "var(--border)"}`, borderRadius: 16, padding: 14, marginBottom: 10, transition: "border .2s" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 22, flexShrink: 0 }}>{meta.icon}</span>
         <div style={{ flex: 1 }}>
           <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>{meta.name}</p>
           <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>{meta.when}</p>
         </div>
-        {/* Switch activo/inactivo */}
-        <div
-          onClick={() => onToggle(meta.key, !isActive)}
-          style={{
-            width: 44, height: 24, borderRadius: 12, flexShrink: 0,
-            background: isActive ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)",
-            cursor: "pointer", position: "relative", transition: "background .2s",
-          }}
-        >
-          <div style={{
-            position: "absolute", top: 3, left: isActive ? 23 : 3,
-            width: 18, height: 18, borderRadius: "50%",
-            background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.3)",
-          }} />
+        <div onClick={() => onToggle(meta.key, !isActive)}
+          style={{ width: 44, height: 24, borderRadius: 12, flexShrink: 0, background: isActive ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)", cursor: "pointer", position: "relative", transition: "background .2s" }}>
+          <div style={{ position: "absolute", top: 3, left: isActive ? 23 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.3)" }} />
         </div>
       </div>
 
-      {/* Días antes (solo si hasOffset y activo) */}
       {meta.hasOffset && isActive && !editing && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px" }}>
           <p style={{ color: "#8b949e", fontSize: 11, flex: 1 }}>
-            {offsetDays >= 0
-              ? `Enviar ${offsetDays} día${offsetDays !== 1 ? "s" : ""} antes del vencimiento`
-              : `Enviar ${Math.abs(offsetDays)} día${Math.abs(offsetDays) !== 1 ? "s" : ""} después del vencimiento`
-            }
+            {offsetDays >= 0 ? `Enviar ${offsetDays}d antes` : `Enviar ${Math.abs(offsetDays)}d después`}
           </p>
           <div style={{ display: "flex", gap: 4 }}>
-            {[1, 2, 3, 5, 7].map(d => (
-              <button
-                key={d}
-                onClick={() => onOffsetChange(meta.key, d)}
-                style={{
-                  padding: "4px 8px", border: "none", borderRadius: 7,
-                  cursor: "pointer", fontFamily: "inherit",
-                  fontSize: 11, fontWeight: 600,
+            {[1,2,3,5,7].map(d => (
+              <button key={d} onClick={() => onOffsetChange(meta.key, d)}
+                style={{ padding: "4px 8px", border: "none", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600,
                   background: offsetDays === d ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-card)",
-                  color: offsetDays === d ? "#fff" : "#8b949e",
-                }}
-              >
+                  color: offsetDays === d ? "#fff" : "#8b949e" }}>
                 {d}d
               </button>
             ))}
@@ -252,65 +482,48 @@ function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChang
         </div>
       )}
 
-      {/* Vista previa del mensaje */}
       {!editing && (
         <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>
-            Mensaje
-          </p>
+          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Mensaje</p>
           <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>{preview}</p>
         </div>
       )}
 
-      {/* Editor inline */}
       {editing && (
         <div style={{ marginBottom: 10 }}>
-          <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>
-            Editando mensaje
-          </p>
-          <textarea
-            value={editText}
-            onChange={e => setEditText(e.target.value)}
-            rows={6}
-            style={{
-              width: "100%", background: "var(--bg-elevated)",
-              border: "1px solid rgba(108,99,255,.4)", borderRadius: 10,
-              padding: "10px 12px", color: "var(--text-primary)", fontSize: 12,
-              fontFamily: "inherit", outline: "none", resize: "vertical",
-              lineHeight: 1.6, marginBottom: 6,
-            }}
-          />
+          <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>Editando mensaje</p>
+          <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={6}
+            style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid rgba(108,99,255,.4)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 6 }} />
           <p style={{ color: "#8b949e", fontSize: 10, lineHeight: 1.5 }}>
             Variables: {"{student_name}"} · {"{due_date}"} · {"{concept}"} · {"{amount}"} · {"{clabe}"} · {"{bank}"} · {"{propietario}"}
           </p>
         </div>
       )}
 
-      {/* Botones de acción */}
       <div style={{ display: "flex", gap: 8 }}>
         {!editing ? (
           <>
-            <button onClick={handleEdit}
+            <button onClick={() => { setEditText(bodyText); setEditing(true); }}
               style={{ flex: 2, padding: "8px", border: "1px solid rgba(108,99,255,.3)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#a78bfa" }}>
               ✏️ Editar mensaje
             </button>
-            <button onClick={handleReset} disabled={resetting}
+            <button onClick={async () => { setResetting(true); await onReset(meta.key); setResetting(false); }} disabled={resetting}
               style={{ flex: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
               {resetting ? "…" : "↺ Restaurar"}
             </button>
           </>
         ) : (
           <>
-            <button onClick={() => setEditing(false)}
-              style={{ flex: 1, padding: "8px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, background: "var(--bg-elevated)", color: "var(--text-secondary)" }}>
-              Cancelar
-            </button>
-            <button onClick={handleReset} disabled={resetting}
+            <button onClick={() => setEditing(false)} style={btnSec}>Cancelar</button>
+            <button onClick={async () => { setResetting(true); await onReset(meta.key); setResetting(false); setEditing(false); }} disabled={resetting}
               style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
               {resetting ? "…" : "↺ Default"}
             </button>
-            <button onClick={handleSave} disabled={saving || !editText.trim()}
-              style={{ flex: 2, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: editText.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d", color: editText.trim() ? "#fff" : "#8b949e" }}>
+            <button onClick={async () => { setSaving(true); await onSave(template?.id, editText); setSaving(false); setEditing(false); }}
+              disabled={saving || !editText.trim()}
+              style={{ flex: 2, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                background: editText.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
+                color: editText.trim() ? "#fff" : "#8b949e" }}>
               {saving ? "Guardando…" : "💾 Guardar"}
             </button>
           </>
@@ -320,220 +533,8 @@ function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChang
   );
 }
 
-
 // ─────────────────────────────────────────────
-//  Sub-componente: PendientesTab
-//  Lista de mensajes WA en cola — con estado local para expand comprobante
-// ─────────────────────────────────────────────
-function EntradaPendiente({ entry, onMarcarEnviado, onEliminar, onEdit }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const fmtShort = (iso) => {
-    if (!iso) return "—";
-    const [y, mo, d] = iso.split("-");
-    const M = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-    return `${parseInt(d)} ${M[parseInt(mo)-1]} ${y}`;
-  };
-
-  const enviarWA = () => {
-    const msg = entry._editMsg !== undefined ? entry._editMsg : entry.msg;
-    const clean = (entry.tel || "").replace(/\D/g, "");
-    const phone = clean.startsWith("52") ? clean : `52${clean}`;
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
-    if (!entry.enviado) onMarcarEnviado(entry.id);
-  };
-
-  const tipoLabel = entry.tipo === "qr_bienvenida" ? "🎫 QR Bienvenida" : "🧾 Membresía";
-  const tipoColor = entry.tipo === "qr_bienvenida" ? "#f59e0b" : "#6c63ff";
-
-  return (
-    <div style={{
-      background: entry.enviado ? "var(--bg-card)" : "rgba(108,99,255,.05)",
-      border: `1px solid ${entry.enviado ? "var(--border)" : "rgba(108,99,255,.25)"}`,
-      borderRadius: 18, padding: 14, marginBottom: 12,
-      opacity: entry.enviado ? 0.7 : 1, transition: "all .3s",
-    }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-          background: "linear-gradient(135deg,#6c63ff33,#e040fb33)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#a78bfa", fontWeight: 700, fontSize: 18,
-        }}>
-          {(entry.nombreMiembro || "?").charAt(0).toUpperCase()}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            {entry.nombreMiembro}
-          </p>
-          <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 2, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-            {entry.plan || "Sin plan"} · {entry.tel || "Sin número"}
-          </p>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-          <span style={{ background: `${tipoColor}18`, color: tipoColor, borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
-            {tipoLabel}
-          </span>
-          {entry.enviado ? (
-            <span style={{ background: "rgba(74,222,128,.15)", color: "#4ade80", borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>✓ Enviado</span>
-          ) : (
-            <span style={{ background: "rgba(108,99,255,.15)", color: "#a78bfa", borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>📬 Pendiente</span>
-          )}
-        </div>
-      </div>
-
-      {/* Info membresía */}
-      {(entry.plan || entry.monto || entry.venceISO) && (
-        <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
-          {[
-            entry.plan    && ["Plan",        entry.plan],
-            entry.monto   && ["Monto",       "$" + Number(entry.monto || 0).toLocaleString("es-MX")],
-            entry.formaPago && ["Pago",      entry.formaPago],
-            entry.venceISO  && ["Vence",     fmtShort(entry.venceISO)],
-          ].filter(Boolean).map(([l, v]) => (
-            <div key={l}>
-              <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>{l}</p>
-              <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{v}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* QR PNG si existe */}
-      {entry.qrPNG && (
-        <div style={{ marginBottom: 10 }}>
-          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>🎫 Código QR</p>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <img src={entry.qrPNG} alt="QR" style={{ width: 80, height: 80, borderRadius: 10, border: "1px solid var(--border)", flexShrink: 0 }} />
-            <div>
-              <p style={{ color: "var(--text-secondary)", fontSize: 12, marginBottom: 6 }}>Código QR de acceso del miembro</p>
-              <a href={entry.qrPNG} download={`qr-${(entry.nombreMiembro||"").replace(/\s+/g,"-")}.png`}
-                style={{ color: "#6c63ff", fontSize: 11, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                📥 Descargar QR
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Comprobante — thumbnail con toggle */}
-      {entry.comprobantePNG && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-            <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>🧾 Comprobante</p>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <button onClick={() => setExpanded(e => !e)} style={{ color: "#a78bfa", fontSize: 11, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                {expanded ? "⬆ Ocultar" : "⬇ Ver"}
-              </button>
-              <a href={entry.comprobantePNG} download={`recibo-${(entry.nombreMiembro||"").replace(/\s+/g,"-")}.png`}
-                style={{ color: "#6c63ff", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>📥 Descargar</a>
-            </div>
-          </div>
-          {expanded && (
-            <img src={entry.comprobantePNG} alt="Comprobante"
-              style={{ width: "100%", borderRadius: 10, border: "1px solid var(--border)", display: "block" }} />
-          )}
-        </div>
-      )}
-
-      {/* Mensaje editable */}
-      <textarea
-        value={entry._editMsg !== undefined ? entry._editMsg : entry.msg}
-        onChange={e => onEdit(entry.id, e.target.value)}
-        rows={3}
-        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.5, marginBottom: 8 }}
-      />
-
-      {/* Botones */}
-      <div style={{ display: "flex", gap: 8 }}>
-        {entry.tel ? (
-          <button onClick={enviarWA} style={{
-            flex: 2, padding: "11px", borderRadius: 12,
-            cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-            background: entry.enviado ? "rgba(37,211,102,.12)" : "linear-gradient(135deg,#25d366,#128c7e)",
-            color: entry.enviado ? "#4ade80" : "#fff",
-            border: entry.enviado ? "1px solid rgba(37,211,102,.3)" : "none",
-            boxShadow: entry.enviado ? "none" : "0 4px 14px rgba(37,211,102,.3)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-          }}>
-            <span style={{ fontSize: 16 }}>💬</span>
-            {entry.enviado ? "Reenviar por WhatsApp" : "Enviar por WhatsApp"}
-          </button>
-        ) : (
-          <div style={{ flex: 2, padding: "11px", borderRadius: 12, background: "var(--bg-elevated)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>Sin número registrado</span>
-          </div>
-        )}
-        <button onClick={() => onEliminar(entry.id)} style={{
-          flex: "0 0 auto", padding: "11px 14px",
-          border: "1px solid rgba(248,113,113,.25)", borderRadius: 12,
-          cursor: "pointer", fontFamily: "inherit", fontSize: 12,
-          background: "rgba(248,113,113,.08)", color: "#f87171",
-        }}>🗑️</button>
-      </div>
-    </div>
-  );
-}
-
-function PendientesTab({ queue, onUpdateWaQueue }) {
-  const marcarEnviado = (id) => {
-    const updated = queue.map(m => m.id === id ? { ...m, enviado: true } : m);
-    if (onUpdateWaQueue) onUpdateWaQueue(updated);
-  };
-  const eliminar = (id) => {
-    const updated = queue.filter(m => m.id !== id);
-    if (onUpdateWaQueue) onUpdateWaQueue(updated);
-  };
-  const editMsg = (id, texto) => {
-    const updated = queue.map(m => m.id === id ? { ...m, _editMsg: texto } : m);
-    if (onUpdateWaQueue) onUpdateWaQueue(updated);
-  };
-  const limpiarEnviados = () => {
-    const updated = queue.filter(m => !m.enviado);
-    if (onUpdateWaQueue) onUpdateWaQueue(updated);
-  };
-
-  const pendientesN = queue.filter(m => !m.enviado).length;
-  const enviadosN   = queue.filter(m => m.enviado).length;
-
-  if (queue.length === 0) return (
-    <div style={{ textAlign: "center", padding: "50px 0" }}>
-      <p style={{ fontSize: 40, marginBottom: 12 }}>📬</p>
-      <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>Sin mensajes pendientes</p>
-      <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Al agregar un miembro con membresía, los mensajes aparecerán aquí</p>
-    </div>
-  );
-
-  return (
-    <>
-      {/* Resumen */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
-        <p style={{ color: "#a78bfa", fontSize: 12 }}>
-          📬 <strong>{pendientesN}</strong> pendiente{pendientesN !== 1 ? "s" : ""} · {enviadosN} enviado{enviadosN !== 1 ? "s" : ""}
-        </p>
-        {enviadosN > 0 && (
-          <button onClick={limpiarEnviados} style={{ background: "none", border: "1px solid rgba(248,113,113,.3)", borderRadius: 8, padding: "4px 10px", cursor: "pointer", color: "#f87171", fontSize: 11, fontWeight: 600, fontFamily: "inherit" }}>
-            🗑 Limpiar enviados
-          </button>
-        )}
-      </div>
-
-      {queue.map(entry => (
-        <EntradaPendiente
-          key={entry.id}
-          entry={entry}
-          onMarcarEnviado={marcarEnviado}
-          onEliminar={eliminar}
-          onEdit={editMsg}
-        />
-      ))}
-    </>
-  );
-}
-
-// ─────────────────────────────────────────────
-//  MensajesScreen  —  Export principal
+//  MensajesScreen — export principal
 // ─────────────────────────────────────────────
 export default function MensajesScreen({
   miembros,
@@ -544,25 +545,44 @@ export default function MensajesScreen({
   onUpdatePlantillas,
   miembroInicial,
   modoInicial,
-  recordatoriosEnviados = {},
+  recordatoriosEnviados = {},   // eslint-disable-line no-unused-vars
   onMarcarRecordatorio,
   waQueue = [],
   onUpdateWaQueue,
 }) {
-  const [modo,       setModo]      = useState(modoInicial || (miembroInicial ? "individual" : ((waQueue||[]).filter(m=>!m.enviado).length > 0 ? "pendientes" : "vencimientos")));
-  const [enviados,   setEnviados]  = useState({});
-  const [selMiembro, setSelMiembro] = useState(miembroInicial || null);
-  const [busqueda,   setBusqueda]  = useState("");
-  const [msgTexto,   setMsgTexto]  = useState("");
-  const [msgOrigen,  setMsgOrigen] = useState(null); // eslint-disable-line no-unused-vars
-  const [copiadoMsg, setCopiadoMsg] = useState(false);
+  const [modo,        setModo]       = useState(modoInicial || (miembroInicial ? "individual" : "bandeja"));
+  const [selMiembro,  setSelMiembro] = useState(miembroInicial || null);
+  const [busqueda,    setBusqueda]   = useState("");
+  const [msgTexto,    setMsgTexto]   = useState("");
+  const [copiadoMsg,  setCopiadoMsg] = useState(false);
   const [copiadoNums, setCopiadoNums] = useState(false);
+
+  // ── Estado persistente de enviados (por día) ──
+  const storageKey = `bandeja_env_${gymId}`;
+  const dateKey    = `bandeja_fecha_${gymId}`;
+
+  const [enviados,  setEnviados]  = useState(() => {
+    try {
+      const hoy     = new Date().toDateString();
+      const guardado = localStorage.getItem(dateKey);
+      if (guardado !== hoy) return {};
+      return JSON.parse(localStorage.getItem(storageKey) || "{}");
+    } catch { return {}; }
+  });
+  const [saltados,  setSaltados]  = useState({});
+  const [msgEdits,  setMsgEdits]  = useState({});
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(enviados));
+      localStorage.setItem(dateKey, new Date().toDateString());
+    } catch {}
+  }, [enviados, storageKey, dateKey]);
 
   // ── Hook de comunicación ──
   const {
-    templates: _templates, // eslint-disable-line no-unused-vars
     automations,
-    loading: commLoading,
+    loading:    commLoading,
     dbAvailable,
     getTemplate,
     getSystemTemplates,
@@ -580,164 +600,193 @@ export default function MensajesScreen({
     { icon: "⭐", label: "", msg: "" },
   ];
 
-  // Plantillas rápidas: primero desde DB, fallback a hardcoded
   const tplsRapidas = useMemo(() => {
     const fromDB = getQuickTemplates();
     if (fromDB.length > 0) return fromDB;
     return [
       { id: "q1", icon: "🚫", name: "Clase cancelada",  body_text: "¡Hola {student_name}! La clase de hoy ha sido cancelada. Disculpa los inconvenientes 🙏" },
       { id: "q2", icon: "⏰", name: "Cambio de horario", body_text: "¡Hola {student_name}! Aviso: hubo un cambio de horario. El nuevo horario es a las 7:00pm 📅" },
-      { id: "q3", icon: "🏋️", name: "Evento especial",  body_text: `¡Hola {student_name}! 🔥 Te invitamos a nuestro evento especial este sábado. ¡Esperamos verte! — ${gymNom}` },
+      { id: "q3", icon: "🏋️", name: "Evento especial",  body_text: `¡Hola {student_name}! 🔥 Te invitamos a nuestro evento especial este sábado. — ${gymNom}` },
       { id: "q4", icon: "🛑", name: "Cierre temporal",  body_text: `¡Hola {student_name}! El gym estará cerrado mañana por mantenimiento 🛑 — ${gymNom}` },
     ];
   }, [getQuickTemplates, gymNom]);
 
-  // ── Construir mensaje de vencimiento desde plantilla ──
+  // ── Build mensaje de vencimiento ──
   const buildVencimientoMsg = useCallback((miembro, diasReales, memInfo) => {
-    const templateKey = mapDiasToTemplateKey(diasReales);
-    const tpl = getTemplate(templateKey);
-
-    // Si no hay template en DB, usar buildWAMsg original como fallback
+    const tpl = getTemplate(mapDiasToTemplateKey(diasReales));
     if (!tpl) {
-      // Fallback: lógica anterior
-      const nombre   = miembro.nombre.split(" ")[0];
-      const vence    = memInfo?.vence || "";
-      const plan     = memInfo?.plan || "";
-      const gym      = gymNom;
-      const planStr  = plan ? ` *${plan}*` : "";
-      if (diasReales === 0) return `¡Hola ${nombre}! 🚨 Tu membresía${planStr} en *${gym}* vence *HOY*. Renueva ahora para no perder tu acceso 💪`;
-      if (diasReales <= 3)  return `¡Hola ${nombre}! ⏰ Tu membresía${planStr} vence en *${diasReales} días* (${vence}). No pierdas tu acceso al gym 🔥`;
-
-      // Template largo (1 día): usar recordatorio_tpl de gymConfig
-      const recordatorioTpl = gymConfig?.recordatorio_tpl || tpl?.body_text || "";
-      return recordatorioTpl
-        .replace(/\{nombre\}/gi,             nombre)
-        .replace(/\{student_name\}/gi,       nombre)
-        .replace(/\{fecha\}/gi,              vence)
-        .replace(/\{due_date\}/gi,           vence)
-        .replace(/\{clabe\}/gi,              gymConfig?.transferencia_clabe || "")
-        .replace(/\{titular\}/gi,            gymConfig?.transferencia_titular || "")
-        .replace(/\{banco\}/gi,              gymConfig?.transferencia_banco || "")
-        .replace(/\{bank\}/gi,               gymConfig?.transferencia_banco || "")
-        .replace(/\{propietario\}/gi,        gymConfig?.propietario_nombre || gym)
+      const nombre  = miembro.nombre.split(" ")[0];
+      const vence   = memInfo?.vence || "";
+      const plan    = memInfo?.plan || "";
+      const planStr = plan ? ` *${plan}*` : "";
+      if (diasReales === 0) return `¡Hola ${nombre}! 🚨 Tu membresía${planStr} en *${gymNom}* vence *HOY*. Renueva ahora para no perder tu acceso 💪`;
+      if (diasReales <= 3)  return `¡Hola ${nombre}! ⏰ Tu membresía${planStr} vence en *${diasReales} días* (${vence}). No pierdas tu acceso 🔥`;
+      const tplLargo = gymConfig?.recordatorio_tpl || "";
+      return (tplLargo || `¡Hola ${nombre}! Te recordamos que tu membresía vence el ${vence}. — ${gymNom}`)
+        .replace(/\{nombre\}/gi, nombre).replace(/\{student_name\}/gi, nombre)
+        .replace(/\{fecha\}/gi, vence).replace(/\{due_date\}/gi, vence)
+        .replace(/\{clabe\}/gi, gymConfig?.transferencia_clabe || "")
+        .replace(/\{titular\}/gi, gymConfig?.transferencia_titular || "")
+        .replace(/\{banco\}/gi, gymConfig?.transferencia_banco || "")
+        .replace(/\{bank\}/gi, gymConfig?.transferencia_banco || "")
+        .replace(/\{propietario\}/gi, gymConfig?.propietario_nombre || gymNom)
         .replace(/\{propietario_titulo\}/gi, gymConfig?.propietario_titulo || "")
-        .replace(/\{gym\}/gi,                gym)
-        .replace(/\{plan\}/gi,               plan)
-        .replace(/\{concept\}/gi,            plan);
+        .replace(/\{gym\}/gi, gymNom).replace(/\{plan\}/gi, plan).replace(/\{concept\}/gi, plan);
     }
-
-    // Con template de DB
-    const vars = buildVarsFromMember(miembro, memInfo, gymConfig);
-    return replaceTemplateVars(tpl.body_text, vars);
+    return replaceTemplateVars(tpl.body_text, buildVarsFromMember(miembro, memInfo, gymConfig));
   }, [getTemplate, gymConfig, gymNom]);
 
-  // ── Alertas: miembros activos que vencen en ≤5 días ──
-  const alertas = useMemo(() => {
-    const result = [];
+  // ──────────────────────────────────────────────────────────────────
+  //  BANDEJA INTELIGENTE — lógica de deduplicación y caducidad
+  // ──────────────────────────────────────────────────────────────────
+  const bandejaItems = useMemo(() => {
+    const items = [];
+
+    // 1) Recordatorios de pago — UN solo mensaje por alumno (el más urgente)
+    const porAlumno = {};
     miembros
       .filter(m => getMembershipInfo(m.id, txs, m).estado === "Activo")
       .forEach(m => {
-        const info       = getMembershipInfo(m.id, txs, m);
-        const diasReales = diasParaVencer(info.vence);
-        if (diasReales === null || diasReales < 0 || diasReales > 5) return;
-        result.push({ miembro: m, diasReales, memInfo: info });
+        const info  = getMembershipInfo(m.id, txs, m);
+        const dias  = diasParaVencer(info.vence);
+        if (dias === null || dias < 0 || dias > 5) return;
+        if (porAlumno[m.id] === undefined || dias < porAlumno[m.id].dias) {
+          porAlumno[m.id] = { miembro: m, dias, info };
+        }
       });
-    result.sort((a, b) => a.diasReales - b.diasReales);
-    return result;
-  }, [miembros, txs]);
 
-  const pendientes = alertas.filter(({ miembro }) => !enviados[miembro.id]).length;
-  const pendientesWA = (waQueue || []).filter(m => !m.enviado).length;
-  const totalBadge = pendientes + pendientesWA;
+    Object.values(porAlumno).forEach(({ miembro, dias, info }) => {
+      const id  = `pago_${miembro.id}`;
+      const msg = buildVencimientoMsg(miembro, dias, info);
+      items.push({
+        id, tipo: "pago", miembro,
+        diasReales: dias, memInfo: info,
+        msg:     msgEdits[id] ?? msg,
+        tel:     miembro.tel || miembro.tutor_tel || null,
+        enviado: !!enviados[id],
+      });
+    });
 
-  const urgColor = (d) => d <= 1 ? "#f43f5e" : d <= 3 ? "#f59e0b" : "#22d3ee";
-  const urgLabel = (d) => d === 0 ? "HOY 🚨" : d === 1 ? "MAÑANA" : `${d}d`;
+    // 2) Cumpleaños — solo hoy
+    miembros.forEach(m => {
+      if (!m.fecha_nacimiento) return;
+      if (diasParaCumple(m.fecha_nacimiento) !== 0) return;
+      const id   = `bday_${m.id}`;
+      const tpl  = getTemplate("birthday");
+      const vars = buildVarsFromMember(m, {}, gymConfig);
+      const msg  = tpl
+        ? replaceTemplateVars(tpl.body_text, vars)
+        : `🎂 ¡Feliz cumpleaños ${m.nombre.split(" ")[0]}! En *${gymNom}* te deseamos un día increíble 💪🎉`;
+      items.push({
+        id, tipo: "birthday", miembro: m,
+        diasReales: 0,
+        msg:     msgEdits[id] ?? msg,
+        tel:     m.tel || m.tutor_tel || null,
+        enviado: !!enviados[id],
+      });
+    });
 
-  // ── Envío WA ──
-  const enviarWA = (tel, msg, miembroId) => {
-    window.open(buildWAUrl(tel, msg), "_blank");
-    if (miembroId) {
-      setEnviados(p => ({ ...p, [miembroId]: true }));
-      if (onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
-    }
-  };
-  const enviarWAIndividual = (tel, msg, miembroId) => {
-    window.open(buildWAUrl(tel, msg), "_blank");
-    if (miembroId && onMarcarRecordatorio) onMarcarRecordatorio(miembroId);
-  };
+    // 3) Cola WA — con caducidad de 3 días
+    const TRES_DIAS = 3 * 24 * 60 * 60 * 1000;
+    const ahora     = Date.now();
+    (waQueue || []).forEach(entry => {
+      if (entry.ts && (ahora - entry.ts) > TRES_DIAS) return; // caducado
+      items.push({
+        id:            entry.id,
+        tipo:          "waQueue",
+        miembro:       null,
+        nombreMiembro: entry.nombreMiembro,
+        diasReales:    null,
+        memInfo:       null,
+        msg:           msgEdits[entry.id] ?? (entry._editMsg ?? entry.msg),
+        tel:           entry.tel,
+        enviado:       !!enviados[entry.id] || !!entry.enviado,
+      });
+    });
 
-  const selNombre1 = selMiembro?.nombre?.split(" ")[0] || "";
+    // Ordenar: no enviados primero, por urgencia
+    return items.sort((a, b) => {
+      if (a.enviado !== b.enviado) return a.enviado ? 1 : -1;
+      const order = { birthday: -2, waQueue: -1 };
+      const oa = order[a.tipo] ?? a.diasReales ?? 99;
+      const ob = order[b.tipo] ?? b.diasReales ?? 99;
+      return oa - ob;
+    });
+  }, [miembros, txs, waQueue, enviados, msgEdits, buildVencimientoMsg, getTemplate, gymConfig, gymNom]);
+
+  const pendientesBandeja = bandejaItems.filter(i => !enviados[i.id] && !saltados[i.id]).length;
+
+  const handleEnviado = useCallback((id) => {
+    setEnviados(p => ({ ...p, [id]: true }));
+    const isWA = (waQueue || []).find(e => e.id === id);
+    if (isWA && onUpdateWaQueue)
+      onUpdateWaQueue((waQueue || []).map(e => e.id === id ? { ...e, enviado: true } : e));
+    if (onMarcarRecordatorio) onMarcarRecordatorio(id);
+  }, [waQueue, onUpdateWaQueue, onMarcarRecordatorio]);
+
+  const handleSaltar   = useCallback((id)        => setSaltados(p => ({ ...p, [id]: true })), []);
+  const handleEditMsg  = useCallback((id, texto)  => setMsgEdits(p => ({ ...p, [id]: texto })), []);
+
   const destMasivo = miembros.filter(mb => getMembershipInfo(mb.id, txs, mb).estado === "Activo" && mb.tel);
+  const selNombre1 = selMiembro?.nombre?.split(" ")[0] || "";
 
-  const cambiarModo = (nuevoModo) => {
-    setModo(nuevoModo);
-    setMsgTexto("");
-    setMsgOrigen(null);
-    setCopiadoMsg(false);
-    setCopiadoNums(false);
-  };
+  const cambiarModo = (m) => { setModo(m); setMsgTexto(""); setCopiadoMsg(false); setCopiadoNums(false); };
 
-  // ── Tabs: 4 modos ──
   const modos = [
-    { k: "pendientes",         icon: "📬", label: "Pendientes",  badge: pendientesWA },
-    { k: "vencimientos",       icon: "⏰", label: "Vencimientos" },
-    { k: "individual",         icon: "👤", label: "Individual"   },
-    { k: "masivo",             icon: "📢", label: "Masivo"       },
-    { k: "mensajes_sistema",   icon: "⚙️", label: "Sistema"      },
+    { k: "bandeja",          icon: "📬", label: "Bandeja",   badge: pendientesBandeja },
+    { k: "individual",       icon: "👤", label: "Individual" },
+    { k: "masivo",           icon: "📢", label: "Masivo"     },
+    { k: "mensajes_sistema", icon: "⚙️", label: "Sistema"    },
   ];
 
-  const btnModoBase = (activo) => ({
-    flex: 1, padding: "9px 4px",
-    border: "none", borderRadius: 11,
+  const tabStyle = (activo) => ({
+    flex: 1, padding: "9px 4px", border: "none", borderRadius: 11,
     cursor: "pointer", fontFamily: "inherit",
     background: activo ? "linear-gradient(135deg,#25d366,#128c7e)" : "transparent",
     color: activo ? "#fff" : "#8b949e",
     fontSize: 10, fontWeight: activo ? 700 : 500,
     boxShadow: activo ? "0 2px 12px rgba(37,211,102,.3)" : "none",
-    transition: "all .2s",
+    transition: "all .2s", position: "relative", flexShrink: 0,
   });
 
   const textareaStyle = {
     width: "100%", background: "var(--bg-elevated)",
     border: "1px solid var(--border-strong)", borderRadius: 14,
     padding: "14px", color: "var(--text-primary)", fontSize: 13,
-    fontFamily: "inherit", outline: "none", resize: "none",
-    lineHeight: 1.6, marginBottom: 6,
+    fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 6,
   };
 
   // ─────────────────────────────────────────────
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
 
-      {/* ── Header fijo ── */}
+      {/* Header */}
       <div style={{ padding: "16px 20px 0", flexShrink: 0 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <button onClick={onBack} style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>←</button>
+            <button onClick={onBack}
+              style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>
+              ←
+            </button>
             <div style={{ flex: 1 }}>
               <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
               <p style={{ color: "#8b949e", fontSize: 11 }}>Centro de comunicación WhatsApp</p>
             </div>
-            {totalBadge > 0 && (
+            {pendientesBandeja > 0 && (
               <span style={{ background: "#f43f5e", color: "#fff", borderRadius: 10, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>
-                {totalBadge}
+                {pendientesBandeja > 99 ? "99+" : pendientesBandeja}
               </span>
             )}
           </div>
 
-          {/* Selector de modos */}
           <div style={{ display: "flex", gap: 4, background: "var(--bg-elevated)", borderRadius: 14, padding: 4, marginBottom: 14, overflowX: "auto" }}>
             {modos.map(m => (
-              <button key={m.k} onClick={() => cambiarModo(m.k)} style={{ ...btnModoBase(modo === m.k), position: "relative", flexShrink: 0 }}>
+              <button key={m.k} onClick={() => cambiarModo(m.k)} style={tabStyle(modo === m.k)}>
                 {m.icon} {m.label}
                 {m.badge > 0 && (
-                  <span style={{
-                    position: "absolute", top: 2, right: 2,
-                    background: "#f43f5e", color: "#fff",
-                    borderRadius: "50%", width: 14, height: 14,
-                    fontSize: 9, fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>{m.badge}</span>
+                  <span style={{ position: "absolute", top: 2, right: 2, background: "#f43f5e", color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {m.badge > 99 ? "99+" : m.badge}
+                  </span>
                 )}
               </button>
             ))}
@@ -745,121 +794,48 @@ export default function MensajesScreen({
         </div>
       </div>
 
-      {/* ── Contenido scrollable ── */}
-      <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 20px 0" }}>
+      {/* Contenido */}
+      <div className="gym-scroll-pad" style={{ flex: 1, padding: "0 20px 20px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
 
-          {/* ════ MODO: PENDIENTES (WA Queue) ════ */}
-          {modo === "pendientes" && (
-            <PendientesTab
-              queue={waQueue || []}
-              onUpdateWaQueue={onUpdateWaQueue}
+          {/* ════ BANDEJA ════ */}
+          {modo === "bandeja" && (
+            <BandejaTab
+              items={bandejaItems}
+              enviados={enviados}
+              saltados={saltados}
+              onEnviado={handleEnviado}
+              onSaltar={handleSaltar}
+              onEditMsg={handleEditMsg}
             />
           )}
 
-          {/* ════ MODO: VENCIMIENTOS ════ */}
-          {modo === "vencimientos" && (
-            <>
-              {alertas.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "50px 0" }}>
-                  <p style={{ fontSize: 40, marginBottom: 12 }}>🎉</p>
-                  <p style={{ color: "#4ade80", fontSize: 15, fontWeight: 700 }}>¡Sin vencimientos próximos!</p>
-                  <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>Todos los miembros tienen su membresía al día</p>
-                </div>
-              ) : (
-                alertas.map(({ miembro, diasReales, memInfo }) => {
-                  const col     = urgColor(diasReales);
-                  const enviado = !!enviados[miembro.id];
-                  // ← CAMBIO: usar plantilla del sistema en lugar de buildWAMsg
-                  const msg     = buildVencimientoMsg(miembro, diasReales, memInfo);
-                  return (
-                    <div
-                      key={miembro.id}
-                      style={{
-                        background: enviado ? "var(--bg-card)" : `${col}10`,
-                        border: `1px solid ${enviado ? "var(--border)" : col + "35"}`,
-                        borderRadius: 18, padding: 14, marginBottom: 12,
-                        opacity: enviado ? 0.65 : 1, transition: "all .3s",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <div style={{ width: 42, height: 42, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: `${col}25`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 700, color: col, border: `2px solid ${col}50` }}>
-                          {miembro.foto
-                            ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            : miembro.nombre.charAt(0)
-                          }
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>{miembro.nombre}</p>
-                          <p style={{ color: "#8b949e", fontSize: 11 }}>{memInfo.plan} · {miembro.tel || "Sin número"}</p>
-                        </div>
-                        <span style={{ background: enviado ? "rgba(74,222,128,.15)" : `${col}25`, color: enviado ? "#4ade80" : col, borderRadius: 8, padding: "4px 9px", fontSize: 11, fontWeight: 700 }}>
-                          {enviado ? "✓" : urgLabel(diasReales)}
-                        </span>
-                      </div>
-
-                      <textarea
-                        value={enviado ? msg : (enviados["msg_" + miembro.id] ?? msg)}
-                        onChange={e => setEnviados(p => ({ ...p, ["msg_" + miembro.id]: e.target.value }))}
-                        rows={3}
-                        style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.5, marginBottom: 8 }}
-                      />
-
-                      <button
-                        onClick={() => enviarWA(miembro.tel, enviados["msg_" + miembro.id] ?? msg, miembro.id)}
-                        disabled={!miembro.tel}
-                        style={{
-                          width: "100%", padding: "11px", border: "none", borderRadius: 12,
-                          cursor: miembro.tel ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                          background: enviado ? "rgba(74,222,128,.12)" : miembro.tel ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
-                          color: enviado ? "#4ade80" : miembro.tel ? "#fff" : "#8b949e",
-                          boxShadow: !enviado && miembro.tel ? "0 4px 14px rgba(37,211,102,.3)" : "none",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                        }}
-                      >
-                        {enviado ? "✓ Enviado" : miembro.tel ? "💬 Enviar por WhatsApp" : "Sin número registrado"}
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </>
-          )}
-
-          {/* ════ MODO: INDIVIDUAL ════ */}
+          {/* ════ INDIVIDUAL ════ */}
           {modo === "individual" && (
             <>
-              {/* Vista A: Selección de miembro */}
-              {!selMiembro && (
+              {!selMiembro ? (
                 <>
                   <div style={{ position: "relative", marginBottom: 10 }}>
                     <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#8b949e", pointerEvents: "none" }}>🔍</span>
-                    <input
-                      value={busqueda}
-                      onChange={e => setBusqueda(e.target.value)}
-                      placeholder="Buscar miembro..."
-                      style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }}
-                    />
+                    <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar miembro..."
+                      style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
                     {busqueda && (
-                      <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer", padding: 2 }}>✕</button>
+                      <button onClick={() => setBusqueda("")}
+                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer" }}>✕</button>
                     )}
                   </div>
-
                   {(() => {
                     const conTel    = miembros.filter(m => m.tel);
                     const filtrados = busqueda.trim()
                       ? conTel.filter(m => m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.tel.includes(busqueda))
                       : conTel;
-                    const sinTel    = miembros.filter(m => !m.tel).length;
                     return (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         {filtrados.length === 0 && <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>}
                         {filtrados.map(m => (
-                          <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setMsgOrigen(null); setBusqueda(""); }}
-                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, transition: "all .2s" }}>
-                            <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>
-                              {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
-                            </div>
+                          <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setBusqueda(""); }}
+                            style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10 }}>
+                            <AvatarCircle nombre={m.nombre} foto={m.foto} size={36} />
                             <div style={{ flex: 1, textAlign: "left" }}>
                               <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                               <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
@@ -867,80 +843,62 @@ export default function MensajesScreen({
                             <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
                           </button>
                         ))}
-                        {sinTel > 0 && !busqueda && <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>{sinTel} miembro{sinTel > 1 ? "s" : ""} sin número no aparecen</p>}
+                        {miembros.filter(m => !m.tel).length > 0 && !busqueda && (
+                          <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
+                            {miembros.filter(m => !m.tel).length} miembros sin número no aparecen
+                          </p>
+                        )}
                       </div>
                     );
                   })()}
                 </>
-              )}
-
-              {/* Vista B: Composición de mensaje */}
-              {selMiembro && (
+              ) : (
                 <>
-                  {/* Header destinatario */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 12 }}>
-                    <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color: "#fff" }}>
-                      {selMiembro.foto ? <img src={selMiembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : selMiembro.nombre.charAt(0)}
-                    </div>
+                    <AvatarCircle nombre={selMiembro.nombre} foto={selMiembro.foto} size={38} />
                     <div style={{ flex: 1 }}>
                       <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
                       <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {selMiembro.tel}</p>
                     </div>
-                    <button onClick={() => { setSelMiembro(null); setMsgTexto(""); setMsgOrigen(null); }}
-                      style={{ background: "#21262d", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "#8b949e", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    <button onClick={() => { setSelMiembro(null); setMsgTexto(""); }}
+                      style={{ background: "#21262d", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "#8b949e", fontSize: 12, fontWeight: 600 }}>
                       Cambiar ✕
                     </button>
                   </div>
 
-                  {/* Textarea */}
-                  <textarea
-                    value={msgTexto}
-                    onChange={e => setMsgTexto(e.target.value)}
-                    placeholder={`Hola ${selNombre1}, escribe o elige una plantilla abajo...`}
-                    rows={4} autoFocus
-                    style={textareaStyle}
-                  />
+                  <textarea value={msgTexto} onChange={e => setMsgTexto(e.target.value)}
+                    placeholder={`Hola ${selNombre1}, escribe o elige una plantilla...`}
+                    rows={4} autoFocus style={textareaStyle} />
                   <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
 
-                  {/* Botón enviar */}
-                  <button
-                    onClick={() => enviarWAIndividual(selMiembro.tel, msgTexto.trim(), selMiembro.id)}
+                  <button onClick={() => { window.open(buildWAUrl(selMiembro.tel, msgTexto.trim()), "_blank"); if (onMarcarRecordatorio) onMarcarRecordatorio(selMiembro.id); }}
                     disabled={!msgTexto.trim()}
-                    style={{
-                      width: "100%", padding: "14px", border: "none", borderRadius: 14,
-                      cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
+                    style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
                       background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
                       color: msgTexto.trim() ? "#fff" : "#8b949e",
                       boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20,
-                    }}
-                  >
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20 }}>
                     <span style={{ fontSize: 18 }}>💬</span>
                     {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
                   </button>
 
-                  {/* Mis mensajes guardados */}
                   <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💾 Mis mensajes guardados</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-                    {[0, 1, 2, 3].map(i => {
+                    {[0,1,2,3].map(i => {
                       const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
                       return (
-                        <PlantillaCustom
-                          key={i} index={i} tpl={slot}
-                          nombreMiembro={selNombre1} gymNom={gymNom}
+                        <PlantillaCustom key={i} index={i} tpl={slot} nombreMiembro={selNombre1} gymNom={gymNom}
                           onUsar={(msg) => setMsgTexto(msg)}
                           onGuardar={async (nueva) => {
                             const nuevas = [...tplsCustom];
                             while (nuevas.length <= i) nuevas.push({ icon: "⭐", label: "", msg: "" });
                             nuevas[i] = nueva;
                             await onUpdatePlantillas(nuevas);
-                          }}
-                        />
+                          }} />
                       );
                     })}
                   </div>
 
-                  {/* ← NUEVO: Plantillas del sistema */}
                   {getSystemTemplates().length > 0 && (
                     <details style={{ marginBottom: 14 }}>
                       <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
@@ -949,12 +907,12 @@ export default function MensajesScreen({
                       </summary>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                         {getSystemTemplates().map(tpl => {
-                          const memInfo = getMembershipInfo(selMiembro.id, txs, selMiembro);
-                          const vars    = buildVarsFromMember(selMiembro, memInfo, gymConfig);
+                          const memInfo  = getMembershipInfo(selMiembro.id, txs, selMiembro);
+                          const vars     = buildVarsFromMember(selMiembro, memInfo, gymConfig);
                           const msgFinal = replaceTemplateVars(tpl.body_text, vars);
                           return (
                             <button key={tpl.id} onClick={() => setMsgTexto(msgFinal)}
-                              style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                              style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                               <span style={{ fontSize: 16 }}>⚙️</span>
                               <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name}</span>
                               {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
@@ -965,7 +923,6 @@ export default function MensajesScreen({
                     </details>
                   )}
 
-                  {/* Plantillas rápidas */}
                   <details style={{ marginBottom: 14 }}>
                     <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
                       <span>⚡ Plantillas rápidas</span>
@@ -973,11 +930,10 @@ export default function MensajesScreen({
                     </summary>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                       {tplsRapidas.map((tpl, i) => {
-                        const vars     = { student_name: selNombre1 };
-                        const msgFinal = replaceTemplateVars(tpl.body_text || tpl.msg || "", vars);
+                        const msgFinal = replaceTemplateVars(tpl.body_text || tpl.msg || "", { student_name: selNombre1 });
                         return (
                           <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
-                            style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                            style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                             <span style={{ fontSize: 18 }}>{tpl.icon}</span>
                             <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
                             {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
@@ -991,16 +947,13 @@ export default function MensajesScreen({
             </>
           )}
 
-          {/* ════ MODO: MASIVO ════ (sin cambios de UX) */}
+          {/* ════ MASIVO ════ */}
           {modo === "masivo" && (
             <>
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Mensaje para todos</p>
-              <textarea
-                value={msgTexto}
-                onChange={e => setMsgTexto(e.target.value)}
+              <textarea value={msgTexto} onChange={e => setMsgTexto(e.target.value)}
                 placeholder={`Ej: Hola, la clase de hoy fue cancelada. Disculpen 🙏 — ${gymNom}`}
-                rows={5} style={textareaStyle}
-              />
+                rows={5} style={textareaStyle} />
               <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
 
               <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Plantillas rápidas</p>
@@ -1009,7 +962,7 @@ export default function MensajesScreen({
                   const msgFinal = tpl.body_text || tpl.msg || "";
                   return (
                     <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
-                      style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "var(--border)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "all .2s" }}>
+                      style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "var(--border)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                       <span style={{ fontSize: 18 }}>{tpl.icon}</span>
                       <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
                       {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
@@ -1025,9 +978,7 @@ export default function MensajesScreen({
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {destMasivo.map(mb => (
                         <div key={mb.id} style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--bg-elevated)", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
-                          <div style={{ width: 22, height: 22, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
-                            {mb.foto ? <img src={mb.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : mb.nombre.charAt(0)}
-                          </div>
+                          <AvatarCircle nombre={mb.nombre} foto={mb.foto} size={22} />
                           <span style={{ color: "#8b949e", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
                         </div>
                       ))}
@@ -1035,10 +986,10 @@ export default function MensajesScreen({
                   </div>
 
                   {[
-                    { num: 1, label: "Copia el mensaje", copiado: copiadoMsg,  action: () => { copyToClipboard(msgTexto); setCopiadoMsg(true); } },
+                    { num: 1, label: "Copia el mensaje", copiado: copiadoMsg, action: () => { copyToClipboard(msgTexto); setCopiadoMsg(true); } },
                     { num: 2, label: "Copia los números", sub: `${destMasivo.length} contactos`, copiado: copiadoNums, action: () => { copyToClipboard(destMasivo.map(mb => mb.tel.replace(/\D/g, "")).join("\n")); setCopiadoNums(true); } },
                   ].map(step => (
-                    <div key={step.num} style={{ background: "var(--bg-card)", border: step.copiado ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)", borderRadius: 14, padding: 14, marginBottom: 8, transition: "border .3s" }}>
+                    <div key={step.num} style={{ background: "var(--bg-card)", border: step.copiado ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)", borderRadius: 14, padding: 14, marginBottom: 8 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ background: step.copiado ? "rgba(37,211,102,.2)" : "var(--bg-elevated)", color: step.copiado ? "#4ade80" : "var(--text-primary)", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
@@ -1049,7 +1000,8 @@ export default function MensajesScreen({
                             {step.sub && <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{step.sub}</p>}
                           </div>
                         </div>
-                        <button onClick={step.action} style={{ padding: "6px 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: step.copiado ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)", color: step.copiado ? "#4ade80" : "#fff" }}>
+                        <button onClick={step.action}
+                          style={{ padding: "6px 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: step.copiado ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)", color: step.copiado ? "#4ade80" : "#fff" }}>
                           {step.copiado ? "✓ Copiado" : "📋 Copiar"}
                         </button>
                       </div>
@@ -1070,62 +1022,33 @@ export default function MensajesScreen({
             </>
           )}
 
-          {/* ════ MODO: MENSAJES DEL SISTEMA ════ */}
+          {/* ════ SISTEMA ════ */}
           {modo === "mensajes_sistema" && (
             <>
-              {/* Intro */}
               <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
                 <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚙️ Centro de automatización</p>
                 <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>
-                  Aquí configuras los mensajes que el sistema envía automáticamente. Actívalos, personaliza el texto y ajusta cuántos días antes se envían.
+                  Configura los mensajes del sistema. Los activos aparecen automáticamente en la Bandeja según sus reglas.
                 </p>
               </div>
 
-              {commLoading && (
+              {commLoading ? (
                 <div style={{ textAlign: "center", padding: "30px 0" }}>
                   <p style={{ color: "#8b949e", fontSize: 13 }}>Cargando mensajes…</p>
                 </div>
-              )}
-
-              {!commLoading && (
+              ) : (
                 <>
-                  {/* Tarjetas de mensajes del sistema */}
-                  {SYSTEM_TEMPLATE_KEYS.map(meta => {
-                    const template   = getTemplate(meta.key);
-                    const automation = automations.find(a => a.event_key === meta.key);
-                    return (
-                      <SystemMessageCard
-                        key={meta.key}
-                        meta={meta}
-                        template={template}
-                        automation={automation}
-                        onToggle={toggleAutomation}
-                        onOffsetChange={updateOffset}
-                        onSave={saveTemplate}
-                        onReset={resetTemplate}
-                      />
-                    );
-                  })}
-
-                  {/* Banner solo si hay gymId pero la DB no está inicializada */}
-                  {!dbAvailable && !gymId && (
-                    <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-                      <p style={{ color: "#f43f5e", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-                        ⚠️ Error de configuración — gymId no disponible
-                      </p>
-                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
-                        No se pudo determinar el ID del gimnasio. Verifica que hayas iniciado sesión correctamente y recarga la página.
-                      </p>
-                    </div>
-                  )}
+                  {SYSTEM_TEMPLATE_KEYS.map(meta => (
+                    <SystemMessageCard key={meta.key} meta={meta}
+                      template={getTemplate(meta.key)}
+                      automation={automations.find(a => a.event_key === meta.key)}
+                      onToggle={toggleAutomation} onOffsetChange={updateOffset}
+                      onSave={saveTemplate} onReset={resetTemplate} />
+                  ))}
                   {!dbAvailable && gymId && (
                     <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-                      <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
-                        📋 Modo vista previa — los cambios no se guardarán
-                      </p>
-                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>
-                        Las tablas de comunicación aún no están inicializadas. Para activar el guardado, ejecuta en Supabase SQL Editor:
-                      </p>
+                      <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>📋 Modo vista previa</p>
+                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>Para guardar cambios, ejecuta en Supabase:</p>
                       <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", wordBreak: "break-all" }}>
                         {`SELECT seed_communication_templates('${gymId}');`}
                       </code>
