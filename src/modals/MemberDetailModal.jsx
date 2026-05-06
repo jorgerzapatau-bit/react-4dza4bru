@@ -1788,93 +1788,104 @@ export default function MemberDetailModal({
                 {/* ═══ PASO 2: Pago ═══ */}
                 {renovarStep === 2 && (
                   <>
-                    {/* Resumen — igual que NuevoMiembro */}
-                    <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
-                      <p style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen</p>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                        <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Alumno</span>
-                        <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{m.nombre}</span>
+                    {/* ── BLOQUE 1: Resumen del pago ── */}
+                    <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:12 }}>
+                      <p style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen del pago</p>
+
+                      {/* Alumno */}
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+                        <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>Alumno</span>
+                        <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:600 }}>{m.nombre}</span>
                       </div>
+
+                      {/* Líneas de conceptos */}
                       {renovar.plan && (
-                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>🏋️ {renovar.plan}</span>
-                          <span style={{ color:"#a78bfa", fontSize:11, fontWeight:600 }}>${montoPagado.toLocaleString("es-MX")}</span>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>🏋️ {renovar.plan}</span>
+                          <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, fontWeight:500 }}>${montoPagado.toLocaleString("es-MX")}</span>
                         </div>
                       )}
                       {(renovar.planesExtra||[]).map(pe => (
-                        <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>🗓️ {pe.nombre}</span>
-                          <span style={{ color:"#22d3ee", fontSize:11, fontWeight:600 }}>${(m.beca?0:Number(pe.monto||0)).toLocaleString("es-MX")}</span>
+                        <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>🗓️ {pe.nombre}</span>
+                          <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, fontWeight:500 }}>${(m.beca?0:Number(pe.monto||0)).toLocaleString("es-MX")}</span>
                         </div>
                       ))}
+                      {/* Recargo solo si aplica — una única aparición */}
                       {aplicaRecargo && (
-                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-                          <span style={{ color:"#f87171", fontSize:11 }}>⚠️ Recargo mora</span>
-                          <span style={{ color:"#f87171", fontSize:11, fontWeight:600 }}>${montoRecargo.toLocaleString("es-MX")}</span>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                          <span style={{ color:"#f87171", fontSize:12 }}>⚠️ Recargo mora</span>
+                          <span style={{ color:"#f87171", fontSize:12, fontWeight:600 }}>+${montoRecargo.toLocaleString("es-MX")}</span>
                         </div>
                       )}
-                      <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
-                        <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Total</span>
-                        <span style={{ color:"#4ade80", fontSize:12, fontWeight:700 }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
-                      </div>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                        <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Vence</span>
-                        <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{venceFmt}</span>
+
+                      {/* Total + Vence unificados con mayor jerarquía */}
+                      <div style={{ borderTop:"1px solid rgba(255,255,255,.1)", marginTop:8, paddingTop:10 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                          <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:14, fontWeight:700 }}>Total a pagar</span>
+                          <span style={{ color:"#4ade80", fontSize:18, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                        </div>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Vence</span>
+                          <span style={{ color:"#22d3ee", fontSize:11, fontWeight:600 }}>
+                            {venceFmt}
+                            {renovar.inicio && renovar.vence && (() => {
+                              const diff = Math.round((new Date(renovar.vence+"T00:00:00") - new Date(renovar.inicio+"T00:00:00")) / 86400000);
+                              return diff > 0 ? <span style={{ color:"var(--text-tertiary,#6b6b8a)", marginLeft:6 }}>· {diff} días</span> : null;
+                            })()}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* ── Último pago + política de mora ── */}
+                    {/* ── BLOQUE 2: Historial de membresía (solo si no es primera) ── */}
                     {!esPrimeraMembresía && (
                       <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:14, padding:"12px 16px", marginBottom:14 }}>
-                        {/* Último pago */}
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: diasVencido > 0 ? 10 : 0 }}>
-                          <span style={{ color:"#8b949e", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
-                            📅 Último pago
-                          </span>
-                          <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>
-                            {ultimoPagoFmt || "—"}
-                          </span>
+                        <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Historial de membresía</p>
+
+                        {/* Grid 2×2 para último pago + días vencido */}
+                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom: (tipoPenalidad !== "ninguna" && penalidad > 0) ? 10 : 0 }}>
+                          <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
+                            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Último pago</p>
+                            <p style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{ultimoPagoFmt || "—"}</p>
+                          </div>
+                          <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
+                            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Días vencido</p>
+                            <p style={{ color: diasVencido > diasGracia ? "#f87171" : diasVencido > 0 ? "#f59e0b" : "#4ade80", fontSize:12, fontWeight:700 }}>
+                              {diasVencido > 0 ? `${diasVencido} días` : "Al día ✓"}
+                            </p>
+                          </div>
+                          {tipoPenalidad !== "ninguna" && penalidad > 0 && (
+                            <>
+                              <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
+                                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Días de gracia</p>
+                                <p style={{ color:"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:600 }}>{diasGracia} días</p>
+                              </div>
+                              <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
+                                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Penalidad</p>
+                                <p style={{ color:"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:600 }}>
+                                  {tipoPenalidad === "porcentaje" ? `${penalidad}%` : `$${penalidad.toLocaleString("es-MX")}`}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
 
-                        {/* Días de atraso */}
-                        {diasVencido > 0 && (
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: tipoPenalidad !== "ninguna" ? 10 : 0 }}>
-                            <span style={{ color: diasVencido > diasGracia ? "#f87171" : "#f59e0b", fontSize:12, display:"flex", alignItems:"center", gap:6 }}>
-                              ⏰ Días vencido
-                            </span>
-                            <span style={{ color: diasVencido > diasGracia ? "#f87171" : "#f59e0b", fontSize:12, fontWeight:700 }}>
-                              {diasVencido} días
+                        {/* Banner recargo — solo aquí, una única vez */}
+                        {aplicaRecargo && (
+                          <div style={{ background:"rgba(239,68,68,.1)", border:"1px solid rgba(239,68,68,.3)", borderRadius:10, padding:"8px 12px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>⚠️ Recargo aplicado</span>
+                            <span style={{ color:"#f87171", fontSize:13, fontWeight:800, fontFamily:"'DM Mono',monospace" }}>
+                              +${montoRecargo.toLocaleString("es-MX")}
                             </span>
                           </div>
                         )}
-
-                        {/* Política de mora desde Configuración */}
-                        {tipoPenalidad !== "ninguna" && penalidad > 0 && (
-                          <div style={{ borderTop:"1px solid rgba(255,255,255,.06)", paddingTop:10 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                              <span style={{ color:"#8b949e", fontSize:11 }}>Días de gracia</span>
-                              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{diasGracia} días</span>
-                            </div>
-                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                              <span style={{ color:"#8b949e", fontSize:11 }}>Penalidad por mora</span>
-                              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>
-                                {tipoPenalidad === "porcentaje" ? `${penalidad}%` : `$${penalidad.toLocaleString("es-MX")}`}
-                              </span>
-                            </div>
-                            {aplicaRecargo ? (
-                              <div style={{ background:"rgba(239,68,68,.1)", border:"1px solid rgba(239,68,68,.3)", borderRadius:10, padding:"8px 12px", marginTop:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                                <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>⚠️ Recargo aplicado</span>
-                                <span style={{ color:"#f87171", fontSize:13, fontWeight:800, fontFamily:"'DM Mono',monospace" }}>
-                                  +${montoRecargo.toLocaleString("es-MX")}
-                                </span>
-                              </div>
-                            ) : diasVencido > 0 ? (
-                              <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.2)", borderRadius:10, padding:"8px 12px", marginTop:6 }}>
-                                <p style={{ color:"#4ade80", fontSize:11 }}>
-                                  ✓ Dentro del período de gracia ({diasGracia - diasVencido} días restantes)
-                                </p>
-                              </div>
-                            ) : null}
+                        {/* Dentro del período de gracia */}
+                        {!aplicaRecargo && diasVencido > 0 && tipoPenalidad !== "ninguna" && penalidad > 0 && (
+                          <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.2)", borderRadius:10, padding:"8px 12px" }}>
+                            <p style={{ color:"#4ade80", fontSize:11 }}>
+                              ✓ Dentro del período de gracia ({diasGracia - diasVencido} días restantes)
+                            </p>
                           </div>
                         )}
                       </div>
