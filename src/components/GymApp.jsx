@@ -70,6 +70,9 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
   const [ahora, setAhora] = useState(new Date());
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('gymfit-theme');
+    // Initialize palette from localStorage
+    const savedPalette = localStorage.getItem('gymfit-palette') || 'blue';
+    document.documentElement.setAttribute('data-palette', savedPalette);
     return saved ? saved === 'dark' : true;
   });
 
@@ -634,6 +637,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
             setFormCfg={setFormCfg}
             setGymConfig={setGymConfig}
             setConfigScreen={setConfigScreen}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
           />
         )}
 

@@ -2,7 +2,7 @@
 //  screens/ConfigScreen.jsx  — con pestañas
 // ─────────────────────────────────────────────
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DEFAULT_PLANES } from "../utils/constants";
 import { Btn, Inp } from "../components/UI";
 import { supabase } from "../supabase";
@@ -31,10 +31,11 @@ function compressImage(file) {
 }
 
 const TABS = [
-  { id: "general",   label: "General",   icon: "🏢" },
-  { id: "pagos",     label: "Pagos",     icon: "💳" },
-  { id: "planes",    label: "Planes",    icon: "📋" },
-  { id: "politicas", label: "Políticas", icon: "⚠️" },
+  { id: "general",    label: "General",    icon: "🏢" },
+  { id: "pagos",      label: "Pagos",      icon: "💳" },
+  { id: "planes",     label: "Planes",     icon: "📋" },
+  { id: "politicas",  label: "Políticas",  icon: "⚠️" },
+  { id: "apariencia", label: "Apariencia", icon: "🎨" },
 ];
 
 function TabGeneral({ formCfg, setFormCfg }) {
@@ -250,7 +251,203 @@ function TabPoliticas({ formCfg, setFormCfg }) {
   );
 }
 
-export default function ConfigScreen({ gymConfig, gymConfigRef: GYM_ID, formCfg, setFormCfg, setGymConfig, setConfigScreen }) {
+// ─────────────────────────────────────────────
+//  TabApariencia — selector de paleta y fuente
+// ─────────────────────────────────────────────
+const PALETTES = [
+  {
+    id: "blue", label: "Azul Océano", desc: "Profesional y confiable",
+    swatch: ["#3b82f6","#1d4ed8","#60a5fa"],
+    dark:  { bg: "#0a0f1a", card: "#111827", accent: "#3b82f6", text: "#e8f0fe" },
+    light: { bg: "#f0f4ff", card: "#ffffff", accent: "#2563eb", text: "#0f1f3d" },
+  },
+  {
+    id: "violet", label: "Violeta Cosmos", desc: "Creativo y enérgico",
+    swatch: ["#8b5cf6","#e040fb","#c4b5fd"],
+    dark:  { bg: "#0d0d1a", card: "#12121f", accent: "#8b5cf6", text: "#ede9fe" },
+    light: { bg: "#f5f3ff", card: "#ffffff", accent: "#7c3aed", text: "#1e0a4a" },
+  },
+  {
+    id: "emerald", label: "Esmeralda Viva", desc: "Natural y vibrante",
+    swatch: ["#10b981","#047857","#6ee7b7"],
+    dark:  { bg: "#071410", card: "#0d1f19", accent: "#10b981", text: "#d1fae5" },
+    light: { bg: "#f0fdf9", card: "#ffffff", accent: "#059669", text: "#063a28" },
+  },
+  {
+    id: "amber", label: "Ámbar Solar", desc: "Cálido y motivador",
+    swatch: ["#f59e0b","#d97706","#fcd34d"],
+    dark:  { bg: "#130e00", card: "#1c1500", accent: "#f59e0b", text: "#fef3c7" },
+    light: { bg: "#fffbeb", card: "#ffffff", accent: "#d97706", text: "#3d1c00" },
+  },
+];
+
+function PaletteCard({ palette, isActive, isDark, onSelect }) {
+  const preview = isDark ? palette.dark : palette.light;
+  return (
+    <button
+      onClick={() => onSelect(palette.id)}
+      style={{
+        background: preview.bg,
+        border: isActive
+          ? `2px solid ${preview.accent}`
+          : `1.5px solid ${isDark ? "rgba(255,255,255,.1)" : "rgba(0,0,0,.1)"}`,
+        borderRadius: 16, padding: 16, cursor: "pointer",
+        fontFamily: "inherit", textAlign: "left",
+        transition: "all .2s",
+        boxShadow: isActive ? `0 0 0 4px ${preview.accent}30, 0 8px 24px ${preview.accent}20` : "none",
+        position: "relative", overflow: "hidden",
+      }}
+    >
+      {/* Mini UI preview */}
+      <div style={{ marginBottom: 12 }}>
+        {/* Fake sidebar */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          <div style={{ width: 28, borderRadius: 6, background: isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)", padding: "6px 4px", display: "flex", flexDirection: "column", gap: 4 }}>
+            {[1,2,3].map(i => (
+              <div key={i} style={{ height: 4, borderRadius: 2, background: i === 1 ? preview.accent : (isDark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.12)") }} />
+            ))}
+          </div>
+          {/* Fake content */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ height: 22, borderRadius: 6, background: preview.card, border: `1px solid ${isDark ? "rgba(255,255,255,.08)" : "rgba(0,0,0,.08)"}`, display: "flex", alignItems: "center", padding: "0 6px", gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: preview.accent }} />
+              <div style={{ flex: 1, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,.2)" : "rgba(0,0,0,.15)" }} />
+            </div>
+            <div style={{ height: 14, borderRadius: 4, background: preview.card, border: `1px solid ${isDark ? "rgba(255,255,255,.06)" : "rgba(0,0,0,.06)"}` }} />
+            <div style={{ height: 10, borderRadius: 4, background: `${preview.accent}20` }} />
+          </div>
+        </div>
+        {/* Fake button */}
+        <div style={{ height: 16, borderRadius: 6, background: preview.accent, opacity: .9 }} />
+      </div>
+
+      {/* Swatches */}
+      <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
+        {palette.swatch.map((c, i) => (
+          <div key={i} style={{ width: 18, height: 18, borderRadius: "50%", background: c, border: `2px solid ${isDark ? "rgba(255,255,255,.15)" : "rgba(0,0,0,.1)"}` }} />
+        ))}
+      </div>
+
+      {/* Labels */}
+      <p style={{ color: preview.text, fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{palette.label}</p>
+      <p style={{ color: `${preview.text}80`, fontSize: 10 }}>{palette.desc}</p>
+
+      {/* Check mark */}
+      {isActive && (
+        <div style={{ position: "absolute", top: 10, right: 10, width: 20, height: 20, borderRadius: "50%", background: preview.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff" }}>✓</div>
+      )}
+    </button>
+  );
+}
+
+function TabApariencia({ darkMode, setDarkMode }) {
+  const [palette, setPalette]       = useState(() => localStorage.getItem("gymfit-palette") || "blue");
+
+  useEffect(() => {
+    localStorage.setItem("gymfit-palette", palette);
+    document.documentElement.setAttribute("data-palette", palette);
+  }, [palette]);
+
+  const s = {
+    section: { marginBottom: 28 },
+    label:   { color: "var(--text-tertiary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .8, marginBottom: 12 },
+    modeBtn: (active) => ({
+      flex: 1, padding: "14px 12px",
+      border: active ? "2px solid var(--col-accent)" : "1.5px solid var(--border)",
+      borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
+      background: active ? "var(--col-accent-soft)" : "var(--bg-elevated)",
+      transition: "all .2s",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+      boxShadow: active ? "var(--shadow-accent)" : "none",
+    }),
+  };
+
+  return (
+    <div style={{ padding: "4px 0" }}>
+
+      {/* ── Modo claro / oscuro ── */}
+      <div style={s.section}>
+        <p style={s.label}>🌓 Modo de pantalla</p>
+        <div style={{ display: "flex", gap: 10 }}>
+          {[
+            { id: false, icon: "☀️", label: "Modo claro" },
+            { id: true,  icon: "🌙", label: "Modo oscuro" },
+          ].map(m => (
+            <button key={String(m.id)} onClick={() => setDarkMode(m.id)} style={s.modeBtn(darkMode === m.id)}>
+              <span style={{ fontSize: 24 }}>{m.icon}</span>
+              <span style={{ color: darkMode === m.id ? "var(--col-accent-text)" : "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>
+                {m.label}
+              </span>
+              {darkMode === m.id && (
+                <span style={{ fontSize: 10, color: "var(--col-accent-text)", fontWeight: 700 }}>● Activo</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Paleta de color ── */}
+      <div style={s.section}>
+        <p style={s.label}>🎨 Paleta de color</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {PALETTES.map(p => (
+            <PaletteCard
+              key={p.id}
+              palette={p}
+              isActive={palette === p.id}
+              isDark={darkMode}
+              onSelect={setPalette}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* ── Tipografía ── */}
+      <div style={s.section}>
+        <p style={s.label}>✍️ Tipografía</p>
+        <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 14, padding: 16 }}>
+          <p style={{ color: "var(--text-primary)", fontFamily: "var(--font-sans)", fontSize: 22, fontWeight: 800, lineHeight: 1.2, marginBottom: 4 }}>
+            Plus Jakarta Sans
+          </p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 13, marginBottom: 10 }}>
+            La fuente principal de toda la aplicación
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {["Regular 400", "Medium 500", "Semi Bold 600", "Bold 700", "Extra Bold 800"].map(w => (
+              <span key={w} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "4px 10px", fontSize: 11, color: "var(--text-tertiary)" }}>{w}</span>
+            ))}
+          </div>
+          <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--bg-card)", borderRadius: 10, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--col-accent-text)" }}>
+            01 { } // JetBrains Mono — código y datos
+          </div>
+        </div>
+      </div>
+
+      {/* ── Vista previa ── */}
+      <div style={s.section}>
+        <p style={s.label}>👁 Vista previa de colores</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {[
+            { label: "Acento principal",  bg: "var(--col-accent)",        text: "#fff" },
+            { label: "Acento suave",      bg: "var(--col-accent-soft)",   text: "var(--col-accent-text)" },
+            { label: "Éxito",             bg: "var(--col-success-soft)",  text: "var(--col-success)" },
+            { label: "Error / Peligro",   bg: "var(--col-danger-soft)",   text: "var(--col-danger)" },
+            { label: "Advertencia",       bg: "var(--col-warning-soft)",  text: "var(--col-warning)" },
+            { label: "WhatsApp",          bg: "var(--col-wa-gradient)",   text: "#fff" },
+          ].map(row => (
+            <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: row.bg, border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px" }}>
+              <span style={{ color: row.text, fontSize: 12, fontWeight: 600 }}>{row.label}</span>
+              <div style={{ width: 24, height: 24, borderRadius: 6, background: row.bg, border: "2px solid rgba(255,255,255,.3)" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+export default function ConfigScreen({ gymConfig, gymConfigRef: GYM_ID, formCfg, setFormCfg, setGymConfig, setConfigScreen, darkMode, setDarkMode }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveOk, setSaveOk] = useState(false);
@@ -344,10 +541,11 @@ export default function ConfigScreen({ gymConfig, gymConfigRef: GYM_ID, formCfg,
 
       {/* ── Contenido scrollable ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px 16px", minHeight: 0 }}>
-        {activeTab === "general"   && <TabGeneral   formCfg={formCfg} setFormCfg={setFormCfg} />}
-        {activeTab === "pagos"     && <TabPagos     formCfg={formCfg} setFormCfg={setFormCfg} />}
-        {activeTab === "planes"    && <TabPlanes    formCfg={formCfg} setFormCfg={setFormCfg} />}
-        {activeTab === "politicas" && <TabPoliticas formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "general"    && <TabGeneral    formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "pagos"      && <TabPagos      formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "planes"     && <TabPlanes     formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "politicas"  && <TabPoliticas  formCfg={formCfg} setFormCfg={setFormCfg} />}
+        {activeTab === "apariencia" && <TabApariencia darkMode={darkMode} setDarkMode={setDarkMode} />}
 
         {saveError && (
           <div style={{ background: "rgba(244,63,94,.12)", border: "1px solid rgba(244,63,94,.35)", borderRadius: 12, padding: "12px 16px", marginTop: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
