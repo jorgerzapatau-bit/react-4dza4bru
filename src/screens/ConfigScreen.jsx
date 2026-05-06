@@ -418,7 +418,7 @@ function TabApariencia({ darkMode, setDarkMode }) {
             ))}
           </div>
           <div style={{ marginTop: 14, padding: "10px 14px", background: "var(--bg-card)", borderRadius: 10, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--col-accent-text)" }}>
-            01 { } // JetBrains Mono — código y datos
+            {"01  // JetBrains Mono — código y datos"}
           </div>
         </div>
       </div>
