@@ -1,15 +1,28 @@
 // Service Worker v4 - push notifications + daily check
+// IMPORTANTE: No borramos caches en activate para no interrumpir sesiones activas.
+// El cache se limpia solo cuando cambia CACHE_NAME (nuevo deploy intencional).
 const CACHE_NAME = 'gymfit-pro-v4';
 
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  // skipWaiting() hace que el nuevo SW tome control inmediatamente,
+  // lo que puede interrumpir la sesión activa. Lo removemos para que
+  // el SW anterior siga activo hasta que el usuario cierre la pestaña.
+  // El nuevo SW tomará control en la próxima apertura normal.
+  // self.skipWaiting();  ← REMOVIDO: causaba reload forzado en cada deploy
 });
 
 self.addEventListener('activate', event => {
+  // Solo borramos caches VIEJOS (de versiones anteriores), no el actual.
+  // Así no interrumpimos sesiones en curso.
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+      Promise.all(
+        keys
+          .filter(k => k !== CACHE_NAME)  // solo borra los que NO son el actual
+          .map(k => caches.delete(k))
+      )
+    )
+    // REMOVIDO: self.clients.claim() — forzaba reload en pestañas abiertas
   );
 });
 

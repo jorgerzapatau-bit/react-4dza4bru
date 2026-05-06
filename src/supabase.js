@@ -61,6 +61,7 @@ export const auth = {
   },
 
   // ── Recuperar sesión guardada en localStorage ──
+  // ── Recuperar sesión guardada en localStorage ──
   async getSession() {
     try {
       const raw = localStorage.getItem("gymfit_session");
