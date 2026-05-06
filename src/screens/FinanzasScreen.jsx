@@ -659,22 +659,144 @@ export default function FinanzasScreen({
                 </div>
 
                 {/* Detalle del día seleccionado */}
-                {calDiaSelec && diaData && (
+                {calDiaSelec && diaData && (() => {
+                  const util = diaData.totalIng - diaData.totalGas;
+                  // Desglose categorías ingreso
+                  const mapaCat = {};
+                  diaData.ingresos.forEach(t => { const c = t.categoria || "Otro"; mapaCat[c] = (mapaCat[c] || 0) + Number(t.monto); });
+                  const catArr = Object.entries(mapaCat).sort((a,b) => b[1]-a[1]);
+                  // Desglose categorías gasto
+                  const mapaGas = {};
+                  diaData.gastos.forEach(t => { const c = t.categoria || "Otro"; mapaGas[c] = (mapaGas[c] || 0) + Number(t.monto); });
+                  const gasArr = Object.entries(mapaGas).sort((a,b) => b[1]-a[1]);
+                  // Formas de pago
+                  const pagoArr = [
+                    ["Efectivo", diaData.efectivo],
+                    ["Transferencia", diaData.transferencia],
+                    ["Tarjeta", diaData.tarjeta],
+                  ].filter(([,v]) => v > 0);
+
+                  // Texto para compartir
+                  const gymNombre = gymConfig?.nombre || "GymFit Pro";
+                  const fechaLabel = fmtDate(calDiaSelec);
+                  const textoCorte = `🏋️ ${gymNombre} — CORTE DE CAJA\n📅 ${fechaLabel}\n\n💰 INGRESOS: ${fmtMoney(diaData.totalIng)}\n${catArr.map(([c,v]) => `  · ${CAT_ICON[c]||"📌"} ${c}: ${fmtMoney(v)}`).join("\n")}${pagoArr.length > 0 ? "\n\n💳 Por forma de pago:\n" + pagoArr.map(([fp,v]) => `  · ${fp === "Efectivo" ? "💵" : fp === "Transferencia" ? "📲" : "💳"} ${fp}: ${fmtMoney(v)}`).join("\n") : ""}\n\n💸 GASTOS: ${fmtMoney(diaData.totalGas)}${gasArr.length > 0 ? "\n" + gasArr.map(([c,v]) => `  · ${CAT_ICON[c]||"📌"} ${c}: ${fmtMoney(v)}`).join("\n") : ""}\n\n📊 UTILIDAD NETA: ${util >= 0 ? "+" : ""}${fmtMoney(Math.abs(util))}\n📋 Movimientos: ${diaData.ingresos.length + diaData.gastos.length}`;
+
+                  const descargarPDFDia = async () => {
+                    const cargarScript = (src) => new Promise((res,rej) => {
+                      if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+                      const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+                    });
+                    try {
+                      await cargarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+                      await cargarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+                      const { jsPDF } = window.jspdf;
+                      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+                      const W = 210; const margin = 14;
+                      const fmt$ = n => "$" + Number(n).toLocaleString("es-MX");
+                      const now = new Date();
+                      const horaCorte = now.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+                      const fechaCorte = now.toLocaleDateString("es-MX", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+                      // Header
+                      doc.setFillColor(108,99,255); doc.rect(0,0,W,26,"F");
+                      doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont("helvetica","bold");
+                      doc.text(gymNombre, margin, 12);
+                      doc.setFontSize(9); doc.setFont("helvetica","normal");
+                      doc.text("Corte de Caja — " + fechaLabel, margin, 20);
+                      doc.setFontSize(14); doc.setFont("helvetica","bold");
+                      doc.text(horaCorte, W-margin, 13, { align: "right" });
+                      doc.setFontSize(8); doc.setFont("helvetica","normal");
+                      doc.text(fechaCorte, W-margin, 21, { align: "right" });
+                      let y = 34;
+                      // Tarjetas resumen
+                      const cards = [
+                        { label:"INGRESOS", value: fmt$(diaData.totalIng), r:22,g:163,b:74 },
+                        { label:"GASTOS",   value: fmt$(diaData.totalGas), r:220,g:38,b:38 },
+                        { label:"UTILIDAD NETA", value: (util>=0?"+":"")+fmt$(util), r:util>=0?22:220, g:util>=0?163:38, b:util>=0?74:38 },
+                      ];
+                      const cW = (W-margin*2-8)/3;
+                      cards.forEach((c,i) => {
+                        const x = margin + i*(cW+4);
+                        doc.setFillColor(250,250,255); doc.setDrawColor(230,230,240); doc.setLineWidth(0.4);
+                        doc.roundedRect(x,y,cW,22,3,3,"FD");
+                        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(120,120,140);
+                        doc.text(c.label, x+cW/2, y+7, { align:"center" });
+                        doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(c.r,c.g,c.b);
+                        doc.text(c.value, x+cW/2, y+17, { align:"center" });
+                      });
+                      y += 29;
+                      // Forma de pago
+                      if (pagoArr.length > 0) {
+                        doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(80,60,180);
+                        doc.text("RESUMEN POR FORMA DE PAGO", margin, y); y += 5;
+                        doc.autoTable({ startY:y, head:[["Forma de pago","Total"]], body: pagoArr.map(([fp,v]) => [fp, fmt$(v)]),
+                          theme:"grid", headStyles:{ fillColor:[108,99,255], fontSize:9, fontStyle:"bold", textColor:[255,255,255] },
+                          bodyStyles:{ fontSize:11, fontStyle:"bold" }, columnStyles:{ 1:{ halign:"right", textColor:[80,60,180], fontStyle:"bold" }},
+                          margin:{left:margin,right:margin}, styles:{ cellPadding:4 } });
+                        y = doc.lastAutoTable.finalY + 8;
+                      }
+                      // Ingresos detalle
+                      if (diaData.ingresos.length > 0) {
+                        doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(22,163,74);
+                        doc.text("INGRESOS — DETALLE", margin, y); y += 5;
+                        doc.autoTable({ startY:y, head:[["Concepto / Miembro","Forma de pago","Monto"]],
+                          body: diaData.ingresos.map(t => {
+                            const mid = t.miembroId || t.miembro_id;
+                            const mb = mid ? miembros.find(mb => String(mb.id) === String(mid)) : null;
+                            return [`${t.categoria||"Ingreso"}
+${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"—", fmt$(t.monto)];
+                          }),
+                          theme:"striped", headStyles:{ fillColor:[22,163,74], fontSize:8, fontStyle:"bold", textColor:[255,255,255] },
+                          bodyStyles:{ fontSize:8 }, columnStyles:{ 1:{cellWidth:26,halign:"center"}, 2:{cellWidth:28,halign:"right",fontStyle:"bold",textColor:[22,163,74]} },
+                          foot:[[{ content:"SUBTOTAL", colSpan:2, styles:{halign:"right",fontStyle:"bold",fontSize:9,fillColor:[240,253,244],textColor:[22,163,74]} },{ content:fmt$(diaData.totalIng), styles:{halign:"right",fontStyle:"bold",fontSize:9,fillColor:[240,253,244],textColor:[22,163,74]} }]],
+                          footStyles:{fillColor:[240,253,244]}, margin:{left:margin,right:margin}, styles:{cellPadding:3} });
+                        y = doc.lastAutoTable.finalY + 8;
+                      }
+                      // Gastos detalle
+                      if (diaData.gastos.length > 0) {
+                        doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(220,38,38);
+                        doc.text("GASTOS — DETALLE", margin, y); y += 5;
+                        doc.autoTable({ startY:y, head:[["Descripción","Categoría","Monto"]],
+                          body: diaData.gastos.map(t => [limpiarDesc(t.desc||t.descripcion||"")||"—", t.categoria||"—", fmt$(t.monto)]),
+                          theme:"striped", headStyles:{ fillColor:[220,38,38], fontSize:8, fontStyle:"bold", textColor:[255,255,255] },
+                          bodyStyles:{ fontSize:8 }, columnStyles:{ 2:{cellWidth:28,halign:"right",fontStyle:"bold",textColor:[220,38,38]} },
+                          foot:[[{ content:"SUBTOTAL", colSpan:2, styles:{halign:"right",fontStyle:"bold",fontSize:9,fillColor:[255,241,242],textColor:[220,38,38]} },{ content:fmt$(diaData.totalGas), styles:{halign:"right",fontStyle:"bold",fontSize:9,fillColor:[255,241,242],textColor:[220,38,38]} }]],
+                          footStyles:{fillColor:[255,241,242]}, margin:{left:margin,right:margin}, styles:{cellPadding:3} });
+                        y = doc.lastAutoTable.finalY + 8;
+                      }
+                      // Utilidad final
+                      doc.setFillColor(util>=0?240:255,util>=0?253:241,util>=0?244:242);
+                      doc.setDrawColor(util>=0?22:220,util>=0?163:38,util>=0?74:38); doc.setLineWidth(0.5);
+                      doc.roundedRect(margin,y,W-margin*2,16,3,3,"FD");
+                      doc.setFontSize(10); doc.setFont("helvetica","bold");
+                      doc.setTextColor(util>=0?22:220,util>=0?163:38,util>=0?74:38);
+                      doc.text("UTILIDAD NETA DEL DÍA", margin+6, y+7);
+                      doc.setFontSize(13);
+                      doc.text((util>=0?"+":"")+fmt$(util), W-margin-4, y+10, { align:"right" });
+                      // Footer
+                      const pH = doc.internal.pageSize.height;
+                      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(156,163,175);
+                      doc.text(`${gymNombre}  |  Corte del día ${fechaLabel}  |  Generado ${fechaCorte} ${horaCorte}`, W/2, pH-8, { align:"center" });
+                      doc.save(`corte-${gymNombre.replace(/\s+/g,"-").toLowerCase()}-${calDiaSelec}.pdf`);
+                    } catch(err) { console.error(err); alert("Error generando PDF"); }
+                  };
+
+                  return (
                   <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 20, padding: "18px", marginBottom: 16, animation: "fadeUp .25s ease" }}>
+                    {/* Header */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                       <div>
-                        <p style={{ color: "#a78bfa", fontSize: 14, fontWeight: 700 }}>📅 {fmtDate(calDiaSelec)}</p>
-                        <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>Corte de caja del día</p>
+                        <p style={{ color: "#a78bfa", fontSize: 15, fontWeight: 700 }}>📅 {fmtDate(calDiaSelec)}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>Corte de caja del día · {diaData.ingresos.length + diaData.gastos.length} movimientos</p>
                       </div>
                       <button onClick={() => setCalDiaSelec(null)} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 30, height: 30, cursor: "pointer", color: "var(--text-secondary)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                     </div>
 
-                    {/* Resumen del día */}
+                    {/* Tarjetas resumen */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                       {[
                         { label: "Ingresos", val: diaData.totalIng, color: "#4ade80", bg: "rgba(74,222,128,.1)", border: "rgba(74,222,128,.2)" },
                         { label: "Gastos",   val: diaData.totalGas, color: "#f87171", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
-                        { label: "Utilidad", val: diaData.totalIng - diaData.totalGas, color: (diaData.totalIng - diaData.totalGas) >= 0 ? "#4ade80" : "#f87171", bg: (diaData.totalIng - diaData.totalGas) >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: (diaData.totalIng - diaData.totalGas) >= 0 ? "rgba(74,222,128,.15)" : "rgba(248,113,113,.15)" },
+                        { label: "Utilidad", val: util, color: util >= 0 ? "#4ade80" : "#f87171", bg: util >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: util >= 0 ? "rgba(74,222,128,.15)" : "rgba(248,113,113,.15)" },
                       ].map(c => (
                         <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
                           <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{c.label}</p>
@@ -683,27 +805,105 @@ export default function FinanzasScreen({
                       ))}
                     </div>
 
-                    {/* Formas de pago del día */}
-                    {(diaData.efectivo > 0 || diaData.transferencia > 0 || diaData.tarjeta > 0) && (
-                      <div style={{ background: "rgba(167,139,250,.07)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
-                        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💳 Ingresos por forma de pago</p>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          {[
-                            { label: "Efectivo", val: diaData.efectivo, icon: "💵", color: "#4ade80" },
-                            { label: "Transfer.", val: diaData.transferencia, icon: "📲", color: "#38bdf8" },
-                            { label: "Tarjeta", val: diaData.tarjeta, icon: "💳", color: "#a78bfa" },
-                          ].map(fp => fp.val > 0 ? (
-                            <div key={fp.label} style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "10px 6px", textAlign: "center" }}>
-                              <p style={{ fontSize: 18, marginBottom: 4 }}>{fp.icon}</p>
-                              <p style={{ color: fp.color, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmtMoney(fp.val)}</p>
-                              <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 2 }}>{fp.label}</p>
+                    {/* Ingresos por concepto con barra % */}
+                    {catArr.length > 0 && (
+                      <div style={{ background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.15)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
+                        <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 12 }}>💰 Ingresos por concepto</p>
+                        {catArr.map(([cat, val]) => {
+                          const pct = diaData.totalIng > 0 ? (val / diaData.totalIng * 100) : 0;
+                          return (
+                            <div key={cat} style={{ marginBottom: 10 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                  <span style={{ fontSize: 14 }}>{CAT_ICON[cat] || "📌"}</span>
+                                  <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{cat}</span>
+                                </div>
+                                <div style={{ textAlign: "right" }}>
+                                  <span style={{ color: "#4ade80", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmtMoney(val)}</span>
+                                  <span style={{ color: "#8b949e", fontSize: 10, marginLeft: 6 }}>{pct.toFixed(0)}%</span>
+                                </div>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 2, background: "var(--bg-elevated)" }}>
+                                <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#4ade80,#22d3ee)", borderRadius: 2, transition: "width .4s ease" }} />
+                              </div>
                             </div>
-                          ) : null)}
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Formas de pago con % */}
+                    {pagoArr.length > 0 && (
+                      <div style={{ background: "rgba(167,139,250,.05)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
+                        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💳 Por forma de pago</p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          {pagoArr.map(([fp, val]) => {
+                            const icon = fp === "Efectivo" ? "💵" : fp === "Transferencia" ? "📲" : fp === "Tarjeta" ? "💳" : "❓";
+                            const pct = diaData.totalIng > 0 ? (val / diaData.totalIng * 100) : 0;
+                            return (
+                              <div key={fp} style={{ flex: 1, background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
+                                <p style={{ fontSize: 20, marginBottom: 4 }}>{icon}</p>
+                                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmtMoney(val)}</p>
+                                <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{fp}</p>
+                                <p style={{ color: "#8b949e", fontSize: 9, marginTop: 1 }}>{pct.toFixed(0)}%</p>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    {/* Lista de movimientos del día */}
+                    {/* Gastos por categoría */}
+                    {gasArr.length > 0 && (
+                      <div style={{ background: "rgba(248,113,113,.05)", border: "1px solid rgba(248,113,113,.12)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
+                        <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💸 Gastos por categoría</p>
+                        {gasArr.map(([cat, val]) => {
+                          const pct = diaData.totalGas > 0 ? (val / diaData.totalGas * 100) : 0;
+                          return (
+                            <div key={cat} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,.04)" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                <span style={{ fontSize: 14 }}>{CAT_ICON[cat] || "📌"}</span>
+                                <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{cat}</span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 50, height: 3, borderRadius: 2, background: "var(--bg-elevated)" }}>
+                                  <div style={{ height: "100%", width: `${pct}%`, background: "#f87171", borderRadius: 2 }} />
+                                </div>
+                                <span style={{ color: "#f87171", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmtMoney(val)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Botones PDF / WhatsApp / Copiar */}
+                    {(diaData.ingresos.length > 0 || diaData.gastos.length > 0) && (
+                      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                        <button onClick={descargarPDFDia}
+                          style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                            background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                            boxShadow: "0 3px 12px rgba(244,63,94,.35)" }}>
+                          <span style={{ fontSize: 14 }}>📄</span> PDF
+                        </button>
+                        <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(textoCorte)}`, "_blank")}
+                          style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                            background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                            boxShadow: "0 3px 12px rgba(37,211,102,.3)" }}>
+                          <span style={{ fontSize: 14 }}>💬</span> WhatsApp
+                        </button>
+                        <button onClick={() => navigator.clipboard.writeText(textoCorte)}
+                          style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
+                            background: "var(--bg-elevated)", color: "var(--text-secondary)",
+                            display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <span style={{ fontSize: 14 }}>📋</span> Copiar
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Lista detallada de ingresos */}
                     {diaData.ingresos.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
                         <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💰 Ingresos del día</p>
@@ -730,6 +930,7 @@ export default function FinanzasScreen({
                       </div>
                     )}
 
+                    {/* Lista detallada de gastos */}
                     {diaData.gastos.length > 0 && (
                       <div>
                         <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💸 Gastos del día</p>
@@ -755,7 +956,8 @@ export default function FinanzasScreen({
                       </div>
                     )}
                   </div>
-                )}
+                  );
+                })()}
               </div>
             );
           })()}
