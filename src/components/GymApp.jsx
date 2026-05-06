@@ -93,6 +93,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     tutor_nombre: "",
     tutor_telefono: "",
     tutor_parentesco: "",
+    tutor_foto: null,
   }));
   const [_fMTutorErrores, setFMTutorErrores] = useState({}); // eslint-disable-line no-unused-vars
   const [_showFotoModal, setShowFotoModal] = useState(false); // eslint-disable-line no-unused-vars
@@ -188,7 +189,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         const txDb = await supabase.from("transacciones");
         const txData = await txDb.select(GYM_ID);
         setTxs(txData.map(t => ({ id: t.id, tipo: t.tipo, categoria: t.categoria, desc: t.descripcion, descripcion: t.descripcion, monto: t.monto, fecha: t.fecha, miembroId: t.miembro_id || null, miembro_id: t.miembro_id || null, forma_pago: t.forma_pago || null, created_at: t.created_at || null })));
-        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, beca: m.beca || false,
+        setMiembros(mData.filter(m => !m.archivado).map(m => ({ id: m.id, nombre: m.nombre, tel: m.tel || "", foto: m.foto || null, fecha_incorporacion: m.fecha_incorporacion || null, sexo: m.sexo || null, fecha_nacimiento: m.fecha_nacimiento || null, notas: m.notas || "", congelado: m.congelado || false, fecha_descongelar: m.fecha_descongelar || null, dias_congelados: m.dias_congelados || 0, tutor_nombre: m.tutor_nombre || null, tutor_telefono: m.tutor_telefono || null, tutor_parentesco: m.tutor_parentesco || null, tutor_foto: m.tutor_foto || null, beca: m.beca || false,
           // ── Estado y QR ──
           estado: m.estado || "Activo",
           qr_token: m.qr_token || null,
@@ -370,6 +371,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         tutor_nombre:     esMenor ? (data.tutor_nombre || null) : null,
         tutor_telefono:   esMenor ? (data.tutor_telefono || null) : null,
         tutor_parentesco: esMenor ? (data.tutor_parentesco || null) : null,
+        tutor_foto:        esMenor ? (data.tutor_foto || null)       : null,
+      tutor_foto:        esMenor ? (data.tutor_foto || null)       : null,
       }, ...p]);
 
       // ── Registrar membresía inicial si se eligió un plan y NO es pendiente ──
@@ -446,7 +449,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     setFM({
       nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "",
       fecha_incorporacion: "", notas: "", clasePrueba: false, fechaPrueba: todayISO(),
-      tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "",
+      tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "", tutor_foto: null,
     });
     setFMTutorErrores({});
     // Only open detalle if called from legacy flow (not from wizard)
@@ -482,7 +485,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
     setMiembros(p => p.map(m => m.id === updated.id ? updated : m));
     setSelM(updated);
     const db = await supabase.from("miembros");
-    await db.update(updated.id, { nombre: updated.nombre, tel: updated.tel, foto: updated.foto || null, fecha_incorporacion: updated.fecha_incorporacion, sexo: updated.sexo || null, fecha_nacimiento: updated.fecha_nacimiento || null, notas: updated.notas || null, congelado: updated.congelado || false, fecha_descongelar: updated.fecha_descongelar || null, dias_congelados: updated.dias_congelados || 0, tutor_nombre: updated.tutor_nombre || null, tutor_telefono: updated.tutor_telefono || null, tutor_parentesco: updated.tutor_parentesco || null, beca: updated.beca || false });
+    await db.update(updated.id, { nombre: updated.nombre, tel: updated.tel, foto: updated.foto || null, fecha_incorporacion: updated.fecha_incorporacion, sexo: updated.sexo || null, fecha_nacimiento: updated.fecha_nacimiento || null, notas: updated.notas || null, congelado: updated.congelado || false, fecha_descongelar: updated.fecha_descongelar || null, dias_congelados: updated.dias_congelados || 0, tutor_nombre: updated.tutor_nombre || null, tutor_telefono: updated.tutor_telefono || null, tutor_parentesco: updated.tutor_parentesco || null, tutor_foto: updated.tutor_foto || null, beca: updated.beca || false });
   };
 
   const saveExtraCfg = (patch) => {
@@ -827,7 +830,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
 
         {modal === "miembro" && (
           <NuevoMiembroWizard
-            onClose={() => { setModal(null); setFM({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: todayISO(), notas: "", tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "", plan: null, monto: null, formaPago: null }); }}
+            onClose={() => { setModal(null); setFM({ nombre: "", tel: "", foto: null, sexo: "", fecha_nacimiento: "", fecha_incorporacion: todayISO(), notas: "", tutor_nombre: "", tutor_telefono: "", tutor_parentesco: "", tutor_foto: null, plan: null, monto: null, formaPago: null }); }}
             onAdd={async (wizardFM, receiptInfo) => {
               setFM(wizardFM);
               const savedM = await addM(wizardFM);

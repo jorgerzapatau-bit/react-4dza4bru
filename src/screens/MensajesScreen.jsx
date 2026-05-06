@@ -60,6 +60,7 @@ function resolveDestinatario(miembro) {
       esMenor:         true,
       tutorNombre:     miembro.tutor_nombre,
       tutorParentesco: miembro.tutor_parentesco || "Tutor",
+      tutorFoto:       miembro.tutor_foto || null,
     };
   }
   return {
@@ -68,6 +69,7 @@ function resolveDestinatario(miembro) {
     esMenor:         false,
     tutorNombre:     null,
     tutorParentesco: null,
+    tutorFoto:       null,
   };
 }
 
@@ -152,7 +154,21 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
     }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <AvatarCircle nombre={item.miembro?.nombre || item.nombreMiembro} foto={item.miembro?.foto} color={col} />
+        {/* Avatar: doble para menores, simple para adultos */}
+        {item.esMenor ? (
+          <div style={{ position: "relative", width: 52, height: 44, flexShrink: 0 }}>
+            {/* Alumno (fondo) */}
+            <div style={{ position: "absolute", left: 0, top: 2 }}>
+              <AvatarCircle nombre={item.miembro?.nombre || item.nombreMiembro} foto={item.miembro?.foto} size={36} color={col} />
+            </div>
+            {/* Tutor (frente) */}
+            <div style={{ position: "absolute", right: 0, bottom: 0, border: "2px solid var(--bg-card)", borderRadius: "50%" }}>
+              <AvatarCircle nombre={item.tutorNombre} foto={item.tutorFoto} size={32} color="#f59e0b" />
+            </div>
+          </div>
+        ) : (
+          <AvatarCircle nombre={item.miembro?.nombre || item.nombreMiembro} foto={item.miembro?.foto} color={col} />
+        )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
             {item.miembro?.nombre || item.nombreMiembro}
@@ -657,23 +673,25 @@ export default function MensajesScreen({
   const buildVencimientoMsg = useCallback((miembro, diasReales, memInfo, dest) => {
     const dest_  = dest || resolveDestinatario(miembro);
     // Para menor: el saludo va al tutor, pero el alumno se menciona en el cuerpo
-    const nombreSaludo  = dest_.esMenor
+    // Nombre seguro para el saludo (tutor si es menor, alumno si es mayor)
+    const nombreSaludo = (dest_.esMenor && dest_.tutorNombre)
       ? dest_.tutorNombre.split(" ")[0]
       : miembro.nombre.split(" ")[0];
-    const nombreAlumno  = miembro.nombre.split(" ")[0];
+    const nombreAlumno = miembro.nombre.split(" ")[0];
 
-    const tpl = getTemplate(mapDiasToTemplateKey(diasReales));
+    const tpl  = getTemplate(mapDiasToTemplateKey(diasReales));
+    const plan = memInfo?.plan || "";
+    const vence = memInfo?.vence || "";
+
     if (!tpl) {
-      const vence   = memInfo?.vence || "";
-      const plan    = memInfo?.plan || "";
       const planStr = plan ? ` *${plan}*` : "";
       const intro   = dest_.esMenor
-        ? `¡Hola ${nombreSaludo}! Le informamos sobre la membresía de *${nombreAlumno}*.`
+        ? `¡Hola ${nombreSaludo}! Le informamos sobre la membresía de *${nombreAlumno}* en *${gymNom}*.`
         : `¡Hola ${nombreSaludo}!`;
-      if (diasReales === 0) return `${intro} 🚨 La membresía${planStr} en *${gymNom}* vence *HOY*. Renueva ahora para no perder el acceso 💪`;
+      if (diasReales === 0) return `${intro} 🚨 La membresía${planStr} vence *HOY*. Renueva para no perder el acceso 💪`;
       if (diasReales <= 3)  return `${intro} ⏰ La membresía${planStr} vence en *${diasReales} días* (${vence}). No pierdas el acceso 🔥`;
       const tplLargo = gymConfig?.recordatorio_tpl || "";
-      return (tplLargo || `${intro} Te recordamos que la membresía vence el ${vence}. — ${gymNom}`)
+      return (tplLargo || `${intro} Recordatorio: la membresía${planStr} vence el *${vence}*. — ${gymNom}`)
         .replace(/\{nombre\}/gi, nombreSaludo).replace(/\{student_name\}/gi, nombreSaludo)
         .replace(/\{fecha\}/gi, vence).replace(/\{due_date\}/gi, vence)
         .replace(/\{clabe\}/gi, gymConfig?.transferencia_clabe || "")
@@ -682,14 +700,14 @@ export default function MensajesScreen({
         .replace(/\{bank\}/gi, gymConfig?.transferencia_banco || "")
         .replace(/\{propietario\}/gi, gymConfig?.propietario_nombre || gymNom)
         .replace(/\{propietario_titulo\}/gi, gymConfig?.propietario_titulo || "")
-        .replace(/\{gym\}/gi, gymNom).replace(/\{plan\}/gi, plan).replace(/\{concept\}/gi, plan);
+        .replace(/\{gym\}/gi, gymNom).replace(/\{plan\}/gi, plan).replace(/\{concept\}/gi, plan || gymNom);
     }
-    // Con template: reemplazar student_name por el nombre correcto (tutor si es menor)
+    // Con plantilla del sistema: inyectar nombre correcto y garantizar {concept} no quede vacío
     const vars = {
       ...buildVarsFromMember(miembro, memInfo, gymConfig),
       student_name: nombreSaludo,
-      // Agregar variable extra por si el template la usa
-      alumno_name: nombreAlumno,
+      alumno_name:  nombreAlumno,
+      concept:      plan || gymNom,   // fallback: gym si no hay plan
     };
     return replaceTemplateVars(tpl.body_text, vars);
   }, [getTemplate, gymConfig, gymNom]);
@@ -726,6 +744,7 @@ export default function MensajesScreen({
         esMenor:         dest.esMenor,
         tutorNombre:     dest.tutorNombre,
         tutorParentesco: dest.tutorParentesco,
+        tutorFoto:       dest.tutorFoto,
       });
     });
 
@@ -736,15 +755,30 @@ export default function MensajesScreen({
       const id   = `bday_${m.id}`;
       const dest = resolveDestinatario(m);
       const tpl  = getTemplate("birthday");
-      // Para cumpleaños de menor, saludo al tutor pero mencionamos al alumno
-      const nombreSaludo = dest.esMenor ? dest.tutorNombre.split(" ")[0] : m.nombre.split(" ")[0];
+
       const nombreAlumno = m.nombre.split(" ")[0];
-      const vars = { ...buildVarsFromMember(m, {}, gymConfig), student_name: nombreSaludo, alumno_name: nombreAlumno };
-      const msg  = tpl
-        ? replaceTemplateVars(tpl.body_text, vars)
-        : dest.esMenor
-          ? `🎂 ¡Hola ${nombreSaludo}! Hoy es el cumpleaños de *${nombreAlumno}*. En *${gymNom}* le deseamos un día increíble 🎉💪`
-          : `🎂 ¡Feliz cumpleaños ${nombreSaludo}! En *${gymNom}* te deseamos un día increíble 💪🎉`;
+      const nombreTutor  = (dest.esMenor && dest.tutorNombre)
+        ? dest.tutorNombre.split(" ")[0]
+        : null;
+      const nombreSaludo = (dest.esMenor && nombreTutor) ? nombreTutor : nombreAlumno;
+
+      // concept = gymNom para evitar que quede vacio en la plantilla
+      const vars = {
+        ...buildVarsFromMember(m, {}, gymConfig),
+        student_name: nombreSaludo,
+        alumno_name:  nombreAlumno,
+        concept:      gymNom,
+      };
+
+      let msg;
+      if (tpl) {
+        msg = replaceTemplateVars(tpl.body_text, vars);
+      } else if (dest.esMenor) {
+        msg = `🎂 ¡Hola ${nombreSaludo}! Hoy es el cumpleaños de *${nombreAlumno}*. En *${gymNom}* le deseamos un día increíble lleno de salud y motivación 🎉💪`;
+      } else {
+        msg = `🎂 ¡Feliz cumpleaños ${nombreSaludo}! En *${gymNom}* te deseamos un día increíble lleno de salud y motivación 💪🎉`;
+      }
+
       items.push({
         id, tipo: "birthday", miembro: m,
         diasReales: 0,
@@ -754,6 +788,7 @@ export default function MensajesScreen({
         esMenor:         dest.esMenor,
         tutorNombre:     dest.tutorNombre,
         tutorParentesco: dest.tutorParentesco,
+        tutorFoto:       dest.tutorFoto,
       });
     });
 

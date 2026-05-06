@@ -41,7 +41,7 @@ async function resizeImage(dataUrl, maxSize = 300, quality = 0.75) {
 }
 
 // ─────────────────────────────────────────────
-export default function PhotoModal({ onClose, onCapture }) {
+export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del miembro" }) {
   // "null" → menú inicial   "camera" → vista cámara   "preview" → confirmar foto
   const [mode,    setMode]    = useState(null);
   const [preview, setPreview] = useState(null);
@@ -158,7 +158,7 @@ export default function PhotoModal({ onClose, onCapture }) {
 
         {/* ── Cabecera ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>📸 Foto del miembro</h2>
+          <h2 style={{ color: "#fff", fontSize: 17, fontWeight: 700 }}>{titulo}</h2>
           <button
             onClick={handleClose}
             style={{
