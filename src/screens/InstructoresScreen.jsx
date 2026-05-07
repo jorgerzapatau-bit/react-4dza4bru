@@ -144,7 +144,7 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
             <div style={{
               background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)",
               borderRadius: 10, padding: "10px 14px", marginBottom: 14,
-              color: "#f87171", fontSize: 12,
+              color: "var(--col-danger)", fontSize: 12,
             }}>{error}</div>
           )}
 
@@ -158,10 +158,10 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
             <div onClick={() => setShowPhoto(true)} style={{
               width: 76, height: 76, borderRadius: "50%",
-              background: form.foto ? "transparent" : "linear-gradient(135deg,#6c63ff33,#e040fb33)",
+              background: form.foto ? "transparent" : "linear-gradient(135deg,var(--col-accent)33,var(--col-accent)33)",
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer", overflow: "hidden", marginBottom: 6,
-              border: form.foto ? "2.5px solid #6c63ff" : "2px dashed rgba(167,139,250,.4)",
+              border: form.foto ? "2.5px solid var(--col-accent)" : "2px dashed rgba(167,139,250,.4)",
               flexShrink: 0,
             }}>
               {form.foto
@@ -169,7 +169,7 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
                 : <span style={{ fontSize: 28 }}>📷</span>
               }
             </div>
-            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11 }}>
+            <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11 }}>
               {form.foto ? "Toca para cambiar foto" : "Toca para agregar foto"}
             </p>
           </div>
@@ -189,10 +189,10 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
                 const sel = form.especialidad === esp;
                 return (
                   <button key={esp} onClick={() => set("especialidad", sel ? "" : esp)} style={{
-                    padding: "7px 13px", border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                    padding: "7px 13px", border: sel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
                     borderRadius: 20, cursor: "pointer", fontFamily: "inherit",
-                    background: sel ? "rgba(108,99,255,.15)" : "var(--bg-elevated,#1e1e2e)",
-                    color: sel ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+                    background: sel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
+                    color: sel ? "var(--col-accent-text)" : "var(--text-secondary,var(--text-tertiary))",
                     fontSize: 12, fontWeight: sel ? 700 : 400, transition: "all .15s",
                   }}>
                     {esp}
@@ -234,7 +234,7 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
                 style={{
                   width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
                   background: form.activo
-                    ? "linear-gradient(135deg,#6c63ff,#e040fb)"
+                    ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))"
                     : "var(--bg-elevated)",
                   position: "relative", transition: "background .2s", flexShrink: 0,
                 }}
@@ -267,7 +267,7 @@ function ModalInstructor({ instructor, gymId, onSave, onClose }) {
               style={{
                 flex: 1, padding: "14px",
                 border: "none", borderRadius: 14,
-                background: saving ? "rgba(108,99,255,.4)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
+                background: saving ? "rgba(108,99,255,.4)" : "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
                 color: "#fff", fontSize: 14, fontWeight: 700,
                 cursor: saving ? "not-allowed" : "pointer", fontFamily: "inherit",
                 boxShadow: saving ? "none" : "0 4px 18px rgba(108,99,255,.35)",
@@ -307,7 +307,7 @@ function InstructorCard({ instructor, clases, onEdit, onArchivar, isOwner }) {
       {!instructor.activo && (
         <span style={{
           position: "absolute", top: 12, right: 12,
-          background: "rgba(248,113,113,.15)", color: "#f87171",
+          background: "rgba(248,113,113,.15)", color: "var(--col-danger)",
           borderRadius: 8, padding: "2px 8px", fontSize: 10, fontWeight: 700,
         }}>Inactivo</span>
       )}
@@ -316,11 +316,11 @@ function InstructorCard({ instructor, clases, onEdit, onArchivar, isOwner }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{
           width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
-          background: instructor.foto ? "transparent" : "linear-gradient(135deg,#6c63ff33,#e040fb33)",
-          color: "#a78bfa", fontSize: 18, fontWeight: 700,
+          background: instructor.foto ? "transparent" : "linear-gradient(135deg,var(--col-accent)33,var(--col-accent)33)",
+          color: "var(--col-accent-text)", fontSize: 18, fontWeight: 700,
           display: "flex", alignItems: "center", justifyContent: "center",
           overflow: "hidden",
-          border: "2px solid rgba(108,99,255,.2)",
+          border: "2px solid var(--col-accent-border)",
         }}>
           {instructor.foto
             ? <img src={instructor.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -332,7 +332,7 @@ function InstructorCard({ instructor, clases, onEdit, onArchivar, isOwner }) {
             {instructor.nombre}
           </p>
           {instructor.especialidad && (
-            <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 600, marginTop: 2 }}>
+            <p style={{ color: "var(--col-accent-text)", fontSize: 11, fontWeight: 600, marginTop: 2 }}>
               🥋 {instructor.especialidad}
             </p>
           )}
@@ -369,9 +369,9 @@ function InstructorCard({ instructor, clases, onEdit, onArchivar, isOwner }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {clasesAsignadas.map(c => (
               <span key={c.id} style={{
-                background: `${c.color || "#6c63ff"}18`,
-                color: c.color || "#6c63ff",
-                border: `1px solid ${c.color || "#6c63ff"}30`,
+                background: `${c.color || "var(--col-accent)"}18`,
+                color: c.color || "var(--col-accent)",
+                border: `1px solid ${c.color || "var(--col-accent)"}30`,
                 borderRadius: 7, padding: "2px 8px", fontSize: 11, fontWeight: 600,
               }}>
                 {c.nombre}
@@ -396,7 +396,7 @@ function InstructorCard({ instructor, clases, onEdit, onArchivar, isOwner }) {
             flex: 1, padding: "8px",
             border: "1px solid rgba(248,113,113,.25)", borderRadius: 10,
             background: "rgba(248,113,113,.08)",
-            color: "#f87171", cursor: "pointer",
+            color: "var(--col-danger)", cursor: "pointer",
             fontFamily: "inherit", fontSize: 12, fontWeight: 600,
           }}>
             {instructor.activo ? "🗄️ Archivar" : "♻️ Restaurar"}
@@ -471,12 +471,12 @@ export default function InstructoresScreen({ gymId, isOwner, clases = [] }) {
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{
               width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-              background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+              background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
             }}>👥</div>
             <div style={{ flex: 1 }}>
               <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700, lineHeight: 1.2 }}>
-                <span style={{ background: "linear-gradient(90deg,#6c63ff,#e040fb)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Instructores</span>
+                <span style={{ background: "linear-gradient(90deg,var(--col-accent),var(--col-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Instructores</span>
               </h1>
               <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>
                 {totalActivos} activo{totalActivos !== 1 ? "s" : ""}
@@ -486,7 +486,7 @@ export default function InstructoresScreen({ gymId, isOwner, clases = [] }) {
               <button onClick={() => setModal("nuevo")} style={{
                 border: "none", borderRadius: 12, padding: "8px 16px",
                 cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
+                background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", color: "#fff",
                 boxShadow: "0 3px 14px rgba(108,99,255,.35)",
               }}>
                 + Nuevo instructor
@@ -521,7 +521,7 @@ export default function InstructoresScreen({ gymId, isOwner, clases = [] }) {
                 <button key={val} onClick={() => setFiltro(val)} style={{
                   padding: "8px 14px", border: "none", borderRadius: 12,
                   cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                  background: filtro === val ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                  background: filtro === val ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
                   color: filtro === val ? "#fff" : "var(--text-secondary)",
                 }}>{lbl}</button>
               ))}
@@ -537,7 +537,7 @@ export default function InstructoresScreen({ gymId, isOwner, clases = [] }) {
             <div style={{ textAlign: "center", padding: "60px 0" }}>
               <div style={{
                 width: 36, height: 36, borderRadius: "50%",
-                border: "3px solid rgba(108,99,255,.2)", borderTopColor: "#6c63ff",
+                border: "3px solid var(--col-accent-border)", borderTopColor: "var(--col-accent)",
                 margin: "0 auto 14px", animation: "spin .8s linear infinite",
               }} />
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -553,7 +553,7 @@ export default function InstructoresScreen({ gymId, isOwner, clases = [] }) {
                 <button onClick={() => setModal("nuevo")} style={{
                   marginTop: 12, border: "none", borderRadius: 12, padding: "10px 22px",
                   cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                  background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
+                  background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", color: "#fff",
                 }}>
                   + Agregar primer instructor
                 </button>
@@ -622,8 +622,8 @@ export default function InstructoresScreen({ gymId, isOwner, clases = [] }) {
                 flex: 1, padding: "11px", border: "none",
                 borderRadius: 12,
                 background: confirmArchivar.activo
-                  ? "linear-gradient(135deg,#f43f5e,#e11d48)"
-                  : "linear-gradient(135deg,#6c63ff,#e040fb)",
+                  ? "linear-gradient(135deg,var(--col-danger),var(--col-danger))"
+                  : "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
                 color: "#fff", cursor: "pointer",
                 fontFamily: "inherit", fontWeight: 700,
               }}>

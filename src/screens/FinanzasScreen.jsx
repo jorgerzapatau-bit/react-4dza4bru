@@ -11,7 +11,7 @@ const CAT_ICON = {
 function Badge({ val }) {
   const up = parseFloat(val) >= 0;
   return (
-    <span style={{ background: up ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)", color: up ? "#4ade80" : "#f87171", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>
+    <span style={{ background: up ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)", color: up ? "var(--col-success)" : "var(--col-danger)", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>
       {up ? "▲" : "▼"} {Math.abs(val)}%
     </span>
   );
@@ -140,7 +140,7 @@ export default function FinanzasScreen({
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: .5, textTransform: "uppercase" }}>{fechaFmt}</p>
                     <span style={{ color: "rgba(167,139,250,.4)", fontSize: 10 }}>·</span>
-                    <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{horaStr}</p>
+                    <p style={{ color: "var(--col-accent-text)", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{horaStr}</p>
                   </div>
                 );
               })()}
@@ -148,7 +148,7 @@ export default function FinanzasScreen({
               <div className="mobile-only" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                 {gymConfig?.logo
                   ? <img src={gymConfig.logo} alt="logo" style={{ maxWidth: 36, maxHeight: 28, width: "auto", height: "auto", objectFit: "contain", borderRadius: 6, flexShrink: 0 }} />
-                  : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>💪</div>
+                  : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>💪</div>
                 }
                 <h1 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700 }}>{gymConfig?.nombre || "GymFit Pro"}</h1>
               </div>
@@ -158,7 +158,7 @@ export default function FinanzasScreen({
             <div className="mobile-only" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
               <button onClick={() => setScreen("mensajes")} style={{ position: "relative", width: 38, height: 38, borderRadius: 11, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 💬
-                {totalRecordatorios > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 5, right: 5, width: 7, height: 7, background: "#f43f5e", borderRadius: "50%", border: "2px solid #0d1117" }} />}
+                {totalRecordatorios > 0 && <span className="wa-pulse" style={{ position: "absolute", top: 5, right: 5, width: 7, height: 7, background: "var(--col-danger)", borderRadius: "50%", border: "2px solid var(--bg-base)" }} />}
               </button>
               <button onClick={() => setConfigScreen(true)} style={{ width: 38, height: 38, borderRadius: 11, border: "none", cursor: "pointer", background: "rgba(255,255,255,.07)", fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center" }}>⚙️</button>
             </div>
@@ -167,7 +167,7 @@ export default function FinanzasScreen({
           {/* Tabs */}
           <div style={{ display: "flex", gap: 3, background: "var(--bg-card)", borderRadius: 12, padding: 4, border: "1px solid var(--border)" }}>
             {TABS.map((t, i) => (
-              <button key={i} onClick={() => setTab(i)} style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 9, cursor: "pointer", background: tab === i ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "transparent", color: tab === i ? "#fff" : "#8b949e", fontSize: 12, fontWeight: tab === i ? 700 : 500, fontFamily: "inherit", boxShadow: tab === i ? "0 2px 10px rgba(108,99,255,.35)" : "none", transition: "all .2s" }}>{t}</button>
+              <button key={i} onClick={() => setTab(i)} style={{ flex: 1, padding: "8px 0", border: "none", borderRadius: 9, cursor: "pointer", background: tab === i ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "transparent", color: tab === i ? "#fff" : "var(--text-secondary)", fontSize: 12, fontWeight: tab === i ? 700 : 500, fontFamily: "inherit", boxShadow: tab === i ? "0 2px 10px rgba(108,99,255,.35)" : "none", transition: "all .2s" }}>{t}</button>
             ))}
           </div>
 
@@ -207,8 +207,8 @@ export default function FinanzasScreen({
                   {/* Ingresos + Gastos */}
                   <div className="card" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                     {[
-                      { label: "Ingresos", val: totalIng, crec: crecIng, c: "#22d3ee", bg: "rgba(34,211,238,.07)", bc: "rgba(34,211,238,.2)" },
-                      { label: "Gastos",   val: totalGas, crec: crecGas, c: "#f43f5e", bg: "rgba(244,63,94,.07)",  bc: "rgba(244,63,94,.2)"  },
+                      { label: "Ingresos", val: totalIng, crec: crecIng, c: "var(--col-info)", bg: "rgba(34,211,238,.07)", bc: "rgba(34,211,238,.2)" },
+                      { label: "Gastos",   val: totalGas, crec: crecGas, c: "var(--col-danger)", bg: "rgba(244,63,94,.07)",  bc: "var(--col-danger-border)"  },
                     ].map((k, i) => (
                       <div key={i} style={{ background: k.bg, borderRadius: 18, padding: "16px 18px", border: `1px solid ${k.bc}` }}>
                         <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, letterSpacing: .6, textTransform: "uppercase", marginBottom: 6 }}>{k.label}</p>
@@ -230,22 +230,22 @@ export default function FinanzasScreen({
                             <p style={{ color: "var(--text-primary)", fontSize: 32, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0" }}>{mActivos}</p>
                             <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>{miembros.filter(m => m.estado === "Vencido").length} vencidos · {miembros.length} total</p>
                           </div>
-                          <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,#6c63ff,#e040fb)", border: "none", borderRadius: 12, padding: "10px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
+                          <button onClick={() => setScreen("miembros")} style={{ background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", border: "none", borderRadius: 12, padding: "10px 18px", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ver todos →</button>
                         </div>
                         {nuevosEsteMes.length > 0 && (
                           <>
                             <div style={{ height: 1, background: "var(--border)", marginBottom: 10 }} />
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                              <p style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>🆕 Nuevos este mes</p>
+                              <p style={{ color: "var(--col-info)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>🆕 Nuevos este mes</p>
                               <button onClick={() => { setFiltroEstado("Nuevo"); setScreen("miembros"); }} style={{ background: "rgba(56,189,248,.15)", border: "none", borderRadius: 8, padding: "2px 10px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
-                                <span style={{ color: "#38bdf8", fontSize: 11, fontWeight: 700 }}>{nuevosEsteMes.length}</span>
-                                {nuevosEsteMes.length > 3 && <span style={{ color: "#38bdf8", fontSize: 10 }}>Ver todos →</span>}
+                                <span style={{ color: "var(--col-info)", fontSize: 11, fontWeight: 700 }}>{nuevosEsteMes.length}</span>
+                                {nuevosEsteMes.length > 3 && <span style={{ color: "var(--col-info)", fontSize: 10 }}>Ver todos →</span>}
                               </button>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                               {nuevosEsteMes.slice(0, 3).map(m => (
                                 <div key={m.id} onClick={() => { setSelM(m); setModal("detalle"); }} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "4px 0" }}>
-                                  <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#38bdf8,#6c63ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>
+                                  <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,var(--col-info),var(--col-accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>
                                     {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : m.nombre.charAt(0)}
                                   </div>
                                   <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, flex: 1 }}>{m.nombre}</p>
@@ -253,7 +253,7 @@ export default function FinanzasScreen({
                                 </div>
                               ))}
                               {nuevosEsteMes.length > 3 && (
-                                <button onClick={() => { setFiltroEstado("Nuevo"); setScreen("miembros"); }} style={{ width: "100%", marginTop: 2, padding: "6px", border: "1px dashed rgba(56,189,248,.25)", borderRadius: 10, background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "#38bdf8", fontSize: 11, fontWeight: 600 }}>
+                                <button onClick={() => { setFiltroEstado("Nuevo"); setScreen("miembros"); }} style={{ width: "100%", marginTop: 2, padding: "6px", border: "1px dashed rgba(56,189,248,.25)", borderRadius: 10, background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "var(--col-info)", fontSize: 11, fontWeight: 600 }}>
                                   +{nuevosEsteMes.length - 3} más — ver todos
                                 </button>
                               )}
@@ -267,31 +267,31 @@ export default function FinanzasScreen({
                   {/* Composición por sexo */}
                   <div className="card" style={{ background: "var(--bg-card)", borderRadius: 18, padding: "14px 18px", border: "1px solid var(--border)", marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                      <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>👥 Composición</p>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>👥 Composición</p>
                       <div style={{ display: "flex", gap: 10 }}>
-                        <span style={{ color: "#60a5fa", fontSize: 12, fontWeight: 700 }}>♂️ {mHombres} <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mHombres / miembros.length * 100) : 0}%</span></span>
+                        <span style={{ color: "var(--col-accent-text)", fontSize: 12, fontWeight: 700 }}>♂️ {mHombres} <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mHombres / miembros.length * 100) : 0}%</span></span>
                         <span style={{ color: "#f472b6", fontSize: 12, fontWeight: 700 }}>♀️ {mMujeres} <span style={{ color: "var(--text-tertiary)", fontWeight: 400, fontSize: 10 }}>{miembros.length > 0 ? Math.round(mMujeres / miembros.length * 100) : 0}%</span></span>
-                        {mSinSexo > 0 && <span style={{ color: "#6b7280", fontSize: 12, fontWeight: 700 }}>— {mSinSexo}</span>}
+                        {mSinSexo > 0 && <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 700 }}>— {mSinSexo}</span>}
                       </div>
                     </div>
                     {miembros.length > 0 && (
                       <div style={{ height: 5, borderRadius: 3, background: "var(--border)", overflow: "hidden", display: "flex" }}>
-                        <div style={{ height: "100%", width: `${Math.round(mHombres / miembros.length * 100)}%`, background: "linear-gradient(90deg,#60a5fa,#3b82f6)" }} />
-                        <div style={{ height: "100%", width: `${Math.round(mMujeres / miembros.length * 100)}%`, background: "linear-gradient(90deg,#e040fb,#f472b6)" }} />
+                        <div style={{ height: "100%", width: `${Math.round(mHombres / miembros.length * 100)}%`, background: "linear-gradient(90deg,var(--col-accent-text),var(--col-accent))" }} />
+                        <div style={{ height: "100%", width: `${Math.round(mMujeres / miembros.length * 100)}%`, background: "linear-gradient(90deg,var(--col-accent),#f472b6)" }} />
                       </div>
                     )}
                     {miembrosSinSexo.length > 0 && (
                       <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
                         {miembrosSinSexo.map(m => (
-                          <div key={m.id} onClick={() => { setSelM(m); setModal("detalle"); }} style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.2)", borderRadius: 12, padding: "8px 10px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-                            <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(245,158,11,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
+                          <div key={m.id} onClick={() => { setSelM(m); setModal("detalle"); }} style={{ background: "var(--col-warning-soft)", border: "1px solid var(--col-warning-border)", borderRadius: 12, padding: "8px 10px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "var(--col-warning-soft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>
                               {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
                             </div>
                             <div style={{ flex: 1 }}>
-                              <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 600 }}>{m.nombre}</p>
+                              <p style={{ color: "var(--col-warning)", fontSize: 12, fontWeight: 600 }}>{m.nombre}</p>
                               <p style={{ color: "#92662a", fontSize: 10 }}>⚠️ Sin sexo registrado · Toca para completar</p>
                             </div>
-                            <span style={{ color: "#f59e0b", fontSize: 16 }}>›</span>
+                            <span style={{ color: "var(--col-warning)", fontSize: 16 }}>›</span>
                           </div>
                         ))}
                       </div>
@@ -304,30 +304,30 @@ export default function FinanzasScreen({
                   {/* Membresías por vencer */}
                   {membresiasPorVencer.length > 0 && (
                     <div className="card" style={{ background: "rgba(239,68,68,.05)", borderRadius: 18, padding: 18, border: "1px solid rgba(239,68,68,.2)", marginBottom: 14 }}>
-                      <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>⏰ Membresías por vencer</p>
+                      <p style={{ color: "var(--col-danger)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>⏰ Membresías por vencer</p>
                       {membresiasPorVencer.map(m => {
                         const yaEnviado = !!recordatoriosEnviados[m.id];
                         return (
                           <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid rgba(239,68,68,.1)", opacity: yaEnviado ? 0.5 : 1, transition: "opacity .3s" }}>
                             <div onClick={() => setScreen("mensajes")} style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, cursor: "pointer" }}>
-                              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: `2px solid ${m.diasVence === 0 ? "rgba(239,68,68,.6)" : m.diasVence <= 1 ? "rgba(239,68,68,.3)" : "rgba(245,158,11,.3)"}` }}>
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "var(--col-warning-soft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, border: `2px solid ${m.diasVence === 0 ? "rgba(239,68,68,.6)" : m.diasVence <= 1 ? "rgba(239,68,68,.3)" : "var(--col-warning-border)"}` }}>
                                 {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
                               </div>
                               <div style={{ flex: 1 }}>
                                 <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                                 <p style={{ color: "var(--text-tertiary)", fontSize: 10, marginTop: 1 }}>
-                                  {m.plan && <span style={{ color: "#6b7280" }}>{m.plan} · </span>}
+                                  {m.plan && <span style={{ color: "var(--text-secondary)" }}>{m.plan} · </span>}
                                   Vence: {fmtDate(m.vence)}
                                 </p>
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                                <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "rgba(245,158,11,.15)", color: m.diasVence === 0 ? "#f87171" : m.diasVence <= 1 ? "#fca5a5" : "#fbbf24", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
+                                <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "var(--col-warning-soft)", color: m.diasVence === 0 ? "var(--col-danger)" : m.diasVence <= 1 ? "#fca5a5" : "var(--col-warning)", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
                                   {m.diasVence === 0 ? "HOY 🚨" : m.diasVence === 1 ? "MAÑANA" : `${m.diasVence}d`}
                                 </span>
-                                <span style={{ color: "#25d366", fontSize: 10, fontWeight: 600 }}>💬 WhatsApp</span>
+                                <span style={{ color: "var(--col-wa)", fontSize: 10, fontWeight: 600 }}>💬 WhatsApp</span>
                               </div>
                             </div>
-                            <button onClick={() => marcarRecordatorio(m.id)} title={yaEnviado ? "Ya enviado hoy" : "Marcar como enviado"} style={{ width: 34, height: 34, border: `1px solid ${yaEnviado ? "rgba(74,222,128,.4)" : "#30363d"}`, borderRadius: 10, background: yaEnviado ? "rgba(74,222,128,.12)" : "transparent", cursor: "pointer", color: yaEnviado ? "#4ade80" : "#8b949e", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .2s" }}>
+                            <button onClick={() => marcarRecordatorio(m.id)} title={yaEnviado ? "Ya enviado hoy" : "Marcar como enviado"} style={{ width: 34, height: 34, border: `1px solid ${yaEnviado ? "var(--col-success-border)" : "var(--border-strong)"}`, borderRadius: 10, background: yaEnviado ? "var(--col-success-soft)" : "transparent", cursor: "pointer", color: yaEnviado ? "var(--col-success)" : "var(--text-secondary)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all .2s" }}>
                               {yaEnviado ? "✓" : "💬"}
                             </button>
                           </div>
@@ -339,10 +339,10 @@ export default function FinanzasScreen({
                   {/* Cumpleaños próximos */}
                   {cumplesPróximos.length > 0 && (
                     <div className="card" style={{ background: "rgba(250,204,21,.06)", borderRadius: 18, padding: 18, border: "1px solid rgba(250,204,21,.18)", marginBottom: 14 }}>
-                      <p style={{ color: "#fbbf24", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 12 }}>🎂 Cumpleaños esta semana</p>
+                      <p style={{ color: "var(--col-warning)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 12 }}>🎂 Cumpleaños esta semana</p>
                       {cumplesPróximos.map(m => (
                         <div key={m.id} className="rh" onClick={() => { setSelM(m); setModal("detalle"); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid rgba(250,204,21,.08)", cursor: "pointer" }}>
-                          <div style={{ width: 38, height: 38, borderRadius: "50%", background: m.diasCumple === 0 ? "linear-gradient(135deg,#fbbf24,#f59e0b)" : "rgba(250,204,21,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: m.diasCumple === 0 ? 20 : 16, overflow: "hidden", flexShrink: 0 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: "50%", background: m.diasCumple === 0 ? "linear-gradient(135deg,var(--col-warning),var(--col-warning))" : "rgba(250,204,21,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: m.diasCumple === 0 ? 20 : 16, overflow: "hidden", flexShrink: 0 }}>
                             {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.diasCumple === 0 ? "🎂" : "🎁")}
                           </div>
                           <div style={{ flex: 1 }}>
@@ -352,7 +352,7 @@ export default function FinanzasScreen({
                               {calcEdad(m.fecha_nacimiento) !== null && ` · cumple ${calcEdad(m.fecha_nacimiento) + (m.diasCumple === 0 ? 0 : 1)} años`}
                             </p>
                           </div>
-                          <span style={{ background: m.diasCumple === 0 ? "rgba(251,191,36,.2)" : "rgba(255,255,255,.06)", color: m.diasCumple === 0 ? "#fbbf24" : "#6b7280", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
+                          <span style={{ background: m.diasCumple === 0 ? "rgba(251,191,36,.2)" : "rgba(255,255,255,.06)", color: m.diasCumple === 0 ? "var(--col-warning)" : "var(--text-secondary)", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
                             {m.diasCumple === 0 ? "HOY 🎂" : `${m.diasCumple}d`}
                           </span>
                         </div>
@@ -364,7 +364,7 @@ export default function FinanzasScreen({
                   <div className="card" style={{ background: "var(--bg-card)", borderRadius: 18, padding: 18, border: "1px solid var(--border)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                       <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>Últimos movimientos</p>
-                      <button onClick={() => setTab(3)} style={{ background: "none", border: "none", color: "#6c63ff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Ver todos</button>
+                      <button onClick={() => setTab(3)} style={{ background: "none", border: "none", color: "var(--col-accent)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Ver todos</button>
                     </div>
                     {txsMes.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 13, textAlign: "center", padding: "16px 0" }}>Sin movimientos este mes</p>}
                     {[...txsMes].sort((a, b) => { const da = parseDate(a.fecha); const db2 = parseDate(b.fecha); if (da && db2) return db2 - da; return (b.fecha || "").localeCompare(a.fecha || ""); }).slice(0, 5).map(t => (
@@ -373,7 +373,7 @@ export default function FinanzasScreen({
                           {(() => {
                             const mFoto = t.tipo === "ingreso" && (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
                             return (
-                              <div style={{ width: 34, height: 34, borderRadius: "50%", fontSize: 14, background: t.tipo === "ingreso" ? "rgba(34,211,238,.12)" : "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto ? "2px solid rgba(34,211,238,.3)" : "none" }}>
+                              <div style={{ width: 34, height: 34, borderRadius: "50%", fontSize: 14, background: t.tipo === "ingreso" ? "var(--col-info-soft)" : "var(--col-danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto ? "2px solid rgba(34,211,238,.3)" : "none" }}>
                                 {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || "📝"}
                               </div>
                             );
@@ -383,7 +383,7 @@ export default function FinanzasScreen({
                             <p style={{ color: "var(--text-tertiary)", fontSize: 10 }}>{fmtDate(t.fecha)}</p>
                           </div>
                         </div>
-                        <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
+                        <p style={{ color: t.tipo === "ingreso" ? "var(--col-info)" : "var(--col-danger)", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
                       </div>
                     ))}
                   </div>
@@ -397,17 +397,17 @@ export default function FinanzasScreen({
           {tab === 1 && <>
             <div className="card" style={{ background: "rgba(34,211,238,.08)", borderRadius: 18, padding: 18, border: "1px solid rgba(34,211,238,.2)", marginBottom: 14 }}>
               <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Total ingresos · {mesLabel}</p>
-              <p style={{ color: "#22d3ee", fontSize: 30, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 8px" }}>{fmt(totalIng)}</p>
+              <p style={{ color: "var(--col-info)", fontSize: 30, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 8px" }}>{fmt(totalIng)}</p>
               <Badge val={crecIng} />
             </div>
-            <button onClick={() => setModal("ingreso")} style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#22d3ee,#0ea5e9)", color: "#fff", marginBottom: 14 }}>+ Agregar ingreso</button>
+            <button onClick={() => setModal("ingreso")} style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,var(--col-info),var(--col-info))", color: "#fff", marginBottom: 14 }}>+ Agregar ingreso</button>
             {txsMes.filter(t => t.tipo === "ingreso").map(t => (
               <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: "1px solid var(--border)", cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   {(() => {
                     const mFoto2 = (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
                     return (
-                      <div style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 18, background: "rgba(34,211,238,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto2 ? "2px solid rgba(34,211,238,.35)" : "none" }}>
+                      <div style={{ width: 42, height: 42, borderRadius: "50%", fontSize: 18, background: "var(--col-info-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto2 ? "2px solid rgba(34,211,238,.35)" : "none" }}>
                         {mFoto2 ? <img src={mFoto2} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || "📝"}
                       </div>
                     );
@@ -418,7 +418,7 @@ export default function FinanzasScreen({
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <p style={{ color: "#22d3ee", fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700 }}>+{fmt(t.monto)}</p>
+                  <p style={{ color: "var(--col-info)", fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700 }}>+{fmt(t.monto)}</p>
                   <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>✏️</span>
                 </div>
               </div>
@@ -427,23 +427,23 @@ export default function FinanzasScreen({
 
           {/* ════ TAB 2: GASTOS ════ */}
           {tab === 2 && <>
-            <div className="card" style={{ background: "rgba(244,63,94,.08)", borderRadius: 18, padding: 18, border: "1px solid rgba(244,63,94,.2)", marginBottom: 14 }}>
+            <div className="card" style={{ background: "var(--col-danger-soft)", borderRadius: 18, padding: 18, border: "1px solid var(--col-danger-border)", marginBottom: 14 }}>
               <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Total gastos · {mesLabel}</p>
-              <p style={{ color: "#f43f5e", fontSize: 30, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 8px" }}>{fmt(totalGas)}</p>
+              <p style={{ color: "var(--col-danger)", fontSize: 30, fontWeight: 700, fontFamily: "'DM Mono',monospace", margin: "4px 0 8px" }}>{fmt(totalGas)}</p>
               <Badge val={crecGas} />
             </div>
-            <button onClick={() => setModal("gasto")} style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", marginBottom: 14 }}>+ Agregar gasto</button>
+            <button onClick={() => setModal("gasto")} style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,var(--col-danger),var(--col-danger))", color: "#fff", marginBottom: 14 }}>+ Agregar gasto</button>
             {txsMes.filter(t => t.tipo === "gasto").map(t => (
               <div key={t.id} className="card rh" onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card)", borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: "1px solid var(--border)", cursor: "pointer" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 14, fontSize: 18, background: "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{CAT_ICON[t.categoria] || "📝"}</div>
+                  <div style={{ width: 42, height: 42, borderRadius: 14, fontSize: 18, background: "var(--col-danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{CAT_ICON[t.categoria] || "📝"}</div>
                   <div>
                     <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, maxWidth: 300, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc}</p>
                     <p style={{ color: "var(--text-tertiary)", fontSize: 11, marginTop: 3 }}>{t.categoria} · 📅 {fmtDate(t.fecha)}</p>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                  <p style={{ color: "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700 }}>-{fmt(t.monto)}</p>
+                  <p style={{ color: "var(--col-danger)", fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700 }}>-{fmt(t.monto)}</p>
                   <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>✏️</span>
                 </div>
               </div>
@@ -464,7 +464,7 @@ export default function FinanzasScreen({
                     const [d, h] = get();
                     const active = filtroDesde === d && filtroHasta === h;
                     return (
-                      <button key={label} onClick={() => { const [fd,fh] = get(); setFiltroDesde(fd); setFiltroHasta(fh); }} style={{ padding: "4px 10px", border: `1px solid ${active ? "rgba(167,139,250,.5)" : "rgba(167,139,250,.2)"}`, borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: active ? "rgba(167,139,250,.2)" : "transparent", color: active ? "#a78bfa" : "#6b7280", transition: "all .2s" }}>{label}</button>
+                      <button key={label} onClick={() => { const [fd,fh] = get(); setFiltroDesde(fd); setFiltroHasta(fh); }} style={{ padding: "4px 10px", border: `1px solid ${active ? "rgba(167,139,250,.5)" : "rgba(167,139,250,.2)"}`, borderRadius: 20, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: active ? "rgba(167,139,250,.2)" : "transparent", color: active ? "var(--col-accent-text)" : "var(--text-secondary)", transition: "all .2s" }}>{label}</button>
                     );
                   })}
                 </div>
@@ -497,12 +497,12 @@ export default function FinanzasScreen({
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                     {[
-                      { label: "Ingresos", value: totalIngresos, color: "#22d3ee", bg: "rgba(34,211,238,.08)", border: "rgba(34,211,238,.15)" },
-                      { label: "Gastos",   value: totalGastos,   color: "#f43f5e", bg: "rgba(244,63,94,.08)",  border: "rgba(244,63,94,.15)"  },
-                      { label: "Utilidad", value: utilidadPer,   color: utilidadPer >= 0 ? "#4ade80" : "#f43f5e", bg: utilidadPer >= 0 ? "rgba(74,222,128,.08)" : "rgba(244,63,94,.08)", border: utilidadPer >= 0 ? "rgba(74,222,128,.15)" : "rgba(244,63,94,.15)" },
+                      { label: "Ingresos", value: totalIngresos, color: "var(--col-info)", bg: "rgba(34,211,238,.08)", border: "rgba(34,211,238,.15)" },
+                      { label: "Gastos",   value: totalGastos,   color: "var(--col-danger)", bg: "var(--col-danger-soft)",  border: "var(--col-danger-soft)"  },
+                      { label: "Utilidad", value: utilidadPer,   color: utilidadPer >= 0 ? "var(--col-success)" : "var(--col-danger)", bg: utilidadPer >= 0 ? "rgba(74,222,128,.08)" : "var(--col-danger-soft)", border: utilidadPer >= 0 ? "var(--col-success-soft)" : "var(--col-danger-soft)" },
                     ].map(card => (
                       <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
-                        <p style={{ color: "#6b7280", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{card.label}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{card.label}</p>
                         <p style={{ color: card.color, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{card.label === "Utilidad" && utilidadPer >= 0 ? "+" : ""}{fmt(card.value)}</p>
                       </div>
                     ))}
@@ -518,7 +518,7 @@ export default function FinanzasScreen({
                         {(() => {
                           const mFoto3 = t.tipo === "ingreso" && (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
                           return (
-                            <div style={{ width: 38, height: 38, borderRadius: "50%", fontSize: 15, background: t.tipo === "ingreso" ? "rgba(34,211,238,.12)" : "rgba(244,63,94,.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto3 ? "2px solid rgba(34,211,238,.3)" : "none" }}>
+                            <div style={{ width: 38, height: 38, borderRadius: "50%", fontSize: 15, background: t.tipo === "ingreso" ? "var(--col-info-soft)" : "var(--col-danger-soft)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", border: mFoto3 ? "2px solid rgba(34,211,238,.3)" : "none" }}>
                               {mFoto3 ? <img src={mFoto3} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || "📝"}
                             </div>
                           );
@@ -529,7 +529,7 @@ export default function FinanzasScreen({
                         </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                        <p style={{ color: t.tipo === "ingreso" ? "#22d3ee" : "#f43f5e", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
+                        <p style={{ color: t.tipo === "ingreso" ? "var(--col-info)" : "var(--col-danger)", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{t.tipo === "ingreso" ? "+" : "-"}{fmt(t.monto)}</p>
                         <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>✏️</span>
                       </div>
                     </div>
@@ -563,7 +563,7 @@ export default function FinanzasScreen({
             return (
               <div>
                 {/* Filtros de fecha + totales del rango */}
-                <div style={{ background: "linear-gradient(135deg,rgba(108,99,255,.15),rgba(224,64,251,.1))", border: "1px solid rgba(108,99,255,.3)", borderRadius: 20, padding: "16px 18px", marginBottom: 16 }}>
+                <div style={{ background: "linear-gradient(135deg,var(--col-accent-soft),rgba(224,64,251,.1))", border: "1px solid var(--col-accent-border)", borderRadius: 20, padding: "16px 18px", marginBottom: 16 }}>
                   <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>📆 Rango de fechas</p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
                     <div>
@@ -580,9 +580,9 @@ export default function FinanzasScreen({
                   {/* Totales del rango */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
                     {[
-                      { label: "Ingresos", val: calRangeData.totalIng, color: "#4ade80", bg: "rgba(74,222,128,.1)", border: "rgba(74,222,128,.2)" },
-                      { label: "Gastos",   val: calRangeData.totalGas, color: "#f87171", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
-                      { label: "Utilidad", val: calRangeData.utilidad, color: calRangeData.utilidad >= 0 ? "#4ade80" : "#f87171", bg: calRangeData.utilidad >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: calRangeData.utilidad >= 0 ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)" },
+                      { label: "Ingresos", val: calRangeData.totalIng, color: "var(--col-success)", bg: "rgba(74,222,128,.1)", border: "var(--col-success-border)" },
+                      { label: "Gastos",   val: calRangeData.totalGas, color: "var(--col-danger)", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
+                      { label: "Utilidad", val: calRangeData.utilidad, color: calRangeData.utilidad >= 0 ? "var(--col-success)" : "var(--col-danger)", bg: calRangeData.utilidad >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: calRangeData.utilidad >= 0 ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)" },
                     ].map(c => (
                       <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
                         <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{c.label}</p>
@@ -593,9 +593,9 @@ export default function FinanzasScreen({
                   {/* Formas de pago en rango */}
                   <div style={{ display: "flex", gap: 8 }}>
                     {[
-                      { label: "Efectivo", val: calRangeData.efectivo, icon: "💵", color: "#4ade80" },
-                      { label: "Transfer.", val: calRangeData.transferencia, icon: "📲", color: "#38bdf8" },
-                      { label: "Tarjeta", val: calRangeData.tarjeta, icon: "💳", color: "#a78bfa" },
+                      { label: "Efectivo", val: calRangeData.efectivo, icon: "💵", color: "var(--col-success)" },
+                      { label: "Transfer.", val: calRangeData.transferencia, icon: "📲", color: "var(--col-info)" },
+                      { label: "Tarjeta", val: calRangeData.tarjeta, icon: "💳", color: "var(--col-accent-text)" },
                     ].map(fp => (
                       <div key={fp.label} style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 10, padding: "8px 6px", textAlign: "center" }}>
                         <p style={{ fontSize: 14, marginBottom: 2 }}>{fp.icon}</p>
@@ -640,21 +640,21 @@ export default function FinanzasScreen({
                       return (
                         <div key={idx} onClick={() => setCalDiaSelec(prev => prev === iso ? null : iso)}
                           style={{ borderRadius: 10, padding: "6px 4px 5px", textAlign: "center", cursor: data ? "pointer" : "default", position: "relative", transition: "all .15s",
-                            background: esSelec ? "linear-gradient(135deg,#6c63ff,#e040fb)" : esHoy ? "rgba(108,99,255,.2)" : enRango && data ? "rgba(108,99,255,.08)" : "transparent",
+                            background: esSelec ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : esHoy ? "var(--col-accent-border)" : enRango && data ? "var(--col-accent-soft)" : "transparent",
                             border: esSelec ? "1px solid rgba(108,99,255,.8)" : esHoy ? "1px solid rgba(108,99,255,.4)" : "1px solid transparent",
                             boxShadow: esSelec ? "0 2px 12px rgba(108,99,255,.4)" : "none",
                             opacity: data || esHoy ? 1 : 0.4 }}>
-                          <p style={{ color: esSelec ? "#fff" : esHoy ? "#a78bfa" : "var(--text-primary)", fontSize: 12, fontWeight: esHoy || esSelec ? 700 : 400, marginBottom: 3 }}>{dayNum}</p>
-                          {tieneIng && <div style={{ height: 3, borderRadius: 2, background: esSelec ? "rgba(255,255,255,.7)" : "#4ade80", marginBottom: 1 }} />}
-                          {tieneGas && <div style={{ height: 3, borderRadius: 2, background: esSelec ? "rgba(255,255,255,.5)" : "#f87171" }} />}
+                          <p style={{ color: esSelec ? "#fff" : esHoy ? "var(--col-accent-text)" : "var(--text-primary)", fontSize: 12, fontWeight: esHoy || esSelec ? 700 : 400, marginBottom: 3 }}>{dayNum}</p>
+                          {tieneIng && <div style={{ height: 3, borderRadius: 2, background: esSelec ? "rgba(255,255,255,.7)" : "var(--col-success)", marginBottom: 1 }} />}
+                          {tieneGas && <div style={{ height: 3, borderRadius: 2, background: esSelec ? "rgba(255,255,255,.5)" : "var(--col-danger)" }} />}
                           {data && !tieneIng && !tieneGas && <div style={{ height: 3 }} />}
                         </div>
                       );
                     })}
                   </div>
                   <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 10 }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-secondary)", fontSize: 10 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: "#4ade80", display: "inline-block" }} /> Ingresos</span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-secondary)", fontSize: 10 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: "#f87171", display: "inline-block" }} /> Gastos</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-secondary)", fontSize: 10 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: "var(--col-success)", display: "inline-block" }} /> Ingresos</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-secondary)", fontSize: 10 }}><span style={{ width: 10, height: 3, borderRadius: 2, background: "var(--col-danger)", display: "inline-block" }} /> Gastos</span>
                   </div>
                 </div>
 
@@ -781,11 +781,11 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                   };
 
                   return (
-                  <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 20, padding: "18px", marginBottom: 16, animation: "fadeUp .25s ease" }}>
+                  <div style={{ background: "var(--bg-card)", border: "1px solid var(--col-accent-border)", borderRadius: 20, padding: "18px", marginBottom: 16, animation: "fadeUp .25s ease" }}>
                     {/* Header */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                       <div>
-                        <p style={{ color: "#a78bfa", fontSize: 15, fontWeight: 700 }}>📅 {fmtDate(calDiaSelec)}</p>
+                        <p style={{ color: "var(--col-accent-text)", fontSize: 15, fontWeight: 700 }}>📅 {fmtDate(calDiaSelec)}</p>
                         <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>Corte de caja del día · {diaData.ingresos.length + diaData.gastos.length} movimientos</p>
                       </div>
                       <button onClick={() => setCalDiaSelec(null)} style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 30, height: 30, cursor: "pointer", color: "var(--text-secondary)", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
@@ -794,9 +794,9 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                     {/* Tarjetas resumen */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
                       {[
-                        { label: "Ingresos", val: diaData.totalIng, color: "#4ade80", bg: "rgba(74,222,128,.1)", border: "rgba(74,222,128,.2)" },
-                        { label: "Gastos",   val: diaData.totalGas, color: "#f87171", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
-                        { label: "Utilidad", val: util, color: util >= 0 ? "#4ade80" : "#f87171", bg: util >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: util >= 0 ? "rgba(74,222,128,.15)" : "rgba(248,113,113,.15)" },
+                        { label: "Ingresos", val: diaData.totalIng, color: "var(--col-success)", bg: "rgba(74,222,128,.1)", border: "var(--col-success-border)" },
+                        { label: "Gastos",   val: diaData.totalGas, color: "var(--col-danger)", bg: "rgba(248,113,113,.1)", border: "rgba(248,113,113,.2)" },
+                        { label: "Utilidad", val: util, color: util >= 0 ? "var(--col-success)" : "var(--col-danger)", bg: util >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", border: util >= 0 ? "var(--col-success-soft)" : "rgba(248,113,113,.15)" },
                       ].map(c => (
                         <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.border}`, borderRadius: 12, padding: "10px 8px", textAlign: "center" }}>
                           <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{c.label}</p>
@@ -807,8 +807,8 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
 
                     {/* Ingresos por concepto con barra % */}
                     {catArr.length > 0 && (
-                      <div style={{ background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.15)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
-                        <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 12 }}>💰 Ingresos por concepto</p>
+                      <div style={{ background: "rgba(74,222,128,.05)", border: "1px solid var(--col-success-soft)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
+                        <p style={{ color: "var(--col-success)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 12 }}>💰 Ingresos por concepto</p>
                         {catArr.map(([cat, val]) => {
                           const pct = diaData.totalIng > 0 ? (val / diaData.totalIng * 100) : 0;
                           return (
@@ -819,12 +819,12 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                                   <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{cat}</span>
                                 </div>
                                 <div style={{ textAlign: "right" }}>
-                                  <span style={{ color: "#4ade80", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmtMoney(val)}</span>
-                                  <span style={{ color: "#8b949e", fontSize: 10, marginLeft: 6 }}>{pct.toFixed(0)}%</span>
+                                  <span style={{ color: "var(--col-success)", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmtMoney(val)}</span>
+                                  <span style={{ color: "var(--text-secondary)", fontSize: 10, marginLeft: 6 }}>{pct.toFixed(0)}%</span>
                                 </div>
                               </div>
                               <div style={{ height: 4, borderRadius: 2, background: "var(--bg-elevated)" }}>
-                                <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,#4ade80,#22d3ee)", borderRadius: 2, transition: "width .4s ease" }} />
+                                <div style={{ height: "100%", width: `${pct}%`, background: "linear-gradient(90deg,var(--col-success),var(--col-info))", borderRadius: 2, transition: "width .4s ease" }} />
                               </div>
                             </div>
                           );
@@ -835,7 +835,7 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                     {/* Formas de pago con % */}
                     {pagoArr.length > 0 && (
                       <div style={{ background: "rgba(167,139,250,.05)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
-                        <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💳 Por forma de pago</p>
+                        <p style={{ color: "var(--col-accent-text)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💳 Por forma de pago</p>
                         <div style={{ display: "flex", gap: 8 }}>
                           {pagoArr.map(([fp, val]) => {
                             const icon = fp === "Efectivo" ? "💵" : fp === "Transferencia" ? "📲" : fp === "Tarjeta" ? "💳" : "❓";
@@ -843,9 +843,9 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                             return (
                               <div key={fp} style={{ flex: 1, background: "rgba(167,139,250,.08)", border: "1px solid rgba(167,139,250,.15)", borderRadius: 14, padding: "10px 8px", textAlign: "center" }}>
                                 <p style={{ fontSize: 20, marginBottom: 4 }}>{icon}</p>
-                                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmtMoney(val)}</p>
-                                <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{fp}</p>
-                                <p style={{ color: "#8b949e", fontSize: 9, marginTop: 1 }}>{pct.toFixed(0)}%</p>
+                                <p style={{ color: "var(--col-accent-text)", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmtMoney(val)}</p>
+                                <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 2 }}>{fp}</p>
+                                <p style={{ color: "var(--text-secondary)", fontSize: 9, marginTop: 1 }}>{pct.toFixed(0)}%</p>
                               </div>
                             );
                           })}
@@ -856,7 +856,7 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                     {/* Gastos por categoría */}
                     {gasArr.length > 0 && (
                       <div style={{ background: "rgba(248,113,113,.05)", border: "1px solid rgba(248,113,113,.12)", borderRadius: 16, padding: "14px 16px", marginBottom: 12 }}>
-                        <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💸 Gastos por categoría</p>
+                        <p style={{ color: "var(--col-danger)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>💸 Gastos por categoría</p>
                         {gasArr.map(([cat, val]) => {
                           const pct = diaData.totalGas > 0 ? (val / diaData.totalGas * 100) : 0;
                           return (
@@ -867,9 +867,9 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                               </div>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <div style={{ width: 50, height: 3, borderRadius: 2, background: "var(--bg-elevated)" }}>
-                                  <div style={{ height: "100%", width: `${pct}%`, background: "#f87171", borderRadius: 2 }} />
+                                  <div style={{ height: "100%", width: `${pct}%`, background: "var(--col-danger)", borderRadius: 2 }} />
                                 </div>
-                                <span style={{ color: "#f87171", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmtMoney(val)}</span>
+                                <span style={{ color: "var(--col-danger)", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700 }}>{fmtMoney(val)}</span>
                               </div>
                             </div>
                           );
@@ -882,16 +882,16 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
                         <button onClick={descargarPDFDia}
                           style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                            background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff",
+                            background: "linear-gradient(135deg,var(--col-danger),var(--col-danger))", color: "#fff",
                             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                             boxShadow: "0 3px 12px rgba(244,63,94,.35)" }}>
                           <span style={{ fontSize: 14 }}>📄</span> PDF
                         </button>
                         <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(textoCorte)}`, "_blank")}
                           style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                            background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff",
+                            background: "linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))", color: "#fff",
                             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                            boxShadow: "0 3px 12px rgba(37,211,102,.3)" }}>
+                            boxShadow: "0 3px 12px var(--col-success-border)" }}>
                           <span style={{ fontSize: 14 }}>💬</span> WhatsApp
                         </button>
                         <button onClick={() => navigator.clipboard.writeText(textoCorte)}
@@ -906,24 +906,24 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                     {/* Lista detallada de ingresos */}
                     {diaData.ingresos.length > 0 && (
                       <div style={{ marginBottom: 12 }}>
-                        <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💰 Ingresos del día</p>
+                        <p style={{ color: "var(--col-success)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💰 Ingresos del día</p>
                         {diaData.ingresos.map(t => {
                           const fp = extraerFP(t);
                           const fpIcon = fp === "Efectivo" ? "💵" : fp === "Transferencia" ? "📲" : fp === "Tarjeta" ? "💳" : null;
                           const mFoto = (t.miembroId || t.miembro_id) ? (miembros.find(mb => String(mb.id) === String(t.miembroId || t.miembro_id))?.foto || null) : null;
                           return (
-                            <div key={t.id} onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, marginBottom: 6, background: "rgba(74,222,128,.05)", border: "1px solid rgba(74,222,128,.12)", cursor: "pointer" }}>
-                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(74,222,128,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden", border: "1.5px solid rgba(74,222,128,.25)" }}>
+                            <div key={t.id} onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, marginBottom: 6, background: "rgba(74,222,128,.05)", border: "1px solid var(--col-success-soft)", cursor: "pointer" }}>
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--col-success-soft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, overflow: "hidden", border: "1.5px solid rgba(74,222,128,.25)" }}>
                                 {mFoto ? <img src={mFoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : CAT_ICON[t.categoria] || "💰"}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{limpiarDesc(t.desc || t.descripcion) || t.categoria || "Ingreso"}</p>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                                  <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700 }}>{t.categoria}</span>
+                                  <span style={{ background: "var(--col-success-soft)", color: "var(--col-success)", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700 }}>{t.categoria}</span>
                                   {fp && <span style={{ color: "var(--text-secondary)", fontSize: 10 }}>{fpIcon} {fp}</span>}
                                 </div>
                               </div>
-                              <p style={{ color: "#4ade80", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>+{fmtMoney(t.monto)}</p>
+                              <p style={{ color: "var(--col-success)", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>+{fmtMoney(t.monto)}</p>
                             </div>
                           );
                         })}
@@ -933,7 +933,7 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                     {/* Lista detallada de gastos */}
                     {diaData.gastos.length > 0 && (
                       <div>
-                        <p style={{ color: "#f87171", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💸 Gastos del día</p>
+                        <p style={{ color: "var(--col-danger)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💸 Gastos del día</p>
                         {diaData.gastos.map(t => (
                           <div key={t.id} onClick={() => { setEditTx(t); setModal("editTx"); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, marginBottom: 6, background: "rgba(248,113,113,.05)", border: "1px solid rgba(248,113,113,.12)", cursor: "pointer" }}>
                             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(248,113,113,.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, border: "1.5px solid rgba(248,113,113,.25)" }}>
@@ -941,9 +941,9 @@ ${mb?.nombre || limpiarDesc(t.desc||t.descripcion||"")||"—"}`, extraerFP(t)||"
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{limpiarDesc(t.desc || t.descripcion) || t.categoria || "Gasto"}</p>
-                              <span style={{ background: "rgba(248,113,113,.12)", color: "#f87171", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700 }}>{t.categoria}</span>
+                              <span style={{ background: "rgba(248,113,113,.12)", color: "var(--col-danger)", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700 }}>{t.categoria}</span>
                             </div>
-                            <p style={{ color: "#f87171", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>-{fmtMoney(t.monto)}</p>
+                            <p style={{ color: "var(--col-danger)", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>-{fmtMoney(t.monto)}</p>
                           </div>
                         ))}
                       </div>

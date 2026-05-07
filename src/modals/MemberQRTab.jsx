@@ -54,7 +54,7 @@ async function buildCardCanvas(qrWrapEl, memberName, shortId) {
   const ctx = canvas.getContext("2d");
 
   // Fondo blanco con bordes redondeados
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "var(--text-inverse)";
   roundRect(ctx, 0, 0, W, H, 24);
   ctx.fill();
 
@@ -63,11 +63,11 @@ async function buildCardCanvas(qrWrapEl, memberName, shortId) {
   ctx.shadowBlur = 0;
 
   // ── Header: nombre del gimnasio / branding ──
-  ctx.fillStyle = "#6c63ff";
+  ctx.fillStyle = "var(--col-accent)";
   roundRect(ctx, 0, 0, W, headerH, { tl: 24, tr: 24, br: 0, bl: 0 });
   ctx.fill();
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "var(--text-inverse)";
   ctx.font = "bold 15px system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("🏋️  IDENTIFICACIÓN DIGITAL", W / 2, 34);
@@ -79,7 +79,7 @@ async function buildCardCanvas(qrWrapEl, memberName, shortId) {
   // Marco blanco con sombra suave
   ctx.shadowColor = "rgba(0,0,0,0.12)";
   ctx.shadowBlur = 18;
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "var(--text-inverse)";
   roundRect(ctx, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 18);
   ctx.fill();
   ctx.shadowBlur = 0;
@@ -91,7 +91,7 @@ async function buildCardCanvas(qrWrapEl, memberName, shortId) {
   const footerY = headerH + PAD + qrSize + PAD;
 
   // Nombre del miembro
-  ctx.fillStyle = "#1e293b";
+  ctx.fillStyle = "var(--bg-elevated)";
   ctx.font = "bold 18px system-ui, sans-serif";
   ctx.textAlign = "center";
   // Truncar nombre si es muy largo
@@ -112,7 +112,7 @@ async function buildCardCanvas(qrWrapEl, memberName, shortId) {
   ctx.stroke();
 
   // Etiqueta "ID"
-  ctx.fillStyle = "#94a3b8";
+  ctx.fillStyle = "var(--text-secondary)";
   ctx.font = "600 10px system-ui, sans-serif";
   ctx.letterSpacing = "2px";
   ctx.fillText("CÓDIGO DE ACCESO", W / 2, footerY + 58);
@@ -125,12 +125,12 @@ async function buildCardCanvas(qrWrapEl, memberName, shortId) {
   const totalW = dotR * 2 + 8 + idW;
   const startX = (W - totalW) / 2;
 
-  ctx.fillStyle = "#22c55e";
+  ctx.fillStyle = "var(--col-success)";
   ctx.beginPath();
   ctx.arc(startX + dotR, footerY + 88, dotR, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#1e293b";
+  ctx.fillStyle = "var(--bg-elevated)";
   ctx.textAlign = "left";
   ctx.fillText(idText, startX + dotR * 2 + 8, footerY + 94);
 
@@ -173,7 +173,7 @@ function QRCanvas({ url }) {
         width: 240,
         height: 240,
         colorDark: "#000000",
-        colorLight: "#ffffff",
+        colorLight: "var(--text-inverse)",
         correctLevel: window.QRCode.CorrectLevel.H,
       });
     } catch (e) {
@@ -182,7 +182,7 @@ function QRCanvas({ url }) {
   }, [scriptReady, url]);
 
   if (!scriptReady) return (
-    <div style={{ width: 240, height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: 12 }}>
+    <div style={{ width: 240, height: 240, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: 12 }}>
       Cargando…
     </div>
   );
@@ -284,14 +284,14 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
 
   const bg     = darkMode ? "rgba(255,255,255,.03)" : "rgba(0,0,0,.02)";
   const border = darkMode ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.08)";
-  const muted  = darkMode ? "#64748b" : "#94a3b8";
-  const text   = darkMode ? "#e2e8f0" : "#1e293b";
-  const cardBg = darkMode ? "#111427" : "#f8fafc";
+  const muted  = darkMode ? "var(--text-secondary)" : "var(--text-secondary)";
+  const text   = darkMode ? "var(--border)" : "var(--bg-elevated)";
+  const cardBg = darkMode ? "var(--bg-card)427" : "#f8fafc";
 
   if (loading) return (
     <div style={{ textAlign: "center", padding: "48px 0" }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: 38, height: 38, borderRadius: "50%", border: "3px solid rgba(108,99,255,.2)", borderTopColor: "#6c63ff", animation: "spin .8s linear infinite", margin: "0 auto 14px" }} />
+      <div style={{ width: 38, height: 38, borderRadius: "50%", border: "3px solid var(--col-accent-border)", borderTopColor: "var(--col-accent)", animation: "spin .8s linear infinite", margin: "0 auto 14px" }} />
       <p style={{ color: muted, fontSize: 13 }}>Generando código QR…</p>
     </div>
   );
@@ -299,8 +299,8 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
   if (error) return (
     <div style={{ textAlign: "center", padding: "40px 16px" }}>
       <p style={{ fontSize: 32, marginBottom: 10 }}>⚠️</p>
-      <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{error}</p>
-      <button onClick={runEnsure} style={{ marginTop: 16, padding: "10px 20px", border: "none", borderRadius: 12, background: "#6c63ff", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+      <p style={{ color: "var(--col-danger)", fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{error}</p>
+      <button onClick={runEnsure} style={{ marginTop: 16, padding: "10px 20px", border: "none", borderRadius: 12, background: "var(--col-accent)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
         Reintentar
       </button>
     </div>
@@ -324,7 +324,7 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
         <div style={{ marginBottom: 20 }}>
           <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".18em", color: muted, textTransform: "uppercase", marginBottom: 6 }}>Código de acceso</p>
           <p style={{ fontFamily: "'Courier New', monospace", fontSize: 20, fontWeight: 800, color: text, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block", boxShadow: "0 0 8px #22c55e", flexShrink: 0 }} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--col-success)", display: "inline-block", boxShadow: "0 0 8px var(--col-success)", flexShrink: 0 }} />
             {shortId}
           </p>
         </div>
@@ -335,9 +335,9 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
           <button onClick={handleDownload} style={{
             display: "flex", alignItems: "center", gap: 8,
             padding: "11px 20px", border: "none", borderRadius: 14, cursor: "pointer",
-            background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+            background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
             color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
-            boxShadow: "0 4px 18px rgba(108,99,255,.3)",
+            boxShadow: "0 4px 18px var(--col-accent-border)",
           }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -350,12 +350,12 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
             display: "flex", alignItems: "center", gap: 8,
             padding: "11px 20px", border: `1.5px solid ${border}`, borderRadius: 14, cursor: copying ? "wait" : "pointer",
             background: copied ? "rgba(34,197,94,.08)" : "transparent",
-            color: copied ? "#22c55e" : text,
-            borderColor: copied ? "rgba(34,197,94,.3)" : border,
+            color: copied ? "var(--col-success)" : text,
+            borderColor: copied ? "var(--col-success-border)" : border,
             fontSize: 13, fontWeight: 600, fontFamily: "inherit", transition: "all .2s",
           }}>
             {copied ? (
-              <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Copiada!</>
+              <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--col-success)" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> ¡Copiada!</>
             ) : copying ? (
               <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ animation: "spin .8s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Copiando…</>
             ) : (
@@ -399,7 +399,7 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
       <div style={{ textAlign: "center" }}>
         <button onClick={handleRegenerate} disabled={regenerating} style={{
           background: "transparent", border: "none", cursor: "pointer",
-          color: "#f43f5e", fontSize: 12, fontFamily: "inherit",
+          color: "var(--col-danger)", fontSize: 12, fontFamily: "inherit",
           opacity: regenerating ? .5 : .7, textDecoration: "underline",
         }}>
           {regenerating ? "Regenerando…" : "🔄 Regenerar código QR"}

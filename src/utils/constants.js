@@ -318,20 +318,20 @@ export const CAT_ICON_DOJO = {
 
 // Grados del karate (orden ascendente de blanco a negro)
 export const GRADOS_KARATE = [
-  { nombre: "Blanco",           kyu: 9,  color: "#ffffff", emoji: "⬜" },
-  { nombre: "Amarillo",         kyu: 8,  color: "#fbbf24", emoji: "🟨" },
-  { nombre: "Naranja",          kyu: 7,  color: "#f97316", emoji: "🟧" },
-  { nombre: "Verde",            kyu: 6,  color: "#22c55e", emoji: "🟩" },
-  { nombre: "Azul",             kyu: 5,  color: "#3b82f6", emoji: "🟦" },
+  { nombre: "Blanco",           kyu: 9,  color: "var(--text-inverse)", emoji: "⬜" },
+  { nombre: "Amarillo",         kyu: 8,  color: "var(--col-warning)", emoji: "🟨" },
+  { nombre: "Naranja",          kyu: 7,  color: "var(--col-warning)", emoji: "🟧" },
+  { nombre: "Verde",            kyu: 6,  color: "var(--col-success)", emoji: "🟩" },
+  { nombre: "Azul",             kyu: 5,  color: "var(--col-accent)", emoji: "🟦" },
   { nombre: "Morado",           kyu: 4,  color: "#a855f7", emoji: "🟪" },
   { nombre: "Café (3er kyu)",   kyu: 3,  color: "#92400e", emoji: "🟫" },
   { nombre: "Café (2do kyu)",   kyu: 2,  color: "#78350f", emoji: "🟫" },
   { nombre: "Café (1er kyu)",   kyu: 1,  color: "#6b2200", emoji: "🟫" },
-  { nombre: "Negro (1er dan)",  kyu: -1, color: "#111827", emoji: "⬛" },
-  { nombre: "Negro (2do dan)",  kyu: -2, color: "#111827", emoji: "⬛" },
-  { nombre: "Negro (3er dan)",  kyu: -3, color: "#111827", emoji: "⬛" },
-  { nombre: "Negro (4to dan)",  kyu: -4, color: "#111827", emoji: "⬛" },
-  { nombre: "Negro (5to dan)",  kyu: -5, color: "#111827", emoji: "⬛" },
+  { nombre: "Negro (1er dan)",  kyu: -1, color: "var(--bg-card)", emoji: "⬛" },
+  { nombre: "Negro (2do dan)",  kyu: -2, color: "var(--bg-card)", emoji: "⬛" },
+  { nombre: "Negro (3er dan)",  kyu: -3, color: "var(--bg-card)", emoji: "⬛" },
+  { nombre: "Negro (4to dan)",  kyu: -4, color: "var(--bg-card)", emoji: "⬛" },
+  { nombre: "Negro (5to dan)",  kyu: -5, color: "var(--bg-card)", emoji: "⬛" },
 ];
 
 export const GRADOS_NOMBRES = GRADOS_KARATE.map(g => g.nombre);

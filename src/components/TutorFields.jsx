@@ -34,13 +34,13 @@ const LABEL_STYLE = {
 };
 const INPUT_STYLE = (error) => ({
   width: "100%",
-  background: "var(--bg-elevated, #1e1e2e)",
-  border: `1px solid ${error ? "#f87171" : "var(--border)"}`,
+  background: "var(--bg-elevated, var(--bg-elevated))",
+  border: `1px solid ${error ? "var(--col-danger)" : "var(--border)"}`,
   borderRadius: 10, padding: "10px 12px",
   color: "var(--text-primary)", fontSize: 13,
   fontFamily: "inherit", outline: "none", boxSizing: "border-box",
 });
-const ERROR_STYLE = { color: "#f87171", fontSize: 11, marginTop: 3 };
+const ERROR_STYLE = { color: "var(--col-danger)", fontSize: 11, marginTop: 3 };
 
 // ── Custom Select ──────────────────────────────────────────────────────────
 function CustomSelect({ value, onChange }) {
@@ -69,12 +69,12 @@ function CustomSelect({ value, onChange }) {
         </svg>
       </div>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--bg-elevated, #1e1e2e)", border: "1px solid var(--border, #333)", borderRadius: 10, zIndex: 9999, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }} id="tutor-parentesco-listbox" role="listbox">
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "var(--bg-elevated, var(--bg-elevated))", border: "1px solid var(--border, var(--border-strong))", borderRadius: 10, zIndex: 9999, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }} id="tutor-parentesco-listbox" role="listbox">
           {PARENTESCO_OPCIONES.map((op) => {
             const isActive = op.value === value;
             return (
               <div key={op.value} role="option" aria-selected={isActive}
-                style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", background: isActive ? "rgba(251,191,36,.15)" : "transparent", color: isActive ? "#fbbf24" : op.value === "" ? "var(--text-tertiary, #888)" : "var(--text-primary)", fontWeight: isActive ? 600 : 400 }}
+                style={{ padding: "10px 14px", fontSize: 13, cursor: "pointer", background: isActive ? "rgba(251,191,36,.15)" : "transparent", color: isActive ? "var(--col-warning)" : op.value === "" ? "var(--text-tertiary, #888)" : "var(--text-primary)", fontWeight: isActive ? 600 : 400 }}
                 onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,.06)"; }}
                 onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                 onMouseDown={(e) => { e.preventDefault(); onChange(op.value); setOpen(false); }}>
@@ -101,7 +101,7 @@ function TutorFotoSelector({ foto, onCapture }) {
           style={{
             width: 72, height: 72, borderRadius: "50%", flexShrink: 0,
             background: foto ? "transparent" : "rgba(251,191,36,.15)",
-            border: foto ? "2.5px solid #fbbf24" : "2px dashed rgba(251,191,36,.5)",
+            border: foto ? "2.5px solid var(--col-warning)" : "2px dashed rgba(251,191,36,.5)",
             overflow: "hidden", cursor: "pointer", position: "relative",
             display: "flex", alignItems: "center", justifyContent: "center",
             transition: "all .2s",
@@ -129,7 +129,7 @@ function TutorFotoSelector({ foto, onCapture }) {
 
         {/* Texto guía */}
         <div style={{ flex: 1 }}>
-          <p style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700, marginBottom: 3 }}>
+          <p style={{ color: "var(--col-warning)", fontSize: 12, fontWeight: 700, marginBottom: 3 }}>
             Foto del tutor
             <span style={{ color: "var(--text-tertiary)", fontWeight: 400 }}> (opcional)</span>
           </p>
@@ -139,7 +139,7 @@ function TutorFotoSelector({ foto, onCapture }) {
           {foto && (
             <button
               onClick={() => onCapture(null)}
-              style={{ marginTop: 4, background: "none", border: "none", cursor: "pointer", color: "#f87171", fontSize: 11, fontFamily: "inherit", padding: 0 }}
+              style={{ marginTop: 4, background: "none", border: "none", cursor: "pointer", color: "var(--col-danger)", fontSize: 11, fontFamily: "inherit", padding: 0 }}
             >
               ✕ Quitar foto
             </button>
@@ -169,7 +169,7 @@ export default function TutorFields({ tutor, onChange, errores = {}, compact = f
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
         <span style={{ fontSize: 16 }}>👨‍👧</span>
         <div>
-          <p style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700, margin: 0 }}>Tutor responsable</p>
+          <p style={{ color: "var(--col-warning)", fontSize: 12, fontWeight: 700, margin: 0 }}>Tutor responsable</p>
           {!compact && (
             <p style={{ color: "var(--text-tertiary)", fontSize: 11, margin: "2px 0 0" }}>
               El miembro es menor de edad — se requiere un tutor legal.

@@ -101,34 +101,34 @@ export default function App() {
 
   // ── Verificando sesión ──
   if (authState === "checking") return (
-    <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid rgba(108,99,255,.3)", borderTopColor: "#6c63ff", margin: "0 auto 16px", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid var(--col-accent-border)", borderTopColor: "var(--col-accent)", margin: "0 auto 16px", animation: "spin 0.8s linear infinite" }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <p style={{ color: "#4b4b6a", fontSize: 13 }}>Verificando sesión...</p>
+        <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Verificando sesión...</p>
       </div>
     </div>
   );
 
   // ── Sin parámetro ?gym= en la URL ──
   if (authState === "login" && !GYM_ID_URL) return (
-    <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "system-ui,sans-serif" }}>
-      <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(244,63,94,.15)", border: "1px solid rgba(244,63,94,.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20 }}>🔒</div>
+    <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "system-ui,sans-serif" }}>
+      <div style={{ width: 72, height: 72, borderRadius: 24, background: "var(--col-danger-soft)", border: "1px solid var(--col-danger-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20 }}>🔒</div>
       <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Acceso no válido</h1>
-      <p style={{ color: "#4b4b6a", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280 }}>Esta aplicación requiere un enlace específico de tu gimnasio.</p>
+      <p style={{ color: "var(--text-tertiary)", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280 }}>Esta aplicación requiere un enlace específico de tu gimnasio.</p>
       <div style={{ marginTop: 24, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.08)", borderRadius: 12, padding: "10px 18px" }}>
-        <p style={{ color: "#6b7280", fontSize: 11, fontFamily: "monospace" }}>tudominio.com/?gym=nombre-del-gym</p>
+        <p style={{ color: "var(--text-secondary)", fontSize: 11, fontFamily: "monospace" }}>tudominio.com/?gym=nombre-del-gym</p>
       </div>
     </div>
   );
 
   // ── Gym no existe en Supabase ──
   if (authState === "login" && gymIdNoExiste) return (
-    <div style={{ minHeight: "100vh", background: "#0a0a12", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "system-ui,sans-serif" }}>
-      <div style={{ width: 72, height: 72, borderRadius: 24, background: "rgba(244,63,94,.15)", border: "1px solid rgba(244,63,94,.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20 }}>❌</div>
+    <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, fontFamily: "system-ui,sans-serif" }}>
+      <div style={{ width: 72, height: 72, borderRadius: 24, background: "var(--col-danger-soft)", border: "1px solid var(--col-danger-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 20 }}>❌</div>
       <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Gimnasio no encontrado</h1>
-      <p style={{ color: "#4b4b6a", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280 }}>
-        El enlace <span style={{ color: "#a78bfa", fontFamily: "monospace" }}>?gym={GYM_ID_URL}</span> no corresponde a ningún gimnasio registrado.
+      <p style={{ color: "var(--text-tertiary)", fontSize: 14, textAlign: "center", lineHeight: 1.6, maxWidth: 280 }}>
+        El enlace <span style={{ color: "var(--col-accent-text)", fontFamily: "monospace" }}>?gym={GYM_ID_URL}</span> no corresponde a ningún gimnasio registrado.
       </p>
     </div>
   );

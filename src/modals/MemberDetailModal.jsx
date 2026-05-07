@@ -63,9 +63,9 @@ async function generarComprobantePNG({ gymConfig, miembro, plan, monto, formaPag
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
-  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.fillStyle = "var(--text-inverse)"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "var(--bg-elevated)"; ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, HEADER_H); ctx.lineTo(W, HEADER_H); ctx.stroke();
 
   const LOGO_SZ = 80, LX = 20, LY = 18;
@@ -76,57 +76,57 @@ async function generarComprobantePNG({ gymConfig, miembro, plan, monto, formaPag
       img.onerror = res; img.src = gym.logo;
     });
   } else {
-    ctx.fillStyle = "#1e1b4b"; ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.fill();
+    ctx.fillStyle = "var(--bg-card)"; ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.font = "bold 28px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("🥋", LX+LOGO_SZ/2, LY+LOGO_SZ/2); ctx.textBaseline = "alphabetic";
   }
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#111827"; ctx.font = "bold 17px Georgia,serif";
+  ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 17px Georgia,serif";
   ctx.fillText((gym.nombre || "GYM").toUpperCase(), W/2, 38);
-  ctx.fillStyle = "#6b7280"; ctx.font = "13px Georgia,serif";
+  ctx.fillStyle = "var(--text-secondary)"; ctx.font = "13px Georgia,serif";
   ctx.fillText(gym.slogan || "", W/2, 58);
-  if (gym.telefono) { ctx.fillStyle = "#374151"; ctx.font = "12px Arial"; ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78); }
-  if (gym.facebook) { ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial"; ctx.fillText(`Facebook: ${gym.facebook}`, W/2, 96); }
-  ctx.strokeStyle = "#d1d5db"; ctx.lineWidth = 1;
+  if (gym.telefono) { ctx.fillStyle = "var(--border-strong)"; ctx.font = "12px Arial"; ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78); }
+  if (gym.facebook) { ctx.fillStyle = "var(--text-secondary)"; ctx.font = "11px Arial"; ctx.fillText(`Facebook: ${gym.facebook}`, W/2, 96); }
+  ctx.strokeStyle = "var(--border-strong)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(20, 110); ctx.lineTo(W-20, 110); ctx.stroke();
-  ctx.fillStyle = "#ef4444"; ctx.font = "bold 9px Arial"; ctx.textAlign = "right";
+  ctx.fillStyle = "var(--col-danger)"; ctx.font = "bold 9px Arial"; ctx.textAlign = "right";
   ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W-16, 128); ctx.textAlign = "left";
 
   let y = HEADER_H + 2;
   rows.forEach((row, i) => {
-    ctx.fillStyle = i%2===0?"#ffffff":"#f9fafb"; ctx.fillRect(0,y,W,ROW_H);
-    ctx.strokeStyle="#f3f4f6"; ctx.lineWidth=0.5;
+    ctx.fillStyle = i%2===0?"var(--text-inverse)":"var(--bg-elevated)"; ctx.fillRect(0,y,W,ROW_H);
+    ctx.strokeStyle="var(--bg-elevated)"; ctx.lineWidth=0.5;
     ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
     if (row.type === "alumno") {
-      ctx.fillStyle="#111827"; ctx.font="bold 15px Arial"; ctx.textAlign="center"; ctx.fillText(row.nombre, W/2, y+20);
-      ctx.fillStyle="#6b7280"; ctx.font="11px Arial"; ctx.fillText(row.plan, W/2, y+ROW_H-6); ctx.textAlign="left";
+      ctx.fillStyle="var(--bg-card)"; ctx.font="bold 15px Arial"; ctx.textAlign="center"; ctx.fillText(row.nombre, W/2, y+20);
+      ctx.fillStyle="var(--text-secondary)"; ctx.font="11px Arial"; ctx.fillText(row.plan, W/2, y+ROW_H-6); ctx.textAlign="left";
     } else {
-      ctx.fillStyle="#6b7280"; ctx.font="12px Arial"; ctx.fillText(row.label, 24, y+ROW_H-12);
-      ctx.fillStyle="#111827"; ctx.font=row.bold?"bold 13px Arial":"13px Arial"; ctx.textAlign="right";
+      ctx.fillStyle="var(--text-secondary)"; ctx.font="12px Arial"; ctx.fillText(row.label, 24, y+ROW_H-12);
+      ctx.fillStyle="var(--bg-card)"; ctx.font=row.bold?"bold 13px Arial":"13px Arial"; ctx.textAlign="right";
       ctx.fillText(row.value, W-24, y+ROW_H-12); ctx.textAlign="left";
     }
     y += ROW_H;
   });
 
   if (gym.transferencia_clabe) {
-    ctx.fillStyle="#f3f4f6"; ctx.fillRect(0,y,W,CLABE_H);
-    ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-    ctx.fillStyle="#111827"; ctx.font="bold 12px Arial"; ctx.textAlign="left"; ctx.fillText("PARA TRANSFERENCIAS:", 24, y+22);
-    ctx.font="12px Arial"; ctx.fillStyle="#374151";
+    ctx.fillStyle="var(--bg-elevated)"; ctx.fillRect(0,y,W,CLABE_H);
+    ctx.strokeStyle="var(--border)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    ctx.fillStyle="var(--bg-card)"; ctx.font="bold 12px Arial"; ctx.textAlign="left"; ctx.fillText("PARA TRANSFERENCIAS:", 24, y+22);
+    ctx.font="12px Arial"; ctx.fillStyle="var(--border-strong)";
     ctx.fillText(`CLABE:  ${gym.transferencia_clabe}`, 24, y+42);
     ctx.fillText(`Beneficiario:  ${gym.transferencia_titular||"—"}`, 24, y+60);
     if (gym.transferencia_banco) ctx.fillText(`Banco:  ${gym.transferencia_banco}`, 24, y+78);
     y += CLABE_H;
   }
 
-  ctx.fillStyle="#f9fafb"; ctx.fillRect(0,y,W,FOOTER_H);
-  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-  ctx.fillStyle="#6b7280"; ctx.font="11px Arial"; ctx.textAlign="center";
+  ctx.fillStyle="var(--bg-elevated)"; ctx.fillRect(0,y,W,FOOTER_H);
+  ctx.strokeStyle="var(--border)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  ctx.fillStyle="var(--text-secondary)"; ctx.font="11px Arial"; ctx.textAlign="center";
   ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y+22);
   ctx.fillText("Whatsapp que aparece en la parte superior de este recibo.", W/2, y+40);
   y += FOOTER_H;
-  ctx.fillStyle="#111827"; ctx.font="bold 20px Arial"; ctx.textAlign="center";
+  ctx.fillStyle="var(--bg-card)"; ctx.font="bold 20px Arial"; ctx.textAlign="center";
   ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W/2, y+34);
 
   return canvas.toDataURL("image/png");
@@ -162,8 +162,8 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, ve
   const ctx = canvas.getContext("2d");
 
   ctx.fillStyle="#fff"; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle="#f9fafb"; ctx.fillRect(0,0,W,HEADER_H);
-  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1;
+  ctx.fillStyle="var(--bg-elevated)"; ctx.fillRect(0,0,W,HEADER_H);
+  ctx.strokeStyle="var(--border)"; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(0,HEADER_H); ctx.lineTo(W,HEADER_H); ctx.stroke();
 
   const LOGO_SZ=80, LX=20, LY=18;
@@ -174,45 +174,45 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, ve
       img.onerror=res; img.src=gym.logo;
     });
   } else {
-    ctx.fillStyle="#1e1b4b"; ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.fill();
+    ctx.fillStyle="var(--bg-card)"; ctx.beginPath(); ctx.roundRect(LX,LY,LOGO_SZ,LOGO_SZ,10); ctx.fill();
     ctx.fillStyle="#fff"; ctx.font="bold 28px serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText("🥋",LX+LOGO_SZ/2,LY+LOGO_SZ/2); ctx.textBaseline="alphabetic";
   }
   ctx.textAlign="center";
-  ctx.fillStyle="#111827"; ctx.font="bold 17px Georgia,serif"; ctx.fillText((gym.nombre||"GYM").toUpperCase(), W/2, 38);
-  ctx.fillStyle="#6b7280"; ctx.font="13px Georgia,serif"; ctx.fillText(gym.slogan||"", W/2, 58);
-  if (gym.telefono) { ctx.fillStyle="#374151"; ctx.font="12px Arial"; ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78); }
+  ctx.fillStyle="var(--bg-card)"; ctx.font="bold 17px Georgia,serif"; ctx.fillText((gym.nombre||"GYM").toUpperCase(), W/2, 38);
+  ctx.fillStyle="var(--text-secondary)"; ctx.font="13px Georgia,serif"; ctx.fillText(gym.slogan||"", W/2, 58);
+  if (gym.telefono) { ctx.fillStyle="var(--border-strong)"; ctx.font="12px Arial"; ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78); }
 
   let y = HEADER_H + 2;
   tableRows.forEach((row, i) => {
-    ctx.fillStyle=i%2===0?"#fff":"#f9fafb"; ctx.fillRect(0,y,W,ROW_H);
-    ctx.strokeStyle="#f3f4f6"; ctx.lineWidth=0.5;
+    ctx.fillStyle=i%2===0?"#fff":"var(--bg-elevated)"; ctx.fillRect(0,y,W,ROW_H);
+    ctx.strokeStyle="var(--bg-elevated)"; ctx.lineWidth=0.5;
     ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
     if (row.span) {
-      ctx.fillStyle="#374151"; ctx.font="12px Arial"; ctx.textAlign="center";
+      ctx.fillStyle="var(--border-strong)"; ctx.font="12px Arial"; ctx.textAlign="center";
       ctx.fillText(`${row.label}  ${row.value}`, W/2, y+ROW_H-10); ctx.textAlign="left";
     } else if (row.big) {
-      ctx.fillStyle="#6b7280"; ctx.font="12px Arial"; ctx.textAlign="left"; ctx.fillText(row.label, 24, y+ROW_H-10);
-      ctx.fillStyle="#111827"; ctx.font="bold 16px Arial"; ctx.textAlign="right"; ctx.fillText(row.value, W-24, y+ROW_H-10); ctx.textAlign="left";
+      ctx.fillStyle="var(--text-secondary)"; ctx.font="12px Arial"; ctx.textAlign="left"; ctx.fillText(row.label, 24, y+ROW_H-10);
+      ctx.fillStyle="var(--bg-card)"; ctx.font="bold 16px Arial"; ctx.textAlign="right"; ctx.fillText(row.value, W-24, y+ROW_H-10); ctx.textAlign="left";
     } else {
-      ctx.fillStyle="#6b7280"; ctx.font=row.bold?"bold 12px Arial":"12px Arial"; ctx.fillText(row.label, 24, y+ROW_H-10);
-      ctx.fillStyle="#111827"; ctx.font=row.bold?"bold 13px Arial":"13px Arial"; ctx.textAlign="right"; ctx.fillText(row.value, W-24, y+ROW_H-10); ctx.textAlign="left";
+      ctx.fillStyle="var(--text-secondary)"; ctx.font=row.bold?"bold 12px Arial":"12px Arial"; ctx.fillText(row.label, 24, y+ROW_H-10);
+      ctx.fillStyle="var(--bg-card)"; ctx.font=row.bold?"bold 13px Arial":"13px Arial"; ctx.textAlign="right"; ctx.fillText(row.value, W-24, y+ROW_H-10); ctx.textAlign="left";
     }
     y += ROW_H;
   });
 
   ctx.fillStyle="#fff"; ctx.fillRect(0,y,W,CLABE_H);
-  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-  ctx.fillStyle="#111827"; ctx.font="bold 12px Arial"; ctx.textAlign="left"; ctx.fillText("PARA TRANSFERENCIAS:", 24, y+22);
-  ctx.font="12px Arial"; ctx.fillStyle="#374151";
+  ctx.strokeStyle="var(--border)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  ctx.fillStyle="var(--bg-card)"; ctx.font="bold 12px Arial"; ctx.textAlign="left"; ctx.fillText("PARA TRANSFERENCIAS:", 24, y+22);
+  ctx.font="12px Arial"; ctx.fillStyle="var(--border-strong)";
   ctx.fillText(`CLABE:   ${gym.transferencia_clabe||"—"}`, 24, y+42);
   ctx.fillText(`Beneficiario:   ${gym.transferencia_titular||"—"}`, 24, y+60);
   if (gym.transferencia_banco) ctx.fillText(`Banco:   ${gym.transferencia_banco}`, 24, y+78);
   y += CLABE_H;
 
-  ctx.fillStyle="#f3f4f6"; ctx.fillRect(0,y,W,FOOTER_H);
-  ctx.strokeStyle="#e5e7eb"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-  ctx.fillStyle="#374151"; ctx.font="bold 11px Arial"; ctx.textAlign="center";
+  ctx.fillStyle="var(--bg-elevated)"; ctx.fillRect(0,y,W,FOOTER_H);
+  ctx.strokeStyle="var(--border)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  ctx.fillStyle="var(--border-strong)"; ctx.font="bold 11px Arial"; ctx.textAlign="center";
   ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y+20);
   ctx.fillText("Whatsapp que aparece en la parte superior de este recibo.", W/2, y+38);
 
@@ -262,17 +262,17 @@ function CongelarModal({ m, onClose, onConfirm }) {
       >
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <p style={{ fontSize: 40, marginBottom: 8 }}>🧊</p>
-          <h3 style={{ color: "#60a5fa", fontSize: 16, fontWeight: 700 }}>
+          <h3 style={{ color: "var(--col-accent-text)", fontSize: 16, fontWeight: 700 }}>
             Congelar membresía
           </h3>
-          <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6, lineHeight: 1.6 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: 6, lineHeight: 1.6 }}>
             Los días congelados se suman automáticamente al vencimiento cuando
             se descongele.
           </p>
         </div>
         <p
           style={{
-            color: "#8b949e",
+            color: "var(--text-secondary)",
             fontSize: 11,
             fontWeight: 600,
             textTransform: "uppercase",
@@ -293,7 +293,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
               style={{
                 flex: 1,
                 padding: "10px 8px",
-                border: modo === op.val ? "2px solid #60a5fa" : "1.5px solid rgba(255,255,255,.08)",
+                border: modo === op.val ? "2px solid var(--col-accent-text)" : "1.5px solid rgba(255,255,255,.08)",
                 borderRadius: 12,
                 cursor: "pointer",
                 fontFamily: "inherit",
@@ -301,10 +301,10 @@ function CongelarModal({ m, onClose, onConfirm }) {
                 textAlign: "center",
               }}
             >
-              <p style={{ color: modo === op.val ? "#60a5fa" : "#8b949e", fontSize: 11, fontWeight: 700 }}>
+              <p style={{ color: modo === op.val ? "var(--col-accent-text)" : "var(--text-secondary)", fontSize: 11, fontWeight: 700 }}>
                 {op.label}
               </p>
-              <p style={{ color: "#8b949e", fontSize: 9, marginTop: 3, lineHeight: 1.4 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 9, marginTop: 3, lineHeight: 1.4 }}>
                 {op.desc}
               </p>
             </button>
@@ -312,7 +312,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
         </div>
         {modo === "fecha" && (
           <div style={{ marginBottom: 16 }}>
-            <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, marginBottom: 6 }}>
               Fecha de regreso
             </p>
             <input
@@ -322,7 +322,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
               onChange={(e) => setFechaDesc(e.target.value)}
               style={{
                 width: "100%",
-                background: "#21262d",
+                background: "var(--bg-elevated)",
                 border: "1px solid rgba(96,165,250,.3)",
                 borderRadius: 12,
                 padding: "12px 14px",
@@ -335,10 +335,10 @@ function CongelarModal({ m, onClose, onConfirm }) {
           </div>
         )}
         <div style={{ display: "flex", gap: 10 }}>
-          <Btn full outline color="#8b949e" onClick={onClose}>
+          <Btn full outline color="var(--text-secondary)" onClick={onClose}>
             Cancelar
           </Btn>
-          <Btn full color="#60a5fa" onClick={() => onConfirm(modo === "fecha" ? fechaDesc : null)}>
+          <Btn full color="var(--col-accent-text)" onClick={() => onConfirm(modo === "fecha" ? fechaDesc : null)}>
             🧊 Congelar
           </Btn>
         </div>
@@ -400,7 +400,7 @@ function ConfirmDeleteInput({ nombre, onConfirm, onCancel }) {
             fontFamily: "inherit",
             fontSize: 12,
             fontWeight: 700,
-            background: ok ? "#f43f5e" : "rgba(244,63,94,.15)",
+            background: ok ? "var(--col-danger)" : "var(--col-danger-soft)",
             color: ok ? "#fff" : "rgba(244,63,94,.4)",
           }}
         >
@@ -1063,49 +1063,49 @@ export default function MemberDetailModal({
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
                 <div>
                   <h2 style={{ color:"var(--text-primary)", fontSize:17, fontWeight:700, margin:0 }}>💰 Cobro de Clase</h2>
-                  <p style={{ color:"#8b949e", fontSize:12, marginTop:4 }}>Selecciona la forma de pago</p>
+                  <p style={{ color:"var(--text-secondary)", fontSize:12, marginTop:4 }}>Selecciona la forma de pago</p>
                 </div>
                 <button onClick={() => setClasesPagoModal(false)}
-                  style={{ border:"none", background:"rgba(255,255,255,.1)", color:"#8b949e", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  style={{ border:"none", background:"rgba(255,255,255,.1)", color:"var(--text-secondary)", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
                   ✕
                 </button>
               </div>
 
               {/* Resumen de clases */}
               <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:18 }}>
-                <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
+                <p style={{ color:"var(--text-secondary)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
                 {clasesConCosto.map(c => (
                   <div key={c.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
                     <span style={{ color:"var(--text-secondary)", fontSize:13 }}>🏋️ {c.nombre}</span>
-                    <span style={{ color:"#22d3ee", fontSize:13, fontWeight:700 }}>${getPrecioClase(c).toLocaleString("es-MX")}</span>
+                    <span style={{ color:"var(--col-info)", fontSize:13, fontWeight:700 }}>${getPrecioClase(c).toLocaleString("es-MX")}</span>
                   </div>
                 ))}
                 <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, paddingTop:8, borderTop:"1px solid rgba(34,211,238,.15)" }}>
                   <span style={{ color:"var(--text-primary)", fontSize:14, fontWeight:700 }}>Total</span>
-                  <span style={{ color:"#22d3ee", fontSize:14, fontWeight:800 }}>${montoTotal.toLocaleString("es-MX")}</span>
+                  <span style={{ color:"var(--col-info)", fontSize:14, fontWeight:800 }}>${montoTotal.toLocaleString("es-MX")}</span>
                 </div>
               </div>
 
               {/* Selector forma de pago */}
-              <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
+              <p style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:20 }}>
                 {[{id:"Efectivo",icon:"💵"},{id:"Transferencia",icon:"🏦"},{id:"Tarjeta",icon:"💳"}].map(op => {
                   const sel = clasesPagoFormaPago === op.id;
                   return (
                     <button key={op.id} onClick={() => setClasesPagoFormaPago(op.id)}
                       style={{ padding:"13px 6px", borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                        border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
-                        background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                        border: sel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
+                        background: sel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
                         display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all .2s" }}>
                       <span style={{ fontSize:22 }}>{op.icon}</span>
-                      <span style={{ color: sel?"#c4b5fd":"var(--text-primary)", fontSize:12, fontWeight:sel?700:500 }}>{op.id}</span>
+                      <span style={{ color: sel?"var(--col-accent-text)":"var(--text-primary)", fontSize:12, fontWeight:sel?700:500 }}>{op.id}</span>
                     </button>
                   );
                 })}
               </div>
 
               {/* Nota */}
-              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:12, marginBottom:18 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid var(--col-accent-border)", borderRadius:12, marginBottom:18 }}>
                 <span style={{ fontSize:18, flexShrink:0 }}>🧾</span>
                 <p style={{ color:"var(--text-secondary)", fontSize:12, lineHeight:1.4 }}>
                   Se generará un <strong style={{ color:"var(--text-primary)" }}>comprobante de pago</strong> automáticamente.
@@ -1115,14 +1115,14 @@ export default function MemberDetailModal({
               {/* Botones */}
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={() => setClasesPagoModal(false)}
-                  style={{ flex:1, padding:"13px", border:"1px solid var(--border)", borderRadius:14, background:"transparent", color:"#8b949e", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                  style={{ flex:1, padding:"13px", border:"1px solid var(--border)", borderRadius:14, background:"transparent", color:"var(--text-secondary)", fontSize:14, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                   Cancelar
                 </button>
                 <button onClick={confirmarPago} disabled={clasesPagoSaving}
                   style={{ flex:2, padding:"13px", border:"none", borderRadius:14, cursor:clasesPagoSaving?"not-allowed":"pointer", fontFamily:"inherit",
                     fontSize:14, fontWeight:700,
-                    background: clasesPagoSaving ? "var(--bg-elevated)" : "linear-gradient(135deg,#6c63ff,#e040fb)",
-                    color: clasesPagoSaving ? "#8b949e" : "#fff",
+                    background: clasesPagoSaving ? "var(--bg-elevated)" : "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
+                    color: clasesPagoSaving ? "var(--text-secondary)" : "#fff",
                     boxShadow: clasesPagoSaving ? "none" : "0 4px 18px rgba(108,99,255,.4)",
                     transition:"all .3s" }}>
                   {clasesPagoSaving ? "⏳ Guardando..." : `✅ Confirmar $${montoTotal.toLocaleString("es-MX")}`}
@@ -1168,14 +1168,14 @@ export default function MemberDetailModal({
                   <h2 style={{ color:"var(--text-primary)", fontSize:17, fontWeight:700, margin:0 }}>
                     {tipo === "transferencia" ? "📲 Info para Transferencia" : "🧾 Comprobante de Pago"}
                   </h2>
-                  <p style={{ color:"#8b949e", fontSize:12, marginTop:4 }}>
+                  <p style={{ color:"var(--text-secondary)", fontSize:12, marginTop:4 }}>
                     {tipo === "transferencia"
                       ? "Comparte los datos de pago con el alumno"
                       : "Renovación registrada exitosamente"}
                   </p>
                 </div>
                 <button onClick={() => setComprobanteModal(false)}
-                  style={{ border:"none", background:"rgba(255,255,255,.1)", color:"#8b949e", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  style={{ border:"none", background:"rgba(255,255,255,.1)", color:"var(--text-secondary)", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
                   ✕
                 </button>
               </div>
@@ -1183,20 +1183,20 @@ export default function MemberDetailModal({
               {/* Resumen */}
               <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:16, display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                 <div>
-                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Plan</p>
-                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>{plan}</p>
+                  <p style={{ color:"var(--text-secondary)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Plan</p>
+                  <p style={{ color:"var(--col-info)", fontSize:13, fontWeight:700, marginTop:2 }}>{plan}</p>
                 </div>
                 <div>
-                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Monto</p>
-                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2, fontFamily:"'DM Mono',monospace" }}>${Number(monto).toLocaleString("es-MX")}</p>
+                  <p style={{ color:"var(--text-secondary)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Monto</p>
+                  <p style={{ color:"var(--col-info)", fontSize:13, fontWeight:700, marginTop:2, fontFamily:"'DM Mono',monospace" }}>${Number(monto).toLocaleString("es-MX")}</p>
                 </div>
                 <div>
-                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Vencimiento</p>
-                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>{venceFmt}</p>
+                  <p style={{ color:"var(--text-secondary)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Vencimiento</p>
+                  <p style={{ color:"var(--col-info)", fontSize:13, fontWeight:700, marginTop:2 }}>{venceFmt}</p>
                 </div>
                 <div>
-                  <p style={{ color:"#8b949e", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
-                  <p style={{ color:"#22d3ee", fontSize:13, fontWeight:700, marginTop:2 }}>
+                  <p style={{ color:"var(--text-secondary)", fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
+                  <p style={{ color:"var(--col-info)", fontSize:13, fontWeight:700, marginTop:2 }}>
                     {tipo === "transferencia" ? "📲 Transferencia" : formaPago === "Tarjeta" ? "💳 Tarjeta" : "💵 Efectivo"}
                   </p>
                 </div>
@@ -1222,7 +1222,7 @@ export default function MemberDetailModal({
                 </button>
                 <button
                   onClick={() => copiarImg(tipo==="transferencia"?infoPNG:png)}
-                  style={{ flex:1, padding:"11px 8px", border:"1px solid rgba(255,255,255,.12)", borderRadius:12, background:"var(--bg-elevated)", color: copiado ? "#4ade80" : "var(--text-primary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                  style={{ flex:1, padding:"11px 8px", border:"1px solid rgba(255,255,255,.12)", borderRadius:12, background:"var(--bg-elevated)", color: copiado ? "var(--col-success)" : "var(--text-primary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                   {copiado ? "✅ Copiado" : "📋 Copiar"}
                 </button>
               </div>
@@ -1231,14 +1231,14 @@ export default function MemberDetailModal({
               {tel && (tipo==="transferencia" ? waTextInfo : waTextComp) && (
                 <button
                   onClick={() => window.open(`https://wa.me/${waFull}?text=${encodeURIComponent(tipo==="transferencia"?waTextInfo:waTextComp)}`, "_blank")}
-                  style={{ width:"100%", padding:"13px", border:"none", borderRadius:14, background:"linear-gradient(135deg,#25d366,#128c7e)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 4px 14px rgba(37,211,102,.35)", marginBottom:12 }}>
+                  style={{ width:"100%", padding:"13px", border:"none", borderRadius:14, background:"linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8, boxShadow:"0 4px 14px var(--col-success-border)", marginBottom:12 }}>
                   <span>💬</span> Enviar por WhatsApp
                 </button>
               )}
 
               <button
                 onClick={() => setComprobanteModal(false)}
-                style={{ width:"100%", padding:"12px", border:"1px solid var(--border)", borderRadius:12, background:"transparent", color:"#8b949e", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                style={{ width:"100%", padding:"12px", border:"1px solid var(--border)", borderRadius:12, background:"transparent", color:"var(--text-secondary)", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                 Cerrar
               </button>
             </div>
@@ -1252,15 +1252,15 @@ export default function MemberDetailModal({
           <div style={{ background:"var(--bg-card)", borderRadius:24, padding:24, width:"100%", maxWidth:360, border:"1px solid rgba(251,191,36,.3)" }}>
             <div style={{ textAlign:"center", marginBottom:20 }}>
               <p style={{ fontSize:40, marginBottom:8 }}>✅</p>
-              <h3 style={{ color:"#fbbf24", fontSize:16, fontWeight:700 }}>Confirmar pago recibido</h3>
-              <p style={{ color:"#8b949e", fontSize:12, marginTop:6, lineHeight:1.5 }}>
-                Al confirmar, el alumno quedará <strong style={{ color:"#4ade80" }}>Activo</strong> y su ID Digital se activará.
+              <h3 style={{ color:"var(--col-warning)", fontSize:16, fontWeight:700 }}>Confirmar pago recibido</h3>
+              <p style={{ color:"var(--text-secondary)", fontSize:12, marginTop:6, lineHeight:1.5 }}>
+                Al confirmar, el alumno quedará <strong style={{ color:"var(--col-success)" }}>Activo</strong> y su ID Digital se activará.
               </p>
             </div>
 
             {/* Monto */}
             <div style={{ marginBottom:12 }}>
-              <label style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Monto recibido ($)</label>
+              <label style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Monto recibido ($)</label>
               <input
                 type="number" value={confirmarDatos.monto} inputMode="numeric"
                 onChange={e => setConfirmarDatos(p => ({...p, monto: e.target.value}))}
@@ -1271,7 +1271,7 @@ export default function MemberDetailModal({
 
             {/* Plan */}
             <div style={{ marginBottom:12 }}>
-              <label style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Plan / Clase</label>
+              <label style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Plan / Clase</label>
               <input
                 type="text" value={confirmarDatos.plan}
                 onChange={e => setConfirmarDatos(p => ({...p, plan: e.target.value}))}
@@ -1282,7 +1282,7 @@ export default function MemberDetailModal({
 
             {/* Fecha */}
             <div style={{ marginBottom:20 }}>
-              <label style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Fecha de pago</label>
+              <label style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, display:"block", marginBottom:5 }}>Fecha de pago</label>
               <input
                 type="date" value={confirmarDatos.fecha}
                 onChange={e => setConfirmarDatos(p => ({...p, fecha: e.target.value}))}
@@ -1297,7 +1297,7 @@ export default function MemberDetailModal({
               </button>
               <button onClick={handleConfirmarPago} disabled={confirmandoPago || !confirmarDatos.monto}
                 style={{ flex:2, padding:"13px", borderRadius:14, border:"none",
-                  background: confirmandoPago ? "rgba(74,222,128,.3)" : "linear-gradient(135deg,#22c55e,#4ade80)",
+                  background: confirmandoPago ? "var(--col-success-border)" : "linear-gradient(135deg,var(--col-success),var(--col-success))",
                   color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit",
                   boxShadow:"0 4px 14px rgba(74,222,128,.35)", opacity: !confirmarDatos.monto ? 0.5 : 1 }}>
                 {confirmandoPago ? "⏳ Guardando..." : "✅ Confirmar pago"}
@@ -1382,7 +1382,7 @@ export default function MemberDetailModal({
                 </h2>
                 <button
                   onClick={() => setCobrarModal(false)}
-                  style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#8b949e", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18 }}
+                  style={{ border: "none", background: "rgba(255,255,255,.1)", color: "var(--text-secondary)", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18 }}
                 >
                   ✕
                 </button>
@@ -1397,11 +1397,11 @@ export default function MemberDetailModal({
                     style={{
                       flexShrink: 0,
                       padding: "7px 12px",
-                      border: cobro.tipo === t.val ? "1.5px solid #4ade80" : "1.5px solid rgba(255,255,255,.08)",
+                      border: cobro.tipo === t.val ? "1.5px solid var(--col-success)" : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 20,
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      background: cobro.tipo === t.val ? "rgba(74,222,128,.12)" : "var(--bg-elevated)",
+                      background: cobro.tipo === t.val ? "var(--col-success-soft)" : "var(--bg-elevated)",
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
@@ -1410,15 +1410,15 @@ export default function MemberDetailModal({
                     }}
                   >
                     <span style={{ fontSize: 15 }}>{t.icon}</span>
-                    <span style={{ color: cobro.tipo === t.val ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: cobro.tipo === t.val ? 700 : 500 }}>
+                    <span style={{ color: cobro.tipo === t.val ? "var(--col-success)" : "var(--text-secondary)", fontSize: 12, fontWeight: cobro.tipo === t.val ? 700 : 500 }}>
                       {t.label}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
-                Descripción <span style={{ color: "#8b949e", fontWeight: 400, fontSize: 10 }}>(opcional)</span>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                Descripción <span style={{ color: "var(--text-secondary)", fontWeight: 400, fontSize: 10 }}>(opcional)</span>
               </p>
               <input
                 value={cobro.desc}
@@ -1427,7 +1427,7 @@ export default function MemberDetailModal({
                 style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                 Monto ($)
               </p>
               <input
@@ -1438,7 +1438,7 @@ export default function MemberDetailModal({
                 style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 16, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                 Fecha
               </p>
               <input
@@ -1448,7 +1448,7 @@ export default function MemberDetailModal({
                 style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "12px 14px", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 14 }}
               />
 
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
                 Forma de pago
               </p>
               <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -1458,14 +1458,14 @@ export default function MemberDetailModal({
                     onClick={() => setCobro((p) => ({ ...p, formaPago: op.val }))}
                     style={{
                       flex: 1, padding: "10px 4px",
-                      border: cobro.formaPago === op.val ? "2px solid #a78bfa" : "1.5px solid rgba(255,255,255,.08)",
+                      border: cobro.formaPago === op.val ? "2px solid var(--col-accent-text)" : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
                       background: cobro.formaPago === op.val ? "rgba(167,139,250,.15)" : "var(--bg-elevated)",
                       transition: "all .2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                     }}
                   >
                     <span style={{ fontSize: 18 }}>{op.icon}</span>
-                    <span style={{ color: cobro.formaPago === op.val ? "#a78bfa" : "#8b949e", fontSize: 10, fontWeight: 700 }}>
+                    <span style={{ color: cobro.formaPago === op.val ? "var(--col-accent-text)" : "var(--text-secondary)", fontSize: 10, fontWeight: 700 }}>
                       {op.val}
                     </span>
                   </button>
@@ -1479,8 +1479,8 @@ export default function MemberDetailModal({
                   width: "100%", padding: "14px", border: "none", borderRadius: 14,
                   cursor: cobro.monto ? "pointer" : "not-allowed", fontFamily: "inherit",
                   fontSize: 14, fontWeight: 700,
-                  background: cobro.monto ? "linear-gradient(135deg,#4ade80,#22c55e)" : "var(--bg-elevated)",
-                  color: cobro.monto ? "#000" : "#8b949e",
+                  background: cobro.monto ? "linear-gradient(135deg,var(--col-success),var(--col-success))" : "var(--bg-elevated)",
+                  color: cobro.monto ? "#000" : "var(--text-secondary)",
                   boxShadow: cobro.monto ? "0 4px 18px rgba(74,222,128,.35)" : "none",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all .2s",
                 }}
@@ -1610,7 +1610,7 @@ export default function MemberDetailModal({
                     </h2>
                   </div>
                   <button onClick={cerrarWizard}
-                    style={{ border:"none", background:"rgba(255,255,255,.1)", color:"#8b949e", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    style={{ border:"none", background:"rgba(255,255,255,.1)", color:"var(--text-secondary)", width:34, height:34, borderRadius:10, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>
                     ✕
                   </button>
                 </div>
@@ -1631,24 +1631,24 @@ export default function MemberDetailModal({
                                   width:28, height:28, borderRadius:"50%",
                                   display:"flex", alignItems:"center", justifyContent:"center",
                                   fontWeight:700, fontSize:12,
-                                  background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
-                                  color: done || active ? "#fff" : "#6b6b8a",
+                                  background: done ? "var(--col-success)" : active ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
+                                  color: done || active ? "#fff" : "var(--text-secondary)",
                                   border: active ? "none" : done ? "none" : "1.5px solid rgba(255,255,255,.15)",
-                                  boxShadow: active ? "0 0 0 3px rgba(108,99,255,.25)" : "none",
+                                  boxShadow: active ? "0 0 0 3px var(--col-accent-soft)" : "none",
                                   transition:"all .3s",
                                 }}>
                                   {done ? "✓" : idx}
                                 </div>
                                 <p style={{
                                   fontSize:10, fontWeight: renovarStep === idx ? 700 : 400,
-                                  color: renovarStep === idx ? "var(--text-primary)" : "#6b6b8a",
+                                  color: renovarStep === idx ? "var(--text-primary)" : "var(--text-secondary)",
                                   margin:"4px 0 0", transition:"color .3s", whiteSpace:"nowrap",
                                 }}>{label}</p>
                               </div>
                               {i < STEPS.length - 1 && (
                                 <div style={{
                                   flex:1, height:2,
-                                  background: done ? "#4ade80" : "rgba(255,255,255,.1)",
+                                  background: done ? "var(--col-success)" : "rgba(255,255,255,.1)",
                                   margin:"0 6px", marginBottom:18, transition:"background .3s",
                                 }} />
                               )}
@@ -1679,7 +1679,7 @@ export default function MemberDetailModal({
                         <div style={{ marginBottom:14 }}>
                           {/* ── Membresía del Gimnasio ── */}
                           {gymPlanes.length > 0 && (
-                            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
+                            <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
                               🏋️ Membresía del Gimnasio
                             </p>
                           )}
@@ -1696,29 +1696,29 @@ export default function MemberDetailModal({
                                   setRenovar(p => ({ ...p, plan:plan.nombre, monto: m.beca?"0":String(precio), vence: p.venceManual?p.vence:calcVence(p.inicio,plan.nombre) }));
                                 }}
                                 style={{ width:"100%", padding:"12px 16px", marginBottom:8,
-                                  border: isSel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                                  border: isSel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
                                   borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                                  background: isSel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                                  background: isSel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
                                   display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
                                 <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
-                                  background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.05)",
+                                  background: isSel ? "var(--col-accent-border)" : "rgba(255,255,255,.05)",
                                   display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
                                   {meses>=12?"🏆":meses>=6?"🔥":meses>=3?"⚡":"📅"}
                                 </div>
                                 <div style={{ flex:1, minWidth:0 }}>
-                                  <p style={{ color: isSel?"#a78bfa":"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>{plan.nombre}</p>
-                                  <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Vigencia: {meses} {meses===1?"mes":"meses"}</p>
+                                  <p style={{ color: isSel?"var(--col-accent-text)":"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:13 }}>{plan.nombre}</p>
+                                  <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, marginTop:1 }}>Vigencia: {meses} {meses===1?"mes":"meses"}</p>
                                 </div>
                                 <div style={{ textAlign:"right", flexShrink:0 }}>
                                   {precio > 0 ? (
                                     <>
-                                      <p style={{ background: isSel?"rgba(108,99,255,.2)":"rgba(255,255,255,.07)", color: isSel?"#a78bfa":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
-                                        {m.beca&&isSel ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                                      <p style={{ background: isSel?"var(--col-accent-border)":"rgba(255,255,255,.07)", color: isSel?"var(--col-accent-text)":"var(--text-secondary,var(--text-tertiary))", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                                        {m.beca&&isSel ? <span style={{ color:"var(--col-success)" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
                                       </p>
-                                      {!m.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                                      {!m.beca && <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
                                     </>
                                   ) : (
-                                    <p style={{ background:"rgba(74,222,128,.1)", color:"#4ade80", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Gratuito</p>
+                                    <p style={{ background:"rgba(74,222,128,.1)", color:"var(--col-success)", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Gratuito</p>
                                   )}
                                 </div>
                               </button>
@@ -1730,7 +1730,7 @@ export default function MemberDetailModal({
                             <>
                               <div style={{ display:"flex", alignItems:"center", gap:8, margin:"14px 0 8px" }}>
                                 <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
-                                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
+                                <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
                                   🗓️ Clases (selección múltiple)
                                 </p>
                                 <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
@@ -1753,29 +1753,29 @@ export default function MemberDetailModal({
                                 return (
                                   <button key={clase.id} onClick={() => toggleClaseRenovar(clase)}
                                     style={{ width:"100%", padding:"12px 16px", marginBottom:8,
-                                      border: isSel ? "2px solid #22d3ee" : "1.5px solid rgba(255,255,255,.08)",
+                                      border: isSel ? "2px solid var(--col-info)" : "1.5px solid rgba(255,255,255,.08)",
                                       borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                                      background: isSel ? "rgba(34,211,238,.1)" : "var(--bg-elevated)",
+                                      background: isSel ? "var(--col-info-soft)" : "var(--bg-elevated)",
                                       display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left" }}>
                                     <div style={{ width:22, height:22, borderRadius:7, flexShrink:0,
                                       border: isSel ? "none" : "2px solid rgba(255,255,255,.2)",
-                                      background: isSel ? "#22d3ee" : "transparent",
-                                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:"#1a1a2e" }}>
+                                      background: isSel ? "var(--col-info)" : "transparent",
+                                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, color:"var(--bg-base)" }}>
                                       {isSel && "✓"}
                                     </div>
                                     <div style={{ flex:1, minWidth:0 }}>
-                                      <p style={{ color: isSel?"#22d3ee":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
+                                      <p style={{ color: isSel?"var(--col-info)":"var(--text-primary)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
                                       {(diasStr||horaStr) && (
-                                        <p style={{ color:"#8b949e", fontSize:11, marginTop:1 }}>
+                                        <p style={{ color:"var(--text-secondary)", fontSize:11, marginTop:1 }}>
                                           {horaStr && `🕐 ${horaStr}`}{diasStr && `  ${diasStr}`}
                                         </p>
                                       )}
                                     </div>
                                     <div style={{ textAlign:"right", flexShrink:0 }}>
-                                      <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"#8b949e", borderRadius:8, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
-                                        {m.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                                      <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"var(--col-info)":"var(--text-secondary)", borderRadius:8, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                                        {m.beca ? <span style={{ color:"var(--col-success)" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
                                       </p>
-                                      {!m.beca && <p style={{ color:"#8b949e", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                                      {!m.beca && <p style={{ color:"var(--text-secondary)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
                                     </div>
                                   </button>
                                 );
@@ -1793,49 +1793,49 @@ export default function MemberDetailModal({
                 {renovarStep === 2 && (
                   <>
                     {/* ── BLOQUE 1: Resumen del pago ── */}
-                    <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:12 }}>
-                      <p style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen del pago</p>
+                    <div style={{ background:"var(--col-accent-soft)", border:"1px solid var(--col-accent-border)", borderRadius:14, padding:"12px 16px", marginBottom:12 }}>
+                      <p style={{ color:"var(--col-accent-text)", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen del pago</p>
 
                       {/* Alumno */}
                       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                        <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>Alumno</span>
-                        <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:600 }}>{m.nombre}</span>
+                        <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:12 }}>Alumno</span>
+                        <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:12, fontWeight:600 }}>{m.nombre}</span>
                       </div>
 
                       {/* Líneas de conceptos */}
                       {renovar.plan && (
                         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>🏋️ {renovar.plan}</span>
-                          <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, fontWeight:500 }}>${montoPagado.toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:12 }}>🏋️ {renovar.plan}</span>
+                          <span style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:12, fontWeight:500 }}>${montoPagado.toLocaleString("es-MX")}</span>
                         </div>
                       )}
                       {(renovar.planesExtra||[]).map(pe => (
                         <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>🗓️ {pe.nombre}</span>
-                          <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, fontWeight:500 }}>${(m.beca?0:Number(pe.monto||0)).toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:12 }}>🗓️ {pe.nombre}</span>
+                          <span style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:12, fontWeight:500 }}>${(m.beca?0:Number(pe.monto||0)).toLocaleString("es-MX")}</span>
                         </div>
                       ))}
                       {/* Recargo solo si aplica — una única aparición */}
                       {aplicaRecargo && (
                         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                          <span style={{ color:"#f87171", fontSize:12 }}>⚠️ Recargo mora</span>
-                          <span style={{ color:"#f87171", fontSize:12, fontWeight:600 }}>+${montoRecargo.toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--col-danger)", fontSize:12 }}>⚠️ Recargo mora</span>
+                          <span style={{ color:"var(--col-danger)", fontSize:12, fontWeight:600 }}>+${montoRecargo.toLocaleString("es-MX")}</span>
                         </div>
                       )}
 
                       {/* Total + Vence unificados con mayor jerarquía */}
                       <div style={{ borderTop:"1px solid rgba(255,255,255,.1)", marginTop:8, paddingTop:10 }}>
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                          <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:14, fontWeight:700 }}>Total a pagar</span>
-                          <span style={{ color:"#4ade80", fontSize:18, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:14, fontWeight:700 }}>Total a pagar</span>
+                          <span style={{ color:"var(--col-success)", fontSize:18, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
                         </div>
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Vence</span>
-                          <span style={{ color:"#22d3ee", fontSize:11, fontWeight:600 }}>
+                          <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>Vence</span>
+                          <span style={{ color:"var(--col-info)", fontSize:11, fontWeight:600 }}>
                             {venceFmt}
                             {renovar.inicio && renovar.vence && (() => {
                               const diff = Math.round((new Date(renovar.vence+"T00:00:00") - new Date(renovar.inicio+"T00:00:00")) / 86400000);
-                              return diff > 0 ? <span style={{ color:"var(--text-tertiary,#6b6b8a)", marginLeft:6 }}>· {diff} días</span> : null;
+                              return diff > 0 ? <span style={{ color:"var(--text-tertiary,var(--text-secondary))", marginLeft:6 }}>· {diff} días</span> : null;
                             })()}
                           </span>
                         </div>
@@ -1844,30 +1844,30 @@ export default function MemberDetailModal({
 
                     {/* ── BLOQUE 2: Historial de membresía (solo si no es primera) ── */}
                     {!esPrimeraMembresía && (
-                      <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:14, padding:"12px 16px", marginBottom:14 }}>
-                        <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Historial de membresía</p>
+                      <div style={{ background:"var(--bg-elevated,var(--bg-elevated))", border:"1px solid var(--border-strong,var(--bg-elevated))", borderRadius:14, padding:"12px 16px", marginBottom:14 }}>
+                        <p style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Historial de membresía</p>
 
                         {/* Grid 2×2 para último pago + días vencido */}
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom: (tipoPenalidad !== "ninguna" && penalidad > 0) ? 10 : 0 }}>
                           <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
-                            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Último pago</p>
-                            <p style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{ultimoPagoFmt || "—"}</p>
+                            <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginBottom:3 }}>Último pago</p>
+                            <p style={{ color:"var(--col-info)", fontSize:12, fontWeight:700 }}>{ultimoPagoFmt || "—"}</p>
                           </div>
                           <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
-                            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Días vencido</p>
-                            <p style={{ color: diasVencido > diasGracia ? "#f87171" : diasVencido > 0 ? "#f59e0b" : "#4ade80", fontSize:12, fontWeight:700 }}>
+                            <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginBottom:3 }}>Días vencido</p>
+                            <p style={{ color: diasVencido > diasGracia ? "var(--col-danger)" : diasVencido > 0 ? "var(--col-warning)" : "var(--col-success)", fontSize:12, fontWeight:700 }}>
                               {diasVencido > 0 ? `${diasVencido} días` : "Al día ✓"}
                             </p>
                           </div>
                           {tipoPenalidad !== "ninguna" && penalidad > 0 && (
                             <>
                               <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
-                                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Días de gracia</p>
-                                <p style={{ color:"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:600 }}>{diasGracia} días</p>
+                                <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginBottom:3 }}>Días de gracia</p>
+                                <p style={{ color:"var(--text-primary,var(--text-primary))", fontSize:12, fontWeight:600 }}>{diasGracia} días</p>
                               </div>
                               <div style={{ background:"rgba(255,255,255,.04)", borderRadius:10, padding:"8px 10px" }}>
-                                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginBottom:3 }}>Penalidad</p>
-                                <p style={{ color:"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:600 }}>
+                                <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginBottom:3 }}>Penalidad</p>
+                                <p style={{ color:"var(--text-primary,var(--text-primary))", fontSize:12, fontWeight:600 }}>
                                   {tipoPenalidad === "porcentaje" ? `${penalidad}%` : `$${penalidad.toLocaleString("es-MX")}`}
                                 </p>
                               </div>
@@ -1878,16 +1878,16 @@ export default function MemberDetailModal({
                         {/* Banner recargo — solo aquí, una única vez */}
                         {aplicaRecargo && (
                           <div style={{ background:"rgba(239,68,68,.1)", border:"1px solid rgba(239,68,68,.3)", borderRadius:10, padding:"8px 12px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                            <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>⚠️ Recargo aplicado</span>
-                            <span style={{ color:"#f87171", fontSize:13, fontWeight:800, fontFamily:"'DM Mono',monospace" }}>
+                            <span style={{ color:"var(--col-danger)", fontSize:12, fontWeight:700 }}>⚠️ Recargo aplicado</span>
+                            <span style={{ color:"var(--col-danger)", fontSize:13, fontWeight:800, fontFamily:"'DM Mono',monospace" }}>
                               +${montoRecargo.toLocaleString("es-MX")}
                             </span>
                           </div>
                         )}
                         {/* Dentro del período de gracia */}
                         {!aplicaRecargo && diasVencido > 0 && tipoPenalidad !== "ninguna" && penalidad > 0 && (
-                          <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.2)", borderRadius:10, padding:"8px 12px" }}>
-                            <p style={{ color:"#4ade80", fontSize:11 }}>
+                          <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid var(--col-success-border)", borderRadius:10, padding:"8px 12px" }}>
+                            <p style={{ color:"var(--col-success)", fontSize:11 }}>
                               ✓ Dentro del período de gracia ({diasGracia - diasVencido} días restantes)
                             </p>
                           </div>
@@ -1898,7 +1898,7 @@ export default function MemberDetailModal({
                     {/* Montos editables */}
                     {!m.beca && renovar.plan && (
                       <div style={{ marginBottom:10, padding:"12px 14px", background:"rgba(167,139,250,.07)", border:"1px solid rgba(167,139,250,.2)", borderRadius:14 }}>
-                        <label style={{ color:"#a78bfa", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6, display:"block" }}>
+                        <label style={{ color:"var(--col-accent-text)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6, display:"block" }}>
                           💰 Monto membresía gym (editable)
                         </label>
                         <input type="number" value={renovar.monto||""} min="0"
@@ -1909,12 +1909,12 @@ export default function MemberDetailModal({
                     )}
                     {!m.beca && (renovar.planesExtra||[]).length > 0 && (
                       <div style={{ marginBottom:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.25)", borderRadius:14 }}>
-                        <label style={{ color:"#22d3ee", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
+                        <label style={{ color:"var(--col-info)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
                           🗓️ Monto clases (editable)
                         </label>
                         {(renovar.planesExtra||[]).map(pe => (
                           <div key={pe.id} style={{ marginBottom:8 }}>
-                            <p style={{ color:"#8b949e", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
+                            <p style={{ color:"var(--text-secondary)", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
                             <input type="number" value={pe.monto||""} min="0"
                               onChange={e => setRenovar(prev => ({ ...prev, planesExtra:(prev.planesExtra||[]).map(x => x.id===pe.id?{...x,monto:e.target.value}:x) }))}
                               placeholder="0" inputMode="numeric"
@@ -1927,13 +1927,13 @@ export default function MemberDetailModal({
                     {/* Fechas */}
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
                       <div>
-                        <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Inicio</p>
+                        <p style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Inicio</p>
                         <input type="date" value={renovar.inicio}
                           onChange={e => { const v=e.target.value; setRenovar(p=>({...p,inicio:v,vence:p.venceManual?p.vence:calcVence(v,p.plan)})); }}
                           style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"12px 10px", color:"var(--text-primary)", fontSize:13, fontFamily:"inherit", outline:"none" }} />
                       </div>
                       <div>
-                        <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Vencimiento</p>
+                        <p style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Vencimiento</p>
                         <input type="date" value={renovar.vence} min={renovar.inicio}
                           onChange={e => { const v=e.target.value; if(v<renovar.inicio)return; setRenovar(p=>({...p,vence:v,venceManual:true})); }}
                           style={{ width:"100%", background:"var(--bg-elevated)", border:"1px solid var(--border)", borderRadius:12, padding:"12px 10px", color:"var(--text-primary)", fontSize:13, fontFamily:"inherit", outline:"none" }} />
@@ -1942,8 +1942,8 @@ export default function MemberDetailModal({
 
                     {/* Duración */}
                     <div style={{ background:"rgba(34,211,238,.08)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14, padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                      <span style={{ color:"#8b949e", fontSize:12 }}>Duración</span>
-                      <span style={{ color:"#22d3ee", fontSize:13, fontWeight:700 }}>
+                      <span style={{ color:"var(--text-secondary)", fontSize:12 }}>Duración</span>
+                      <span style={{ color:"var(--col-info)", fontSize:13, fontWeight:700 }}>
                         {(() => {
                           if (!renovar.inicio || !renovar.vence) return "—";
                           const diff = Math.round((new Date(renovar.vence+"T00:00:00") - new Date(renovar.inicio+"T00:00:00")) / 86400000);
@@ -1953,18 +1953,18 @@ export default function MemberDetailModal({
                     </div>
 
                     {/* Forma de pago — grid 3 columnas igual que NuevoMiembro */}
-                    <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
+                    <p style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>Forma de pago</p>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
                       {[{id:"Efectivo",icon:"💵"},{id:"Transferencia",icon:"🏦"},{id:"Tarjeta",icon:"💳"}].map(op => {
                         const sel = renovar.formaPago === op.id;
                         return (
                           <button key={op.id} onClick={() => setRenovar(p => ({...p, formaPago:op.id}))}
                             style={{ padding:"13px 6px", borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                              border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
-                              background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                              border: sel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
+                              background: sel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
                               display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all .2s" }}>
                             <span style={{ fontSize:22 }}>{op.icon}</span>
-                            <span style={{ color: sel?"#c4b5fd":"var(--text-primary,#e8e8f0)", fontSize:12, fontWeight:sel?700:500 }}>{op.id}</span>
+                            <span style={{ color: sel?"var(--col-accent-text)":"var(--text-primary,var(--text-primary))", fontSize:12, fontWeight:sel?700:500 }}>{op.id}</span>
                           </button>
                         );
                       })}
@@ -1972,10 +1972,10 @@ export default function MemberDetailModal({
 
                     {/* Efectivo / Tarjeta → nota */}
                     {!esPendienteTransf && renovar.formaPago && (
-                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:12 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid var(--col-accent-border)", borderRadius:12 }}>
                         <span style={{ fontSize:18, flexShrink:0 }}>🧾</span>
-                        <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, lineHeight:1.4 }}>
-                          El <strong style={{ color:"var(--text-primary,#e8e8f0)" }}>comprobante de pago</strong> se generará automáticamente en el siguiente paso.
+                        <p style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:12, lineHeight:1.4 }}>
+                          El <strong style={{ color:"var(--text-primary,var(--text-primary))" }}>comprobante de pago</strong> se generará automáticamente en el siguiente paso.
                         </p>
                       </div>
                     )}
@@ -1986,7 +1986,7 @@ export default function MemberDetailModal({
                         <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"12px 14px", background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.28)", borderRadius:12, marginBottom:12 }}>
                           <span style={{ fontSize:18, flexShrink:0 }}>⏳</span>
                           <div>
-                            <p style={{ color:"#fbbf24", fontWeight:700, fontSize:13 }}>Pago por confirmar</p>
+                            <p style={{ color:"var(--col-warning)", fontWeight:700, fontSize:13 }}>Pago por confirmar</p>
                             <p style={{ color:"rgba(251,191,36,.8)", fontSize:11, marginTop:3, lineHeight:1.4 }}>
                               El alumno se registrará como <strong>Pendiente</strong> hasta que confirmes el pago desde su perfil.
                             </p>
@@ -1994,11 +1994,11 @@ export default function MemberDetailModal({
                         </div>
 
                         {/* Info para transferencia */}
-                        <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${renovarInfoPNG?"#0ea5e955":"var(--border-strong,#2e2e42)"}`, borderRadius:16, padding:14, marginBottom:12 }}>
+                        <div style={{ background:"var(--bg-elevated,var(--bg-elevated))", border:`1.5px solid ${renovarInfoPNG?"var(--col-info)55":"var(--border-strong,var(--bg-elevated))"}`, borderRadius:16, padding:14, marginBottom:12 }}>
                           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                               <div style={{ width:36, height:36, borderRadius:10, background:"rgba(14,165,233,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏦</div>
-                              <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>Info para Transferencia</p>
+                              <p style={{ color:"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:13 }}>Info para Transferencia</p>
                             </div>
                             <button onClick={async () => {
                                 setRenovarSaving(true);
@@ -2009,25 +2009,25 @@ export default function MemberDetailModal({
                                 finally { setRenovarSaving(false); }
                               }}
                               disabled={renovarSaving}
-                              style={{ padding:"8px 14px", borderRadius:10, border:"none", background: renovarSaving?"rgba(14,165,233,.3)":"#0ea5e9", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+                              style={{ padding:"8px 14px", borderRadius:10, border:"none", background: renovarSaving?"rgba(14,165,233,.3)":"var(--col-info)", color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
                               {renovarSaving ? "⏳ Generando..." : renovarInfoPNG ? "✨ Regenerar" : "✨ Generar"}
                             </button>
                           </div>
                           {renovarInfoPNG && (
                             <>
-                              <img src={renovarInfoPNG} alt="Info transferencia" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,#2a2a3e)", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
+                              <img src={renovarInfoPNG} alt="Info transferencia" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,var(--bg-elevated))", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
                               <div style={{ display:"flex", gap:7, marginTop:9 }}>
                                 <button onClick={() => { const a=document.createElement("a"); a.href=renovarInfoPNG; a.download=`transferencia-${m.nombre.replace(/\s+/g,"-").toLowerCase()}.png`; a.click(); }}
-                                  style={{ flex:1, padding:"10px 8px", borderRadius:12, fontFamily:"inherit", background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                  style={{ flex:1, padding:"10px 8px", borderRadius:12, fontFamily:"inherit", background:"var(--bg-elevated,var(--bg-elevated))", border:"1px solid var(--border-strong,var(--bg-elevated))", color:"var(--text-secondary,var(--text-tertiary))", fontWeight:600, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                   📥 Descargar
                                 </button>
                                 <button onClick={() => copiarImg(renovarInfoPNG)}
-                                  style={{ flex:1, padding:"10px 8px", borderRadius:12, fontFamily:"inherit", background:renovarCopiado?"rgba(74,222,128,.12)":"var(--bg-elevated,#1e1e2e)", border:`1px solid ${renovarCopiado?"rgba(74,222,128,.4)":"var(--border-strong,#2e2e42)"}`, color:renovarCopiado?"#4ade80":"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                  style={{ flex:1, padding:"10px 8px", borderRadius:12, fontFamily:"inherit", background:renovarCopiado?"var(--col-success-soft)":"var(--bg-elevated,var(--bg-elevated))", border:`1px solid ${renovarCopiado?"var(--col-success-border)":"var(--border-strong,var(--bg-elevated))"}`, color:renovarCopiado?"var(--col-success)":"var(--text-secondary,var(--text-tertiary))", fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                   {renovarCopiado ? "✓ Copiado" : "📋 Copiar"}
                                 </button>
                                 {tel && waMsgBanco && (
                                   <button onClick={() => abrirWA(waMsgBanco)}
-                                    style={{ flex:1, padding:"10px 8px", borderRadius:12, fontFamily:"inherit", background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)", color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                                    style={{ flex:1, padding:"10px 8px", borderRadius:12, fontFamily:"inherit", background:"rgba(37,211,102,.12)", border:"1px solid var(--col-success-border)", color:"var(--col-wa)", fontWeight:700, fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                                     📲 WhatsApp
                                   </button>
                                 )}
@@ -2039,11 +2039,11 @@ export default function MemberDetailModal({
                         {/* Datos bancarios rápidos */}
                         {(gymConfig?.transferencia_clabe || gymConfig?.transferencia_titular) && (
                           <div style={{ background:"rgba(14,165,233,.06)", border:"1px solid rgba(14,165,233,.2)", borderRadius:12, padding:"12px 14px" }}>
-                            <p style={{ color:"#38bdf8", fontSize:11, fontWeight:700, marginBottom:8 }}>📋 Datos bancarios rápidos</p>
+                            <p style={{ color:"var(--col-info)", fontSize:11, fontWeight:700, marginBottom:8 }}>📋 Datos bancarios rápidos</p>
                             {[["CLABE", gymConfig.transferencia_clabe||"—"], ["Titular", gymConfig.transferencia_titular||"—"], ["Banco", gymConfig.transferencia_banco||""]].filter(([,v])=>v).map(([l,v]) => (
                               <div key={l} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                                <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>{l}</span>
-                                <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600, fontFamily:"'DM Mono',monospace" }}>{v}</span>
+                                <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>{l}</span>
+                                <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:11, fontWeight:600, fontFamily:"'DM Mono',monospace" }}>{v}</span>
                               </div>
                             ))}
                           </div>
@@ -2058,42 +2058,42 @@ export default function MemberDetailModal({
                   <>
                     {/* Resumen */}
                     <div style={{ background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.15)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
-                      <p style={{ color:"#8b949e", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen</p>
+                      <p style={{ color:"var(--text-secondary)", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:.5, marginBottom:10 }}>Resumen</p>
                       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
-                        <span style={{ color:"#8b949e", fontSize:11 }}>Alumno</span>
-                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{m.nombre}</span>
+                        <span style={{ color:"var(--text-secondary)", fontSize:11 }}>Alumno</span>
+                        <span style={{ color:"var(--col-info)", fontSize:12, fontWeight:700 }}>{m.nombre}</span>
                       </div>
                       {renovar.plan && (
                         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                          <span style={{ color:"#8b949e", fontSize:11 }}>🏋️ {renovar.plan}</span>
-                          <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${montoPagado.toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--text-secondary)", fontSize:11 }}>🏋️ {renovar.plan}</span>
+                          <span style={{ color:"var(--col-accent-text)", fontSize:12, fontWeight:700 }}>${montoPagado.toLocaleString("es-MX")}</span>
                         </div>
                       )}
                       {(renovar.planesExtra||[]).map(pe => (
                         <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                          <span style={{ color:"#8b949e", fontSize:11 }}>🗓️ {pe.nombre}</span>
-                          <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--text-secondary)", fontSize:11 }}>🗓️ {pe.nombre}</span>
+                          <span style={{ color:"var(--col-info)", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
                         </div>
                       ))}
                       {aplicaRecargo && (
                         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                          <span style={{ color:"#f87171", fontSize:11 }}>⚠️ Recargo mora</span>
-                          <span style={{ color:"#f87171", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--col-danger)", fontSize:11 }}>⚠️ Recargo mora</span>
+                          <span style={{ color:"var(--col-danger)", fontSize:12, fontWeight:700 }}>${montoRecargo.toLocaleString("es-MX")}</span>
                         </div>
                       )}
                       {montoTotalRenovacion !== montoPagado && (
                         <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
-                          <span style={{ color:"#8b949e", fontSize:11 }}>Total</span>
-                          <span style={{ color:"#4ade80", fontSize:12, fontWeight:700 }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
+                          <span style={{ color:"var(--text-secondary)", fontSize:11 }}>Total</span>
+                          <span style={{ color:"var(--col-success)", fontSize:12, fontWeight:700 }}>${montoTotalRenovacion.toLocaleString("es-MX")}</span>
                         </div>
                       )}
                       <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                        <span style={{ color:"#8b949e", fontSize:11 }}>Vence</span>
-                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{venceFmt}</span>
+                        <span style={{ color:"var(--text-secondary)", fontSize:11 }}>Vence</span>
+                        <span style={{ color:"var(--col-info)", fontSize:12, fontWeight:700 }}>{venceFmt}</span>
                       </div>
                       <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                        <span style={{ color:"#8b949e", fontSize:11 }}>Forma pago</span>
-                        <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>{fp === "Transferencia" ? "📲 Transferencia" : fp === "Tarjeta" ? "💳 Tarjeta" : "💵 Efectivo"}</span>
+                        <span style={{ color:"var(--text-secondary)", fontSize:11 }}>Forma pago</span>
+                        <span style={{ color:"var(--col-info)", fontSize:12, fontWeight:700 }}>{fp === "Transferencia" ? "📲 Transferencia" : fp === "Tarjeta" ? "💳 Tarjeta" : "💵 Efectivo"}</span>
                       </div>
                     </div>
 
@@ -2112,12 +2112,12 @@ export default function MemberDetailModal({
                         📥 Descargar
                       </button>
                       <button onClick={() => copiarImg(renovarInfoPNG || renovarCompPNG)}
-                        style={{ flex:1, padding:"11px 8px", border:`1px solid ${renovarCopiado?"rgba(74,222,128,.4)":"rgba(255,255,255,.12)"}`, borderRadius:12, background:renovarCopiado?"rgba(74,222,128,.12)":"var(--bg-elevated)", color:renovarCopiado?"#4ade80":"var(--text-primary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all .2s" }}>
+                        style={{ flex:1, padding:"11px 8px", border:`1px solid ${renovarCopiado?"var(--col-success-border)":"rgba(255,255,255,.12)"}`, borderRadius:12, background:renovarCopiado?"var(--col-success-soft)":"var(--bg-elevated)", color:renovarCopiado?"var(--col-success)":"var(--text-primary)", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6, transition:"all .2s" }}>
                         {renovarCopiado ? "✅ Copiado" : "📋 Copiar"}
                       </button>
                       {tel && (
                         <button onClick={() => abrirWA(renovarInfoPNG ? waMsgBanco : waMsgComp)}
-                          style={{ flex:1, padding:"11px 8px", border:"1px solid rgba(37,211,102,.3)", borderRadius:12, background:"rgba(37,211,102,.12)", color:"#25d366", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                          style={{ flex:1, padding:"11px 8px", border:"1px solid var(--col-success-border)", borderRadius:12, background:"rgba(37,211,102,.12)", color:"var(--col-wa)", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                           📲 WhatsApp
                         </button>
                       )}
@@ -2127,7 +2127,7 @@ export default function MemberDetailModal({
                     {esPendienteTransf && renovarInfoPNG && !renovarCompPNG && (
                       <button onClick={handleRenovarConfirmarPago} disabled={renovarSaving}
                         style={{ width:"100%", padding:"13px", border:"none", borderRadius:14, marginBottom:8,
-                          background: renovarSaving ? "rgba(16,185,129,.4)" : "linear-gradient(135deg,#10b981,#059669)",
+                          background: renovarSaving ? "rgba(16,185,129,.4)" : "linear-gradient(135deg,var(--col-success),var(--col-success))",
                           color:"#fff", fontWeight:700, fontSize:13, cursor: renovarSaving ? "not-allowed" : "pointer",
                           fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:8,
                           boxShadow:"0 4px 14px rgba(16,185,129,.3)", opacity: renovarSaving ? .6 : 1 }}>
@@ -2141,7 +2141,7 @@ export default function MemberDetailModal({
               {/* ── Footer fijo ── */}
               <div style={{ padding:"14px 24px 28px", borderTop:"1px solid rgba(255,255,255,.06)", flexShrink:0, display:"flex", flexDirection:"column", gap:0 }}>
                 {renovarStep === 1 && !renovar.plan && !m.beca && (
-                  <p style={{ color:"#f87171", fontSize:11, textAlign:"center", marginBottom:8 }}>
+                  <p style={{ color:"var(--col-danger)", fontSize:11, textAlign:"center", marginBottom:8 }}>
                     ⚠️ Selecciona una membresía para continuar
                   </p>
                 )}
@@ -2162,7 +2162,7 @@ export default function MemberDetailModal({
                         cursor: (renovarSaving || (!m.beca && !renovar.plan)) ? "not-allowed" : "pointer",
                         fontFamily:"inherit", fontSize:13, fontWeight:700,
                         opacity: (renovarSaving || (!m.beca && !renovar.plan)) ? 0.4 : 1,
-                        background:"linear-gradient(135deg,#6c63ff,#e040fb)",
+                        background:"linear-gradient(135deg,var(--col-accent),var(--col-accent))",
                         color:"#fff", boxShadow:"0 4px 18px rgba(108,99,255,.35)",
                         display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                       {renovarSaving ? "Guardando..." :
@@ -2229,7 +2229,7 @@ export default function MemberDetailModal({
                           }}
                           disabled={renovarSaving || !renovar.inicio}
                           style={{ flex:1, padding:"13px 10px", borderRadius:14, border:"none", fontFamily:"inherit",
-                            background: renovarSaving?"rgba(16,185,129,.4)":"linear-gradient(135deg,#10b981,#059669)",
+                            background: renovarSaving?"rgba(16,185,129,.4)":"linear-gradient(135deg,var(--col-success),var(--col-success))",
                             color:"#fff", fontWeight:700, fontSize:13, cursor:renovarSaving?"not-allowed":"pointer",
                             opacity: renovarSaving?.6:1,
                             display:"flex", alignItems:"center", justifyContent:"center", gap:6,
@@ -2244,10 +2244,10 @@ export default function MemberDetailModal({
                           cursor:(!renovar.inicio||renovarSaving)?"not-allowed":"pointer",
                           fontFamily:"inherit", fontSize:13, fontWeight:700,
                           opacity:(!renovar.inicio||renovarSaving||(!m.beca&&(renovar.plan||(renovar.planesExtra||[]).length>0)&&montoTotalRenovacion<=0))?.5:1,
-                          background: m.beca ? "linear-gradient(135deg,#fbbf24,#f59e0b)"
-                            : esPendienteTransf ? "linear-gradient(135deg,#f59e0b,#d97706)"
-                            : "linear-gradient(135deg,#10b981,#059669)",
-                          color: m.beca?"#1a1a2e":"#fff",
+                          background: m.beca ? "linear-gradient(135deg,var(--col-warning),var(--col-warning))"
+                            : esPendienteTransf ? "linear-gradient(135deg,var(--col-warning),var(--col-warning))"
+                            : "linear-gradient(135deg,var(--col-success),var(--col-success))",
+                          color: m.beca?"var(--bg-base)":"#fff",
                           boxShadow: esPendienteTransf?"0 4px 18px rgba(245,158,11,.35)":"0 4px 18px rgba(16,185,129,.3)",
                           display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
                         {renovarSaving ? "Guardando..." : m.beca
@@ -2324,11 +2324,11 @@ export default function MemberDetailModal({
         const esCongelado = memInfo.estado === "Congelado";
         const esSinMem    = memInfo.estado === "Sin membresía";
 
-        const accentColor = isPagoPendiente ? "#f59e0b"
-          : esActivo    ? "#22d3ee"
-          : esCongelado ? "#60a5fa"
-          : esVencido   ? "#f87171"
-          : "var(--text-tertiary,#6b7280)";
+        const accentColor = isPagoPendiente ? "var(--col-warning)"
+          : esActivo    ? "var(--col-info)"
+          : esCongelado ? "var(--col-accent-text)"
+          : esVencido   ? "var(--col-danger)"
+          : "var(--text-tertiary,var(--text-secondary))";
 
         const estadoLabel = isPagoPendiente ? "⏳ Pago pendiente"
           : esCongelado ? "🧊 Congelado"
@@ -2338,11 +2338,11 @@ export default function MemberDetailModal({
 
         // ── Días restantes
         const diasR = diasParaVencer(memInfo.vence);
-        const diasColor = diasR === null ? "var(--text-tertiary,#6b7280)"
-          : diasR <= 0  ? "#f87171"
+        const diasColor = diasR === null ? "var(--text-tertiary,var(--text-secondary))"
+          : diasR <= 0  ? "var(--col-danger)"
           : diasR <= 5  ? "#fb923c"
-          : diasR <= 15 ? "#fbbf24"
-          : "#4ade80";
+          : diasR <= 15 ? "var(--col-warning)"
+          : "var(--col-success)";
         const diasLabel = diasR === null ? null
           : diasR === 0 ? "vence hoy"
           : diasR < 0   ? `venció hace ${Math.abs(diasR)}d`
@@ -2389,10 +2389,10 @@ export default function MemberDetailModal({
                 style={{
                   position: "relative", flexShrink: 0,
                   width: 72, height: 72, borderRadius: "50%",
-                  background: isPagoPendiente ? "linear-gradient(135deg,#f59e0b,#d97706)"
-                    : esActivo   ? "linear-gradient(135deg,#6c63ff,#e040fb)"
-                    : esVencido  ? "linear-gradient(135deg,#f43f5e,#fb923c)"
-                    : "linear-gradient(135deg,#374151,#4b5563)",
+                  background: isPagoPendiente ? "linear-gradient(135deg,var(--col-warning),var(--col-warning))"
+                    : esActivo   ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))"
+                    : esVencido  ? "linear-gradient(135deg,var(--col-danger),#fb923c)"
+                    : "linear-gradient(135deg,var(--border-strong),var(--text-tertiary))",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 26, color: "#fff", fontWeight: 800, overflow: "hidden",
                   boxShadow: `0 0 0 2.5px ${accentColor}55, 0 6px 20px rgba(0,0,0,.25)`,
@@ -2428,7 +2428,7 @@ export default function MemberDetailModal({
                 {/* Chips fila 1: estado · plan · edad */}
                 <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
                   <span style={{
-                    background: isPagoPendiente ? "rgba(245,158,11,.12)"
+                    background: isPagoPendiente ? "var(--col-warning-soft)"
                       : esActivo    ? "rgba(22,163,74,.12)"
                       : esCongelado ? "rgba(37,99,235,.12)"
                       : esVencido   ? "rgba(220,38,38,.12)"
@@ -2437,7 +2437,7 @@ export default function MemberDetailModal({
                       : esActivo    ? "#15803d"
                       : esCongelado ? "#1d4ed8"
                       : esVencido   ? "#b91c1c"
-                      : "var(--text-secondary,#475569)",
+                      : "var(--text-secondary,var(--text-tertiary))",
                     border: "none",
                     borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700,
                   }}>{estadoLabel}</span>
@@ -2445,7 +2445,7 @@ export default function MemberDetailModal({
                   {claseFinal && (
                     <span style={{
                       background: "rgba(37,99,235,.08)",
-                      color: "var(--brand-accent,#2563EB)",
+                      color: "var(--brand-accent,var(--col-accent))",
                       border: "1px solid rgba(37,99,235,.2)",
                       borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
                     }}>{claseFinal}</span>
@@ -2454,7 +2454,7 @@ export default function MemberDetailModal({
                   {esMenor && edad !== null && (
                     <span style={{
                       background: "rgba(100,116,139,.08)",
-                      color: "var(--text-secondary,#475569)",
+                      color: "var(--text-secondary,var(--text-tertiary))",
                       border: "1px solid var(--border)",
                       borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
                     }}>{edad} años</span>
@@ -2463,7 +2463,7 @@ export default function MemberDetailModal({
                   {gradoInfo && (
                     <span style={{
                       background: "rgba(100,116,139,.08)",
-                      color: "var(--text-secondary,#475569)",
+                      color: "var(--text-secondary,var(--text-tertiary))",
                       border: "1px solid var(--border)",
                       borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
                     }}>{gradoInfo.emoji} {m.grado_actual}</span>
@@ -2471,9 +2471,9 @@ export default function MemberDetailModal({
 
                   {m.beca && (
                     <span style={{
-                      background: "rgba(245,158,11,.1)",
+                      background: "var(--col-warning-soft)",
                       color: "#b45309",
-                      border: "1px solid rgba(245,158,11,.25)",
+                      border: "1px solid var(--col-warning-border)",
                       borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
                     }}>Beca</span>
                   )}
@@ -2493,10 +2493,10 @@ export default function MemberDetailModal({
                       </span>
                     )}
                     {diasFinal && horarioFinal && (
-                      <span style={{ color:"var(--text-tertiary,#64748b)", fontSize:10 }}>·</span>
+                      <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10 }}>·</span>
                     )}
                     {horarioFinal && (
-                      <span style={{ color:"var(--brand-accent,#2563EB)", fontSize:11, fontWeight:600 }}>
+                      <span style={{ color:"var(--brand-accent,var(--col-accent))", fontSize:11, fontWeight:600 }}>
                         {horarioFinal}
                       </span>
                     )}
@@ -2518,13 +2518,13 @@ export default function MemberDetailModal({
                     {diasR !== null && diasR <= 0 ? "🔴" : diasR !== null && diasR <= 5 ? "🟠" : diasR !== null && diasR <= 15 ? "🟡" : "🟢"}
                   </span>
                   <div>
-                    <p style={{ color:"var(--text-tertiary,#64748b)", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, margin:0 }}>Membresía</p>
+                    <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, margin:0 }}>Membresía</p>
                     <p style={{ color:diasColor, fontSize:12, fontWeight:700, margin:0 }}>{diasLabel}</p>
                   </div>
                 </div>
                 <div style={{ textAlign:"right" }}>
-                  <p style={{ color:"var(--text-tertiary,#64748b)", fontSize:9, margin:0 }}>{diasR !== null && diasR < 0 ? "Venció" : "Vence"}</p>
-                  <p style={{ color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:700, margin:0 }}>{fmtDate(memInfo.vence) || "—"}</p>
+                  <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:9, margin:0 }}>{diasR !== null && diasR < 0 ? "Venció" : "Vence"}</p>
+                  <p style={{ color:"var(--text-primary,var(--bg-base))", fontSize:11, fontWeight:700, margin:0 }}>{fmtDate(memInfo.vence) || "—"}</p>
                 </div>
               </div>
             )}
@@ -2555,8 +2555,8 @@ export default function MemberDetailModal({
                     border: "1px solid var(--border)",
                     borderRadius: 10, padding: "7px 8px",
                   }}>
-                    <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2, lineHeight: 1.3 }}>{s.label}</p>
-                    <p style={{ color: s.highlight ? "var(--text-primary,#0F172A)" : "var(--text-secondary,#475569)", fontSize: 11, fontWeight: s.highlight ? 800 : 600, margin: 0 }}>{s.val}</p>
+                    <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2, lineHeight: 1.3 }}>{s.label}</p>
+                    <p style={{ color: s.highlight ? "var(--text-primary,var(--bg-base))" : "var(--text-secondary,var(--text-tertiary))", fontSize: 11, fontWeight: s.highlight ? 800 : 600, margin: 0 }}>{s.val}</p>
                   </div>
                 ))}
               </div>
@@ -2567,7 +2567,7 @@ export default function MemberDetailModal({
               <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
                 flex:1, padding:"9px 4px", borderRadius:8,
                 border:"1px solid var(--border)", background:"var(--bg-elevated)",
-                color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
+                color:"var(--text-primary,var(--bg-base))", fontSize:11, fontWeight:600,
                 cursor:"pointer", fontFamily:"inherit",
                 display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
               }}><span style={{fontSize:14}}>✏️</span><span>Editar</span></button>
@@ -2587,7 +2587,7 @@ export default function MemberDetailModal({
                 setRenovarModal(true);
               }} style={{
                 flex:2, padding:"9px 4px", borderRadius:8,
-                border:"none", background:"var(--brand-accent,#2563EB)",
+                border:"none", background:"var(--brand-accent,var(--col-accent))",
                 color:"#fff", fontSize:11, fontWeight:700,
                 cursor:"pointer", fontFamily:"inherit",
                 display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
@@ -2595,14 +2595,14 @@ export default function MemberDetailModal({
               <button onClick={() => { setCobro({ tipo:"libre", desc:"", monto:"", fecha:todayISO(), formaPago:"Efectivo" }); setCobrarModal(true); }} style={{
                 flex:1, padding:"9px 4px", borderRadius:8,
                 border:"1px solid var(--border)", background:"var(--bg-elevated)",
-                color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
+                color:"var(--text-primary,var(--bg-base))", fontSize:11, fontWeight:600,
                 cursor:"pointer", fontFamily:"inherit",
                 display:"flex", alignItems:"center", justifyContent:"center", gap:4,
               }}><span style={{fontSize:14}}>💰</span><span>Cobrar</span></button>
               {m.tel && onGoToMensajes && (
                 <button onClick={() => onGoToMensajes(m)} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
-                  border:"none", background:"#25d366",
+                  border:"none", background:"var(--col-wa)",
                   color:"#fff", fontSize:11, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:4,
@@ -2615,7 +2615,7 @@ export default function MemberDetailModal({
                 <button onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
                   border:"1px solid var(--border)", background:"var(--bg-elevated)",
-                  color:"var(--text-primary,#0F172A)", fontSize:11, fontWeight:600,
+                  color:"var(--text-primary,var(--bg-base))", fontSize:11, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:4,
                 }}><span style={{fontSize:14}}>👨‍👧</span><span>Tutor</span></button>
@@ -2633,7 +2633,7 @@ export default function MemberDetailModal({
                 <button onClick={() => setCongelarModal(true)} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
                   border:"1px solid rgba(96,165,250,.3)", background:"rgba(96,165,250,.06)",
-                  color:"#3b82f6", fontSize:11, fontWeight:600,
+                  color:"var(--col-accent)", fontSize:11, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
                 }}><span style={{fontSize:14}}>🧊</span><span>Congelar</span></button>
@@ -2672,13 +2672,13 @@ export default function MemberDetailModal({
                 fontSize: 12,
                 fontWeight: active ? 700 : 500,
                 background: active
-                  ? "var(--bg-card,#ffffff)"
+                  ? "var(--bg-card,var(--text-inverse))"
                   : "transparent",
                 color: active
-                  ? "var(--brand-accent,#2563EB)"
-                  : "var(--text-secondary,#64748b)",
+                  ? "var(--brand-accent,var(--col-accent))"
+                  : "var(--text-secondary,var(--text-secondary))",
                 boxShadow: active
-                  ? "0 1px 4px rgba(0,0,0,.1), 0 0 0 1px var(--brand-accent,#2563EB)"
+                  ? "0 1px 4px rgba(0,0,0,.1), 0 0 0 1px var(--brand-accent,var(--col-accent))"
                   : "none",
                 transition: "all .15s",
                 whiteSpace: "nowrap",
@@ -2688,7 +2688,7 @@ export default function MemberDetailModal({
               <span>{t.label}</span>
               {t.badge && (
                 <span style={{
-                  background: active ? "var(--brand-accent,#2563EB)" : "var(--text-secondary,#94a3b8)",
+                  background: active ? "var(--brand-accent,var(--col-accent))" : "var(--text-secondary,var(--text-secondary))",
                   color: "#fff",
                   borderRadius: 10,
                   padding: "1px 6px",
@@ -2709,13 +2709,13 @@ export default function MemberDetailModal({
         <div style={{ padding: "18px 20px 0" }}>
           {editing ? (
             <>
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
                 Datos personales
               </p>
               <Inp label="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Nombre completo" />
               <Inp label="Teléfono" value={form.tel} onChange={(v) => setForm((p) => ({ ...p, tel: v }))} placeholder="999 000 0000" type="tel" />
 
-              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Fecha de incorporación
               </p>
               <input
@@ -2732,19 +2732,19 @@ export default function MemberDetailModal({
                 }}
               />
               {!form.fecha_incorporacion && (
-                <p style={{ color: "#f59e0b", fontSize: 11, marginBottom: 12 }}>
+                <p style={{ color: "var(--col-warning)", fontSize: 11, marginBottom: 12 }}>
                   ⚠️ Sin fecha de incorporación — agrégala para no confundir con otras fechas
                 </p>
               )}
 
-              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Sexo
               </p>
               <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                 {[
-                  { val: "Masculino", icon: "♂️", color: "#60a5fa" },
+                  { val: "Masculino", icon: "♂️", color: "var(--col-accent-text)" },
                   { val: "Femenino",  icon: "♀️", color: "#f472b6" },
-                  { val: "",          icon: "—",  color: "#8b949e" },
+                  { val: "",          icon: "—",  color: "var(--text-secondary)" },
                 ].map((op) => (
                   <button
                     key={op.val}
@@ -2754,7 +2754,7 @@ export default function MemberDetailModal({
                       border: form.sexo === op.val ? `2px solid ${op.color}` : "1.5px solid rgba(255,255,255,.08)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
                       background: form.sexo === op.val ? `${op.color}20` : "var(--bg-elevated)",
-                      color: form.sexo === op.val ? op.color : "#8b949e",
+                      color: form.sexo === op.val ? op.color : "var(--text-secondary)",
                       fontSize: 12, fontWeight: 700, transition: "all .2s",
                     }}
                   >
@@ -2764,7 +2764,7 @@ export default function MemberDetailModal({
                 ))}
               </div>
 
-              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 Fecha de nacimiento
               </p>
               <input
@@ -2781,14 +2781,14 @@ export default function MemberDetailModal({
                 }}
               />
               {!form.fecha_nacimiento && (
-                <p style={{ color: "#f59e0b", fontSize: 11, marginBottom: 12 }}>
+                <p style={{ color: "var(--col-warning)", fontSize: 11, marginBottom: 12 }}>
                   ⚠️ Sin fecha de nacimiento — agrégala para ver cumpleaños
                 </p>
               )}
               {form.fecha_nacimiento && (
                 <p style={{
                   fontSize: 11,
-                  color: esEdicionMenor ? "#fbbf24" : "var(--text-tertiary)",
+                  color: esEdicionMenor ? "var(--col-warning)" : "var(--text-tertiary)",
                   marginTop: -8,
                   marginBottom: 12,
                   paddingLeft: 2,
@@ -2817,13 +2817,13 @@ export default function MemberDetailModal({
 
               {/* ── DIVIDER: Sección Membresía ── */}
               <div style={{ height: 1, background: "var(--border,rgba(255,255,255,.08))", margin: "18px 0 16px" }} />
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
                 Membresía
               </p>
               <div style={{ background: "rgba(251,191,36,.06)", border: "1px solid rgba(251,191,36,.15)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 14 }}>ℹ️</span>
-                <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
-                  Los planes de membresía se configuran en <strong style={{ color: "#fbbf24" }}>Configuración</strong>. Aquí solo activas o desactivas la beca para este miembro.
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>
+                  Los planes de membresía se configuran en <strong style={{ color: "var(--col-warning)" }}>Configuración</strong>. Aquí solo activas o desactivas la beca para este miembro.
                 </p>
               </div>
 
@@ -2832,23 +2832,23 @@ export default function MemberDetailModal({
                 onClick={() => setForm(p => ({ ...p, beca: !p.beca }))}
                 style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, padding: "12px 14px", background: form.beca ? "rgba(251,191,36,.08)" : "rgba(255,255,255,.04)", borderRadius: 12, border: `1.5px solid ${form.beca ? "rgba(251,191,36,.4)" : "rgba(255,255,255,.08)"}`, cursor: "pointer", transition: "all .2s" }}
               >
-                <div style={{ width: 22, height: 22, borderRadius: 7, border: `2px solid ${form.beca ? "#fbbf24" : "rgba(255,255,255,.2)"}`, background: form.beca ? "#fbbf24" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {form.beca && <span style={{ color: "#1a1a2e", fontSize: 13, fontWeight: 700 }}>✓</span>}
+                <div style={{ width: 22, height: 22, borderRadius: 7, border: `2px solid ${form.beca ? "var(--col-warning)" : "rgba(255,255,255,.2)"}`, background: form.beca ? "var(--col-warning)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {form.beca && <span style={{ color: "var(--bg-base)", fontSize: 13, fontWeight: 700 }}>✓</span>}
                 </div>
                 <div>
-                  <p style={{ color: form.beca ? "#fbbf24" : "#d1d5db", fontSize: 13, fontWeight: 600 }}>🎓 Beca — Membresía sin costo</p>
-                  <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>Las renovaciones se registrarán en $0 sin comprobante</p>
+                  <p style={{ color: form.beca ? "var(--col-warning)" : "var(--border-strong)", fontSize: 13, fontWeight: 600 }}>🎓 Beca — Membresía sin costo</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>Las renovaciones se registrarán en $0 sin comprobante</p>
                 </div>
               </div>
 
               {/* ── DOJO: Grado / Cinturón (solo en modo dojo) ── */}
               {isDojo && (
                 <div style={{ marginBottom: 14 }}>
-                  <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
                     🥋 Grado y cinturón
                   </p>
                   {/* Selector visual de grado */}
-                  <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 8 }}>Cinturón actual</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11, marginBottom: 8 }}>Cinturón actual</p>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 12 }}>
                     {GRADOS_KARATE.map(g => {
                       const active = form.grado_actual === g.nombre;
@@ -2858,13 +2858,13 @@ export default function MemberDetailModal({
                           onClick={() => setForm(p => ({ ...p, grado_actual: g.nombre }))}
                           style={{
                             padding: "8px 4px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
-                            border: active ? `2px solid ${g.kyu < 0 ? "#a78bfa" : g.color}` : "1.5px solid rgba(255,255,255,.08)",
+                            border: active ? `2px solid ${g.kyu < 0 ? "var(--col-accent-text)" : g.color}` : "1.5px solid rgba(255,255,255,.08)",
                             background: active ? `${g.color}22` : "var(--bg-elevated)",
                             display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
                           }}
                         >
                           <span style={{ fontSize: 14 }}>{g.emoji}</span>
-                          <span style={{ fontSize: 9, color: active ? "#e5e7eb" : "#6b7280", fontWeight: active ? 700 : 400, textAlign: "center", lineHeight: 1.3 }}>
+                          <span style={{ fontSize: 9, color: active ? "var(--border)" : "var(--text-secondary)", fontWeight: active ? 700 : 400, textAlign: "center", lineHeight: 1.3 }}>
                             {g.nombre.replace(" (", "\n(")}
                           </span>
                         </button>
@@ -2889,13 +2889,13 @@ export default function MemberDetailModal({
 
               {/* ── DIVIDER: Sección Clases ── */}
               <div style={{ height: 1, background: "var(--border,rgba(255,255,255,.08))", margin: "18px 0 16px" }} />
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
                 Clases inscritas
               </p>
               <div style={{ background: "rgba(34,211,238,.05)", border: "1px solid rgba(34,211,238,.15)", borderRadius: 10, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 14 }}>ℹ️</span>
-                <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>
-                  Las clases disponibles dependen de los planes activos en <strong style={{ color: "#22d3ee" }}>Configuración</strong>.
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>
+                  Las clases disponibles dependen de los planes activos en <strong style={{ color: "var(--col-info)" }}>Configuración</strong>.
                 </p>
               </div>
 
@@ -2927,18 +2927,18 @@ export default function MemberDetailModal({
 
                 return (
                   <div style={{ marginBottom: 18 }}>
-                    <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
                       🏋️ Clases
                     </p>
 
                     {/* ── BLOQUE 1: Clases en las que YA ESTÁ inscrito ── */}
                     <div style={{ marginBottom: 10 }}>
-                      <p style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                         Actualmente inscrito
                       </p>
                       {clasesActuales.length === 0 ? (
                         <div style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(255,255,255,.1)", borderRadius: 10, padding: "10px 14px" }}>
-                          <p style={{ color: "#6b7280", fontSize: 12 }}>Sin clases asignadas</p>
+                          <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Sin clases asignadas</p>
                         </div>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -2965,22 +2965,22 @@ export default function MemberDetailModal({
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                    <p style={{ color: marcadoParaQuitar ? "#f87171" : "#22d3ee", fontSize: 13, fontWeight: 700, margin: 0, textDecoration: marcadoParaQuitar ? "line-through" : "none" }}>
+                                    <p style={{ color: marcadoParaQuitar ? "var(--col-danger)" : "var(--col-info)", fontSize: 13, fontWeight: 700, margin: 0, textDecoration: marcadoParaQuitar ? "line-through" : "none" }}>
                                       {c.nombre}
                                     </p>
                                     {!marcadoParaQuitar && (
-                                      <span style={{ background: "rgba(34,211,238,.15)", color: "#22d3ee", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
+                                      <span style={{ background: "rgba(34,211,238,.15)", color: "var(--col-info)", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
                                         Inscrito
                                       </span>
                                     )}
                                     {marcadoParaQuitar && (
-                                      <span style={{ background: "rgba(248,113,113,.15)", color: "#f87171", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
+                                      <span style={{ background: "rgba(248,113,113,.15)", color: "var(--col-danger)", borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>
                                         Se quitará al guardar
                                       </span>
                                     )}
                                   </div>
-                                  {horStr && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
-                                  {precio > 0 && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 1 }}>${precio.toLocaleString("es-MX")}/mes</p>}
+                                  {horStr && <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
+                                  {precio > 0 && <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 1 }}>${precio.toLocaleString("es-MX")}/mes</p>}
                                 </div>
                                 {/* Botón quitar */}
                                 <button
@@ -2992,8 +2992,8 @@ export default function MemberDetailModal({
                                   style={{
                                     flexShrink: 0, padding: "5px 10px", borderRadius: 8,
                                     border: marcadoParaQuitar ? "1px solid rgba(34,211,238,.3)" : "1px solid rgba(248,113,113,.3)",
-                                    background: marcadoParaQuitar ? "rgba(34,211,238,.1)" : "rgba(248,113,113,.08)",
-                                    color: marcadoParaQuitar ? "#22d3ee" : "#f87171",
+                                    background: marcadoParaQuitar ? "var(--col-info-soft)" : "rgba(248,113,113,.08)",
+                                    color: marcadoParaQuitar ? "var(--col-info)" : "var(--col-danger)",
                                     fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                                   }}
                                 >
@@ -3009,7 +3009,7 @@ export default function MemberDetailModal({
                     {/* ── BLOQUE 2: Clases disponibles para AGREGAR ── */}
                     {clasesDisponibles.length > 0 && (
                       <div>
-                        <p style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                           Agregar clase
                         </p>
                         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -3029,7 +3029,7 @@ export default function MemberDetailModal({
                                   style={{
                                     padding: "10px 14px", borderRadius: seleccionada && precio > 0 ? "12px 12px 0 0" : 12,
                                     cursor: "pointer", fontFamily: "inherit", textAlign: "left",
-                                    border: seleccionada ? "2px solid #4ade80" : "1.5px solid rgba(255,255,255,.1)",
+                                    border: seleccionada ? "2px solid var(--col-success)" : "1.5px solid rgba(255,255,255,.1)",
                                     borderBottom: seleccionada && precio > 0 ? "none" : undefined,
                                     background: seleccionada ? "rgba(74,222,128,.08)" : "var(--bg-elevated)",
                                     display: "flex", alignItems: "center", gap: 10, transition: "all .2s",
@@ -3037,31 +3037,31 @@ export default function MemberDetailModal({
                                 >
                                   <div style={{
                                     width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                                    border: `2px solid ${seleccionada ? "#4ade80" : "rgba(255,255,255,.2)"}`,
-                                    background: seleccionada ? "#4ade80" : "transparent",
+                                    border: `2px solid ${seleccionada ? "var(--col-success)" : "rgba(255,255,255,.2)"}`,
+                                    background: seleccionada ? "var(--col-success)" : "transparent",
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                   }}>
                                     {seleccionada
                                       ? <span style={{ color: "#0f172a", fontSize: 13, fontWeight: 900 }}>✓</span>
-                                      : <span style={{ color: "#6b7280", fontSize: 16, lineHeight: 1 }}>+</span>
+                                      : <span style={{ color: "var(--text-secondary)", fontSize: 16, lineHeight: 1 }}>+</span>
                                     }
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p style={{ color: seleccionada ? "#4ade80" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionada ? 700 : 500, margin: 0 }}>
+                                    <p style={{ color: seleccionada ? "var(--col-success)" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionada ? 700 : 500, margin: 0 }}>
                                       {c.nombre}
                                     </p>
-                                    {horStr && <p style={{ color: "#6b7280", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
+                                    {horStr && <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>🗓️ {horStr}</p>}
                                   </div>
                                   {precio > 0 ? (
                                     <span style={{
-                                      background: seleccionada ? "rgba(74,222,128,.2)" : "rgba(255,255,255,.07)",
-                                      color: seleccionada ? "#4ade80" : "#8b949e",
+                                      background: seleccionada ? "var(--col-success-border)" : "rgba(255,255,255,.07)",
+                                      color: seleccionada ? "var(--col-success)" : "var(--text-secondary)",
                                       borderRadius: 8, padding: "3px 9px", fontSize: 12, fontWeight: 700, flexShrink: 0,
                                     }}>
                                       ${precio.toLocaleString("es-MX")}/mes
                                     </span>
                                   ) : (
-                                    <span style={{ background: "rgba(74,222,128,.1)", color: "#4ade80", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                                    <span style={{ background: "rgba(74,222,128,.1)", color: "var(--col-success)", borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
                                       Sin costo
                                     </span>
                                   )}
@@ -3076,8 +3076,8 @@ export default function MemberDetailModal({
                                     }}
                                     style={{
                                       padding: "11px 14px", borderRadius: "0 0 12px 12px",
-                                      border: "2px solid #4ade80", borderTop: "1px solid rgba(74,222,128,.3)",
-                                      background: "linear-gradient(135deg,#16a34a,#22c55e)",
+                                      border: "2px solid var(--col-success)", borderTop: "1px solid var(--col-success-border)",
+                                      background: "linear-gradient(135deg,var(--col-success),var(--col-success))",
                                       cursor: "pointer", fontFamily: "inherit",
                                       display: "flex", alignItems: "center", justifyContent: "space-between",
                                       transition: "all .2s",
@@ -3104,7 +3104,7 @@ export default function MemberDetailModal({
                       if (clasesGratisNuevas.length === 0) return null;
                       return (
                         <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(34,211,238,.06)", border: "1px solid rgba(34,211,238,.2)" }}>
-                          <p style={{ color: "#22d3ee", fontSize: 12, fontWeight: 600, margin: 0 }}>
+                          <p style={{ color: "var(--col-info)", fontSize: 12, fontWeight: 600, margin: 0 }}>
                             ℹ️ {clasesGratisNuevas.map(c => c.nombre).join(", ")} se inscribirá al guardar (sin costo)
                           </p>
                         </div>
@@ -3116,9 +3116,9 @@ export default function MemberDetailModal({
 
               {/* ── DIVIDER: Notas internas ── */}
               <div style={{ height: 1, background: "var(--border,rgba(255,255,255,.08))", margin: "18px 0 16px" }} />
-              <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 📝 Notas internas{" "}
-                <span style={{ color: "#8b949e", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span>
+                <span style={{ color: "var(--text-secondary)", fontWeight: 400, fontSize: 10, textTransform: "none" }}>(opcional)</span>
               </p>
               <textarea
                 value={form.notas}
@@ -3134,7 +3134,7 @@ export default function MemberDetailModal({
               />
 
               <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                <Btn full outline color="#8b949e" onClick={() => setEditing(false)}>Cancelar</Btn>
+                <Btn full outline color="var(--text-secondary)" onClick={() => setEditing(false)}>Cancelar</Btn>
                 <button
                   onClick={handleSave}
                   disabled={!hasChanges}
@@ -3142,8 +3142,8 @@ export default function MemberDetailModal({
                     flex: 1, padding: "13px 20px", border: "none", borderRadius: 14,
                     cursor: hasChanges ? "pointer" : "not-allowed", fontFamily: "inherit",
                     fontSize: 14, fontWeight: 700,
-                    background: hasChanges ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
-                    color: hasChanges ? "#fff" : "#8b949e",
+                    background: hasChanges ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
+                    color: hasChanges ? "#fff" : "var(--text-secondary)",
                     boxShadow: hasChanges ? "0 4px 18px rgba(108,99,255,.4)" : "none",
                     transition: "all .3s",
                   }}
@@ -3158,7 +3158,7 @@ export default function MemberDetailModal({
                   <button
                     onClick={() => setConfirmDelete(true)}
                     style={{
-                      width: "100%", padding: "10px", border: "1px solid rgba(244,63,94,.2)",
+                      width: "100%", padding: "10px", border: "1px solid var(--col-danger-border)",
                       borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 12,
                       fontWeight: 600, background: "transparent", color: "rgba(244,63,94,.5)",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -3167,11 +3167,11 @@ export default function MemberDetailModal({
                     🗑️ Eliminar miembro
                   </button>
                 ) : !confirmDelete2 ? (
-                  <div style={{ background: "rgba(244,63,94,.08)", border: "1px solid rgba(244,63,94,.3)", borderRadius: 14, padding: 14 }}>
-                    <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
+                  <div style={{ background: "var(--col-danger-soft)", border: "1px solid var(--col-danger-border)", borderRadius: 14, padding: 14 }}>
+                    <p style={{ color: "var(--col-danger)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>
                       ⚠️ ¿Eliminar a {m.nombre}?
                     </p>
-                    <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12 }}>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 11, marginBottom: 12 }}>
                       Se borrarán también todas sus transacciones (
                       {txs.filter((t) => String(t.miembroId) === String(m.id) || String(t.miembro_id) === String(m.id)).length}{" "}
                       movimiento
@@ -3181,23 +3181,23 @@ export default function MemberDetailModal({
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         onClick={() => setConfirmDelete(false)}
-                        style={{ flex: 1, padding: "10px", border: "1px solid #30363d", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#8b949e" }}
+                        style={{ flex: 1, padding: "10px", border: "1px solid var(--border-strong)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "var(--text-secondary)" }}
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={() => setConfirmDelete2(true)}
-                        style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "rgba(244,63,94,.2)", color: "#f43f5e" }}
+                        style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: "var(--col-danger-border)", color: "var(--col-danger)" }}
                       >
                         Sí, eliminar todo
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div style={{ background: "rgba(244,63,94,.12)", border: "2px solid rgba(244,63,94,.5)", borderRadius: 14, padding: 14 }}>
-                    <p style={{ color: "#f43f5e", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>🚨 Confirmación final</p>
-                    <p style={{ color: "#8b949e", fontSize: 11, marginBottom: 12 }}>
-                      Escribe <strong style={{ color: "#f43f5e" }}>ELIMINAR</strong> para confirmar
+                  <div style={{ background: "var(--col-danger-soft)", border: "2px solid rgba(244,63,94,.5)", borderRadius: 14, padding: 14 }}>
+                    <p style={{ color: "var(--col-danger)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>🚨 Confirmación final</p>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 11, marginBottom: 12 }}>
+                      Escribe <strong style={{ color: "var(--col-danger)" }}>ELIMINAR</strong> para confirmar
                     </p>
                     <ConfirmDeleteInput
                       nombre={m.nombre}
@@ -3224,7 +3224,7 @@ export default function MemberDetailModal({
                 >
                   <span style={{ fontSize: 26 }}>{diasCumple === 0 ? "🎂" : "🎁"}</span>
                   <div>
-                    <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>
+                    <p style={{ color: "var(--col-warning)", fontSize: 13, fontWeight: 700 }}>
                       {diasCumple === 0
                         ? `¡Hoy es el cumpleaños de ${m.nombre.split(" ")[0]}! 🎉`
                         : diasCumple === 1
@@ -3257,23 +3257,23 @@ export default function MemberDetailModal({
                   : null;
 
                 const badge = mesesCliente === null ? null
-                  : mesesCliente < 2   ? { label: "Nuevo",     emoji: "🌱", color: "#22c55e", bg: "rgba(34,197,94,.1)"   }
-                  : mesesCliente < 6   ? { label: "Regular",   emoji: "⭐", color: "#f59e0b", bg: "rgba(245,158,11,.1)"  }
+                  : mesesCliente < 2   ? { label: "Nuevo",     emoji: "🌱", color: "var(--col-success)", bg: "var(--col-success-soft)"   }
+                  : mesesCliente < 6   ? { label: "Regular",   emoji: "⭐", color: "var(--col-warning)", bg: "var(--col-warning-soft)"  }
                   : mesesCliente < 12  ? { label: "Frecuente", emoji: "🏅", color: "#6366f1", bg: "rgba(99,102,241,.1)"  }
-                  :                      { label: "VIP",        emoji: "👑", color: "#e040fb", bg: "rgba(224,64,251,.12)" };
+                  :                      { label: "VIP",        emoji: "👑", color: "var(--col-accent)", bg: "rgba(224,64,251,.12)" };
 
                 // Solo alertas que requieren acción inmediata
                 const alertas = [];
                 const diasVence = diasParaVencer(memInfo.vence);
                 if (diasVence !== null && diasVence <= 5 && diasVence >= 0)
-                  alertas.push({ emoji: "⏰", msg: diasVence === 0 ? "Vence HOY" : `Vence en ${diasVence} día${diasVence === 1 ? "" : "s"}`, color: diasVence <= 2 ? "#ef4444" : "#f59e0b" });
+                  alertas.push({ emoji: "⏰", msg: diasVence === 0 ? "Vence HOY" : `Vence en ${diasVence} día${diasVence === 1 ? "" : "s"}`, color: diasVence <= 2 ? "var(--col-danger)" : "var(--col-warning)" });
                 if (diasVence !== null && diasVence < 0)
-                  alertas.push({ emoji: "🚨", msg: `Membresía vencida hace ${Math.abs(diasVence)} días`, color: "#ef4444" });
+                  alertas.push({ emoji: "🚨", msg: `Membresía vencida hace ${Math.abs(diasVence)} días`, color: "var(--col-danger)" });
                 const diasCumpleCheck = diasParaCumple(m.fecha_nacimiento);
                 if (diasCumpleCheck !== null && diasCumpleCheck <= 7)
                   alertas.push({ emoji: "🎂", msg: diasCumpleCheck === 0 ? "¡Cumpleaños hoy!" : `Cumpleaños en ${diasCumpleCheck} días`, color: "#f472b6" });
                 if (m.pago_pendiente)
-                  alertas.push({ emoji: "💸", msg: "Transferencia pendiente de confirmar", color: "#f59e0b" });
+                  alertas.push({ emoji: "💸", msg: "Transferencia pendiente de confirmar", color: "var(--col-warning)" });
 
                 return (
                   <div style={{ marginBottom: 14 }}>
@@ -3297,17 +3297,17 @@ export default function MemberDetailModal({
                     {/* Stats: Total pagado · Antigüedad · Fidelidad */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
                       <div style={{ background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", border: "1px solid var(--border)" }}>
-                        <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Total pagado</p>
-                        <p style={{ color: "#22c55e", fontSize: 15, fontWeight: 800, margin: 0 }}>${totalPagado.toLocaleString("es-MX")}</p>
+                        <p style={{ color: "var(--text-secondary,var(--text-secondary))", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Total pagado</p>
+                        <p style={{ color: "var(--col-success)", fontSize: 15, fontWeight: 800, margin: 0 }}>${totalPagado.toLocaleString("es-MX")}</p>
                       </div>
                       <div style={{ background: "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", border: "1px solid var(--border)" }}>
-                        <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Antigüedad</p>
-                        <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 15, fontWeight: 800, margin: 0 }}>
+                        <p style={{ color: "var(--text-secondary,var(--text-secondary))", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Antigüedad</p>
+                        <p style={{ color: "var(--text-primary,var(--bg-base))", fontSize: 15, fontWeight: 800, margin: 0 }}>
                           {mesesCliente !== null ? `${mesesCliente} mes${mesesCliente === 1 ? "" : "es"}` : "—"}
                         </p>
                       </div>
                       <div style={{ background: badge ? badge.bg : "var(--bg-elevated)", borderRadius: 12, padding: "10px 12px", border: `1px solid ${badge ? badge.color + "44" : "var(--border)"}` }}>
-                        <p style={{ color: "var(--text-secondary,#64748b)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Fidelidad</p>
+                        <p style={{ color: "var(--text-secondary,var(--text-secondary))", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Fidelidad</p>
                         <p style={{ color: badge ? badge.color : "var(--text-primary)", fontSize: 13, fontWeight: 800, margin: 0 }}>
                           {badge ? `${badge.emoji} ${badge.label}` : "—"}
                         </p>
@@ -3386,15 +3386,15 @@ export default function MemberDetailModal({
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           {/* Label de sección */}
-                          <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: "0 0 2px" }}>
+                          <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: "0 0 2px" }}>
                             Membresía
                           </p>
                           {/* Nombre del plan o estado */}
                           <p style={{
-                            color: isPagoPendiente ? "#fbbf24"
-                              : esActiva ? "var(--text-primary,#0F172A)"
-                              : memInfo.estado === "Vencido" ? "#ef4444"
-                              : "var(--text-secondary,#475569)",
+                            color: isPagoPendiente ? "var(--col-warning)"
+                              : esActiva ? "var(--text-primary,var(--bg-base))"
+                              : memInfo.estado === "Vencido" ? "var(--col-danger)"
+                              : "var(--text-secondary,var(--text-tertiary))",
                             fontSize: 15, fontWeight: 700, margin: 0,
                             overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
                           }}>
@@ -3404,7 +3404,7 @@ export default function MemberDetailModal({
                           </p>
                           {/* Fechas o estado secundario */}
                           {!esSinMem && memInfo.vence && (
-                            <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 11, margin: "2px 0 0" }}>
+                            <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, margin: "2px 0 0" }}>
                               {(() => {
                                 const dR = diasParaVencer(memInfo.vence);
                                 if (dR === null) return `Vence ${fmtDate(memInfo.vence)}`;
@@ -3416,18 +3416,18 @@ export default function MemberDetailModal({
                             </p>
                           )}
                           {memInfo.esGratis && memInfo.estado !== "Sin membresía" && (
-                            <p style={{ color: "#a78bfa", fontSize: 11, margin: "2px 0 0" }}>🎁 Cortesía</p>
+                            <p style={{ color: "var(--col-accent-text)", fontSize: 11, margin: "2px 0 0" }}>🎁 Cortesía</p>
                           )}
                           {m.beca && (
-                            <p style={{ color: "#fbbf24", fontSize: 11, margin: "2px 0 0" }}>🎓 Beca</p>
+                            <p style={{ color: "var(--col-warning)", fontSize: 11, margin: "2px 0 0" }}>🎓 Beca</p>
                           )}
                         </div>
 
                         {/* Monto del último pago */}
                         {!esSinMem && memInfo.monto && (
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
-                            <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, margin: 0 }}>Último pago</p>
-                            <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 14, fontWeight: 800, margin: "1px 0 0", fontFamily: "'DM Mono',monospace" }}>
+                            <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 10, margin: 0 }}>Último pago</p>
+                            <p style={{ color: "var(--text-primary,var(--bg-base))", fontSize: 14, fontWeight: 800, margin: "1px 0 0", fontFamily: "'DM Mono',monospace" }}>
                               {memInfo.esGratis ? "—" : `$${Number(memInfo.monto).toLocaleString("es-MX")}`}
                             </p>
                           </div>
@@ -3438,7 +3438,7 @@ export default function MemberDetailModal({
                       {memInfo.congelado && (
                         <div style={{ background: "rgba(96,165,250,.08)", borderBottom: "1px solid var(--border,rgba(255,255,255,.08))", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 16 }}>🧊</span>
-                          <p style={{ color: "#60a5fa", fontSize: 12, fontWeight: 600, flex: 1 }}>
+                          <p style={{ color: "var(--col-accent-text)", fontSize: 12, fontWeight: 600, flex: 1 }}>
                             Congelada · {memInfo.fechaDescongelar ? `Se descongela el ${fmtDate(memInfo.fechaDescongelar)}` : "Descongelar manualmente"}
                           </p>
                           <button
@@ -3448,7 +3448,7 @@ export default function MemberDetailModal({
                               const diasNuevos = inicioCongelado ? Math.round((hoy - inicioCongelado) / (1000*60*60*24)) : 0;
                               onSave({ ...m, congelado: false, fecha_descongelar: null, fecha_congelado: null, dias_congelados: (m.dias_congelados||0) + diasNuevos });
                             }}
-                            style={{ background: "rgba(96,165,250,.2)", border: "1px solid rgba(96,165,250,.4)", borderRadius: 8, padding: "5px 10px", color: "#60a5fa", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
+                            style={{ background: "rgba(96,165,250,.2)", border: "1px solid rgba(96,165,250,.4)", borderRadius: 8, padding: "5px 10px", color: "var(--col-accent-text)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}
                           >
                             Descongelar
                           </button>
@@ -3463,7 +3463,7 @@ export default function MemberDetailModal({
                           </p>
                           <button
                             onClick={() => { setConfirmarDatos({ monto:"", plan:"", fecha:todayISO(), formaPago:"Transferencia" }); setConfirmarModal(true); }}
-                            style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#22c55e,#4ade80)", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
+                            style={{ width:"100%", padding:"10px", borderRadius:10, border:"none", background:"linear-gradient(135deg,var(--col-success),var(--col-success))", color:"#fff", fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}
                           >
                             ✅ Confirmar pago recibido
                           </button>
@@ -3473,7 +3473,7 @@ export default function MemberDetailModal({
                       {/* ── Sin membresía — CTA directo ── */}
                       {esSinMem && (
                         <div style={{ padding: "12px 16px", borderBottom: todasLasClases.length > 0 ? "1px solid var(--border,rgba(255,255,255,.08))" : "none" }}>
-                          <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 12, margin: "0 0 8px" }}>
+                          <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 12, margin: "0 0 8px" }}>
                             Sin membresía activa. Usa "Renovar" para registrar un pago.
                           </p>
                         </div>
@@ -3487,14 +3487,14 @@ export default function MemberDetailModal({
 
                           {/* Label "Clases inscritas" con botón agregar (solo si hay membresía) */}
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                            <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: 0 }}>
+                            <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: 0 }}>
                               Clases inscritas
                             </p>
                             {/* Botón agregar: solo visible si hay membresía activa */}
                             {!esSinMem && !isPagoPendiente && clasesDisponibles.length > 0 && (
                               <button
                                 onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                                style={{ background: "transparent", border: "1px solid var(--border,rgba(255,255,255,.15))", borderRadius: 6, padding: "3px 8px", color: "var(--text-tertiary,#64748b)", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                                style={{ background: "transparent", border: "1px solid var(--border,rgba(255,255,255,.15))", borderRadius: 6, padding: "3px 8px", color: "var(--text-tertiary,var(--text-secondary))", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                               >
                                 + Agregar
                               </button>
@@ -3511,7 +3511,7 @@ export default function MemberDetailModal({
                               opacity: 0.6,
                             }}>
                               <span style={{ fontSize: 13 }}>🔒</span>
-                              <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 12, margin: 0 }}>
+                              <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 12, margin: 0 }}>
                                 {isPagoPendiente
                                   ? "Disponible al confirmar el pago"
                                   : "Requiere membresía activa"}
@@ -3528,10 +3528,10 @@ export default function MemberDetailModal({
                                 cursor: "pointer",
                               }}
                             >
-                              <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 12 }}>
+                              <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 12 }}>
                                 Sin clases asignadas
                               </p>
-                              <p style={{ color: "var(--brand-accent,#2563EB)", fontSize: 11, marginTop: 2 }}>
+                              <p style={{ color: "var(--brand-accent,var(--col-accent))", fontSize: 11, marginTop: 2 }}>
                                 Toca para inscribir →
                               </p>
                             </div>
@@ -3559,11 +3559,11 @@ export default function MemberDetailModal({
                                       display: "flex", alignItems: "center", gap: 8,
                                     }}>
                                       <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{ color: "var(--text-primary,#0F172A)", fontSize: 12, fontWeight: 600, margin: 0 }}>{c.nombre}</p>
-                                        {horStr && <p style={{ color: "var(--text-tertiary,#64748b)", fontSize: 11, marginTop: 2 }}>{horStr}</p>}
+                                        <p style={{ color: "var(--text-primary,var(--bg-base))", fontSize: 12, fontWeight: 600, margin: 0 }}>{c.nombre}</p>
+                                        {horStr && <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 2 }}>{horStr}</p>}
                                       </div>
                                       {precio > 0 && (
-                                        <span style={{ color: "var(--text-tertiary,#64748b)", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
+                                        <span style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
                                           ${precio.toLocaleString("es-MX")}/mes
                                         </span>
                                       )}
@@ -3582,7 +3582,7 @@ export default function MemberDetailModal({
 
 
               {/* ── 3. DATOS PERSONALES ── */}
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
                 Datos personales
               </p>
               <div style={{ background: "var(--bg-elevated)", borderRadius: 14, padding: "0 14px", marginBottom: 16 }}>
@@ -3591,7 +3591,7 @@ export default function MemberDetailModal({
                   {
                     label: "📆 Incorporación",
                     custom: !m.fecha_incorporacion ? (
-                      <span style={{ background: "rgba(245,158,11,.15)", color: "#f59e0b", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
+                      <span style={{ background: "var(--col-warning-soft)", color: "var(--col-warning)", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
                     ) : (
                       <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{fmtDate(m.fecha_incorporacion) || m.fecha_incorporacion}</span>
                     ),
@@ -3599,9 +3599,9 @@ export default function MemberDetailModal({
                   {
                     label: "⚧ Sexo",
                     custom: !m.sexo ? (
-                      <span style={{ background: "rgba(245,158,11,.15)", color: "#f59e0b", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
+                      <span style={{ background: "var(--col-warning-soft)", color: "var(--col-warning)", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
                     ) : (
-                      <span style={{ color: m.sexo === "Masculino" ? "#60a5fa" : "#f472b6", fontWeight: 700, fontSize: 13 }}>
+                      <span style={{ color: m.sexo === "Masculino" ? "var(--col-accent-text)" : "#f472b6", fontWeight: 700, fontSize: 13 }}>
                         {m.sexo === "Masculino" ? "♂️" : "♀️"} {m.sexo}
                       </span>
                     ),
@@ -3609,12 +3609,12 @@ export default function MemberDetailModal({
                   {
                     label: "🎂 Nacimiento",
                     custom: !m.fecha_nacimiento ? (
-                      <span style={{ background: "rgba(245,158,11,.15)", color: "#f59e0b", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
+                      <span style={{ background: "var(--col-warning-soft)", color: "var(--col-warning)", borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>⚠️ Sin registrar</span>
                     ) : (
                       <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>
                         {fmtDate(m.fecha_nacimiento)}{edad !== null ? ` · ${edad} años` : ""}
                         {diasCumple !== null && diasCumple <= 30 && (
-                          <span style={{ color: "#fbbf24", marginLeft: 6, fontSize: 11 }}>🎂 en {diasCumple}d</span>
+                          <span style={{ color: "var(--col-warning)", marginLeft: 6, fontSize: 11 }}>🎂 en {diasCumple}d</span>
                         )}
                       </span>
                     ),
@@ -3628,7 +3628,7 @@ export default function MemberDetailModal({
                       borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
                     }}
                   >
-                    <span style={{ color: "#8b949e", fontSize: 13 }}>{row.label}</span>
+                    <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{row.label}</span>
                     {row.custom || <span style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{row.val || "—"}</span>}
                   </div>
                 ))}
@@ -3642,13 +3642,13 @@ export default function MemberDetailModal({
                 return (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                      <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
                         👨‍👧 Tutor responsable
                       </p>
                       {tieneTutor && (
                         <button
                           onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
-                          style={{ background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "3px 10px", color: "#f59e0b", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                          style={{ background: "rgba(251,191,36,.12)", border: "1px solid rgba(251,191,36,.3)", borderRadius: 8, padding: "3px 10px", color: "var(--col-warning)", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                         >
                           Editar
                         </button>
@@ -3665,7 +3665,7 @@ export default function MemberDetailModal({
                             }
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                            <p style={{ color: "var(--col-warning)", fontSize: 13, fontWeight: 700, margin: 0, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                               {m.tutor_nombre}
                             </p>
                             {m.tutor_parentesco && (
@@ -3676,9 +3676,9 @@ export default function MemberDetailModal({
                         <div style={{ padding: "0 14px" }}>
                           {m.tutor_telefono && (
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid rgba(251,191,36,.1)" }}>
-                              <span style={{ color: "#8b949e", fontSize: 12 }}>Teléfono</span>
+                              <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Teléfono</span>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{m.tutor_telefono}</span>
+                                <span style={{ color: "var(--col-warning)", fontSize: 13, fontWeight: 600 }}>{m.tutor_telefono}</span>
                                 {waNumTutor.length >= 10 && (
                                   <button
                                     onClick={() => window.open(`https://wa.me/${waFullTutor}`, "_blank")}
@@ -3692,8 +3692,8 @@ export default function MemberDetailModal({
                           )}
                           {m.tutor_parentesco && (
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0" }}>
-                              <span style={{ color: "#8b949e", fontSize: 12 }}>Parentesco</span>
-                              <span style={{ color: "#fbbf24", fontSize: 13, fontWeight: 600 }}>{m.tutor_parentesco}</span>
+                              <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Parentesco</span>
+                              <span style={{ color: "var(--col-warning)", fontSize: 13, fontWeight: 600 }}>{m.tutor_parentesco}</span>
                             </div>
                           )}
                         </div>
@@ -3705,8 +3705,8 @@ export default function MemberDetailModal({
                       >
                         <span style={{ fontSize: 24, flexShrink: 0 }}>⚠️</span>
                         <div>
-                          <p style={{ color: "#f87171", fontSize: 13, fontWeight: 700, margin: 0 }}>Tutor no registrado</p>
-                          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 3, lineHeight: 1.5 }}>
+                          <p style={{ color: "var(--col-danger)", fontSize: 13, fontWeight: 700, margin: 0 }}>Tutor no registrado</p>
+                          <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 3, lineHeight: 1.5 }}>
                             Este alumno es menor de edad. Toca para agregar datos del tutor responsable.
                           </p>
                         </div>
@@ -3718,7 +3718,7 @@ export default function MemberDetailModal({
 
               {/* ── 7. NOTAS INTERNAS ── */}
               <div style={{ marginBottom: 16 }}>
-                <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
                   📝 Notas internas
                 </p>
                 {m.notas ? (
@@ -3730,7 +3730,7 @@ export default function MemberDetailModal({
                     onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }}
                     style={{ background: "var(--bg-elevated)", border: "1px dashed var(--border)", borderRadius: 12, padding: "12px 14px", textAlign: "center", cursor: "pointer" }}
                   >
-                    <p style={{ color: "#8b949e", fontSize: 12 }}>Sin notas — toca para agregar</p>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Sin notas — toca para agregar</p>
                   </div>
                 )}
               </div>
@@ -3747,13 +3747,13 @@ export default function MemberDetailModal({
           {/* ── GRADO Y CINTURÓN ── */}
           <div style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
                 🥋 Grado y cinturón
               </p>
               {m.grado_actual && (
                 <button
                   onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); setDetTab("perfil"); }}
-                  style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 8, padding: "3px 10px", color: "#a78bfa", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 8, padding: "3px 10px", color: "var(--col-accent-text)", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                 >
                   Editar
                 </button>
@@ -3771,15 +3771,15 @@ export default function MemberDetailModal({
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
                     <div style={{
                       width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-                      background: gInfo.kyu < 0 ? "linear-gradient(135deg,#1a1a2e,#2d1b69)" : `${gInfo.color}22`,
+                      background: gInfo.kyu < 0 ? "linear-gradient(135deg,var(--bg-base),#2d1b69)" : `${gInfo.color}22`,
                       border: `2px solid ${gInfo.kyu < 0 ? "#a855f7" : gInfo.color}`,
                       display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
                     }}>
                       {gInfo.emoji}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ color: "#e5e7eb", fontSize: 14, fontWeight: 700 }}>{m.grado_actual}</p>
-                      <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>
+                      <p style={{ color: "var(--border)", fontSize: 14, fontWeight: 700 }}>{m.grado_actual}</p>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>
                         {gInfo.kyu > 0 ? `${gInfo.kyu}° Kyu` : `${Math.abs(gInfo.kyu)}er Dan`}
                       </p>
                     </div>
@@ -3787,14 +3787,14 @@ export default function MemberDetailModal({
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                     {m.fecha_ultimo_examen && (
                       <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
-                        <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Último examen</p>
-                        <p style={{ color: "#e5e7eb", fontSize: 12, fontWeight: 600, marginTop: 2 }}>{fmtDate(m.fecha_ultimo_examen)}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Último examen</p>
+                        <p style={{ color: "var(--border)", fontSize: 12, fontWeight: 600, marginTop: 2 }}>{fmtDate(m.fecha_ultimo_examen)}</p>
                       </div>
                     )}
                     {m.proximo_objetivo && (
                       <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 10px" }}>
-                        <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Próximo objetivo</p>
-                        <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 600, marginTop: 2 }}>→ {m.proximo_objetivo}</p>
+                        <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Próximo objetivo</p>
+                        <p style={{ color: "var(--col-accent-text)", fontSize: 12, fontWeight: 600, marginTop: 2 }}>→ {m.proximo_objetivo}</p>
                       </div>
                     )}
                   </div>
@@ -3806,8 +3806,8 @@ export default function MemberDetailModal({
                 style={{ background: "var(--bg-elevated)", border: "1px dashed rgba(167,139,250,.3)", borderRadius: 12, padding: "16px", textAlign: "center", cursor: "pointer" }}
               >
                 <p style={{ fontSize: 28, marginBottom: 6 }}>🥋</p>
-                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 600 }}>Sin grado asignado</p>
-                <p style={{ color: "#8b949e", fontSize: 11, marginTop: 4 }}>Toca para asignar cinturón</p>
+                <p style={{ color: "var(--col-accent-text)", fontSize: 13, fontWeight: 600 }}>Sin grado asignado</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 4 }}>Toca para asignar cinturón</p>
               </div>
             )}
           </div>
@@ -3821,7 +3821,7 @@ export default function MemberDetailModal({
           {historial.length === 0 ? (
             <div style={{ textAlign: "center", padding: "30px 0" }}>
               <p style={{ fontSize: 28, marginBottom: 8 }}>💳</p>
-              <p style={{ color: "#8b949e", fontSize: 13 }}>Sin movimientos registrados</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Sin movimientos registrados</p>
             </div>
           ) : (
             <div>
@@ -3845,17 +3845,17 @@ export default function MemberDetailModal({
                     return (
                       <div key={key} style={{ marginBottom: 20 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                          <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
+                          <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6 }}>
                             {g.label}
                           </p>
-                          <p style={{ color: "#22d3ee", fontSize: 11, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
+                          <p style={{ color: "var(--col-info)", fontSize: 11, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
                             ${totalMes.toLocaleString("es-MX")}
                           </p>
                         </div>
                         {g.txs.map((t) => {
                           const desc = t.desc || t.descripcion || "—";
                           const isIngreso = t.tipo === "ingreso";
-                          const color = isIngreso ? "#22d3ee" : "#f43f5e";
+                          const color = isIngreso ? "var(--col-info)" : "var(--col-danger)";
                           const bgColor = isIngreso ? "rgba(34,211,238,.10)" : "rgba(244,63,94,.10)";
                           return (
                             <div
@@ -3882,7 +3882,7 @@ export default function MemberDetailModal({
                                   <span style={{ background: bgColor, color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
                                     {t.categoria}
                                   </span>
-                                  <span style={{ color: "#8b949e", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
+                                  <span style={{ color: "var(--text-secondary)", fontSize: 10 }}>· {fmtDate(t.fecha)}</span>
                                 </div>
                               </div>
                               <p style={{ color, fontFamily: "'DM Mono',monospace", fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
@@ -3903,12 +3903,12 @@ export default function MemberDetailModal({
               <div style={{ width: "100%", maxWidth: isDesktop ? 520 : "100%", background: "var(--bg-card)", borderRadius: isDesktop ? 20 : "28px 28px 0 0", padding: "24px 24px 44px", animation: isDesktop ? "fadeUp .25s ease" : "slideUp .3s ease", maxHeight: isDesktop ? "85vh" : "90%", overflowY: "auto" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                   <h2 style={{ color: "var(--text-primary)", fontSize: 17, fontWeight: 700 }}>💰 Registrar cobro extra</h2>
-                  <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "#8b949e", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                  <button onClick={() => setPagoModal(false)} style={{ border: "none", background: "rgba(255,255,255,.1)", color: "var(--text-secondary)", width: 34, height: 34, borderRadius: 10, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
                 </div>
                 <Inp label="Descripción" value={pago.desc} onChange={(v) => setPago((p) => ({ ...p, desc: v }))} placeholder="Ej: Clase extra, venta tienda, etc." />
                 <Inp label="Monto ($)" type="number" value={pago.monto} onChange={(v) => setPago((p) => ({ ...p, monto: v }))} placeholder="0.00" />
                 <Inp label="Fecha" type="date" value={pago.fecha} onChange={(v) => setPago((p) => ({ ...p, fecha: v }))} />
-                <Btn full onClick={handleAddPago} color="#22d3ee">Guardar pago ✓</Btn>
+                <Btn full onClick={handleAddPago} color="var(--col-info)">Guardar pago ✓</Btn>
               </div>
             </div>
           )}

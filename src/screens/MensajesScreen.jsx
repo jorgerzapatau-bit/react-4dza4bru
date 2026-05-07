@@ -73,7 +73,7 @@ function resolveDestinatario(miembro) {
   };
 }
 
-function AvatarCircle({ nombre, foto, size = 44, color = "#6c63ff" }) {
+function AvatarCircle({ nombre, foto, size = 44, color = "var(--col-accent)" }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
@@ -91,13 +91,13 @@ function AvatarCircle({ nombre, foto, size = 44, color = "#6c63ff" }) {
 }
 
 function UrgBadge({ dias, tipo }) {
-  if (tipo === "birthday") return <span style={chip("#f59e0b")}>🎂 HOY</span>;
-  if (tipo === "welcome")  return <span style={chip("#22d3ee")}>🎉 Nuevo</span>;
-  if (tipo === "waQueue")  return <span style={chip("#a78bfa")}>📬 Cola</span>;
-  if (dias === 0) return <span style={chip("#f43f5e")}>🚨 HOY</span>;
-  if (dias === 1) return <span style={chip("#f97316")}>⚡ 1 día</span>;
-  if (dias <= 3)  return <span style={chip("#f59e0b")}>⏰ {dias}d</span>;
-  return              <span style={chip("#22d3ee")}>📅 {dias}d</span>;
+  if (tipo === "birthday") return <span style={chip("var(--col-warning)")}>🎂 HOY</span>;
+  if (tipo === "welcome")  return <span style={chip("var(--col-info)")}>🎉 Nuevo</span>;
+  if (tipo === "waQueue")  return <span style={chip("var(--col-accent-text)")}>📬 Cola</span>;
+  if (dias === 0) return <span style={chip("var(--col-danger)")}>🚨 HOY</span>;
+  if (dias === 1) return <span style={chip("var(--col-warning)")}>⚡ 1 día</span>;
+  if (dias <= 3)  return <span style={chip("var(--col-warning)")}>⏰ {dias}d</span>;
+  return              <span style={chip("var(--col-info)")}>📅 {dias}d</span>;
 }
 const chip = (color) => ({
   background: `${color}20`, color, borderRadius: 8,
@@ -105,13 +105,13 @@ const chip = (color) => ({
 });
 
 const urgColor = (tipo, dias) => {
-  if (tipo === "birthday") return "#f59e0b";
-  if (tipo === "waQueue")  return "#a78bfa";
-  if (tipo === "welcome")  return "#22d3ee";
-  if (dias === 0) return "#f43f5e";
-  if (dias === 1) return "#f97316";
-  if (dias <= 3)  return "#f59e0b";
-  return "#22d3ee";
+  if (tipo === "birthday") return "var(--col-warning)";
+  if (tipo === "waQueue")  return "var(--col-accent-text)";
+  if (tipo === "welcome")  return "var(--col-info)";
+  if (dias === 0) return "var(--col-danger)";
+  if (dias === 1) return "var(--col-warning)";
+  if (dias <= 3)  return "var(--col-warning)";
+  return "var(--col-info)";
 };
 
 const navBtn = {
@@ -147,8 +147,8 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
 
   return (
     <div style={{
-      background: item.enviado ? "rgba(74,222,128,.04)" : isCurrent ? `${col}0d` : "var(--bg-card)",
-      border: `1px solid ${item.enviado ? "rgba(74,222,128,.2)" : isCurrent ? col + "40" : "var(--border)"}`,
+      background: item.enviado ? "var(--col-success-soft)" : isCurrent ? `${col}0d` : "var(--bg-card)",
+      border: `1px solid ${item.enviado ? "var(--col-success-border)" : isCurrent ? col + "40" : "var(--border)"}`,
       borderRadius: 18, padding: 16, transition: "all .3s",
       opacity: item.enviado ? 0.65 : 1,
     }}>
@@ -163,7 +163,7 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
             </div>
             {/* Tutor (frente) */}
             <div style={{ position: "absolute", right: 0, bottom: 0, border: "2px solid var(--bg-card)", borderRadius: "50%" }}>
-              <AvatarCircle nombre={item.tutorNombre} foto={item.tutorFoto} size={32} color="#f59e0b" />
+              <AvatarCircle nombre={item.tutorNombre} foto={item.tutorFoto} size={32} color="var(--col-warning)" />
             </div>
           </div>
         ) : (
@@ -178,7 +178,7 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
           <UrgBadge dias={item.diasReales} tipo={item.tipo} />
           {item.enviado
-            ? <span style={{ color: "#4ade80", fontSize: 10, fontWeight: 700 }}>✓ Enviado</span>
+            ? <span style={{ color: "var(--col-success)", fontSize: 10, fontWeight: 700 }}>✓ Enviado</span>
             : isCurrent && <span style={{ color: col, fontSize: 10, fontWeight: 700 }}>{index + 1}/{total}</span>
           }
         </div>
@@ -186,11 +186,11 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
 
       {/* Banner menor de edad */}
       {item.esMenor && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(245,158,11,.1)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 10, padding: "7px 12px", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--col-warning-soft)", border: "1px solid var(--col-warning-border)", borderRadius: 10, padding: "7px 12px", marginBottom: 10 }}>
           <span style={{ fontSize: 14 }}>👨‍👩‍👧</span>
           <div style={{ flex: 1 }}>
-            <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: 700 }}>Menor de edad — mensaje al tutor</p>
-            <p style={{ color: "#8b949e", fontSize: 11 }}>{item.tutorParentesco}: <strong style={{ color: "var(--text-primary)" }}>{item.tutorNombre}</strong> · {item.tel}</p>
+            <p style={{ color: "var(--col-warning)", fontSize: 11, fontWeight: 700 }}>Menor de edad — mensaje al tutor</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>{item.tutorParentesco}: <strong style={{ color: "var(--text-primary)" }}>{item.tutorNombre}</strong> · {item.tel}</p>
           </div>
         </div>
       )}
@@ -204,7 +204,7 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
             item.memInfo.vence && ["Vence", fmtFecha(item.memInfo.vence)],
           ].filter(Boolean).map(([l, v]) => (
             <div key={l}>
-              <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>{l}</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4 }}>{l}</p>
               <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{v}</p>
             </div>
           ))}
@@ -231,7 +231,7 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
           </p>
           {!item.enviado && (
             <button onClick={() => setEditando(true)}
-              style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "#8b949e", fontSize: 13, padding: 2 }}>
+              style={{ position: "absolute", top: 8, right: 8, background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", fontSize: 13, padding: 2 }}>
               ✏️
             </button>
           )}
@@ -244,9 +244,9 @@ function TarjetaCola({ item, index, total, isCurrent, onEnviado, onSaltar, onEdi
           {item.tel ? (
             <button onClick={enviarWA} style={{
               flex: 2, padding: "11px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, border: "none",
-              background: item.enviado ? "rgba(37,211,102,.12)" : "linear-gradient(135deg,#25d366,#128c7e)",
-              color: item.enviado ? "#4ade80" : "#fff",
-              boxShadow: item.enviado ? "none" : "0 4px 14px rgba(37,211,102,.3)",
+              background: item.enviado ? "rgba(37,211,102,.12)" : "linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))",
+              color: item.enviado ? "var(--col-success)" : "#fff",
+              boxShadow: item.enviado ? "none" : "0 4px 14px var(--col-success-border)",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
             }}>
               <span style={{ fontSize: 16 }}>💬</span>
@@ -277,12 +277,12 @@ function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg 
   const [currentIdx,   setCurrentIdx]   = useState({});
 
   const GRUPOS = [
-    { key: "hoy",      label: "Vence HOY",       icon: "🚨", color: "#f43f5e", filter: i => i.tipo === "pago" && i.diasReales === 0 },
-    { key: "manana",   label: "Vence mañana",     icon: "⚡", color: "#f97316", filter: i => i.tipo === "pago" && i.diasReales === 1 },
-    { key: "tres",     label: "En 3 días",         icon: "⏰", color: "#f59e0b", filter: i => i.tipo === "pago" && i.diasReales > 1 && i.diasReales <= 3 },
-    { key: "cinco",    label: "En 5 días",         icon: "📅", color: "#22d3ee", filter: i => i.tipo === "pago" && i.diasReales > 3 },
-    { key: "birthday", label: "Cumpleaños hoy",   icon: "🎂", color: "#f59e0b", filter: i => i.tipo === "birthday" },
-    { key: "waQueue",  label: "Cola pendiente",    icon: "📬", color: "#a78bfa", filter: i => i.tipo === "waQueue" },
+    { key: "hoy",      label: "Vence HOY",       icon: "🚨", color: "var(--col-danger)", filter: i => i.tipo === "pago" && i.diasReales === 0 },
+    { key: "manana",   label: "Vence mañana",     icon: "⚡", color: "var(--col-warning)", filter: i => i.tipo === "pago" && i.diasReales === 1 },
+    { key: "tres",     label: "En 3 días",         icon: "⏰", color: "var(--col-warning)", filter: i => i.tipo === "pago" && i.diasReales > 1 && i.diasReales <= 3 },
+    { key: "cinco",    label: "En 5 días",         icon: "📅", color: "var(--col-info)", filter: i => i.tipo === "pago" && i.diasReales > 3 },
+    { key: "birthday", label: "Cumpleaños hoy",   icon: "🎂", color: "var(--col-warning)", filter: i => i.tipo === "birthday" },
+    { key: "waQueue",  label: "Cola pendiente",    icon: "📬", color: "var(--col-accent-text)", filter: i => i.tipo === "waQueue" },
   ];
 
   const grupos = useMemo(() =>
@@ -300,8 +300,8 @@ function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg 
     return (
       <div style={{ textAlign: "center", padding: "60px 0" }}>
         <p style={{ fontSize: 48, marginBottom: 12 }}>🎉</p>
-        <p style={{ color: "#4ade80", fontSize: 16, fontWeight: 700 }}>¡Bandeja vacía!</p>
-        <p style={{ color: "#8b949e", fontSize: 12, marginTop: 6 }}>No hay mensajes pendientes para hoy.</p>
+        <p style={{ color: "var(--col-success)", fontSize: 16, fontWeight: 700 }}>¡Bandeja vacía!</p>
+        <p style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: 6 }}>No hay mensajes pendientes para hoy.</p>
       </div>
     );
   }
@@ -329,7 +329,7 @@ function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg 
                   cursor: "pointer", fontFamily: "inherit", transition: "all .2s" }}>
                 <span style={{ fontSize: 14 }}>{g.icon}</span>
                 <span style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600 }}>{g.label}</span>
-                <span style={{ background: pendG > 0 ? `${g.color}25` : "rgba(74,222,128,.15)", color: pendG > 0 ? g.color : "#4ade80", borderRadius: 8, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
+                <span style={{ background: pendG > 0 ? `${g.color}25` : "var(--col-success-soft)", color: pendG > 0 ? g.color : "var(--col-success)", borderRadius: 8, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>
                   {pendG > 0 ? pendG : `✓${envG}`}
                 </span>
               </button>
@@ -339,15 +339,15 @@ function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg 
 
         {/* Barra de progreso */}
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-          <span style={{ color: "#8b949e", fontSize: 11 }}>
+          <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
             {totalEnviados} enviados · {totalPend} pendientes{totalSaltados > 0 ? ` · ${totalSaltados} saltados` : ""}
           </span>
-          <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>
+          <span style={{ color: "var(--col-success)", fontSize: 11, fontWeight: 700 }}>
             {items.length > 0 ? Math.round((totalEnviados / items.length) * 100) : 0}%
           </span>
         </div>
         <div style={{ background: "var(--bg-elevated)", borderRadius: 99, height: 6, overflow: "hidden" }}>
-          <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg,#25d366,#128c7e)", width: `${items.length > 0 ? (totalEnviados / items.length) * 100 : 0}%`, transition: "width .5s ease" }} />
+          <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg,var(--col-wa),var(--col-wa-dark))", width: `${items.length > 0 ? (totalEnviados / items.length) * 100 : 0}%`, transition: "width .5s ease" }} />
         </div>
       </div>
 
@@ -376,11 +376,11 @@ function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg 
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <span style={{ fontSize: 18 }}>{g.icon}</span>
               <p style={{ color: g.color, fontSize: 13, fontWeight: 700, flex: 1 }}>{g.label}</p>
-              <span style={{ color: "#8b949e", fontSize: 11 }}>{pendCount} pendiente{pendCount !== 1 ? "s" : ""}</span>
+              <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>{pendCount} pendiente{pendCount !== 1 ? "s" : ""}</span>
               {gItems.length > 1 && (
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <button onClick={retroceder} disabled={cidx === 0} style={{ ...navBtn, opacity: cidx === 0 ? .3 : 1 }}>‹</button>
-                  <span style={{ color: "#8b949e", fontSize: 11, minWidth: 40, textAlign: "center" }}>{effectiveCidx + 1}/{gItems.length}</span>
+                  <span style={{ color: "var(--text-secondary)", fontSize: 11, minWidth: 40, textAlign: "center" }}>{effectiveCidx + 1}/{gItems.length}</span>
                   <button onClick={avanzar} disabled={cidx >= gItems.length - 1} style={{ ...navBtn, opacity: cidx >= gItems.length - 1 ? .3 : 1 }}>›</button>
                 </div>
               )}
@@ -403,7 +403,7 @@ function BandejaTab({ items, enviados, saltados, onEnviado, onSaltar, onEditMsg 
             {/* Enviados colapsados */}
             {grupoAbierto === g.key && gItems.filter(i => enviados[i.id]).length > 0 && (
               <details style={{ marginTop: 8 }}>
-                <summary style={{ color: "#8b949e", fontSize: 11, cursor: "pointer", padding: "6px 0", listStyle: "none" }}>
+                <summary style={{ color: "var(--text-secondary)", fontSize: 11, cursor: "pointer", padding: "6px 0", listStyle: "none" }}>
                   ✓ {gItems.filter(i => enviados[i.id]).length} ya enviados — ver
                 </summary>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
@@ -439,8 +439,8 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
   };
 
   if (editando) return (
-    <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: 14 }}>
-      <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Mensaje {index + 1}</p>
+    <div style={{ background: "var(--col-accent-soft)", border: "1px solid var(--col-accent-border)", borderRadius: 14, padding: 14 }}>
+      <p style={{ color: "var(--col-accent-text)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Mensaje {index + 1}</p>
       <input value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="Nombre del mensaje"
         style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 13, fontFamily: "inherit", outline: "none", marginBottom: 8 }} />
       <textarea value={form.msg} onChange={e => setForm(p => ({ ...p, msg: e.target.value }))}
@@ -448,16 +448,16 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
         style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 8 }} />
       {form.msg.trim() && (
         <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
-          <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Vista previa</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.5 }}>{msgFinal}</p>
         </div>
       )}
       <div style={{ display: "flex", gap: 8 }}>
         <button onClick={() => { setEditando(false); setForm({ label: tpl.label, msg: tpl.msg }); }} style={btnSec}>Cancelar</button>
         <button onClick={handleGuardar} disabled={!form.label.trim() || !form.msg.trim() || guardando}
           style={{ flex: 2, padding: "10px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-            background: form.label.trim() && form.msg.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
-            color: form.label.trim() && form.msg.trim() ? "#fff" : "#8b949e" }}>
+            background: form.label.trim() && form.msg.trim() ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
+            color: form.label.trim() && form.msg.trim() ? "#fff" : "var(--text-secondary)" }}>
           {guardando ? "Guardando…" : "💾 Guardar"}
         </button>
       </div>
@@ -465,15 +465,15 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
   );
 
   if (tieneContenido) return (
-    <div style={{ background: "var(--bg-card)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={{ background: "var(--bg-card)", border: "1px solid var(--col-accent-border)", borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ fontSize: 18 }}>⭐</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
-        <p style={{ color: "#8b949e", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
+        <p style={{ color: "var(--col-accent-text)", fontSize: 12, fontWeight: 700, marginBottom: 2 }}>{tpl.label}</p>
+        <p style={{ color: "var(--text-secondary)", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tpl.msg}</p>
       </div>
       <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
         <button onClick={() => onUsar(tpl.msg.replace(/\{nombre\}/g, nombreMiembro).replace(/\{student_name\}/g, nombreMiembro), tpl.label)}
-          style={{ padding: "6px 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff" }}>
+          style={{ padding: "6px 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))", color: "#fff" }}>
           Usar
         </button>
         <button onClick={() => { setForm({ label: tpl.label, msg: tpl.msg }); setEditando(true); }}
@@ -486,9 +486,9 @@ function PlantillaCustom({ index, tpl, nombreMiembro, gymNom, onUsar, onGuardar 
 
   return (
     <button onClick={() => { setForm({ label: "", msg: "" }); setEditando(true); }}
-      style={{ width: "100%", padding: "12px 14px", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", background: "transparent", display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 16, color: "#6c63ff" }}>＋</span>
-      <span style={{ color: "#8b949e", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
+      style={{ width: "100%", padding: "12px 14px", border: "1px dashed var(--col-accent-border)", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", background: "transparent", display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 16, color: "var(--col-accent)" }}>＋</span>
+      <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>Mensaje guardado {index + 1} — toca para crear</span>
     </button>
   );
 }
@@ -508,30 +508,30 @@ function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChang
   const preview    = bodyText.length > 90 ? bodyText.slice(0, 90) + "…" : bodyText;
 
   return (
-    <div style={{ background: "var(--bg-card)", border: `1px solid ${isActive ? "rgba(108,99,255,.3)" : "var(--border)"}`, borderRadius: 16, padding: 14, marginBottom: 10, transition: "border .2s" }}>
+    <div style={{ background: "var(--bg-card)", border: `1px solid ${isActive ? "var(--col-accent-border)" : "var(--border)"}`, borderRadius: 16, padding: 14, marginBottom: 10, transition: "border .2s" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 22, flexShrink: 0 }}>{meta.icon}</span>
         <div style={{ flex: 1 }}>
           <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>{meta.name}</p>
-          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>{meta.when}</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>{meta.when}</p>
         </div>
         <div onClick={() => onToggle(meta.key, !isActive)}
-          style={{ width: 44, height: 24, borderRadius: 12, flexShrink: 0, background: isActive ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)", cursor: "pointer", position: "relative", transition: "background .2s" }}>
+          style={{ width: 44, height: 24, borderRadius: 12, flexShrink: 0, background: isActive ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "rgba(255,255,255,.1)", cursor: "pointer", position: "relative", transition: "background .2s" }}>
           <div style={{ position: "absolute", top: 3, left: isActive ? 23 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.3)" }} />
         </div>
       </div>
 
       {meta.hasOffset && isActive && !editing && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px" }}>
-          <p style={{ color: "#8b949e", fontSize: 11, flex: 1 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, flex: 1 }}>
             {offsetDays >= 0 ? `Enviar ${offsetDays}d antes` : `Enviar ${Math.abs(offsetDays)}d después`}
           </p>
           <div style={{ display: "flex", gap: 4 }}>
             {[1,2,3,5,7].map(d => (
               <button key={d} onClick={() => onOffsetChange(meta.key, d)}
                 style={{ padding: "4px 8px", border: "none", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 600,
-                  background: offsetDays === d ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-card)",
-                  color: offsetDays === d ? "#fff" : "#8b949e" }}>
+                  background: offsetDays === d ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-card)",
+                  color: offsetDays === d ? "#fff" : "var(--text-secondary)" }}>
                 {d}d
               </button>
             ))}
@@ -541,17 +541,17 @@ function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChang
 
       {!editing && (
         <div style={{ background: "var(--bg-elevated)", borderRadius: 10, padding: "8px 12px", marginBottom: 10 }}>
-          <p style={{ color: "#8b949e", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Mensaje</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>Mensaje</p>
           <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>{preview}</p>
         </div>
       )}
 
       {editing && (
         <div style={{ marginBottom: 10 }}>
-          <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>Editando mensaje</p>
+          <p style={{ color: "var(--col-accent-text)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>Editando mensaje</p>
           <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={6}
             style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid rgba(108,99,255,.4)", borderRadius: 10, padding: "10px 12px", color: "var(--text-primary)", fontSize: 12, fontFamily: "inherit", outline: "none", resize: "vertical", lineHeight: 1.6, marginBottom: 6 }} />
-          <p style={{ color: "#8b949e", fontSize: 10, lineHeight: 1.5 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 10, lineHeight: 1.5 }}>
             Variables: {"{student_name}"} · {"{due_date}"} · {"{concept}"} · {"{amount}"} · {"{clabe}"} · {"{bank}"} · {"{propietario}"}
           </p>
         </div>
@@ -561,11 +561,11 @@ function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChang
         {!editing ? (
           <>
             <button onClick={() => { setEditText(bodyText); setEditing(true); }}
-              style={{ flex: 2, padding: "8px", border: "1px solid rgba(108,99,255,.3)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "#a78bfa" }}>
+              style={{ flex: 2, padding: "8px", border: "1px solid var(--col-accent-border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 600, background: "transparent", color: "var(--col-accent-text)" }}>
               ✏️ Editar mensaje
             </button>
             <button onClick={async () => { setResetting(true); await onReset(meta.key); setResetting(false); }} disabled={resetting}
-              style={{ flex: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
+              style={{ flex: 1, padding: "8px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "var(--text-secondary)" }}>
               {resetting ? "…" : "↺ Restaurar"}
             </button>
           </>
@@ -573,14 +573,14 @@ function SystemMessageCard({ meta, template, automation, onToggle, onOffsetChang
           <>
             <button onClick={() => setEditing(false)} style={btnSec}>Cancelar</button>
             <button onClick={async () => { setResetting(true); await onReset(meta.key); setResetting(false); setEditing(false); }} disabled={resetting}
-              style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "#8b949e" }}>
+              style={{ padding: "8px 12px", border: "1px solid var(--border)", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 11, background: "transparent", color: "var(--text-secondary)" }}>
               {resetting ? "…" : "↺ Default"}
             </button>
             <button onClick={async () => { setSaving(true); await onSave(template?.id, editText); setSaving(false); setEditing(false); }}
               disabled={saving || !editText.trim()}
               style={{ flex: 2, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                background: editText.trim() ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "#21262d",
-                color: editText.trim() ? "#fff" : "#8b949e" }}>
+                background: editText.trim() ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
+                color: editText.trim() ? "#fff" : "var(--text-secondary)" }}>
               {saving ? "Guardando…" : "💾 Guardar"}
             </button>
           </>
@@ -848,10 +848,10 @@ export default function MensajesScreen({
   const tabStyle = (activo) => ({
     flex: 1, padding: "9px 4px", border: "none", borderRadius: 11,
     cursor: "pointer", fontFamily: "inherit",
-    background: activo ? "linear-gradient(135deg,#25d366,#128c7e)" : "transparent",
-    color: activo ? "#fff" : "#8b949e",
+    background: activo ? "linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))" : "transparent",
+    color: activo ? "#fff" : "var(--text-secondary)",
     fontSize: 10, fontWeight: activo ? 700 : 500,
-    boxShadow: activo ? "0 2px 12px rgba(37,211,102,.3)" : "none",
+    boxShadow: activo ? "0 2px 12px var(--col-success-border)" : "none",
     transition: "all .2s", position: "relative", flexShrink: 0,
   });
 
@@ -871,15 +871,15 @@ export default function MensajesScreen({
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
             <button onClick={onBack}
-              style={{ background: "#21262d", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>
+              style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, width: 36, height: 36, cursor: "pointer", color: "#fff", fontSize: 18, flexShrink: 0 }}>
               ←
             </button>
             <div style={{ flex: 1 }}>
               <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700 }}>💬 Mensajes</h1>
-              <p style={{ color: "#8b949e", fontSize: 11 }}>Centro de comunicación WhatsApp</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>Centro de comunicación WhatsApp</p>
             </div>
             {pendientesBandeja > 0 && (
-              <span style={{ background: "#f43f5e", color: "#fff", borderRadius: 10, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>
+              <span style={{ background: "var(--col-danger)", color: "#fff", borderRadius: 10, padding: "3px 9px", fontSize: 11, fontWeight: 700 }}>
                 {pendientesBandeja > 99 ? "99+" : pendientesBandeja}
               </span>
             )}
@@ -890,7 +890,7 @@ export default function MensajesScreen({
               <button key={m.k} onClick={() => cambiarModo(m.k)} style={tabStyle(modo === m.k)}>
                 {m.icon} {m.label}
                 {m.badge > 0 && (
-                  <span style={{ position: "absolute", top: 2, right: 2, background: "#f43f5e", color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ position: "absolute", top: 2, right: 2, background: "var(--col-danger)", color: "#fff", borderRadius: "50%", width: 14, height: 14, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {m.badge > 99 ? "99+" : m.badge}
                   </span>
                 )}
@@ -922,12 +922,12 @@ export default function MensajesScreen({
               {!selMiembro ? (
                 <>
                   <div style={{ position: "relative", marginBottom: 10 }}>
-                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#8b949e", pointerEvents: "none" }}>🔍</span>
+                    <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "var(--text-secondary)", pointerEvents: "none" }}>🔍</span>
                     <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar miembro..."
-                      style={{ width: "100%", background: "#21262d", border: "1px solid #30363d", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+                      style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: "10px 12px 10px 36px", color: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
                     {busqueda && (
                       <button onClick={() => setBusqueda("")}
-                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#8b949e", fontSize: 16, cursor: "pointer" }}>✕</button>
+                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-secondary)", fontSize: 16, cursor: "pointer" }}>✕</button>
                     )}
                   </div>
                   {(() => {
@@ -937,20 +937,20 @@ export default function MensajesScreen({
                       : conTel;
                     return (
                       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {filtrados.length === 0 && <p style={{ color: "#8b949e", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>}
+                        {filtrados.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 12, textAlign: "center", padding: "20px 0" }}>No se encontró "{busqueda}"</p>}
                         {filtrados.map(m => (
                           <button key={m.id} onClick={() => { setSelMiembro(m); setMsgTexto(""); setBusqueda(""); }}
                             style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 14, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10 }}>
                             <AvatarCircle nombre={m.nombre} foto={m.foto} size={36} />
                             <div style={{ flex: 1, textAlign: "left" }}>
                               <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
-                              <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {m.tel}</p>
+                              <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>📱 {m.tel}</p>
                             </div>
-                            <span style={{ color: "#8b949e", fontSize: 14 }}>›</span>
+                            <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>›</span>
                           </button>
                         ))}
                         {miembros.filter(m => !m.tel).length > 0 && !busqueda && (
-                          <p style={{ color: "#8b949e", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
+                          <p style={{ color: "var(--text-secondary)", fontSize: 11, textAlign: "center", padding: "6px 0" }}>
                             {miembros.filter(m => !m.tel).length} miembros sin número no aparecen
                           </p>
                         )}
@@ -960,14 +960,14 @@ export default function MensajesScreen({
                 </>
               ) : (
                 <>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(108,99,255,.1)", border: "1px solid rgba(108,99,255,.3)", borderRadius: 14, padding: "10px 14px", marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--col-accent-soft)", border: "1px solid var(--col-accent-border)", borderRadius: 14, padding: "10px 14px", marginBottom: 12 }}>
                     <AvatarCircle nombre={selMiembro.nombre} foto={selMiembro.foto} size={38} />
                     <div style={{ flex: 1 }}>
-                      <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
-                      <p style={{ color: "#8b949e", fontSize: 11 }}>📱 {selMiembro.tel}</p>
+                      <p style={{ color: "var(--col-accent-text)", fontSize: 13, fontWeight: 700 }}>{selMiembro.nombre}</p>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>📱 {selMiembro.tel}</p>
                     </div>
                     <button onClick={() => { setSelMiembro(null); setMsgTexto(""); }}
-                      style={{ background: "#21262d", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "#8b949e", fontSize: 12, fontWeight: 600 }}>
+                      style={{ background: "var(--bg-elevated)", border: "none", borderRadius: 10, padding: "6px 12px", cursor: "pointer", fontFamily: "inherit", color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>
                       Cambiar ✕
                     </button>
                   </div>
@@ -975,20 +975,20 @@ export default function MensajesScreen({
                   <textarea value={msgTexto} onChange={e => setMsgTexto(e.target.value)}
                     placeholder={`Hola ${selNombre1}, escribe o elige una plantilla...`}
                     rows={4} autoFocus style={textareaStyle} />
-                  <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11, textAlign: "right", marginBottom: 10 }}>{msgTexto.length} caracteres</p>
 
                   <button onClick={() => { window.open(buildWAUrl(selMiembro.tel, msgTexto.trim()), "_blank"); if (onMarcarRecordatorio) onMarcarRecordatorio(selMiembro.id); }}
                     disabled={!msgTexto.trim()}
                     style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: msgTexto.trim() ? "pointer" : "not-allowed", fontFamily: "inherit", fontSize: 14, fontWeight: 700,
-                      background: msgTexto.trim() ? "linear-gradient(135deg,#25d366,#128c7e)" : "#21262d",
-                      color: msgTexto.trim() ? "#fff" : "#8b949e",
-                      boxShadow: msgTexto.trim() ? "0 4px 18px rgba(37,211,102,.35)" : "none",
+                      background: msgTexto.trim() ? "linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))" : "var(--bg-elevated)",
+                      color: msgTexto.trim() ? "#fff" : "var(--text-secondary)",
+                      boxShadow: msgTexto.trim() ? "0 4px 18px var(--col-success-border)" : "none",
                       display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20 }}>
                     <span style={{ fontSize: 18 }}>💬</span>
                     {msgTexto.trim() ? `Enviar a ${selNombre1} por WhatsApp` : "Escribe o elige un mensaje"}
                   </button>
 
-                  <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💾 Mis mensajes guardados</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>💾 Mis mensajes guardados</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
                     {[0,1,2,3].map(i => {
                       const slot = tplsCustom[i] || { icon: "⭐", label: "", msg: "" };
@@ -1007,9 +1007,9 @@ export default function MensajesScreen({
 
                   {getSystemTemplates().length > 0 && (
                     <details style={{ marginBottom: 14 }}>
-                      <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
+                      <summary style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
                         <span>⚙️ Plantillas del sistema</span>
-                        <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                        <span style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
                       </summary>
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                         {getSystemTemplates().map(tpl => {
@@ -1018,10 +1018,10 @@ export default function MensajesScreen({
                           const msgFinal = replaceTemplateVars(tpl.body_text, vars);
                           return (
                             <button key={tpl.id} onClick={() => setMsgTexto(msgFinal)}
-                              style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
+                              style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "var(--col-success-border)" : "var(--bg-elevated)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                               <span style={{ fontSize: 16 }}>⚙️</span>
-                              <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name}</span>
-                              {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
+                              <span style={{ color: msgTexto === msgFinal ? "var(--col-success)" : "var(--text-secondary)", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name}</span>
+                              {msgTexto === msgFinal && <span style={{ color: "var(--col-success)" }}>✓</span>}
                             </button>
                           );
                         })}
@@ -1030,19 +1030,19 @@ export default function MensajesScreen({
                   )}
 
                   <details style={{ marginBottom: 14 }}>
-                    <summary style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
+                    <summary style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 6, padding: "8px 0" }}>
                       <span>⚡ Plantillas rápidas</span>
-                      <span style={{ color: "#8b949e", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
+                      <span style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 400, marginLeft: "auto" }}>toca para ver ›</span>
                     </summary>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
                       {tplsRapidas.map((tpl, i) => {
                         const msgFinal = replaceTemplateVars(tpl.body_text || tpl.msg || "", { student_name: selNombre1 });
                         return (
                           <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
-                            style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "#161b22", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "#21262d"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
+                            style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "var(--col-success-border)" : "var(--bg-elevated)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                             <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                            <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
-                            {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
+                            <span style={{ color: msgTexto === msgFinal ? "var(--col-success)" : "var(--text-secondary)", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
+                            {msgTexto === msgFinal && <span style={{ color: "var(--col-success)" }}>✓</span>}
                           </button>
                         );
                       })}
@@ -1056,22 +1056,22 @@ export default function MensajesScreen({
           {/* ════ MASIVO ════ */}
           {modo === "masivo" && (
             <>
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Mensaje para todos</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 6 }}>Mensaje para todos</p>
               <textarea value={msgTexto} onChange={e => setMsgTexto(e.target.value)}
                 placeholder={`Ej: Hola, la clase de hoy fue cancelada. Disculpen 🙏 — ${gymNom}`}
                 rows={5} style={textareaStyle} />
-              <p style={{ color: "#8b949e", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, textAlign: "right", marginBottom: 12 }}>{msgTexto.length} caracteres</p>
 
-              <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Plantillas rápidas</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 8 }}>Plantillas rápidas</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
                 {tplsRapidas.map((tpl, i) => {
                   const msgFinal = tpl.body_text || tpl.msg || "";
                   return (
                     <button key={tpl.id || i} onClick={() => setMsgTexto(msgFinal)}
-                      style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "rgba(37,211,102,.3)" : "var(--border)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
+                      style={{ background: msgTexto === msgFinal ? "rgba(37,211,102,.1)" : "var(--bg-card)", border: `1px solid ${msgTexto === msgFinal ? "var(--col-success-border)" : "var(--border)"}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
                       <span style={{ fontSize: 18 }}>{tpl.icon}</span>
-                      <span style={{ color: msgTexto === msgFinal ? "#4ade80" : "#8b949e", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
-                      {msgTexto === msgFinal && <span style={{ color: "#4ade80" }}>✓</span>}
+                      <span style={{ color: msgTexto === msgFinal ? "var(--col-success)" : "var(--text-secondary)", fontSize: 12, fontWeight: 600, flex: 1 }}>{tpl.name || tpl.label}</span>
+                      {msgTexto === msgFinal && <span style={{ color: "var(--col-success)" }}>✓</span>}
                     </button>
                   );
                 })}
@@ -1079,13 +1079,13 @@ export default function MensajesScreen({
 
               {msgTexto.trim() && (
                 <>
-                  <div style={{ background: "rgba(37,211,102,.06)", border: "1px solid rgba(37,211,102,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
-                    <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>Destinatarios ({destMasivo.length})</p>
+                  <div style={{ background: "var(--col-success-soft)", border: "1px solid var(--col-success-border)", borderRadius: 14, padding: "12px 14px", marginBottom: 10 }}>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>Destinatarios ({destMasivo.length})</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {destMasivo.map(mb => (
                         <div key={mb.id} style={{ display: "flex", alignItems: "center", gap: 5, background: "var(--bg-elevated)", borderRadius: 20, padding: "4px 10px 4px 4px" }}>
                           <AvatarCircle nombre={mb.nombre} foto={mb.foto} size={22} />
-                          <span style={{ color: "#8b949e", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
+                          <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>{mb.nombre.split(" ")[0]}</span>
                         </div>
                       ))}
                     </div>
@@ -1098,16 +1098,16 @@ export default function MensajesScreen({
                     <div key={step.num} style={{ background: "var(--bg-card)", border: step.copiado ? "1px solid rgba(37,211,102,.4)" : "1px solid var(--border)", borderRadius: 14, padding: 14, marginBottom: 8 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ background: step.copiado ? "rgba(37,211,102,.2)" : "var(--bg-elevated)", color: step.copiado ? "#4ade80" : "var(--text-primary)", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: step.copiado ? "var(--col-success-border)" : "var(--bg-elevated)", color: step.copiado ? "var(--col-success)" : "var(--text-primary)", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700 }}>
                             {step.copiado ? "✓" : step.num}
                           </span>
                           <div>
                             <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{step.label}</p>
-                            {step.sub && <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{step.sub}</p>}
+                            {step.sub && <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 2 }}>{step.sub}</p>}
                           </div>
                         </div>
                         <button onClick={step.action}
-                          style={{ padding: "6px 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: step.copiado ? "rgba(37,211,102,.2)" : "linear-gradient(135deg,#6c63ff,#e040fb)", color: step.copiado ? "#4ade80" : "#fff" }}>
+                          style={{ padding: "6px 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, background: step.copiado ? "var(--col-success-border)" : "linear-gradient(135deg,var(--col-accent),var(--col-accent))", color: step.copiado ? "var(--col-success)" : "#fff" }}>
                           {step.copiado ? "✓ Copiado" : "📋 Copiar"}
                         </button>
                       </div>
@@ -1116,11 +1116,11 @@ export default function MensajesScreen({
 
                   <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
                     <p style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>3️⃣ Abre WhatsApp</p>
-                    <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5 }}>Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.</p>
+                    <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5 }}>Nueva lista de difusión → pega los números → pega el mensaje. Llega como mensaje privado a cada uno.</p>
                   </div>
 
                   <button onClick={() => window.open("https://wa.me", "_blank")}
-                    style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,#25d366,#128c7e)", color: "#fff", boxShadow: "0 4px 18px rgba(37,211,102,.35)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    style={{ width: "100%", padding: "14px", border: "none", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg,var(--col-wa),var(--col-wa-dark))", color: "#fff", boxShadow: "0 4px 18px var(--col-success-border)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                     <span style={{ fontSize: 18 }}>💬</span> Abrir WhatsApp
                   </button>
                 </>
@@ -1131,16 +1131,16 @@ export default function MensajesScreen({
           {/* ════ SISTEMA ════ */}
           {modo === "mensajes_sistema" && (
             <>
-              <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
-                <p style={{ color: "#a78bfa", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚙️ Centro de automatización</p>
-                <p style={{ color: "#8b949e", fontSize: 12, lineHeight: 1.5 }}>
+              <div style={{ background: "var(--col-accent-soft)", border: "1px solid var(--col-accent-border)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
+                <p style={{ color: "var(--col-accent-text)", fontSize: 13, fontWeight: 700, marginBottom: 4 }}>⚙️ Centro de automatización</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.5 }}>
                   Configura los mensajes del sistema. Los activos aparecen automáticamente en la Bandeja según sus reglas.
                 </p>
               </div>
 
               {commLoading ? (
                 <div style={{ textAlign: "center", padding: "30px 0" }}>
-                  <p style={{ color: "#8b949e", fontSize: 13 }}>Cargando mensajes…</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Cargando mensajes…</p>
                 </div>
               ) : (
                 <>
@@ -1152,10 +1152,10 @@ export default function MensajesScreen({
                       onSave={saveTemplate} onReset={resetTemplate} />
                   ))}
                   {!dbAvailable && gymId && (
-                    <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
-                      <p style={{ color: "#f59e0b", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>📋 Modo vista previa</p>
-                      <p style={{ color: "#8b949e", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>Para guardar cambios, ejecuta en Supabase:</p>
-                      <code style={{ display: "block", background: "#0d1117", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#a78bfa", wordBreak: "break-all" }}>
+                    <div style={{ background: "var(--col-warning-soft)", border: "1px solid var(--col-warning-border)", borderRadius: 14, padding: "14px 16px", marginTop: 4 }}>
+                      <p style={{ color: "var(--col-warning)", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>📋 Modo vista previa</p>
+                      <p style={{ color: "var(--text-secondary)", fontSize: 11, lineHeight: 1.5, marginBottom: 8 }}>Para guardar cambios, ejecuta en Supabase:</p>
+                      <code style={{ display: "block", background: "var(--bg-base)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--col-accent-text)", wordBreak: "break-all" }}>
                         {`SELECT seed_communication_templates('${gymId}');`}
                       </code>
                     </div>

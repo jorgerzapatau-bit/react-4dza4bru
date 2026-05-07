@@ -64,7 +64,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
         const fn = new Date(m.fecha_nacimiento + "T00:00:00");
         if (fn.getMonth() === mesVer) {
           push(fn.getDate(), {
-            tipo: "cumple", nombre: m.nombre, foto: m.foto, miembro: m, color: "#f59e0b",
+            tipo: "cumple", nombre: m.nombre, foto: m.foto, miembro: m, color: "var(--col-warning)",
           });
         }
       }
@@ -76,7 +76,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
         if (vp && vp.getMonth() === mesVer && vp.getFullYear() === anioVer) {
           push(vp.getDate(), {
             tipo: "vence", nombre: m.nombre, foto: m.foto, miembro: m,
-            color: mem.estado === "Vencido" ? "#f43f5e" : "#22d3ee",
+            color: mem.estado === "Vencido" ? "var(--col-danger)" : "var(--col-info)",
             vencido: mem.estado === "Vencido",
           });
         }
@@ -90,7 +90,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
           const fp = new Date(primera.fecha + "T00:00:00");
           if (fp.getMonth() === mesVer && fp.getFullYear() === anioVer) {
             push(fp.getDate(), {
-              tipo: "nuevo", nombre: m.nombre, foto: m.foto, miembro: m, color: "#a78bfa",
+              tipo: "nuevo", nombre: m.nombre, foto: m.foto, miembro: m, color: "var(--col-accent-text)",
             });
           }
         }
@@ -147,19 +147,19 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}>📅 Calendario</p>
-          <p style={{ color: "#8b949e", fontSize: 11, marginTop: 2 }}>Cumpleaños y vencimientos</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 2 }}>Cumpleaños y vencimientos</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => navMes(-1)}
-            style={{ border: "none", background: "#21262d", color: "#8b949e", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ border: "none", background: "var(--bg-elevated)", color: "var(--text-secondary)", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
           >‹</button>
           <span style={{ color: "var(--text-primary)", fontSize: 12, fontWeight: 700, minWidth: 90, textAlign: "center" }}>
             {MESES_FULL[mesVer]} {anioVer}
           </span>
           <button
             onClick={() => navMes(1)}
-            style={{ border: "none", background: "#21262d", color: "#8b949e", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ border: "none", background: "var(--bg-elevated)", color: "var(--text-secondary)", width: 28, height: 28, borderRadius: 8, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
           >›</button>
         </div>
       </div>
@@ -167,10 +167,10 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       {/* Stats cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
         {[
-          { count: totalCumples,  icon: "🎂", color: "#f59e0b", bg: "rgba(245,158,11,.08)",  border: "rgba(245,158,11,.2)",  label: "Cumpleaños" },
-          { count: totalNuevos,   icon: "✨", color: "#a78bfa", bg: "rgba(167,139,250,.08)", border: "rgba(167,139,250,.2)", label: "Nuevos" },
-          { count: totalVence,    icon: "⏰", color: "#22d3ee", bg: "rgba(34,211,238,.08)",  border: "rgba(34,211,238,.2)",  label: "Vencen este mes" },
-          { count: totalVencidos, icon: "🔴", color: "#f43f5e", bg: "rgba(244,63,94,.08)",   border: "rgba(244,63,94,.2)",   label: "Ya vencidos" },
+          { count: totalCumples,  icon: "🎂", color: "var(--col-warning)", bg: "var(--col-warning-soft)",  border: "var(--col-warning-border)",  label: "Cumpleaños" },
+          { count: totalNuevos,   icon: "✨", color: "var(--col-accent-text)", bg: "rgba(167,139,250,.08)", border: "rgba(167,139,250,.2)", label: "Nuevos" },
+          { count: totalVence,    icon: "⏰", color: "var(--col-info)", bg: "rgba(34,211,238,.08)",  border: "rgba(34,211,238,.2)",  label: "Vencen este mes" },
+          { count: totalVencidos, icon: "🔴", color: "var(--col-danger)", bg: "var(--col-danger-soft)",   border: "var(--col-danger-border)",   label: "Ya vencidos" },
         ].map(({ count, icon, color, bg, border, label }) => (
           <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, background: bg.replace(".08", ".15"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
@@ -178,7 +178,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
             </div>
             <div>
               <p style={{ color, fontSize: 20, fontWeight: 800, lineHeight: 1 }}>{count}</p>
-              <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>{label}</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 2 }}>{label}</p>
             </div>
           </div>
         ))}
@@ -187,7 +187,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       {/* Días semana */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 4 }}>
         {DIAS.map((d) => (
-          <p key={d} style={{ color: "#8b949e", fontSize: 9, fontWeight: 700, textAlign: "center", padding: "2px 0" }}>{d}</p>
+          <p key={d} style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 700, textAlign: "center", padding: "2px 0" }}>{d}</p>
         ))}
       </div>
 
@@ -208,7 +208,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
                 borderRadius: 8, padding: "4px 2px", textAlign: "center",
                 position: "relative", minHeight: 38,
                 background: esHoy
-                  ? "linear-gradient(135deg,#6c63ff,#e040fb)"
+                  ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))"
                   : evs.length > 0 ? "var(--bg-elevated)" : "transparent",
                 border: evs.length > 0 && !esHoy
                   ? "1px solid var(--border)" : "1px solid transparent",
@@ -218,10 +218,10 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
                 {dia}
               </p>
               <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2, marginTop: 2 }}>
-                {tieneCumple  && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#f59e0b" }} />}
-                {tieneVence   && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#22d3ee" }} />}
-                {tieneVencido && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#f43f5e" }} />}
-                {tieneNuevo   && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#a78bfa" }} />}
+                {tieneCumple  && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--col-warning)" }} />}
+                {tieneVence   && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--col-info)" }} />}
+                {tieneVencido && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--col-danger)" }} />}
+                {tieneNuevo   && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--col-accent-text)" }} />}
               </div>
             </div>
           );
@@ -231,14 +231,14 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       {/* Leyenda */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
         {[
-          { color: "#f59e0b", label: "Cumpleaños" },
-          { color: "#22d3ee", label: "Vence membresía" },
-          { color: "#f43f5e", label: "Ya vencido" },
-          { color: "#a78bfa", label: "Nuevo miembro" },
+          { color: "var(--col-warning)", label: "Cumpleaños" },
+          { color: "var(--col-info)", label: "Vence membresía" },
+          { color: "var(--col-danger)", label: "Ya vencido" },
+          { color: "var(--col-accent-text)", label: "Nuevo miembro" },
         ].map(({ color, label }) => (
           <div key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
-            <span style={{ color: "#8b949e", fontSize: 10 }}>{label}</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: 10 }}>{label}</span>
           </div>
         ))}
       </div>
@@ -253,8 +253,8 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
               border: "none", borderRadius: 20, padding: "5px 12px", cursor: "pointer",
               fontFamily: "inherit", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
               transition: "all .15s",
-              background: filtro === f.key ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
-              color: filtro === f.key ? "#fff" : "#8b949e",
+              background: filtro === f.key ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
+              color: filtro === f.key ? "#fff" : "var(--text-secondary)",
             }}
           >
             {f.label}
@@ -265,7 +265,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
       {/* Lista de eventos */}
       {listaEventos.length === 0 ? (
         <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <p style={{ color: "#8b949e", fontSize: 12 }}>Sin eventos este mes</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12 }}>Sin eventos este mes</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -297,7 +297,7 @@ export default function CalendarioEventos({ miembros, txs, onGoToMember }) {
                 <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {ev.nombre}
                 </p>
-                <p style={{ color: "#8b949e", fontSize: 10 }}>
+                <p style={{ color: "var(--text-secondary)", fontSize: 10 }}>
                   {ev.tipo === "cumple"
                     ? "🎂 Cumpleaños"
                     : ev.tipo === "nuevo"

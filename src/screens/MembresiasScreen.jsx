@@ -12,18 +12,18 @@ import { supabase } from "../supabase";
 
 // ── Helpers de color del tema ──────────────────────────────────────
 const C = {
-  accent:   "#6c63ff",
-  accent2:  "#e040fb",
-  green:    "#22d3ee",
-  red:      "#f43f5e",
-  yellow:   "#fbbf24",
-  bg:       "var(--bg-main, #0d1117)",
-  bgCard:   "var(--bg-card, #161b22)",
-  bgCard2:  "var(--bg-nav, #13131f)",
+  accent:   "var(--col-accent)",
+  accent2:  "var(--col-accent)",
+  green:    "var(--col-info)",
+  red:      "var(--col-danger)",
+  yellow:   "var(--col-warning)",
+  bg:       "var(--bg-main, var(--bg-base))",
+  bgCard:   "var(--bg-card, var(--bg-card))",
+  bgCard2:  "var(--bg-nav, var(--bg-base))",
   border:   "var(--border, rgba(255,255,255,.08))",
-  text:     "var(--text-primary, #e2e8f0)",
-  textSub:  "var(--text-secondary, #8b949e)",
-  textMut:  "var(--text-tertiary, #4b4b6a)",
+  text:     "var(--text-primary, var(--border))",
+  textSub:  "var(--text-secondary, var(--text-secondary))",
+  textMut:  "var(--text-tertiary, var(--text-tertiary))",
 };
 
 // ── Íconos SVG inline ──────────────────────────────────────────────
@@ -111,7 +111,7 @@ function Select({ value, onChange, options }) {
                 background: o.value === value ? C.accent : "transparent",
                 transition: "background .12s",
               }}
-              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = "rgba(108,99,255,.18)"; }}
+              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = "var(--col-accent-soft)"; }}
               onMouseLeave={e => { if (o.value !== value) e.currentTarget.style.background = "transparent"; }}
             >{o.label}</div>
           ))}
@@ -150,8 +150,8 @@ function Tooltip({ text, children }) {
       {show && (
         <div style={{
           position: "absolute", bottom: "calc(100% + 8px)", left: 0,
-          background: "#1e1e2e", border: "1px solid rgba(108,99,255,.4)",
-          color: "#e2e8f0", fontSize: 12, borderRadius: 8, padding: "8px 12px",
+          background: "var(--bg-elevated)", border: "1px solid rgba(108,99,255,.4)",
+          color: "var(--border)", fontSize: 12, borderRadius: 8, padding: "8px 12px",
           zIndex: 999, pointerEvents: "none",
           boxShadow: "0 6px 24px rgba(0,0,0,.7)",
           width: 230, lineHeight: 1.6, fontWeight: 400,
@@ -159,7 +159,7 @@ function Tooltip({ text, children }) {
           {text}
           <div style={{
             position: "absolute", top: "100%", left: 18,
-            border: "6px solid transparent", borderTopColor: "#1e1e2e",
+            border: "6px solid transparent", borderTopColor: "var(--bg-elevated)",
           }} />
         </div>
       )}
@@ -220,13 +220,13 @@ function Modal({ title, onClose, children, width = 520 }) {
 // ── Badge de ciclo ────────────────────────────────────────────────
 function CicloBadge({ ciclo }) {
   const map = {
-    mensual: { label: "Mensual", color: "#6c63ff" },
-    trimestral: { label: "Trimestral", color: "#22d3ee" },
-    semestral: { label: "Semestral", color: "#f59e0b" },
-    anual: { label: "Anual", color: "#22c55e" },
-    ilimitado: { label: "Ilimitado", color: "#e040fb" },
+    mensual: { label: "Mensual", color: "var(--col-accent)" },
+    trimestral: { label: "Trimestral", color: "var(--col-info)" },
+    semestral: { label: "Semestral", color: "var(--col-warning)" },
+    anual: { label: "Anual", color: "var(--col-success)" },
+    ilimitado: { label: "Ilimitado", color: "var(--col-accent)" },
   };
-  const cfg = map[ciclo] || { label: ciclo, color: "#6b7280" };
+  const cfg = map[ciclo] || { label: ciclo, color: "var(--text-secondary)" };
   return (
     <span style={{
       fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em",
@@ -272,8 +272,8 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig, clases }) {
         <div style={{
           position: "absolute", top: 10, left: 12,
           width: 8, height: 8, borderRadius: "50%",
-          background: plan.activo ? "#22c55e" : "#f43f5e",
-          boxShadow: `0 0 6px ${plan.activo ? "#22c55e" : "#f43f5e"}`,
+          background: plan.activo ? "var(--col-success)" : "var(--col-danger)",
+          boxShadow: `0 0 6px ${plan.activo ? "var(--col-success)" : "var(--col-danger)"}`,
         }} />
       </div>
 
@@ -322,7 +322,7 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig, clases }) {
         {plan.costo_operativo > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 12, color: C.textMut }}>Costo operativo</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#22c55e" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--col-success)" }}>
               ${Number(plan.costo_operativo).toLocaleString()}
             </span>
           </div>
@@ -336,11 +336,11 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig, clases }) {
               {clasesVinculadas.map(c => (
                 <span key={c.id} style={{
                   fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 6,
-                  background: `${c.color || "#6c63ff"}18`, color: c.color || "#6c63ff",
-                  border: `1px solid ${c.color || "#6c63ff"}30`,
+                  background: `${c.color || "var(--col-accent)"}18`, color: c.color || "var(--col-accent)",
+                  border: `1px solid ${c.color || "var(--col-accent)"}30`,
                   display: "flex", alignItems: "center", gap: 4,
                 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.color || "#6c63ff", flexShrink: 0 }} />
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.color || "var(--col-accent)", flexShrink: 0 }} />
                   {c.nombre}
                 </span>
               ))}
@@ -355,7 +355,7 @@ function PlanCard({ plan, politica, onEdit, onDelete, gymConfig, clases }) {
           </Btn>
           {!confirmDel
             ? <button onClick={() => setConfirmDel(true)}
-                style={{ border: "none", background: "rgba(244,63,94,.12)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", color: C.red, display: "flex", alignItems: "center" }}>
+                style={{ border: "none", background: "var(--col-danger-soft)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", color: C.red, display: "flex", alignItems: "center" }}>
                 {IC.trash}
               </button>
             : <button onClick={() => onDelete(plan.id)}
@@ -883,7 +883,7 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
       {toast && (
         <div style={{
           position: "fixed", bottom: 30, right: 30, zIndex: 999,
-          background: toast.type === "warn" ? C.yellow : "#22c55e",
+          background: toast.type === "warn" ? C.yellow : "var(--col-success)",
           color: "#000", padding: "10px 20px", borderRadius: 12,
           fontWeight: 700, fontSize: 14, boxShadow: "0 8px 32px rgba(0,0,0,.4)",
           animation: "slideIn .3s ease",
@@ -912,8 +912,8 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
         {[
           { label: "Planes Activos",    value: planesActivos,   icon: IC.card,    color: C.accent },
-          { label: "Costo Promedio",    value: `$${costoPromedio.toLocaleString()}`, icon: "💲", color: "#22d3ee" },
-          { label: "Sucursales",        value: sucursales.length || 1,             icon: "📍", color: "#22c55e" },
+          { label: "Costo Promedio",    value: `$${costoPromedio.toLocaleString()}`, icon: "💲", color: "var(--col-info)" },
+          { label: "Sucursales",        value: sucursales.length || 1,             icon: "📍", color: "var(--col-success)" },
           { label: "Planes Ilimitados", value: planesIlimitados,                   icon: IC.infinite, color: C.accent2 },
         ].map((m, i) => (
           <div key={i} style={{ background: C.bgCard, borderRadius: 14, border: `1px solid ${C.border}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -945,7 +945,7 @@ export default function MembresiasScreen({ gymId, gymConfig, miembros, txs, isOw
         {/* Chips ciclo */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {[["todos", "Todos ciclos"], ...CICLOS.map(c => [c.value, c.label])].map(([v, l]) => (
-            <button key={v} style={chipStyle(filtroCiclo === v, "#22d3ee")} onClick={() => setFiltroCiclo(v)}>{l}</button>
+            <button key={v} style={chipStyle(filtroCiclo === v, "var(--col-info)")} onClick={() => setFiltroCiclo(v)}>{l}</button>
           ))}
         </div>
       </div>

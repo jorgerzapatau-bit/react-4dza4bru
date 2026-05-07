@@ -126,7 +126,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
       });
     } catch {}
   } else {
-    ctx.fillStyle = "#1a1a2e";
+    ctx.fillStyle = "var(--bg-base)";
     ctx.beginPath();
     ctx.arc(logoX + LOGO_SIZE/2, logoY + LOGO_SIZE/2, LOGO_SIZE/2, 0, Math.PI*2);
     ctx.fill();
@@ -139,7 +139,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
   }
 
   // Gym name
-  ctx.fillStyle = "#111";
+  ctx.fillStyle = "var(--bg-card)";
   ctx.font = "bold 17px Georgia, serif";
   ctx.textAlign = "center";
   ctx.fillText(nombre.toUpperCase(), W/2, 32);
@@ -151,7 +151,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
 
   // Tel
   if (tel) {
-    ctx.fillStyle = "#333";
+    ctx.fillStyle = "var(--border-strong)";
     ctx.font = "12px Arial, sans-serif";
     ctx.fillText(`Whatsapp ${tel}`, W/2, 70);
   }
@@ -171,7 +171,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
   ctx.stroke();
 
   // Right logo (fitzone/fi.t)
-  ctx.fillStyle = "#1a1a2e";
+  ctx.fillStyle = "var(--bg-base)";
   ctx.beginPath();
   ctx.roundRect(W-90, 18, 70, 35, 6);
   ctx.fill();
@@ -200,7 +200,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
       ctx.fillText(row.value, W/2, y + ROW_H - 10);
       ctx.textAlign = "left";
     } else if (row.big) {
-      ctx.fillStyle = "#111";
+      ctx.fillStyle = "var(--bg-card)";
       ctx.font = "bold 16px Arial";
       ctx.textAlign = "center";
       ctx.fillText(row.value, W/2, y + ROW_H - 8);
@@ -209,7 +209,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
       ctx.fillStyle = "#555";
       ctx.font = "12px Arial";
       ctx.fillText(row.label, 20, y + ROW_H - 10);
-      ctx.fillStyle = "#111";
+      ctx.fillStyle = "var(--bg-card)";
       ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
       ctx.textAlign = "right";
       ctx.fillText(row.value, W - 20, y + ROW_H - 10);
@@ -226,11 +226,11 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
 
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = "var(--bg-card)";
     ctx.font = "bold 12px Arial";
     ctx.fillText("PARA TRANSFERENCIAS:", 20, y + 18);
     ctx.font = "12px Arial";
-    ctx.fillStyle = "#333";
+    ctx.fillStyle = "var(--border-strong)";
     ctx.fillText(`CLABE:  ${gym.transferencia_clabe}`, 20, y + 36);
     ctx.fillText(`Beneficiario:  ${gym.transferencia_titular || "—"}`, 20, y + 52);
     if (gym.transferencia_banco) {
@@ -246,7 +246,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
 
-  ctx.fillStyle = "#333";
+  ctx.fillStyle = "var(--border-strong)";
   ctx.font = "11px Arial";
   ctx.textAlign = "center";
   const footerText = "Favor de enviar comprobante de transferencia al número de";
@@ -267,7 +267,7 @@ const S = {
   sheet: {
     width: "100%", maxWidth: 520,
     maxHeight: "96vh",
-    background: "var(--bg-card, #12121f)",
+    background: "var(--bg-card, var(--bg-base))",
     borderRadius: "22px 22px 0 0",
     display: "flex", flexDirection: "column",
     overflow: "hidden",
@@ -283,22 +283,22 @@ const S = {
   footer: {
     padding: "12px 20px 20px",
     flexShrink: 0,
-    borderTop: "1px solid var(--border, #2a2a3e)",
+    borderTop: "1px solid var(--border, var(--bg-elevated))",
   },
   inp: {
     width: "100%",
-    background: "var(--bg-elevated, #1e1e2e)",
-    border: "1px solid var(--border-strong, #2e2e42)",
+    background: "var(--bg-elevated, var(--bg-elevated))",
+    border: "1px solid var(--border-strong, var(--bg-elevated))",
     borderRadius: 12,
     padding: "12px 14px",
-    color: "var(--text-primary, #e8e8f0)",
+    color: "var(--text-primary, var(--text-primary))",
     fontSize: 13,
     fontFamily: "inherit",
     outline: "none",
     boxSizing: "border-box",
   },
   label: {
-    color: "var(--text-tertiary, #6b6b8a)",
+    color: "var(--text-tertiary, var(--text-secondary))",
     fontSize: 11,
     fontWeight: 600,
     textTransform: "uppercase",
@@ -311,7 +311,7 @@ const S = {
     flex: 1,
     padding: "14px",
     border: "none", borderRadius: 14,
-    background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+    background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
     color: "#fff", fontSize: 14, fontWeight: 700,
     cursor: "pointer", fontFamily: "inherit",
     boxShadow: "0 4px 18px rgba(108,99,255,.35)",
@@ -320,10 +320,10 @@ const S = {
   btnSecondary: {
     flex: 1,
     padding: "14px",
-    border: "1.5px solid var(--border-strong, #2e2e42)",
+    border: "1.5px solid var(--border-strong, var(--bg-elevated))",
     borderRadius: 14,
-    background: "var(--bg-elevated, #1e1e2e)",
-    color: "var(--text-primary, #e8e8f0)",
+    background: "var(--bg-elevated, var(--bg-elevated))",
+    color: "var(--text-primary, var(--text-primary))",
     fontSize: 14, fontWeight: 600,
     cursor: "pointer", fontFamily: "inherit",
     transition: "all .2s",
@@ -345,10 +345,10 @@ function ProgressBar({ step, total = 3, labels }) {
                 width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontWeight: 700, fontSize: 12,
-                background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#1e1e2e)",
-                color: done || active ? "#fff" : "var(--text-tertiary,#6b6b8a)",
-                border: active ? "none" : done ? "none" : "1.5px solid var(--border-strong,#2e2e42)",
-                boxShadow: active ? "0 0 0 3px rgba(108,99,255,.25)" : "none",
+                background: done ? "var(--col-success)" : active ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated,var(--bg-elevated))",
+                color: done || active ? "#fff" : "var(--text-tertiary,var(--text-secondary))",
+                border: active ? "none" : done ? "none" : "1.5px solid var(--border-strong,var(--bg-elevated))",
+                boxShadow: active ? "0 0 0 3px var(--col-accent-soft)" : "none",
                 transition: "all .3s",
               }}>
                 {done ? "✓" : idx}
@@ -356,7 +356,7 @@ function ProgressBar({ step, total = 3, labels }) {
               {i < total - 1 && (
                 <div style={{
                   flex: 1, height: 2,
-                  background: done ? "#4ade80" : "var(--border-strong,#2e2e42)",
+                  background: done ? "var(--col-success)" : "var(--border-strong,var(--bg-elevated))",
                   margin: "0 2px",
                   transition: "background .3s",
                 }} />
@@ -370,7 +370,7 @@ function ProgressBar({ step, total = 3, labels }) {
           <p key={i} style={{
             flex: 1, textAlign: i === 0 ? "left" : i === labels.length-1 ? "right" : "center",
             fontSize: 10, fontWeight: step === i+1 ? 700 : 400,
-            color: step === i+1 ? "var(--text-primary,#e8e8f0)" : "var(--text-tertiary,#6b6b8a)",
+            color: step === i+1 ? "var(--text-primary,var(--text-primary))" : "var(--text-tertiary,var(--text-secondary))",
             transition: "color .3s",
           }}>{l}</p>
         ))}
@@ -412,10 +412,10 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
           onClick={() => setShowFotoModal(true)}
           style={{
             width: 80, height: 80, borderRadius: "50%",
-            background: "linear-gradient(135deg,#6c63ff33,#e040fb33)",
+            background: "linear-gradient(135deg,var(--col-accent)33,var(--col-accent)33)",
             display: "flex", alignItems: "center", justifyContent: "center",
             cursor: "pointer", overflow: "hidden", marginBottom: 6,
-            border: fM.foto ? "2.5px solid #6c63ff" : "2px dashed rgba(167,139,250,.4)",
+            border: fM.foto ? "2.5px solid var(--col-accent)" : "2px dashed rgba(167,139,250,.4)",
             transition: "border .2s",
           }}
         >
@@ -424,7 +424,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
             : <span style={{ fontSize: 30 }}>📷</span>
           }
         </div>
-        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11 }}>
+        <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11 }}>
           {fM.foto ? "Toca para cambiar foto" : "Toca para agregar foto"}
         </p>
       </div>
@@ -444,10 +444,10 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
                 onClick={() => setFM(p => ({ ...p, sexo: op }))}
                 style={{
                   flex: 1, padding: "11px 8px",
-                  border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                  border: sel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
                   borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                  background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
-                  color: sel ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+                  background: sel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
+                  color: sel ? "var(--col-accent-text)" : "var(--text-secondary,var(--text-tertiary))",
                   fontSize: 13, fontWeight: sel ? 700 : 400,
                   transition: "all .15s",
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
@@ -470,7 +470,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
           style={S.inp}
         />
         {edad !== null && (
-          <p style={{ fontSize: 11, marginTop: 4, color: esMenor ? "#fbbf24" : "var(--text-tertiary,#6b6b8a)" }}>
+          <p style={{ fontSize: 11, marginTop: 4, color: esMenor ? "var(--col-warning)" : "var(--text-tertiary,var(--text-secondary))" }}>
             {esMenor ? `⚠️ ${edad} años — menor de edad` : `${edad} años`}
           </p>
         )}
@@ -509,7 +509,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
       {/* ── DOJO: Grado inicial (solo si es dojo) ── */}
       {isDojo && (
         <div style={{ marginBottom: 12 }}>
-          <p style={{ color: "#8b949e", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
             🥋 Cinturón inicial
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
@@ -521,13 +521,13 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
                   onClick={() => setFM(p => ({ ...p, grado_actual: active ? "" : g.nombre }))}
                   style={{
                     padding: "8px 4px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
-                    border: active ? `2px solid ${g.kyu < 0 ? "#a78bfa" : g.color}` : "1.5px solid rgba(255,255,255,.08)",
+                    border: active ? `2px solid ${g.kyu < 0 ? "var(--col-accent-text)" : g.color}` : "1.5px solid rgba(255,255,255,.08)",
                     background: active ? `${g.color}22` : "var(--bg-elevated)",
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
                   }}
                 >
                   <span style={{ fontSize: 14 }}>{g.emoji}</span>
-                  <span style={{ fontSize: 9, color: active ? "#e5e7eb" : "#6b7280", fontWeight: active ? 700 : 400, textAlign: "center", lineHeight: 1.3 }}>
+                  <span style={{ fontSize: 9, color: active ? "var(--border)" : "var(--text-secondary)", fontWeight: active ? 700 : 400, textAlign: "center", lineHeight: 1.3 }}>
                     {g.nombre.split(" ")[0]}
                   </span>
                 </button>
@@ -535,7 +535,7 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
             })}
           </div>
           {!fM.grado_actual && (
-            <p style={{ color: "#6b7280", fontSize: 10, marginTop: 6 }}>Opcional — puedes asignarlo después desde el perfil</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 6 }}>Opcional — puedes asignarlo después desde el perfil</p>
           )}
         </div>
       )}
@@ -554,15 +554,15 @@ function Step1({ fM, setFM, onPhoto, showFotoModal, setShowFotoModal, PhotoModal
       >
         <div style={{
           width: 22, height: 22, borderRadius: 7, flexShrink: 0,
-          border: `2px solid ${fM.beca ? "#fbbf24" : "rgba(255,255,255,.2)"}`,
-          background: fM.beca ? "#fbbf24" : "transparent",
+          border: `2px solid ${fM.beca ? "var(--col-warning)" : "rgba(255,255,255,.2)"}`,
+          background: fM.beca ? "var(--col-warning)" : "transparent",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          {fM.beca && <span style={{ color: "#1a1a2e", fontSize: 13, fontWeight: 700 }}>✓</span>}
+          {fM.beca && <span style={{ color: "var(--bg-base)", fontSize: 13, fontWeight: 700 }}>✓</span>}
         </div>
         <div>
-          <p style={{ color: fM.beca ? "#fbbf24" : "#d1d5db", fontSize: 13, fontWeight: 600 }}>🎓 Becario — Membresía sin costo</p>
-          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>El pago se registrará como $0 y se saltará el paso de cobro</p>
+          <p style={{ color: fM.beca ? "var(--col-warning)" : "var(--border-strong)", fontSize: 13, fontWeight: 600 }}>🎓 Becario — Membresía sin costo</p>
+          <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 2 }}>El pago se registrará como $0 y se saltará el paso de cobro</p>
         </div>
       </button>
     </div>
@@ -682,7 +682,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
       <div>
         {/* ── Sección: Planes del Gimnasio ── */}
         {gymPlanes.length > 0 && (
-          <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
+          <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>
             🏋️ Membresía del Gimnasio
           </p>
         )}
@@ -702,30 +702,30 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
               }))}
               style={{
                 width:"100%", padding:"12px 16px", marginBottom:8,
-                border: isSel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
+                border: isSel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
                 borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                background: isSel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                background: isSel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
                 display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left",
               }}>
               <div style={{ width:40, height:40, borderRadius:12, flexShrink:0,
-                background: isSel ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.05)",
+                background: isSel ? "var(--col-accent-border)" : "rgba(255,255,255,.05)",
                 display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>
                 {meses>=12?"🏆":meses>=6?"🔥":meses>=3?"⚡":"📅"}
               </div>
               <div style={{ flex:1, minWidth:0 }}>
-                <p style={{ color: isSel?"#a78bfa":"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>{plan.nombre}</p>
-                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>Vigencia: {meses} {meses===1?"mes":"meses"}</p>
+                <p style={{ color: isSel?"var(--col-accent-text)":"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:13 }}>{plan.nombre}</p>
+                <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, marginTop:1 }}>Vigencia: {meses} {meses===1?"mes":"meses"}</p>
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>
                 {precio > 0 ? (
                   <>
-                    <p style={{ background: isSel?"rgba(108,99,255,.2)":"rgba(255,255,255,.07)", color: isSel?"#a78bfa":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
-                      {fM.beca&&isSel ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                    <p style={{ background: isSel?"var(--col-accent-border)":"rgba(255,255,255,.07)", color: isSel?"var(--col-accent-text)":"var(--text-secondary,var(--text-tertiary))", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                      {fM.beca&&isSel ? <span style={{ color:"var(--col-success)" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
                     </p>
-                    {!fM.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                    {!fM.beca && <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
                   </>
                 ) : (
-                  <p style={{ background:"rgba(74,222,128,.1)", color:"#4ade80", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Gratuito</p>
+                  <p style={{ background:"rgba(74,222,128,.1)", color:"var(--col-success)", borderRadius:10, padding:"3px 10px", fontSize:12, fontWeight:700 }}>Gratuito</p>
                 )}
               </div>
             </button>
@@ -737,7 +737,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
           <>
             <div style={{ display:"flex", alignItems:"center", gap:8, margin:"14px 0 8px" }}>
               <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
-              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
+              <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, flexShrink:0 }}>
                 🗓️ Clases (selección múltiple)
               </p>
               <div style={{ flex:1, height:1, background:"rgba(255,255,255,.07)" }} />
@@ -764,31 +764,31 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
                 <button key={clase.id} onClick={() => toggleClase(clase)}
                   style={{
                     width:"100%", padding:"12px 16px", marginBottom:8,
-                    border: isSel ? "2px solid #22d3ee" : "1.5px solid var(--border-strong,#2e2e42)",
+                    border: isSel ? "2px solid var(--col-info)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
                     borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                    background: isSel ? "rgba(34,211,238,.1)" : "var(--bg-elevated,#1e1e2e)",
+                    background: isSel ? "var(--col-info-soft)" : "var(--bg-elevated,var(--bg-elevated))",
                     display:"flex", alignItems:"center", gap:12, transition:"all .2s", textAlign:"left",
                   }}>
                   {/* Checkbox visual */}
                   <div style={{ width:22, height:22, borderRadius:7, flexShrink:0,
                     border: isSel ? "none" : "2px solid rgba(255,255,255,.2)",
-                    background: isSel ? "#22d3ee" : "transparent",
+                    background: isSel ? "var(--col-info)" : "transparent",
                     display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>
                     {isSel && "✓"}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ color: isSel?"#22d3ee":"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
+                    <p style={{ color: isSel?"var(--col-info)":"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:13 }}>{clase.nombre}</p>
                     {(diasStr || horaStr) && (
-                      <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>
+                      <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, marginTop:1 }}>
                         {horaStr && `🕐 ${horaStr}`}{diasStr && `  ${diasStr}`}
                       </p>
                     )}
                   </div>
                   <div style={{ textAlign:"right", flexShrink:0 }}>
-                    <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"#22d3ee":"var(--text-secondary,#9999b3)", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
-                      {fM.beca ? <span style={{ color:"#4ade80" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
+                    <p style={{ background: isSel?"rgba(34,211,238,.2)":"rgba(255,255,255,.07)", color: isSel?"var(--col-info)":"var(--text-secondary,var(--text-tertiary))", borderRadius:10, padding:"3px 10px", fontSize:13, fontWeight:700 }}>
+                      {fM.beca ? <span style={{ color:"var(--col-success)" }}>$0</span> : `$${precio.toLocaleString("es-MX")}`}
                     </p>
-                    {!fM.beca && <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
+                    {!fM.beca && <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:10, marginTop:2 }}>/ {CICLO_LBL[ciclo]||ciclo}</p>}
                   </div>
                 </button>
               );
@@ -798,26 +798,26 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
 
         {/* Monto editable si hay plan principal y no es beca */}
         {fM.plan && !fM.beca && (
-          <div style={{ marginTop:8, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14 }}>
-            <label style={{ color:"#a78bfa", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6, display:"block" }}>
+          <div style={{ marginTop:8, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid var(--col-accent-border)", borderRadius:14 }}>
+            <label style={{ color:"var(--col-accent-text)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:6, display:"block" }}>
               💰 Monto membresía gym (editable)
             </label>
             <input type="number" value={fM.monto||""} min="0"
               onChange={e => setFM(p => ({ ...p, monto:e.target.value }))}
               placeholder="0" inputMode="numeric"
-              style={{ width:"100%", background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary,#e8e8f0)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+              style={{ width:"100%", background:"var(--bg-elevated,var(--bg-elevated))", border:"1px solid var(--border-strong,var(--bg-elevated))", borderRadius:12, padding:"10px 14px", color:"var(--text-primary,var(--text-primary))", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
           </div>
         )}
 
         {/* Montos editables de clases seleccionadas */}
         {(fM.planesExtra||[]).length > 0 && !fM.beca && (
           <div style={{ marginTop:8, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.25)", borderRadius:14 }}>
-            <label style={{ color:"#22d3ee", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
+            <label style={{ color:"var(--col-info)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8, display:"block" }}>
               🗓️ Monto clases (editable)
             </label>
             {(fM.planesExtra||[]).map(pe => (
               <div key={pe.id} style={{ marginBottom:8 }}>
-                <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
+                <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, marginBottom:4 }}>{pe.nombre}</p>
                 <input type="number" value={pe.monto||""} min="0"
                   onChange={e => setFM(p => ({
                     ...p,
@@ -826,7 +826,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
                     )
                   }))}
                   placeholder="0" inputMode="numeric"
-                  style={{ width:"100%", background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)", borderRadius:12, padding:"10px 14px", color:"var(--text-primary,#e8e8f0)", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", background:"var(--bg-elevated,var(--bg-elevated))", border:"1px solid var(--border-strong,var(--bg-elevated))", borderRadius:12, padding:"10px 14px", color:"var(--text-primary,var(--text-primary))", fontSize:14, fontFamily:"'DM Mono',monospace", fontWeight:700, outline:"none", boxSizing:"border-box" }} />
               </div>
             ))}
           </div>
@@ -835,22 +835,22 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
         {/* Resumen de selección múltiple */}
         {haySeleccion && (fM.planesExtra||[]).length > 0 && !fM.beca && (
           <div style={{ marginTop:10, padding:"12px 14px", background:"rgba(34,211,238,.06)", border:"1px solid rgba(34,211,238,.2)", borderRadius:14 }}>
-            <p style={{ color:"#8b949e", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
+            <p style={{ color:"var(--text-secondary)", fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>Resumen de cobro</p>
             {fM.plan && (
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12 }}>🏋️ {fM.plan}</span>
-                <span style={{ color:"#a78bfa", fontSize:12, fontWeight:700 }}>${Number(fM.monto||0).toLocaleString("es-MX")}</span>
+                <span style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:12 }}>🏋️ {fM.plan}</span>
+                <span style={{ color:"var(--col-accent-text)", fontSize:12, fontWeight:700 }}>${Number(fM.monto||0).toLocaleString("es-MX")}</span>
               </div>
             )}
             {(fM.planesExtra||[]).map(pe => (
               <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                <span style={{ color:"var(--text-secondary,#9999b3)", fontSize:12 }}>🗓️ {pe.nombre}</span>
-                <span style={{ color:"#22d3ee", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+                <span style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:12 }}>🗓️ {pe.nombre}</span>
+                <span style={{ color:"var(--col-info)", fontSize:12, fontWeight:700 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
               </div>
             ))}
             <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:8, paddingTop:8, display:"flex", justifyContent:"space-between" }}>
-              <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:13, fontWeight:700 }}>Total</span>
-              <span style={{ color:"#4ade80", fontSize:14, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${totalMonto.toLocaleString("es-MX")}</span>
+              <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:13, fontWeight:700 }}>Total</span>
+              <span style={{ color:"var(--col-success)", fontSize:14, fontWeight:700, fontFamily:"'DM Mono',monospace" }}>${totalMonto.toLocaleString("es-MX")}</span>
             </div>
           </div>
         )}
@@ -859,7 +859,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
         {fM.beca && (
           <div style={{ marginTop:10, padding:"10px 14px", background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.3)", borderRadius:12, display:"flex", gap:8, alignItems:"center" }}>
             <span style={{ fontSize:16 }}>🎓</span>
-            <p style={{ color:"#fbbf24", fontSize:11 }}>Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.</p>
+            <p style={{ color:"var(--col-warning)", fontSize:11 }}>Miembro becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.</p>
           </div>
         )}
 
@@ -879,7 +879,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
           background: "rgba(251,191,36,.09)", border: "1px solid rgba(251,191,36,.28)", borderRadius: 12,
         }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>👶</span>
-          <p style={{ color: "#fbbf24", fontSize: 12, lineHeight: 1.4 }}>
+          <p style={{ color: "var(--col-warning)", fontSize: 12, lineHeight: 1.4 }}>
             <strong>Menor de edad ({edad} años)</strong> — las clases incompatibles con su rango de edad aparecen deshabilitadas.
           </p>
         </div>
@@ -896,9 +896,9 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
           width: "100%", padding: "14px 16px", marginBottom: 10,
           border: !fM.claseId
             ? "2px solid rgba(167,139,250,.5)"
-            : "1.5px solid var(--border-strong,#2e2e42)",
+            : "1.5px solid var(--border-strong,var(--bg-elevated))",
           borderRadius: 14, cursor: "pointer", fontFamily: "inherit",
-          background: !fM.claseId ? "rgba(167,139,250,.07)" : "var(--bg-elevated,#1e1e2e)",
+          background: !fM.claseId ? "rgba(167,139,250,.07)" : "var(--bg-elevated,var(--bg-elevated))",
           display: "flex", alignItems: "center", gap: 12, transition: "all .2s", textAlign: "left",
         }}
       >
@@ -909,14 +909,14 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
         }}>⏸️</div>
         <div style={{ flex: 1 }}>
           <p style={{
-            color: !fM.claseId ? "#c4b5fd" : "var(--text-secondary,#9999b3)",
+            color: !fM.claseId ? "var(--col-accent-text)" : "var(--text-secondary,var(--text-tertiary))",
             fontWeight: !fM.claseId ? 700 : 500, fontSize: 14,
           }}>Sin clase por ahora</p>
-          <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
+          <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 2 }}>
             Se puede asignar después desde el perfil
           </p>
         </div>
-        {!fM.claseId && <span style={{ color: "#a78bfa", fontSize: 18 }}>✓</span>}
+        {!fM.claseId && <span style={{ color: "var(--col-accent-text)", fontSize: 18 }}>✓</span>}
       </button>
 
       {/* ── Lista de clases (= opciones de membresía) ── */}
@@ -928,8 +928,8 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
         }}>
           <span style={{ fontSize: 20 }}>⚠️</span>
           <div>
-            <p style={{ color: "#fbbf24", fontSize: 13, fontWeight: 700 }}>No hay clases activas</p>
-            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 12, marginTop: 4 }}>
+            <p style={{ color: "var(--col-warning)", fontSize: 13, fontWeight: 700 }}>No hay clases activas</p>
+            <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 12, marginTop: 4 }}>
               Ve a Gestión de Clases para crear clases antes de registrar alumnos.
             </p>
           </div>
@@ -938,7 +938,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
         clasesActivas.map(c => {
           const isSel    = fM.claseId === c.id;
           const { precio, ciclo, meses, planNombre } = resolverPrecio(c);
-          const color    = c.color || "#6c63ff";
+          const color    = c.color || "var(--col-accent)";
           const { apto, warning } = ageCheck(c);
           const horas    = horariosDeClase(c.id);
 
@@ -968,14 +968,14 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
                   ? `2px solid ${color}`
                   : !apto
                   ? "1.5px solid rgba(248,113,113,.18)"
-                  : "1.5px solid var(--border-strong,#2e2e42)",
+                  : "1.5px solid var(--border-strong,var(--bg-elevated))",
                 borderRadius: 14,
                 cursor: apto ? "pointer" : "not-allowed",
                 opacity: !apto ? 0.5 : 1,
                 fontFamily: "inherit",
                 background: isSel
                   ? `${color}18`
-                  : !apto ? "rgba(248,113,113,.03)" : "var(--bg-elevated,#1e1e2e)",
+                  : !apto ? "rgba(248,113,113,.03)" : "var(--bg-elevated,var(--bg-elevated))",
                 display: "flex", alignItems: "center", gap: 12,
                 transition: "all .2s", textAlign: "left",
               }}
@@ -992,7 +992,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  color: isSel ? color : "var(--text-primary,#e8e8f0)",
+                  color: isSel ? color : "var(--text-primary,var(--text-primary))",
                   fontWeight: 700, fontSize: 14,
                 }}>
                   {c.nombre}
@@ -1000,7 +1000,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
 
                 {/* Horarios de esta clase */}
                 {horas.length > 0 && (
-                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 2 }}>
+                  <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 2 }}>
                     🕐 {fmtHora(horas[0].hora_inicio)} – {fmtHora(horas[0].hora_fin)}
                     {(horas[0].dias_semana || []).length > 0 && (
                       <span style={{ marginLeft: 4 }}>
@@ -1008,26 +1008,26 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
                       </span>
                     )}
                     {horas.length > 1 && (
-                      <span style={{ marginLeft: 4, color: "#6b7280" }}>+{horas.length - 1} horarios</span>
+                      <span style={{ marginLeft: 4, color: "var(--text-secondary)" }}>+{horas.length - 1} horarios</span>
                     )}
                   </p>
                 )}
 
                 {/* Rango de edad configurado */}
                 {((c.edad_min ?? 0) > 0 || (c.edad_max ?? 99) < 99) && (
-                  <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 2 }}>
+                  <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 10, marginTop: 2 }}>
                     👤 {c.edad_min ?? 0}–{c.edad_max ?? 99} años
                   </p>
                 )}
 
                 {/* Warning de edad incompatible */}
                 {warning && (
-                  <p style={{ color: "#f87171", fontSize: 11, marginTop: 3 }}>⚠️ {warning}</p>
+                  <p style={{ color: "var(--col-danger)", fontSize: 11, marginTop: 3 }}>⚠️ {warning}</p>
                 )}
 
                 {/* Beca seleccionada */}
                 {fM.beca && isSel && (
-                  <p style={{ color: "#4ade80", fontSize: 11, marginTop: 3 }}>🎓 Beca — sin costo</p>
+                  <p style={{ color: "var(--col-success)", fontSize: 11, marginTop: 3 }}>🎓 Beca — sin costo</p>
                 )}
               </div>
 
@@ -1037,23 +1037,23 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
                   <>
                     <p style={{
                       background: isSel ? `${color}28` : "rgba(255,255,255,.07)",
-                      color: isSel ? color : "var(--text-secondary,#9999b3)",
+                      color: isSel ? color : "var(--text-secondary,var(--text-tertiary))",
                       borderRadius: 10, padding: "4px 12px",
                       fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace",
                     }}>
                       {fM.beca && isSel
-                        ? <span style={{ color: "#4ade80" }}>$0</span>
+                        ? <span style={{ color: "var(--col-success)" }}>$0</span>
                         : `$${precio.toLocaleString("es-MX")}`}
                     </p>
                     {!fM.beca && (
-                      <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 10, marginTop: 3 }}>
+                      <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 10, marginTop: 3 }}>
                         / {CICLO_LABEL[ciclo] || ciclo}
                       </p>
                     )}
                   </>
                 ) : (
                   <p style={{
-                    background: "rgba(74,222,128,.1)", color: "#4ade80",
+                    background: "rgba(74,222,128,.1)", color: "var(--col-success)",
                     borderRadius: 10, padding: "4px 12px", fontSize: 12, fontWeight: 700,
                   }}>
                     Gratuita
@@ -1069,10 +1069,10 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
       {fM.claseId && !fM.beca && (
         <div style={{
           marginTop: 8, padding: "14px",
-          background: "rgba(108,99,255,.07)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14,
+          background: "rgba(108,99,255,.07)", border: "1px solid var(--col-accent-border)", borderRadius: 14,
         }}>
           <label style={{
-            color: "#a78bfa", fontSize: 11, fontWeight: 600,
+            color: "var(--col-accent-text)", fontSize: 11, fontWeight: 600,
             textTransform: "uppercase", letterSpacing: .5, marginBottom: 6, display: "block",
           }}>
             💰 Monto a cobrar (editable)
@@ -1082,9 +1082,9 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
             onChange={e => setFM(p => ({ ...p, monto: e.target.value }))}
             placeholder="0" inputMode="numeric"
             style={{
-              width: "100%", background: "var(--bg-elevated,#1e1e2e)",
-              border: "1px solid var(--border-strong,#2e2e42)", borderRadius: 12,
-              padding: "12px 14px", color: "var(--text-primary,#e8e8f0)",
+              width: "100%", background: "var(--bg-elevated,var(--bg-elevated))",
+              border: "1px solid var(--border-strong,var(--bg-elevated))", borderRadius: 12,
+              padding: "12px 14px", color: "var(--text-primary,var(--text-primary))",
               fontSize: 15, fontFamily: "'DM Mono',monospace",
               fontWeight: 700, outline: "none", boxSizing: "border-box",
             }}
@@ -1100,7 +1100,7 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
           display: "flex", gap: 8, alignItems: "center",
         }}>
           <span style={{ fontSize: 16 }}>🎓</span>
-          <p style={{ color: "#fbbf24", fontSize: 11 }}>
+          <p style={{ color: "var(--col-warning)", fontSize: 11 }}>
             Alumno becario — el cobro será <strong>$0</strong>. Se saltará el paso de pago.
           </p>
         </div>
@@ -1109,10 +1109,10 @@ function Step2({ fM, setFM, clases, horarios, planesMembresia, isDojo, activePla
       {/* Nota pie */}
       {!fM.claseId && clasesActivas.length > 0 && (
         <p style={{
-          color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, textAlign: "center",
+          color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, textAlign: "center",
           marginTop: 14, lineHeight: 1.5,
         }}>
-          Si no seleccionas clase, el alumno se registrará <strong style={{ color: "var(--text-secondary,#9999b3)" }}>sin membresía</strong> y podrás asignarla después.
+          Si no seleccionas clase, el alumno se registrará <strong style={{ color: "var(--text-secondary,var(--text-tertiary))" }}>sin membresía</strong> y podrás asignarla después.
         </p>
       )}
     </div>
@@ -1143,7 +1143,7 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
   const ctx = canvas.getContext("2d");
 
   // Fondo blanco
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "var(--text-inverse)";
   ctx.fillRect(0, 0, W, H);
 
   // Header degradado suave morado
@@ -1154,7 +1154,7 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
   ctx.fillRect(0, 0, W, HEADER_H);
 
   // Línea inferior del header
-  ctx.fillStyle = "#c4b5fd";
+  ctx.fillStyle = "var(--col-accent-text)";
   ctx.fillRect(0, HEADER_H - 2, W, 2);
 
   // Emoji dojo + texto header
@@ -1168,7 +1168,7 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
   const qrX = (W - QR_SIZE) / 2;
   const qrY = HEADER_H + QR_PAD;
   ctx.fillStyle = "#f8f8f8";
-  ctx.strokeStyle = "#e5e7eb";
+  ctx.strokeStyle = "var(--border)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.roundRect(qrX - 10, qrY - 10, QR_SIZE + 20, QR_SIZE + 20, 14);
@@ -1183,27 +1183,27 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
       img.src = qrDataUrl;
     });
   } else {
-    ctx.fillStyle = "#d1d5db";
+    ctx.fillStyle = "var(--border-strong)";
     ctx.fillRect(qrX, qrY, QR_SIZE, QR_SIZE);
-    ctx.fillStyle = "#6b7280"; ctx.font = "14px Arial"; ctx.textAlign = "center";
+    ctx.fillStyle = "var(--text-secondary)"; ctx.font = "14px Arial"; ctx.textAlign = "center";
     ctx.fillText("QR no disponible", W/2, qrY + QR_SIZE/2);
   }
 
   // Footer: nombre, código acceso
   const footerY = qrY + QR_SIZE + QR_PAD + 14;
-  ctx.fillStyle = "#111827";
+  ctx.fillStyle = "var(--bg-card)";
   ctx.font = "bold 18px Georgia, serif";
   ctx.textAlign = "center";
   ctx.fillText(miembro.nombre || "—", W / 2, footerY);
 
-  ctx.fillStyle = "#9ca3af";
+  ctx.fillStyle = "var(--text-secondary)";
   ctx.font = "10px Arial";
   ctx.letterSpacing = "1.5px";
   ctx.fillText("CÓDIGO DE ACCESO", W / 2, footerY + 22);
 
   // Badge código
   const codigo = codigoAcceso || "—";
-  ctx.fillStyle = "#10b981";
+  ctx.fillStyle = "var(--col-success)";
   ctx.font = "bold 16px 'Courier New', monospace";
   ctx.letterSpacing = "2px";
   ctx.fillText("● " + codigo, W / 2, footerY + 46);
@@ -1268,10 +1268,10 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "var(--text-inverse)"; ctx.fillRect(0, 0, W, H);
   // Header bg
-  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
-  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.fillStyle = "var(--bg-elevated)"; ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, HEADER_H); ctx.lineTo(W, HEADER_H); ctx.stroke();
 
   // Logo
@@ -1287,7 +1287,7 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
       img.onerror = res; img.src = gym.logo;
     });
   } else {
-    ctx.fillStyle = "#1e1b4b";
+    ctx.fillStyle = "var(--bg-card)";
     ctx.beginPath(); ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.font = "bold 28px serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1297,24 +1297,24 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
 
   // Gym nombre / slogan / tel
   ctx.textAlign = "center";
-  ctx.fillStyle = "#111827"; ctx.font = "bold 17px Georgia,serif";
+  ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 17px Georgia,serif";
   ctx.fillText((gym.nombre || "NOMBRE DEL GYM").toUpperCase(), W/2, 38);
-  ctx.fillStyle = "#6b7280"; ctx.font = "13px Georgia,serif";
+  ctx.fillStyle = "var(--text-secondary)"; ctx.font = "13px Georgia,serif";
   ctx.fillText(gym.slogan || "Slogan del gimnasio", W/2, 58);
   if (gym.telefono) {
-    ctx.fillStyle = "#374151"; ctx.font = "12px Arial";
+    ctx.fillStyle = "var(--border-strong)"; ctx.font = "12px Arial";
     ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78);
   }
   if (gym.facebook) {
-    ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial";
+    ctx.fillStyle = "var(--text-secondary)"; ctx.font = "11px Arial";
     ctx.fillText(`Facebook: ${gym.facebook}`, W/2, 96);
   }
 
   // Separator
-  ctx.strokeStyle = "#d1d5db"; ctx.lineWidth = 1;
+  ctx.strokeStyle = "var(--border-strong)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(20, 110); ctx.lineTo(W-20, 110); ctx.stroke();
   // "COMPROBANTE DE PAGO RECIBIDO" small stamp arriba derecha
-  ctx.fillStyle = "#ef4444"; ctx.font = "bold 9px Arial";
+  ctx.fillStyle = "var(--col-danger)"; ctx.font = "bold 9px Arial";
   ctx.textAlign = "right"; ctx.letterSpacing = "0.5px";
   ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W - 16, 128);
   ctx.textAlign = "left";
@@ -1323,30 +1323,30 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
   let y = HEADER_H + 2;
   rows.forEach((row, i) => {
     const rh = row.type === "desglose" ? DESGLOSE_ROW_H : ROW_H;
-    const bg = i % 2 === 0 ? "#ffffff" : "#f9fafb";
+    const bg = i % 2 === 0 ? "var(--text-inverse)" : "var(--bg-elevated)";
     ctx.fillStyle = row.highlight ? "#f0fdf4" : bg;
     ctx.fillRect(0, y, W, rh);
-    ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 0.5;
+    ctx.strokeStyle = "var(--bg-elevated)"; ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(0, y + rh - 0.5); ctx.lineTo(W, y + rh - 0.5); ctx.stroke();
 
     if (row.type === "alumno") {
       // Nombre alumno centrado grande
-      ctx.fillStyle = "#111827"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
+      ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 15px Arial"; ctx.textAlign = "center";
       ctx.fillText(row.nombre, W/2, y + 20);
-      ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial";
+      ctx.fillStyle = "var(--text-secondary)"; ctx.font = "11px Arial";
       ctx.fillText(row.plan, W/2, y + rh - 6);
       ctx.textAlign = "left";
     } else if (row.type === "desglose") {
       // Fila de desglose: label izquierda (gris), valor derecha
-      ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial"; ctx.textAlign = "left";
+      ctx.fillStyle = "var(--text-secondary)"; ctx.font = "11px Arial"; ctx.textAlign = "left";
       ctx.fillText(row.label, 32, y + rh - 8);
-      ctx.fillStyle = "#374151"; ctx.font = "bold 11px Arial"; ctx.textAlign = "right";
+      ctx.fillStyle = "var(--border-strong)"; ctx.font = "bold 11px Arial"; ctx.textAlign = "right";
       ctx.fillText(row.value, W - 24, y + rh - 8);
       ctx.textAlign = "left";
     } else {
-      ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial";
+      ctx.fillStyle = "var(--text-secondary)"; ctx.font = "12px Arial";
       ctx.fillText(row.label, 24, y + rh - 12);
-      ctx.fillStyle = row.highlight ? "#16a34a" : "#111827";
+      ctx.fillStyle = row.highlight ? "var(--col-success)" : "var(--bg-card)";
       ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
       ctx.textAlign = "right";
       ctx.fillText(row.value, W - 24, y + rh - 12);
@@ -1357,12 +1357,12 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
 
   // CLABE section
   if (gym.transferencia_clabe) {
-    ctx.fillStyle = "#f3f4f6"; ctx.fillRect(0, y, W, CLABE_H);
-    ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+    ctx.fillStyle = "var(--bg-elevated)"; ctx.fillRect(0, y, W, CLABE_H);
+    ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    ctx.fillStyle = "#111827"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
+    ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
     ctx.fillText("PARA TRANSFERENCIAS:", 24, y + 22);
-    ctx.font = "12px Arial"; ctx.fillStyle = "#374151";
+    ctx.font = "12px Arial"; ctx.fillStyle = "var(--border-strong)";
     ctx.fillText(`CLABE:  ${gym.transferencia_clabe}`, 24, y + 42);
     ctx.fillText(`Beneficiario:  ${gym.transferencia_titular || "—"}`, 24, y + 60);
     if (gym.transferencia_banco) ctx.fillText(`Banco:  ${gym.transferencia_banco}`, 24, y + 78);
@@ -1370,16 +1370,16 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
   }
 
   // Footer instrucción
-  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, y, W, FOOTER_H);
-  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.fillStyle = "var(--bg-elevated)"; ctx.fillRect(0, y, W, FOOTER_H);
+  ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-  ctx.fillStyle = "#6b7280"; ctx.font = "11px Arial"; ctx.textAlign = "center";
+  ctx.fillStyle = "var(--text-secondary)"; ctx.font = "11px Arial"; ctx.textAlign = "center";
   ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y + 22);
   ctx.fillText("Whatsapp que aparece en la parte superior de este recibo.", W/2, y + 40);
   y += FOOTER_H;
 
   // STAMP grande al fondo
-  ctx.fillStyle = "#111827"; ctx.font = "bold 20px Arial"; ctx.textAlign = "center";
+  ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 20px Arial"; ctx.textAlign = "center";
   ctx.fillText("COMPROBANTE DE PAGO RECIBIDO", W/2, y + 34);
 
   return canvas.toDataURL("image/png");
@@ -1433,8 +1433,8 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, pl
   const ctx = canvas.getContext("2d");
 
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "#f9fafb"; ctx.fillRect(0, 0, W, HEADER_H);
-  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.fillStyle = "var(--bg-elevated)"; ctx.fillRect(0, 0, W, HEADER_H);
+  ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, HEADER_H); ctx.lineTo(W, HEADER_H); ctx.stroke();
 
   // Logo
@@ -1450,46 +1450,46 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, pl
       img.onerror = res; img.src = gym.logo;
     });
   } else {
-    ctx.fillStyle = "#1e1b4b"; ctx.beginPath(); ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10); ctx.fill();
+    ctx.fillStyle = "var(--bg-card)"; ctx.beginPath(); ctx.roundRect(LX, LY, LOGO_SZ, LOGO_SZ, 10); ctx.fill();
     ctx.fillStyle = "#fff"; ctx.font = "bold 28px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("🥋", LX + LOGO_SZ/2, LY + LOGO_SZ/2); ctx.textBaseline = "alphabetic";
   }
 
   ctx.textAlign = "center";
-  ctx.fillStyle = "#111827"; ctx.font = "bold 17px Georgia,serif";
+  ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 17px Georgia,serif";
   ctx.fillText((gym.nombre || "NOMBRE DEL GYM").toUpperCase(), W/2, 38);
-  ctx.fillStyle = "#6b7280"; ctx.font = "13px Georgia,serif";
+  ctx.fillStyle = "var(--text-secondary)"; ctx.font = "13px Georgia,serif";
   ctx.fillText(gym.slogan || "Slogan del gimnasio", W/2, 58);
   if (gym.telefono) {
-    ctx.fillStyle = "#374151"; ctx.font = "12px Arial";
+    ctx.fillStyle = "var(--border-strong)"; ctx.font = "12px Arial";
     ctx.fillText(`WhatsApp: ${gym.telefono}`, W/2, 78);
   }
 
   let y = HEADER_H + 2;
   tableRows.forEach((row, i) => {
     const rowH = row.desglose ? DESGLOSE_ROW_H : ROW_H;
-    const bg = i % 2 === 0 ? "#fff" : "#f9fafb";
+    const bg = i % 2 === 0 ? "#fff" : "var(--bg-elevated)";
     ctx.fillStyle = bg; ctx.fillRect(0, y, W, rowH);
-    ctx.strokeStyle = "#f3f4f6"; ctx.lineWidth = 0.5;
+    ctx.strokeStyle = "var(--bg-elevated)"; ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(0, y + rowH - 0.5); ctx.lineTo(W, y + rowH - 0.5); ctx.stroke();
 
     if (row.span) {
-      ctx.fillStyle = "#374151"; ctx.font = "12px Arial"; ctx.textAlign = "center";
+      ctx.fillStyle = "var(--border-strong)"; ctx.font = "12px Arial"; ctx.textAlign = "center";
       ctx.fillText(`${row.label}  ${row.value}`, W/2, y + rowH - 10); ctx.textAlign = "left";
     } else if (row.desglose) {
-      ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial"; ctx.textAlign = "left";
+      ctx.fillStyle = "var(--text-secondary)"; ctx.font = "12px Arial"; ctx.textAlign = "left";
       ctx.fillText(row.label, 32, y + rowH - 9);
-      ctx.fillStyle = "#374151"; ctx.font = "bold 12px Arial"; ctx.textAlign = "right";
+      ctx.fillStyle = "var(--border-strong)"; ctx.font = "bold 12px Arial"; ctx.textAlign = "right";
       ctx.fillText(row.value, W - 24, y + rowH - 9); ctx.textAlign = "left";
     } else if (row.big) {
-      ctx.fillStyle = "#6b7280"; ctx.font = "12px Arial"; ctx.textAlign = "left";
+      ctx.fillStyle = "var(--text-secondary)"; ctx.font = "12px Arial"; ctx.textAlign = "left";
       ctx.fillText(row.label, 24, y + rowH - 10);
-      ctx.fillStyle = "#111827"; ctx.font = "bold 16px Arial"; ctx.textAlign = "right";
+      ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 16px Arial"; ctx.textAlign = "right";
       ctx.fillText(row.value, W - 24, y + rowH - 10); ctx.textAlign = "left";
     } else {
-      ctx.fillStyle = "#6b7280"; ctx.font = row.bold ? "bold 12px Arial" : "12px Arial";
+      ctx.fillStyle = "var(--text-secondary)"; ctx.font = row.bold ? "bold 12px Arial" : "12px Arial";
       ctx.fillText(row.label, 24, y + rowH - 10);
-      ctx.fillStyle = "#111827"; ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
+      ctx.fillStyle = "var(--bg-card)"; ctx.font = row.bold ? "bold 13px Arial" : "13px Arial";
       ctx.textAlign = "right"; ctx.fillText(row.value, W - 24, y + rowH - 10);
       ctx.textAlign = "left";
     }
@@ -1498,25 +1498,25 @@ async function generarInfoTransferenciaPNG({ gymConfig, miembro, plan, monto, pl
 
   // CLABE section
   ctx.fillStyle = "#fff"; ctx.fillRect(0, y, W, CLABE_H);
-  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
 
   const CLABE = gym.transferencia_clabe || "—";
   const titular = gym.transferencia_titular || "—";
   const banco   = gym.transferencia_banco   || "";
-  ctx.fillStyle = "#111827"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
+  ctx.fillStyle = "var(--bg-card)"; ctx.font = "bold 12px Arial"; ctx.textAlign = "left";
   ctx.fillText("PARA TRANSFERENCIAS:", 24, y + 22);
-  ctx.font = "12px Arial"; ctx.fillStyle = "#374151";
+  ctx.font = "12px Arial"; ctx.fillStyle = "var(--border-strong)";
   ctx.fillText(`CLABE:   ${CLABE}`, 24, y + 42);
   ctx.fillText(`Beneficiario:   ${titular}`, 24, y + 60);
   if (banco) ctx.fillText(`Banco:   ${banco}`, 24, y + 78);
   y += CLABE_H;
 
   // Footer
-  ctx.fillStyle = "#f3f4f6"; ctx.fillRect(0, y, W, FOOTER_H);
-  ctx.strokeStyle = "#e5e7eb"; ctx.lineWidth = 1;
+  ctx.fillStyle = "var(--bg-elevated)"; ctx.fillRect(0, y, W, FOOTER_H);
+  ctx.strokeStyle = "var(--border)"; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-  ctx.fillStyle = "#374151"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+  ctx.fillStyle = "var(--border-strong)"; ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
   ctx.fillText("Favor de enviar comprobante de transferencia al número de", W/2, y + 20);
   ctx.fillText("Whasthsapp que aparece en la parte superior de este recibo.", W/2, y + 38);
 
@@ -1557,7 +1557,7 @@ async function generarQRPNG(text) {
         document.body.appendChild(div);
         new window.QRCode(div, {
           text, width: 200, height: 200,
-          colorDark: "#1a1a2e", colorLight: "#ffffff",
+          colorDark: "var(--bg-base)", colorLight: "var(--text-inverse)",
           correctLevel: window.QRCode.CorrectLevel.H,
         });
         setTimeout(() => {
@@ -1671,16 +1671,16 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
     <div style={{ display:"flex", gap:7, marginTop:9, flexWrap:"wrap" }}>
       <button onClick={() => descargar(dataUrl, prefix)}
         style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
-          background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border-strong,#2e2e42)",
-          color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer",
+          background:"var(--bg-elevated,var(--bg-elevated))", border:"1px solid var(--border-strong,var(--bg-elevated))",
+          color:"var(--text-secondary,var(--text-tertiary))", fontWeight:600, fontSize:12, cursor:"pointer",
           display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
         📥 Descargar
       </button>
       <button onClick={() => copiar(dataUrl, cKey)}
         style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
-          background: copiado===cKey ? "rgba(74,222,128,.12)" : "var(--bg-elevated,#1e1e2e)",
-          border: `1px solid ${copiado===cKey ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
-          color: copiado===cKey ? "#4ade80" : "var(--text-secondary,#9999b3)",
+          background: copiado===cKey ? "var(--col-success-soft)" : "var(--bg-elevated,var(--bg-elevated))",
+          border: `1px solid ${copiado===cKey ? "var(--col-success-border)" : "var(--border-strong,var(--bg-elevated))"}`,
+          color: copiado===cKey ? "var(--col-success)" : "var(--text-secondary,var(--text-tertiary))",
           fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s",
           display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
         {copiado===cKey ? "✓ Copiado" : "📋 Copiar"}
@@ -1688,8 +1688,8 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
       {waMsgBanco && (
         <button onClick={abrirWABanco}
           style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
-            background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
-            color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
+            background:"rgba(37,211,102,.12)", border:"1px solid var(--col-success-border)",
+            color:"var(--col-wa)", fontWeight:700, fontSize:12, cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
           📲 WhatsApp
         </button>
@@ -1700,33 +1700,33 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
   return (
     <div>
       {/* Resumen */}
-      <div style={{ background:"rgba(108,99,255,.08)", border:"1px solid rgba(108,99,255,.2)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
-        <p style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen</p>
+      <div style={{ background:"var(--col-accent-soft)", border:"1px solid var(--col-accent-border)", borderRadius:14, padding:"12px 16px", marginBottom:16 }}>
+        <p style={{ color:"var(--col-accent-text)", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginBottom:8 }}>Resumen</p>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Alumno</span>
-          <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{fM.nombre||"—"}</span>
+          <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>Alumno</span>
+          <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:11, fontWeight:600 }}>{fM.nombre||"—"}</span>
         </div>
         {fM.plan && (
           <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-            <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>🏋️ {fM.plan}</span>
-            <span style={{ color:"#a78bfa", fontSize:11, fontWeight:600 }}>${Number(fM.monto||0).toLocaleString("es-MX")}</span>
+            <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>🏋️ {fM.plan}</span>
+            <span style={{ color:"var(--col-accent-text)", fontSize:11, fontWeight:600 }}>${Number(fM.monto||0).toLocaleString("es-MX")}</span>
           </div>
         )}
         {(fM.planesExtra||[]).map(pe => (
           <div key={pe.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
-            <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>🗓️ {pe.nombre}</span>
-            <span style={{ color:"#22d3ee", fontSize:11, fontWeight:600 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
+            <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>🗓️ {pe.nombre}</span>
+            <span style={{ color:"var(--col-info)", fontSize:11, fontWeight:600 }}>${Number(pe.monto||0).toLocaleString("es-MX")}</span>
           </div>
         ))}
         {((fM.planesExtra||[]).length > 0 || fM.plan) && (
           <div style={{ borderTop:"1px solid rgba(255,255,255,.08)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Total</span>
-            <span style={{ color:"#4ade80", fontSize:12, fontWeight:700 }}>${montoTotal.toLocaleString("es-MX")}</span>
+            <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>Total</span>
+            <span style={{ color:"var(--col-success)", fontSize:12, fontWeight:700 }}>${montoTotal.toLocaleString("es-MX")}</span>
           </div>
         )}
         <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-          <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>Vence</span>
-          <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600 }}>{fmtDateShort(venceISO)}</span>
+          <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>Vence</span>
+          <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:11, fontWeight:600 }}>{fmtDateShort(venceISO)}</span>
         </div>
       </div>
 
@@ -1741,11 +1741,11 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
                 <button key={m.id}
                   onClick={() => { setFM(p => ({...p, formaPago:m.id})); setComprobantePNG(null); setInfoBancoPNG(null); }}
                   style={{ padding:"13px 6px", borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-                    border: sel ? "2px solid #6c63ff" : "1.5px solid var(--border-strong,#2e2e42)",
-                    background: sel ? "rgba(108,99,255,.12)" : "var(--bg-elevated,#1e1e2e)",
+                    border: sel ? "2px solid var(--col-accent)" : "1.5px solid var(--border-strong,var(--bg-elevated))",
+                    background: sel ? "var(--col-accent-soft)" : "var(--bg-elevated,var(--bg-elevated))",
                     display:"flex", flexDirection:"column", alignItems:"center", gap:5, transition:"all .2s" }}>
                   <span style={{ fontSize:22 }}>{m.icon}</span>
-                  <span style={{ color: sel ? "#c4b5fd" : "var(--text-primary,#e8e8f0)", fontSize:12, fontWeight: sel ? 700 : 500 }}>{m.label}</span>
+                  <span style={{ color: sel ? "var(--col-accent-text)" : "var(--text-primary,var(--text-primary))", fontSize:12, fontWeight: sel ? 700 : 500 }}>{m.label}</span>
                 </button>
               );
             })}
@@ -1755,10 +1755,10 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
 
       {/* ── Efectivo / Tarjeta → nota de que el comprobante se genera en paso 4 ── */}
       {hasPlan && !esPorTransferencia && fM.formaPago && (
-        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid rgba(108,99,255,.2)", borderRadius:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", background:"rgba(108,99,255,.07)", border:"1px solid var(--col-accent-border)", borderRadius:12 }}>
           <span style={{ fontSize:18, flexShrink:0 }}>🧾</span>
-          <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:12, lineHeight:1.4 }}>
-            El <strong style={{ color:"var(--text-primary,#e8e8f0)" }}>comprobante de pago</strong> y la <strong style={{ color:"var(--text-primary,#e8e8f0)" }}>ID Digital</strong> se generarán automáticamente en el siguiente paso.
+          <p style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:12, lineHeight:1.4 }}>
+            El <strong style={{ color:"var(--text-primary,var(--text-primary))" }}>comprobante de pago</strong> y la <strong style={{ color:"var(--text-primary,var(--text-primary))" }}>ID Digital</strong> se generarán automáticamente en el siguiente paso.
           </p>
         </div>
       )}
@@ -1770,7 +1770,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
           <div style={{ display:"flex", alignItems:"flex-start", gap:10, padding:"12px 14px", background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.28)", borderRadius:12, marginBottom:12 }}>
             <span style={{ fontSize:18, flexShrink:0 }}>⏳</span>
             <div>
-              <p style={{ color:"#fbbf24", fontWeight:700, fontSize:13 }}>Pago por confirmar</p>
+              <p style={{ color:"var(--col-warning)", fontWeight:700, fontSize:13 }}>Pago por confirmar</p>
               <p style={{ color:"rgba(251,191,36,.8)", fontSize:11, marginTop:3, lineHeight:1.4 }}>
                 El alumno se registrará como <strong>Pendiente</strong> hasta que confirmes el pago desde su perfil. La Identificación Digital se activará en ese momento.
               </p>
@@ -1778,14 +1778,14 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
           </div>
 
           {/* Info para transferencia */}
-          <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${infoBancoPNG ? "#0ea5e955" : "var(--border-strong,#2e2e42)"}`, borderRadius:16, padding:14, marginBottom:12 }}>
+          <div style={{ background:"var(--bg-elevated,var(--bg-elevated))", border:`1.5px solid ${infoBancoPNG ? "var(--col-info)55" : "var(--border-strong,var(--bg-elevated))"}`, borderRadius:16, padding:14, marginBottom:12 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:36, height:36, borderRadius:10, background:"rgba(14,165,233,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🏦</div>
-                <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:13 }}>Info para Transferencia</p>
+                <p style={{ color:"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:13 }}>Info para Transferencia</p>
               </div>
               <button onClick={genInfoBanco} disabled={generandoInfo}
-                style={{ padding:"8px 14px", borderRadius:10, border:"none", background: generandoInfo ? "rgba(14,165,233,.3)" : "#0ea5e9",
+                style={{ padding:"8px 14px", borderRadius:10, border:"none", background: generandoInfo ? "rgba(14,165,233,.3)" : "var(--col-info)",
                   color:"#fff", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", gap:5 }}>
                 {generandoInfo ? "⏳ Generando..." : infoBancoPNG ? "✨ Regenerar" : "✨ Generar"}
@@ -1793,7 +1793,7 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
             </div>
             {infoBancoPNG && (
               <>
-                <img src={infoBancoPNG} alt="Info transferencia" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,#2a2a3e)", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
+                <img src={infoBancoPNG} alt="Info transferencia" style={{ width:"100%", borderRadius:10, border:"1px solid var(--border,var(--bg-elevated))", marginTop:12, boxShadow:"0 2px 12px rgba(0,0,0,.3)" }} />
                 <BotonesAccion dataUrl={infoBancoPNG} prefix="transferencia" cKey="banco" waM={waMsg} />
               </>
             )}
@@ -1802,11 +1802,11 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
           {/* Datos bancarios rápidos (para ver sin generar imagen) */}
           {(gym.transferencia_clabe || gym.transferencia_titular) && (
             <div style={{ background:"rgba(14,165,233,.06)", border:"1px solid rgba(14,165,233,.2)", borderRadius:12, padding:"12px 14px" }}>
-              <p style={{ color:"#38bdf8", fontSize:11, fontWeight:700, marginBottom:8 }}>📋 Datos bancarios rápidos</p>
+              <p style={{ color:"var(--col-info)", fontSize:11, fontWeight:700, marginBottom:8 }}>📋 Datos bancarios rápidos</p>
               {[["CLABE", gym.transferencia_clabe||"—"], ["Titular", gym.transferencia_titular||"—"], ["Banco", gym.transferencia_banco||""]].filter(([,v])=>v).map(([l,v]) => (
                 <div key={l} style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                  <span style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11 }}>{l}</span>
-                  <span style={{ color:"var(--text-primary,#e8e8f0)", fontSize:11, fontWeight:600, fontFamily:"'DM Mono',monospace" }}>{v}</span>
+                  <span style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11 }}>{l}</span>
+                  <span style={{ color:"var(--text-primary,var(--text-primary))", fontSize:11, fontWeight:600, fontFamily:"'DM Mono',monospace" }}>{v}</span>
                 </div>
               ))}
             </div>
@@ -1817,8 +1817,8 @@ function Step3Pago({ fM, setFM, gymConfig, venceISO, hasPlan, montoTotal, compro
       {/* Sin plan → nota */}
       {!hasPlan && (
         <div style={{ padding:"14px 16px", background:"rgba(107,114,128,.07)", border:"1px solid rgba(107,114,128,.2)", borderRadius:12, textAlign:"center" }}>
-          <p style={{ color:"var(--text-secondary,#9999b3)", fontSize:13 }}>Sin membresía seleccionada</p>
-          <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:4 }}>El alumno se registrará sin plan activo. Podrás asignarle una membresía después.</p>
+          <p style={{ color:"var(--text-secondary,var(--text-tertiary))", fontSize:13 }}>Sin membresía seleccionada</p>
+          <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, marginTop:4 }}>El alumno se registrará sin plan activo. Podrás asignarle una membresía después.</p>
         </div>
       )}
     </div>
@@ -1889,16 +1889,16 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
     <div style={{ display:"flex", gap:7, marginTop:10, flexWrap:"wrap" }}>
       <button onClick={onDescargar}
         style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
-          background:"var(--bg-card,#12121f)", border:"1px solid var(--border-strong,#2e2e42)",
-          color:"var(--text-secondary,#9999b3)", fontWeight:600, fontSize:12, cursor:"pointer",
+          background:"var(--bg-card,var(--bg-base))", border:"1px solid var(--border-strong,var(--bg-elevated))",
+          color:"var(--text-secondary,var(--text-tertiary))", fontWeight:600, fontSize:12, cursor:"pointer",
           display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
         📥 Descargar
       </button>
       <button onClick={onCopiar}
         style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
-          background: copiado ? "rgba(74,222,128,.12)" : "var(--bg-card,#12121f)",
-          border: `1px solid ${copiado ? "rgba(74,222,128,.4)" : "var(--border-strong,#2e2e42)"}`,
-          color: copiado ? "#4ade80" : "var(--text-secondary,#9999b3)",
+          background: copiado ? "var(--col-success-soft)" : "var(--bg-card,var(--bg-base))",
+          border: `1px solid ${copiado ? "var(--col-success-border)" : "var(--border-strong,var(--bg-elevated))"}`,
+          color: copiado ? "var(--col-success)" : "var(--text-secondary,var(--text-tertiary))",
           fontWeight:600, fontSize:12, cursor:"pointer", transition:"all .2s",
           display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
         {copiado ? "✓ Copiado" : "📋 Copiar"}
@@ -1906,8 +1906,8 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
       {showWA && (
         <button onClick={waOnClick}
           style={{ flex:1, minWidth:80, padding:"10px 8px", borderRadius:12, fontFamily:"inherit",
-            background:"rgba(37,211,102,.12)", border:"1px solid rgba(37,211,102,.3)",
-            color:"#25d366", fontWeight:700, fontSize:12, cursor:"pointer",
+            background:"rgba(37,211,102,.12)", border:"1px solid var(--col-success-border)",
+            color:"var(--col-wa)", fontWeight:700, fontSize:12, cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
           📲 WhatsApp
         </button>
@@ -1922,24 +1922,24 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
       {/* Celebración */}
       <div style={{ textAlign:"center", marginBottom:20 }}>
         <div style={{ fontSize:48, marginBottom:8 }}>🎉</div>
-        <h3 style={{ color:"var(--text-primary,#e8e8f0)", fontSize:18, fontWeight:700, marginBottom:4 }}>
+        <h3 style={{ color:"var(--text-primary,var(--text-primary))", fontSize:18, fontWeight:700, marginBottom:4 }}>
           ¡{(fM.nombre||"").split(" ")[0]} ya es miembro!
         </h3>
-        <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>
+        <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:12 }}>
           Registro completado · Pago confirmado
         </p>
       </div>
 
       {/* ── Card: ID Digital ── */}
-      <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:`1.5px solid ${idPNG ? "#8b5cf655" : "var(--border-strong,#2e2e42)"}`, borderRadius:18, padding:16, marginBottom:12, textAlign:"left" }}>
+      <div style={{ background:"var(--bg-elevated,var(--bg-elevated))", border:`1.5px solid ${idPNG ? "var(--col-accent)55" : "var(--border-strong,var(--bg-elevated))"}`, borderRadius:18, padding:16, marginBottom:12, textAlign:"left" }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: idPNG ? 14 : 0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <div style={{ width:40, height:40, borderRadius:12, background:"rgba(139,92,246,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🪪</div>
             <div>
-              <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:14 }}>Identificación Digital</p>
-              <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, marginTop:1 }}>
+              <p style={{ color:"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:14 }}>Identificación Digital</p>
+              <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, marginTop:1 }}>
                 {generando ? "Generando..." : `Código: `}
-                {!generando && <span style={{ color:"#10b981", fontFamily:"'DM Mono',monospace", fontWeight:700 }}>{codigo}</span>}
+                {!generando && <span style={{ color:"var(--col-success)", fontFamily:"'DM Mono',monospace", fontWeight:700 }}>{codigo}</span>}
               </p>
             </div>
           </div>
@@ -1950,20 +1950,20 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
           }} disabled={generando}
             style={{ padding:"8px 14px", borderRadius:11, border:"none",
               background: generando ? "rgba(139,92,246,.3)" : "rgba(139,92,246,.15)",
-              color:"#c4b5fd", fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"inherit",
+              color:"var(--col-accent-text)", fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"inherit",
               display:"flex", alignItems:"center", gap:4 }}>
             {generando ? "⏳" : "↺"} {generando ? "Generando..." : "Regenerar"}
           </button>
         </div>
         {generando && !idPNG && (
           <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"24px 0", gap:10 }}>
-            <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid #8b5cf6", borderTopColor:"transparent", animation:"spin .8s linear infinite" }} />
-            <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:12 }}>Generando tu identificación...</p>
+            <div style={{ width:20, height:20, borderRadius:"50%", border:"2px solid var(--col-accent)", borderTopColor:"transparent", animation:"spin .8s linear infinite" }} />
+            <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:12 }}>Generando tu identificación...</p>
           </div>
         )}
         {idPNG && (
           <>
-            <img src={idPNG} alt="ID Digital" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,#2a2a3e)", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
+            <img src={idPNG} alt="ID Digital" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,var(--bg-elevated))", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
             <BotonesDoc
               dataUrl={idPNG}
               onDescargar={() => descargar(idPNG, "ID")}
@@ -1978,12 +1978,12 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
 
       {/* ── Card: Comprobante de Pago ── */}
       {comprobantePNG && (
-        <div style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1.5px solid #6c63ff55", borderRadius:18, padding:16, marginBottom:12, textAlign:"left" }}>
+        <div style={{ background:"var(--bg-elevated,var(--bg-elevated))", border:"1.5px solid var(--col-accent)55", borderRadius:18, padding:16, marginBottom:12, textAlign:"left" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-            <div style={{ width:40, height:40, borderRadius:12, background:"rgba(108,99,255,.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🧾</div>
-            <p style={{ color:"var(--text-primary,#e8e8f0)", fontWeight:700, fontSize:14 }}>Comprobante de Pago</p>
+            <div style={{ width:40, height:40, borderRadius:12, background:"var(--col-accent-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🧾</div>
+            <p style={{ color:"var(--text-primary,var(--text-primary))", fontWeight:700, fontSize:14 }}>Comprobante de Pago</p>
           </div>
-          <img src={comprobantePNG} alt="Comprobante" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,#2a2a3e)", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
+          <img src={comprobantePNG} alt="Comprobante" style={{ width:"100%", borderRadius:12, border:"1px solid var(--border,var(--bg-elevated))", boxShadow:"0 4px 20px rgba(0,0,0,.4)" }} />
           <BotonesDoc
             dataUrl={comprobantePNG}
             onDescargar={() => descargar(comprobantePNG, "comprobante")}
@@ -1995,7 +1995,7 @@ function Step4ID({ fM, gymConfig, savedMiembro, comprobantePNG, venceISO }) {
         </div>
       )}
 
-      <p style={{ color:"var(--text-tertiary,#6b6b8a)", fontSize:11, lineHeight:1.5, textAlign:"center" }}>
+      <p style={{ color:"var(--text-tertiary,var(--text-secondary))", fontSize:11, lineHeight:1.5, textAlign:"center" }}>
         La ID Digital es el acceso oficial del alumno al dojo.<br/>Descárgala, cópiala o envíala por WhatsApp.
       </p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -2259,13 +2259,13 @@ export default function NuevoMiembroWizard({
         {/* Header */}
         <div style={S.header}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <h2 style={{ color:"var(--text-primary,#e8e8f0)", fontSize:17, fontWeight:700, display:"flex", alignItems:"center", gap:8 }}>
+            <h2 style={{ color:"var(--text-primary,var(--text-primary))", fontSize:17, fontWeight:700, display:"flex", alignItems:"center", gap:8 }}>
               <span>{isStep4 ? "✅" : "👤"}</span>
               {isStep4 ? "Alumno Registrado" : `Nuevo ${gymConfig?.termino_miembros?.replace(/s$/,"") || "Miembro"}`}
             </h2>
             {!isStep4 && (
               <button onClick={onClose}
-                style={{ background:"var(--bg-elevated,#1e1e2e)", border:"1px solid var(--border,#2a2a3e)", borderRadius:10, width:32, height:32, cursor:"pointer", color:"var(--text-primary,#e8e8f0)", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                style={{ background:"var(--bg-elevated,var(--bg-elevated))", border:"1px solid var(--border,var(--bg-elevated))", borderRadius:10, width:32, height:32, cursor:"pointer", color:"var(--text-primary,var(--text-primary))", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
             )}
           </div>
           <ProgressBar step={step} total={TOTAL_STEPS} labels={stepLabels} />
@@ -2298,21 +2298,21 @@ export default function NuevoMiembroWizard({
         <div style={S.footer}>
           {step===1 && tutorError && (
             <div style={{ background:"rgba(251,191,36,.1)", border:"1px solid rgba(251,191,36,.3)", borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
-              <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>⚠️ El miembro es menor de edad — completa los datos del tutor para continuar.</p>
+              <p style={{ color:"var(--col-warning)", fontSize:12, fontWeight:600 }}>⚠️ El miembro es menor de edad — completa los datos del tutor para continuar.</p>
             </div>
           )}
 
           {/* Aviso beca en paso 2 */}
           {step===2 && fM.beca && hasPlan && (
             <div style={{ background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.3)", borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
-              <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>🎓 Becario — se registrará sin cobro y con membresía activa.</p>
+              <p style={{ color:"var(--col-warning)", fontSize:12, fontWeight:600 }}>🎓 Becario — se registrará sin cobro y con membresía activa.</p>
             </div>
           )}
 
           {/* Aviso forma de pago obligatoria en paso 3 */}
           {step===3 && hasPlan && !fM.formaPago && (
             <div style={{ background:"rgba(251,191,36,.08)", border:"1px solid rgba(251,191,36,.3)", borderRadius:10, padding:"8px 12px", marginBottom:10 }}>
-              <p style={{ color:"#fbbf24", fontSize:12, fontWeight:600 }}>⚠️ Selecciona una forma de pago para continuar.</p>
+              <p style={{ color:"var(--col-warning)", fontSize:12, fontWeight:600 }}>⚠️ Selecciona una forma de pago para continuar.</p>
             </div>
           )}
 
@@ -2344,7 +2344,7 @@ export default function NuevoMiembroWizard({
                     disabled={saving}
                     style={{
                       flex:1, padding:"14px 10px", borderRadius:14, border:"none", fontFamily:"inherit",
-                      background: saving ? "rgba(16,185,129,.4)" : "linear-gradient(135deg,#10b981,#059669)",
+                      background: saving ? "rgba(16,185,129,.4)" : "linear-gradient(135deg,var(--col-success),var(--col-success))",
                       color:"#fff", fontWeight:700, fontSize:13, cursor: saving ? "not-allowed" : "pointer",
                       opacity: saving ? 0.6 : 1,
                       display:"flex", alignItems:"center", justifyContent:"center", gap:6,
@@ -2360,7 +2360,7 @@ export default function NuevoMiembroWizard({
                     ...S.btnPrimary,
                     flex:1,
                     background: esPendiente && step===3
-                      ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                      ? "linear-gradient(135deg,var(--col-warning),var(--col-warning))"
                       : S.btnPrimary.background,
                     opacity: ((step===1 && !canNext1) || (step===2 && !isDojo && !hasPlan) || (step===3 && !canNext3) || saving) ? 0.5 : 1,
                     cursor:  ((step===1 && !canNext1) || (step===2 && !isDojo && !hasPlan) || (step===3 && !canNext3) || saving) ? "not-allowed" : "pointer",

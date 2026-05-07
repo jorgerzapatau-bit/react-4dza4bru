@@ -27,7 +27,7 @@ export function Badge({ val }) {
   return (
     <span style={{
       background: up ? "rgba(74,222,128,.18)" : "rgba(248,113,113,.18)",
-      color: up ? "#4ade80" : "#f87171",
+      color: up ? "var(--col-success)" : "var(--col-danger)",
       borderRadius: 20,
       padding: "3px 10px",
       fontSize: 12,
@@ -207,7 +207,7 @@ export function Modal({ title, onClose, children }) {
 }
 
 // ── Botón primario / outline / small ────────
-export function Btn({ children, onClick, color = "#6c63ff", full, outline, small, style: extraStyle }) {
+export function Btn({ children, onClick, color = "var(--col-accent)", full, outline, small, style: extraStyle }) {
   return (
     <button
       onClick={onClick}

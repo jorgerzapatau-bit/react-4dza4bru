@@ -113,12 +113,12 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
   // ── Estilos reutilizados ─────────────────────
   const btnSecondary = {
     padding: "11px 20px",
-    border: "1.5px solid #6b7280",
+    border: "1.5px solid var(--text-secondary)",
     borderRadius: 14,
     cursor: "pointer",
     fontFamily: "inherit",
     background: "transparent",
-    color: "#6b7280",
+    color: "var(--text-secondary)",
     fontSize: 13,
     fontWeight: 700,
   };
@@ -128,7 +128,7 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
     borderRadius: 14,
     cursor: "pointer",
     fontFamily: "inherit",
-    background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+    background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
     color: "#fff",
     fontSize: 13,
     fontWeight: 700,
@@ -164,7 +164,7 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
             style={{
               border: "none",
               background: "rgba(255,255,255,.1)",
-              color: "#9ca3af",
+              color: "var(--text-secondary)",
               width: 34, height: 34,
               borderRadius: 10,
               cursor: "pointer",
@@ -181,8 +181,8 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
             <button
               onClick={startCamera}
               style={{
-                background: "rgba(108,99,255,.15)",
-                border: "1px solid rgba(108,99,255,.3)",
+                background: "var(--col-accent-soft)",
+                border: "1px solid var(--col-accent-border)",
                 borderRadius: 18,
                 padding: "24px 0",
                 cursor: "pointer",
@@ -191,13 +191,13 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
               }}
             >
               <span style={{ fontSize: 32 }}>📷</span>
-              <span style={{ color: "#a78bfa",  fontSize: 13, fontWeight: 700 }}>Tomar foto</span>
-              <span style={{ color: "#4b4b6a",  fontSize: 10 }}>Usar cámara</span>
+              <span style={{ color: "var(--col-accent-text)",  fontSize: 13, fontWeight: 700 }}>Tomar foto</span>
+              <span style={{ color: "var(--text-tertiary)",  fontSize: 10 }}>Usar cámara</span>
             </button>
 
             {/* Galería */}
             <label style={{
-              background: "rgba(34,211,238,.1)",
+              background: "var(--col-info-soft)",
               border: "1px solid rgba(34,211,238,.25)",
               borderRadius: 18,
               padding: "24px 0",
@@ -211,8 +211,8 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
                 style={{ display: "none" }}
               />
               <span style={{ fontSize: 32 }}>🖼️</span>
-              <span style={{ color: "#22d3ee", fontSize: 13, fontWeight: 700 }}>Galería</span>
-              <span style={{ color: "#4b4b6a", fontSize: 10 }}>Elegir imagen</span>
+              <span style={{ color: "var(--col-info)", fontSize: 13, fontWeight: 700 }}>Galería</span>
+              <span style={{ color: "var(--text-tertiary)", fontSize: 10 }}>Elegir imagen</span>
             </label>
           </div>
         )}
@@ -266,7 +266,7 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
               borderRadius: "50%",
               overflow: "hidden",
               border: "3px solid rgba(108,99,255,.5)",
-              boxShadow: "0 0 0 6px rgba(108,99,255,.12)",
+              boxShadow: "0 0 0 6px var(--col-accent-soft)",
             }}>
               <img
                 src={preview}
@@ -275,7 +275,7 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
               />
             </div>
 
-            <p style={{ color: "#4b4b6a", fontSize: 12 }}>¿Se ve bien la foto?</p>
+            <p style={{ color: "var(--text-tertiary)", fontSize: 12 }}>¿Se ve bien la foto?</p>
 
             <div style={{ display: "flex", gap: 12, width: "100%" }}>
               <button

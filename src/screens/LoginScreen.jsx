@@ -35,7 +35,7 @@ const btnPrimaryStyle = (loading) => ({
   borderRadius: 14,
   border: "none",
   cursor: loading ? "not-allowed" : "pointer",
-  background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+  background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
   color: "#fff",
   fontSize: 15,
   fontWeight: 700,
@@ -53,7 +53,7 @@ const btnGhostStyle = {
   border: "none",
   cursor: "pointer",
   background: "transparent",
-  color: "#8b949e",
+  color: "var(--text-secondary)",
   fontSize: 12,
   fontFamily: "inherit",
 };
@@ -73,8 +73,8 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
   const isDojo  = gymConfig?.tipo_negocio === "dojo";
   const iconFallback = isDojo ? "🥋" : "💪";
   const gradientColors = isDojo
-    ? "linear-gradient(135deg,#1e1b4b,#4c1d95)"
-    : "linear-gradient(135deg,#6c63ff,#e040fb)";
+    ? "linear-gradient(135deg,var(--bg-card),#4c1d95)"
+    : "linear-gradient(135deg,var(--col-accent),var(--col-accent))";
 
   // ── Login ────────────────────────────────────
   const handleLogin = async (e) => {
@@ -181,7 +181,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
           <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700, textAlign: "center", margin: 0 }}>
             {nombre}
           </h1>
-          <p style={{ color: "#8b949e", fontSize: 12, marginTop: 4 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: 4 }}>
             Panel de administración
           </p>
         </div>
@@ -189,7 +189,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
         {/* ── Modo recuperación ── */}
         {resetMode ? (
           <>
-            <p style={{ color: "#a78bfa", fontSize: 13, textAlign: "center", marginBottom: 18, lineHeight: 1.5 }}>
+            <p style={{ color: "var(--col-accent-text)", fontSize: 13, textAlign: "center", marginBottom: 18, lineHeight: 1.5 }}>
               {resetSent
                 ? "✅ Email enviado. Revisá tu bandeja."
                 : "Ingresá tu email para recuperar la contraseña."
@@ -207,7 +207,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
                   style={{ ...inputStyle, marginBottom: 12 }}
                 />
                 {error && (
-                  <p style={{ color: "#f43f5e", fontSize: 12, marginBottom: 10, textAlign: "center" }}>
+                  <p style={{ color: "var(--col-danger)", fontSize: 12, marginBottom: 10, textAlign: "center" }}>
                     {error}
                   </p>
                 )}
@@ -256,7 +256,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: "#8b949e",
+                  color: "var(--text-secondary)",
                   fontSize: 16,
                   padding: 0,
                 }}
@@ -266,7 +266,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
             </div>
 
             {error && (
-              <p style={{ color: "#f43f5e", fontSize: 12, marginBottom: 12, textAlign: "center" }}>
+              <p style={{ color: "var(--col-danger)", fontSize: 12, marginBottom: 12, textAlign: "center" }}>
                 {error}
               </p>
             )}

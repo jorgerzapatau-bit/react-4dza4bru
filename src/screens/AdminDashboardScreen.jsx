@@ -13,7 +13,7 @@ const fmt = (n) =>
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 /* ─── StatCard ────────────────────────────────────────────────── */
-function StatCard({ emoji, title, value, sub, accent = "#6c63ff", onClick, badge, badgeColor = "#f43f5e", children, darkMode }) {
+function StatCard({ emoji, title, value, sub, accent = "var(--col-accent)", onClick, badge, badgeColor = "var(--col-danger)", children, darkMode }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -77,7 +77,7 @@ function MemberRow({ m, right, onClick, darkMode }) {
     >
       <div style={{
         width: 34, height: 34, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-        background: "linear-gradient(135deg,#6c63ff44,#e040fb44)",
+        background: "linear-gradient(135deg,var(--col-accent)44,var(--col-accent)44)",
         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
       }}>
         {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
@@ -221,7 +221,7 @@ export default function AdminDashboardScreen({
                 <h1 style={{ color: "var(--text-primary)", fontSize: 20, fontWeight: 700 }}>
                   {gymConfig?.nombre || "GymFit Pro"}
                 </h1>
-                <span style={{ color: "#a78bfa", fontSize: 13, fontFamily: "'DM Mono',monospace", fontWeight: 700 }}>{horaStr}</span>
+                <span style={{ color: "var(--col-accent-text)", fontSize: 13, fontFamily: "'DM Mono',monospace", fontWeight: 700 }}>{horaStr}</span>
               </div>
             </div>
             {/* Mobile: mensaje icon */}
@@ -249,18 +249,18 @@ export default function AdminDashboardScreen({
               title="Miembros Activos"
               value={miembrosActivos.length}
               sub={`${miembros.length} total registrados`}
-              accent="#6c63ff"
+              accent="var(--col-accent)"
               onClick={() => { setFiltroEstado("Activo"); setScreen("miembros"); }}
               badge={nuevosEsteMes.length}
-              badgeColor="#22c55e"
+              badgeColor="var(--col-success)"
               darkMode={darkMode}
             >
               {nuevosEsteMes.length > 0 && (
                 <div style={{ background: "rgba(34,197,94,.08)", borderRadius: 10, padding: "8px 10px", border: "1px solid rgba(34,197,94,.2)" }}>
-                  <p style={{ color: "#4ade80", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>✨ {nuevosEsteMes.length} nuevo{nuevosEsteMes.length > 1 ? "s" : ""} este mes</p>
+                  <p style={{ color: "var(--col-success)", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>✨ {nuevosEsteMes.length} nuevo{nuevosEsteMes.length > 1 ? "s" : ""} este mes</p>
                   {nuevosEsteMes.slice(0, 3).map(m => (
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
-                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#6c63ff44,#e040fb44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,var(--col-accent)44,var(--col-accent)44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
                         {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
                       </div>
                       <span style={{ color: "var(--text-secondary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{m.nombre}</span>
@@ -277,9 +277,9 @@ export default function AdminDashboardScreen({
               title="Vencimientos esta semana"
               value={vencimientosSemana.length}
               sub="Membresías próximas a vencer"
-              accent="#f59e0b"
+              accent="var(--col-warning)"
               badge={vencimientosSemana.filter(m => m.diasVence <= 2).length}
-              badgeColor="#f43f5e"
+              badgeColor="var(--col-danger)"
               onClick={() => setScreen("mensajes")}
               darkMode={darkMode}
             >
@@ -287,14 +287,14 @@ export default function AdminDashboardScreen({
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {vencimientosSemana.slice(0, 4).map(m => (
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>
-                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#f59e0b44,#f43f5e44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,var(--col-warning)44,var(--col-danger)44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
                         {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
                       </div>
                       <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nombre}</span>
                       <span style={{
                         fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
-                        background: m.diasVence === 0 ? "rgba(244,63,94,.2)" : m.diasVence <= 2 ? "rgba(245,158,11,.2)" : "rgba(167,139,250,.15)",
-                        color: m.diasVence === 0 ? "#f43f5e" : m.diasVence <= 2 ? "#f59e0b" : "#a78bfa",
+                        background: m.diasVence === 0 ? "var(--col-danger-border)" : m.diasVence <= 2 ? "var(--col-warning-border)" : "rgba(167,139,250,.15)",
+                        color: m.diasVence === 0 ? "var(--col-danger)" : m.diasVence <= 2 ? "var(--col-warning)" : "var(--col-accent-text)",
                         flexShrink: 0,
                       }}>
                         {m.diasVence === 0 ? "Hoy" : m.diasVence === 1 ? "Mañana" : `${m.diasVence}d`}
@@ -314,7 +314,7 @@ export default function AdminDashboardScreen({
               title="Ingresos de Hoy"
               value={fmt(ingresosHoy)}
               sub={`${txs.filter(t => t.tipo === "ingreso" && (t.fecha || "").startsWith(hoy)).length} transacciones hoy`}
-              accent="#22d3ee"
+              accent="var(--col-info)"
               onClick={() => setScreen("caja")}
               darkMode={darkMode}
             >
@@ -328,11 +328,11 @@ export default function AdminDashboardScreen({
                       const miembro = mid ? miembros.find(m => m.id === mid) : null;
                       return (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#22d3ee44,#6c63ff44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,var(--col-info)44,var(--col-accent)44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
                             {miembro?.foto ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "💰"}
                           </div>
                           <span style={{ color: "var(--text-secondary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || t.categoria}</span>
-                          <span style={{ color: "#22d3ee", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginLeft: 8 }}>{fmt(t.monto)}</span>
+                          <span style={{ color: "var(--col-info)", fontSize: 12, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginLeft: 8 }}>{fmt(t.monto)}</span>
                         </div>
                       );
                     })}
@@ -346,9 +346,9 @@ export default function AdminDashboardScreen({
               title="Productos bajos en stock"
               value={productosBajos.length}
               sub="Tienda — debajo del límite crítico"
-              accent="#f43f5e"
+              accent="var(--col-danger)"
               badge={productosBajos.length}
-              badgeColor="#f43f5e"
+              badgeColor="var(--col-danger)"
               onClick={() => setScreen("tienda")}
               darkMode={darkMode}
             >
@@ -357,7 +357,7 @@ export default function AdminDashboardScreen({
                   {productosBajos.slice(0, 4).map(p => (
                     <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: "#f43f5e", marginLeft: 8 }}>Stock: {p.stock_initial ?? "—"}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "var(--col-danger)", marginLeft: 8 }}>Stock: {p.stock_initial ?? "—"}</span>
                     </div>
                   ))}
                   {productosBajos.length > 4 && <p style={{ color: "var(--text-tertiary)", fontSize: 11 }}>+{productosBajos.length - 4} más</p>}
@@ -373,21 +373,21 @@ export default function AdminDashboardScreen({
               title="Cumpleaños esta semana"
               value={cumplesSemana.length}
               sub="Próximos 7 días"
-              accent="#e040fb"
+              accent="var(--col-accent)"
               darkMode={darkMode}
             >
               {cumplesSemana.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {cumplesSemana.map(m => (
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#e040fb44,#f43f5e44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,var(--col-accent)44,var(--col-danger)44)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>
                         {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (m.diasCumple === 0 ? "🎉" : "🎂")}
                       </div>
                       <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1 }}>{m.nombre}</span>
                       <span style={{
                         fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
                         background: m.diasCumple === 0 ? "rgba(224,64,251,.25)" : "rgba(224,64,251,.1)",
-                        color: "#e040fb",
+                        color: "var(--col-accent)",
                       }}>
                         {m.diasCumple === 0 ? "¡Hoy!" : `en ${m.diasCumple}d`}
                       </span>
@@ -405,7 +405,7 @@ export default function AdminDashboardScreen({
               title="Nuevos miembros del mes"
               value={nuevosEsteMes.length}
               sub={new Date().toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
-              accent="#4ade80"
+              accent="var(--col-success)"
               onClick={() => { setFiltroEstado("Todos"); setScreen("miembros"); }}
               darkMode={darkMode}
             >
@@ -415,7 +415,7 @@ export default function AdminDashboardScreen({
                     <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{
                         width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-                        background: "linear-gradient(135deg,#6c63ff44,#e040fb44)",
+                        background: "linear-gradient(135deg,var(--col-accent)44,var(--col-accent)44)",
                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12,
                       }}>
                         {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
@@ -439,9 +439,9 @@ export default function AdminDashboardScreen({
               title="Membresías vencidas"
               value={membresiasVencidas.length}
               sub="Pendientes de cobro o renovación"
-              accent="#f43f5e"
+              accent="var(--col-danger)"
               badge={membresiasVencidas.length}
-              badgeColor="#f43f5e"
+              badgeColor="var(--col-danger)"
               onClick={() => { setFiltroEstado("Vencido"); setScreen("miembros"); }}
               darkMode={darkMode}
             >
@@ -453,14 +453,14 @@ export default function AdminDashboardScreen({
                       <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <div style={{
                           width: 26, height: 26, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-                          background: "rgba(244,63,94,.15)",
+                          background: "var(--col-danger-soft)",
                           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12,
                         }}>
                           {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
                         </div>
                         <span style={{ color: "var(--text-primary)", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{m.nombre}</span>
                         {info.vence && (
-                          <span style={{ color: "#f43f5e", fontSize: 11, fontFamily: "'DM Mono',monospace" }}>
+                          <span style={{ color: "var(--col-danger)", fontSize: 11, fontFamily: "'DM Mono',monospace" }}>
                             {(() => { const d = parseDate(info.vence); return d && !isNaN(d) ? d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : fmtDate(info.vence); })()}
                           </span>
                         )}
@@ -472,7 +472,7 @@ export default function AdminDashboardScreen({
                   )}
                 </div>
               ) : (
-                <p style={{ color: "#4ade80", fontSize: 12 }}>✅ No hay membresías vencidas</p>
+                <p style={{ color: "var(--col-success)", fontSize: 12 }}>✅ No hay membresías vencidas</p>
               )}
             </StatCard>
 
@@ -482,19 +482,19 @@ export default function AdminDashboardScreen({
               title="Asistencia de hoy"
               value={asistenciaHoy === null ? "..." : asistenciaHoy}
               sub="Accesos registrados — Control de Acceso"
-              accent="#22c55e"
+              accent="var(--col-success)"
               onClick={() => setScreen("scanner")}
               darkMode={darkMode}
             >
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 1, background: "rgba(34,197,94,.08)", borderRadius: 10, padding: "8px 12px", border: "1px solid rgba(34,197,94,.2)", textAlign: "center" }}>
-                  <p style={{ color: "#4ade80", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{asistenciaHoy ?? "—"}</p>
+                  <p style={{ color: "var(--col-success)", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{asistenciaHoy ?? "—"}</p>
                   <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5 }}>Entradas hoy</p>
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); setScreen("scanner"); }}
                   style={{
-                    flex: 1, background: "linear-gradient(135deg,#059669,#22c55e)",
+                    flex: 1, background: "linear-gradient(135deg,var(--col-success),var(--col-success))",
                     border: "none", borderRadius: 10, color: "#fff", fontSize: 12,
                     fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                     padding: "8px 0",

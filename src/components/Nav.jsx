@@ -86,8 +86,8 @@ const OWNER_EXTRA_ITEMS = [
 
 // ── NavBtn: soporta modo colapsado (solo icono con tooltip) ──
 function NavBtn({ label, icon, active, onClick, badge, totalRecordatorios, darkMode, accentColor, collapsed }) {
-  const activeBg = accentColor || "#2563eb";
-  const hoverBg  = darkMode ? "#161b22" : "#f0f0f5";
+  const activeBg = accentColor || "var(--col-accent)";
+  const hoverBg  = darkMode ? "var(--bg-card)" : "var(--bg-elevated)";
   return (
     <button
       title={collapsed ? label : undefined}
@@ -106,12 +106,12 @@ function NavBtn({ label, icon, active, onClick, badge, totalRecordatorios, darkM
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = hoverBg; }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
     >
-      <span style={{ color: active ? "#fff" : (darkMode ? "#6e7681" : "#6b7280"), display: "flex", flexShrink: 0 }}>{icon}</span>
+      <span style={{ color: active ? "#fff" : (darkMode ? "var(--text-tertiary)" : "var(--text-secondary)"), display: "flex", flexShrink: 0 }}>{icon}</span>
       {!collapsed && (
-        <span style={{ fontSize: 14, fontWeight: active ? 600 : 500, color: active ? "#fff" : (darkMode ? "#8b949e" : "#374151"), flex: 1, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden" }}>{label}</span>
+        <span style={{ fontSize: 14, fontWeight: active ? 600 : 500, color: active ? "#fff" : (darkMode ? "var(--text-secondary)" : "var(--border-strong)"), flex: 1, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden" }}>{label}</span>
       )}
       {badge && totalRecordatorios > 0 && (
-        <span className="wa-pulse" style={{ position: collapsed ? "absolute" : "static", top: collapsed ? 6 : "auto", right: collapsed ? 6 : "auto", width: 7, height: 7, background: "#f43f5e", borderRadius: "50%", flexShrink: 0 }} />
+        <span className="wa-pulse" style={{ position: collapsed ? "absolute" : "static", top: collapsed ? 6 : "auto", right: collapsed ? 6 : "auto", width: 7, height: 7, background: "var(--col-danger)", borderRadius: "50%", flexShrink: 0 }} />
       )}
     </button>
   );
@@ -130,9 +130,9 @@ function ThemeToggle({ darkMode, setDarkMode, collapsed }) {
         padding: collapsed ? "10px" : "10px 12px",
         cursor: "pointer", fontFamily: "inherit",
         background: "transparent", transition: "background .15s, padding .2s",
-        color: darkMode ? "#8b949e" : "#6b7280",
+        color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)",
       }}
-      onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#161b22" : "#f0f0f5"}
+      onMouseEnter={e => e.currentTarget.style.background = darkMode ? "var(--bg-card)" : "var(--bg-elevated)"}
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
     >
       <span style={{ display: "flex", flexShrink: 0 }}>{darkMode ? IC.sun : IC.moon}</span>
@@ -143,14 +143,14 @@ function ThemeToggle({ darkMode, setDarkMode, collapsed }) {
           </span>
           <span style={{
             marginLeft: "auto", width: 36, height: 20, borderRadius: 10,
-            background: darkMode ? "#334155" : "#d1d5db",
+            background: darkMode ? "#334155" : "var(--border-strong)",
             position: "relative", flexShrink: 0, transition: "background .2s",
           }}>
             <span style={{
               position: "absolute", top: 2,
               left: darkMode ? 18 : 2,
               width: 16, height: 16, borderRadius: "50%",
-              background: darkMode ? "#a78bfa" : "#fff",
+              background: darkMode ? "var(--col-accent-text)" : "#fff",
               transition: "left .2s", boxShadow: "0 1px 3px rgba(0,0,0,.3)",
             }} />
           </span>
@@ -181,14 +181,14 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  const dividerStyle = { height: 1, background: darkMode ? "#21262d" : "#e5e7eb", margin: "10px 0" };
+  const dividerStyle = { height: 1, background: darkMode ? "var(--bg-elevated)" : "var(--border)", margin: "10px 0" };
 
   // ── Sidebar content (shared between desktop and mobile drawer) ──
   const sidebarContent = (isMobileDrawer = false) => {
     const isCollapsed = isMobileDrawer ? false : collapsed;
     const sectionStyle = {
       fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
-      textTransform: "uppercase", color: darkMode ? "#6e7681" : "#9ca3af",
+      textTransform: "uppercase", color: darkMode ? "var(--text-tertiary)" : "var(--text-secondary)",
       padding: "16px 12px 6px", display: isCollapsed ? "none" : "block",
     };
     return (
@@ -200,7 +200,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           gap: isCollapsed ? 0 : 10,
           justifyContent: isCollapsed ? "center" : "flex-start",
           padding: isCollapsed ? "4px 0 18px" : "4px 4px 18px",
-          borderBottom: `1px solid ${darkMode ? "#21262d" : "#e5e7eb"}`,
+          borderBottom: `1px solid ${darkMode ? "var(--bg-elevated)" : "var(--border)"}`,
           marginBottom: 8,
         }}>
           {/* Hamburger */}
@@ -209,10 +209,10 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             style={{
               border: "none", background: "transparent", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              color: darkMode ? "#8b949e" : "#6b7280",
+              color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)",
               padding: 4, borderRadius: 8, flexShrink: 0,
             }}
-            onMouseEnter={e => e.currentTarget.style.background = darkMode ? "#161b22" : "#f0f0f5"}
+            onMouseEnter={e => e.currentTarget.style.background = darkMode ? "var(--bg-card)" : "var(--bg-elevated)"}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           >
             {IC.hamburger}
@@ -223,7 +223,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             <>
               <div style={{
                 width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+                background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 16, overflow: "hidden",
               }}>
@@ -233,10 +233,10 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
                 }
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? "#e2e8f0" : "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? "var(--border)" : "var(--bg-card)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {gymNombre}
                 </div>
-                <div style={{ fontSize: 9, color: darkMode ? "#64748b" : "#9ca3af", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 1 }}>
+                <div style={{ fontSize: 9, color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 1 }}>
                   {isOwner ? "👑 Dueño" : "🛡️ Administrador"}
                 </div>
               </div>
@@ -269,11 +269,11 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             width: "100%", marginTop: 10,
             padding: isCollapsed ? "10px" : "10px 16px",
             border: "none", borderRadius: 10, cursor: "pointer",
-            background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+            background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
             display: "flex", alignItems: "center",
             justifyContent: isCollapsed ? "center" : "flex-start",
             gap: isCollapsed ? 0 : 10,
-            fontFamily: "inherit", boxShadow: "0 4px 18px rgba(108,99,255,.3)",
+            fontFamily: "inherit", boxShadow: "0 4px 18px var(--col-accent-border)",
             transition: "padding .2s",
           }}
         >
@@ -286,7 +286,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         {!isCollapsed && <span style={sectionStyle}>Herramientas</span>}
 
         {isOwner && <NavBtn label="Estadísticas" icon={IC.stats} active={screen === "estadisticas"} darkMode={darkMode} collapsed={isCollapsed} onClick={() => setScreen("estadisticas")} />}
-        <NavBtn label="Control de Acceso" icon={IC.qr} active={screen === "scanner"} darkMode={darkMode} accentColor="#059669" collapsed={isCollapsed} onClick={() => setScreen("scanner")} />
+        <NavBtn label="Control de Acceso" icon={IC.qr} active={screen === "scanner"} darkMode={darkMode} accentColor="var(--col-success)" collapsed={isCollapsed} onClick={() => setScreen("scanner")} />
 
         {/* Spacer */}
         <div style={{ flex: 1, minHeight: 16 }} />
@@ -308,11 +308,11 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             borderRadius: 10, background: "transparent",
             transition: "background .15s, padding .2s", fontFamily: "inherit",
           }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(244,63,94,.08)"}
+          onMouseEnter={e => e.currentTarget.style.background = "var(--col-danger-soft)"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}
         >
-          <span style={{ color: "#f43f5e", display: "flex" }}>{IC.logout}</span>
-          {!isCollapsed && <span style={{ fontSize: 14, fontWeight: 500, color: "#f43f5e" }}>Cerrar sesión</span>}
+          <span style={{ color: "var(--col-danger)", display: "flex" }}>{IC.logout}</span>
+          {!isCollapsed && <span style={{ fontSize: 14, fontWeight: 500, color: "var(--col-danger)" }}>Cerrar sesión</span>}
         </button>
       </>
     );
@@ -337,7 +337,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
         display: "none",
         position: "fixed", top: 0, left: 0, right: 0, height: 52,
         background: darkMode ? "var(--bg-nav)" : "var(--bg-nav)",
-        borderBottom: `1px solid ${darkMode ? "#21262d" : "#e5e7eb"}`,
+        borderBottom: `1px solid ${darkMode ? "var(--bg-elevated)" : "var(--border)"}`,
         zIndex: 201, alignItems: "center", gap: 10, padding: "0 16px",
         backdropFilter: "blur(20px)",
       }}>
@@ -346,20 +346,20 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           style={{
             border: "none", background: "transparent", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            color: darkMode ? "#8b949e" : "#6b7280", padding: 6, borderRadius: 8,
+            color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)", padding: 6, borderRadius: 8,
           }}
         >
           {IC.hamburger}
         </button>
         <div style={{
           width: 28, height: 28, borderRadius: 8,
-          background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+          background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 14, overflow: "hidden", flexShrink: 0,
         }}>
           {gymLogo ? <img src={gymLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : gymIcon}
         </div>
-        <span style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "#e2e8f0" : "#111827" }}>{gymNombre}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: darkMode ? "var(--border)" : "var(--bg-card)" }}>{gymNombre}</span>
       </div>
 
       {/* ══ MOBILE DRAWER backdrop ══ */}
@@ -380,7 +380,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           position: "fixed", top: 0, left: 0, bottom: 0,
           width: 280,
           background: darkMode ? "var(--bg-nav)" : "var(--bg-nav)",
-          borderRight: `1px solid ${darkMode ? "#21262d" : "#e5e7eb"}`,
+          borderRight: `1px solid ${darkMode ? "var(--bg-elevated)" : "var(--border)"}`,
           zIndex: 300,
           display: "flex", flexDirection: "column",
           padding: "20px 8px 16px",
@@ -401,21 +401,21 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             className="gym-nav-btn mobile-only"
             onClick={() => { setScreen(item.s); if (item.s === "dashboard") setTab(0); }}
           >
-            <span style={{ color: screen === item.s ? "#a78bfa" : "#6e7681", display: "flex" }}>{item.icon}</span>
+            <span style={{ color: screen === item.s ? "var(--col-accent-text)" : "var(--text-tertiary)", display: "flex" }}>{item.icon}</span>
             <span className={"gym-nav-label" + (screen === item.s ? " active" : "")}>{item.label}</span>
             {item.hasBadge && totalRecordatorios > 0 && (
-              <span className="wa-pulse" style={{ position: "absolute", top: 4, right: "50%", marginRight: -18, width: 7, height: 7, background: "#f43f5e", borderRadius: "50%", border: "2px solid #0d1117" }} />
+              <span className="wa-pulse" style={{ position: "absolute", top: 4, right: "50%", marginRight: -18, width: 7, height: 7, background: "var(--col-danger)", borderRadius: "50%", border: "2px solid var(--bg-base)" }} />
             )}
           </button>
         ))}
         <button className="gym-nav-btn mobile-only" onClick={() => setScreen("scanner")}>
-          <span style={{ color: screen === "scanner" ? "#22c55e" : "#6e7681", display: "flex" }}>{IC.qr}</span>
-          <span className={"gym-nav-label" + (screen === "scanner" ? " active" : "")} style={{ color: screen === "scanner" ? "#22c55e" : undefined }}>Acceso</span>
+          <span style={{ color: screen === "scanner" ? "var(--col-success)" : "var(--text-tertiary)", display: "flex" }}>{IC.qr}</span>
+          <span className={"gym-nav-label" + (screen === "scanner" ? " active" : "")} style={{ color: screen === "scanner" ? "var(--col-success)" : undefined }}>Acceso</span>
         </button>
         <button className="gym-nav-btn mobile-only" onClick={() => setModal("quickAdd")}>
           <div style={{
             width: 46, height: 46, borderRadius: 15, marginTop: -16,
-            background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+            background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 18px rgba(108,99,255,.4)",
           }}>{IC.plus}</div>

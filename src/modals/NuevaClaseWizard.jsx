@@ -46,7 +46,7 @@ const S = {
   },
   sheet: {
     width: "100%", maxWidth: 540, maxHeight: "95vh",
-    background: "var(--bg-card, #12121f)",
+    background: "var(--bg-card, var(--bg-base))",
     borderRadius: "22px 22px 0 0",
     display: "flex", flexDirection: "column",
     overflow: "hidden", boxShadow: "0 -8px 40px rgba(0,0,0,.55)",
@@ -54,41 +54,41 @@ const S = {
   },
   header: { padding: "18px 20px 0", flexShrink: 0 },
   body:   { flex: 1, overflowY: "auto", padding: "16px 20px" },
-  footer: { padding: "12px 20px 20px", flexShrink: 0, borderTop: "1px solid var(--border, #2a2a3e)" },
+  footer: { padding: "12px 20px 20px", flexShrink: 0, borderTop: "1px solid var(--border, var(--bg-elevated))" },
   inp: {
-    width: "100%", background: "var(--bg-elevated, #1e1e2e)",
-    border: "1px solid var(--border-strong, #2e2e42)",
+    width: "100%", background: "var(--bg-elevated, var(--bg-elevated))",
+    border: "1px solid var(--border-strong, var(--bg-elevated))",
     borderRadius: 12, padding: "12px 14px",
-    color: "var(--text-primary, #e8e8f0)",
+    color: "var(--text-primary, var(--text-primary))",
     fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box",
   },
   label: {
-    color: "var(--text-tertiary, #6b6b8a)", fontSize: 11, fontWeight: 600,
+    color: "var(--text-tertiary, var(--text-secondary))", fontSize: 11, fontWeight: 600,
     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 5, display: "block",
   },
   field: { marginBottom: 16 },
   secTitle: {
-    color: "var(--text-tertiary, #6b6b8a)", fontSize: 10, fontWeight: 700,
+    color: "var(--text-tertiary, var(--text-secondary))", fontSize: 10, fontWeight: 700,
     textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 14,
   },
   btnPrimary: {
     flex: 1, padding: "14px", border: "none", borderRadius: 14,
-    background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+    background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
     color: "#fff", fontSize: 14, fontWeight: 700,
     cursor: "pointer", fontFamily: "inherit",
     boxShadow: "0 4px 18px rgba(108,99,255,.35)", transition: "all .2s",
   },
   btnSecondary: {
     padding: "14px 20px",
-    border: "1.5px solid var(--border-strong, #2e2e42)", borderRadius: 14,
-    background: "var(--bg-elevated, #1e1e2e)",
-    color: "var(--text-primary, #e8e8f0)",
+    border: "1.5px solid var(--border-strong, var(--bg-elevated))", borderRadius: 14,
+    background: "var(--bg-elevated, var(--bg-elevated))",
+    color: "var(--text-primary, var(--text-primary))",
     fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all .2s",
     flexShrink: 0,
   },
   errorBox: {
     background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)",
-    borderRadius: 10, padding: "10px 14px", color: "#f87171", fontSize: 12, marginBottom: 14,
+    borderRadius: 10, padding: "10px 14px", color: "var(--col-danger)", fontSize: 12, marginBottom: 14,
   },
 };
 
@@ -108,9 +108,9 @@ function ProgressBar({ step }) {
                   width: 28, height: 28, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontWeight: 700, fontSize: 12,
-                  background: done ? "#4ade80" : active ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#1e1e2e)",
-                  color: done || active ? "#fff" : "var(--text-tertiary,#6b6b8a)",
-                  border: active || done ? "none" : "1.5px solid var(--border-strong,#2e2e42)",
+                  background: done ? "var(--col-success)" : active ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated,var(--bg-elevated))",
+                  color: done || active ? "#fff" : "var(--text-tertiary,var(--text-secondary))",
+                  border: active || done ? "none" : "1.5px solid var(--border-strong,var(--bg-elevated))",
                   boxShadow: active ? "0 0 0 3px rgba(108,99,255,.22)" : "none",
                   transition: "all .3s",
                 }}>
@@ -118,12 +118,12 @@ function ProgressBar({ step }) {
                 </div>
                 <p style={{
                   fontSize: 10, fontWeight: step === idx ? 700 : 400, marginTop: 4,
-                  color: step === idx ? "var(--text-primary,#e8e8f0)" : "var(--text-tertiary,#6b6b8a)",
+                  color: step === idx ? "var(--text-primary,var(--text-primary))" : "var(--text-tertiary,var(--text-secondary))",
                   transition: "color .3s", whiteSpace: "nowrap",
                 }}>{label}</p>
               </div>
               {i < labels.length - 1 && (
-                <div style={{ flex: 1, height: 2, margin: "0 6px", marginBottom: 18, background: done ? "#4ade80" : "var(--border-strong,#2e2e42)", transition: "background .3s" }} />
+                <div style={{ flex: 1, height: 2, margin: "0 6px", marginBottom: 18, background: done ? "var(--col-success)" : "var(--border-strong,var(--bg-elevated))", transition: "background .3s" }} />
               )}
             </div>
           );
@@ -139,9 +139,9 @@ function DiaChip({ label, activo, onClick }) {
       padding: "8px 12px", border: "none", borderRadius: 10,
       cursor: "pointer", fontFamily: "inherit", fontSize: 11, fontWeight: 700, letterSpacing: 0.4,
       transition: "all .15s",
-      background: activo ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated,#1e1e2e)",
-      color: activo ? "#fff" : "var(--text-secondary,#9999b3)",
-      boxShadow: activo ? "0 2px 8px rgba(108,99,255,.3)" : "none",
+      background: activo ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated,var(--bg-elevated))",
+      color: activo ? "#fff" : "var(--text-secondary,var(--text-tertiary))",
+      boxShadow: activo ? "0 2px 8px var(--col-accent-border)" : "none",
     }}>
       {label}
     </button>
@@ -164,14 +164,14 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
       <div style={S.field}>
         <label style={S.label}>Costo adicional de la clase</label>
         <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,#9999b3)", fontSize: 18, fontWeight: 700, pointerEvents: "none" }}>$</span>
+          <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-secondary,var(--text-tertiary))", fontSize: 18, fontWeight: 700, pointerEvents: "none" }}>$</span>
           <input type="number" min={0} value={form.precio_membresia || ""}
             onChange={e => set("precio_membresia", e.target.value)}
             placeholder="0"
             style={{ ...S.inp, paddingLeft: 30, fontFamily: "'DM Mono',monospace", fontSize: 20, fontWeight: 700 }}
           />
         </div>
-        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 5 }}>
+        <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 5 }}>
           Cobro adicional a la membresía del gym. Puede ser $0.
         </p>
       </div>
@@ -191,7 +191,7 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
           }
           value={form.instructor_id}
           onChange={(id, nombre) => { set("instructor_id", id); set("instructor_nombre", nombre); }}
-          color="#6c63ff"
+          color="var(--col-accent)"
         />
       </div>
 
@@ -212,25 +212,25 @@ function Step1Datos({ form, set, miembros, instructores, esEdicion }) {
         <label style={S.label}>Cupo máximo *</label>
         <input type="number" value={form.cupo_max} min={1}
           onChange={e => set("cupo_max", e.target.value)} style={S.inp} />
-        <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 5 }}>
+        <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 5 }}>
           Número máximo de alumnos que pueden inscribirse.
         </p>
       </div>
 
       {esEdicion && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--bg-elevated,#1e1e2e)", borderRadius: 12, border: "1px solid var(--border-strong,#2e2e42)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: "var(--bg-elevated,var(--bg-elevated))", borderRadius: 12, border: "1px solid var(--border-strong,var(--bg-elevated))" }}>
           <button onClick={() => set("activo", !form.activo)} style={{
             width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
-            background: form.activo ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "rgba(255,255,255,.1)",
+            background: form.activo ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "rgba(255,255,255,.1)",
             position: "relative", transition: "background .2s", flexShrink: 0,
           }}>
             <span style={{ position: "absolute", top: 3, left: form.activo ? 22 : 3, width: 18, height: 18, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.25)" }} />
           </button>
           <div>
-            <p style={{ color: "var(--text-primary,#e8e8f0)", fontSize: 13, fontWeight: 600 }}>
+            <p style={{ color: "var(--text-primary,var(--text-primary))", fontSize: 13, fontWeight: 600 }}>
               Clase {form.activo ? "activa" : "inactiva"}
             </p>
-            <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 1 }}>
+            <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 1 }}>
               {form.activo ? "Los alumnos pueden inscribirse" : "Oculta para nuevas inscripciones"}
             </p>
           </div>
@@ -261,7 +261,7 @@ function Step2Horario({ form, set }) {
           <label style={{ ...S.label, marginBottom: 0 }}>Días de entrenamiento *</label>
           <button
             onClick={() => set("dias_semana", todosActivos ? [] : DIAS.map(d => d.key))}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#a78bfa", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--col-accent-text)", fontSize: 11, fontWeight: 700, fontFamily: "inherit" }}
           >
             {todosActivos ? "Quitar todos" : "Seleccionar todos"}
           </button>
@@ -292,20 +292,20 @@ function Step2Horario({ form, set }) {
       </div>
 
       {diasActivos.length > 0 && form.hora_inicio && form.hora_fin && (
-        <div style={{ padding: "14px 16px", marginBottom: 16, background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 14, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ padding: "14px 16px", marginBottom: 16, background: "var(--col-accent-soft)", border: "1px solid var(--col-accent-border)", borderRadius: 14, display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 18 }}>🕐</span>
           <div>
-            <p style={{ color: "#c4b5fd", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
+            <p style={{ color: "var(--col-accent-text)", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
               {fmtH(form.hora_inicio)} — {fmtH(form.hora_fin)}
             </p>
-            <p style={{ color: "var(--text-secondary,#9999b3)", fontSize: 12, marginTop: 2 }}>
+            <p style={{ color: "var(--text-secondary,var(--text-tertiary))", fontSize: 12, marginTop: 2 }}>
               {diasActivos.map(k => DIAS.find(x => x.key === k)?.label || k).join(" · ")}
             </p>
           </div>
         </div>
       )}
 
-      <div style={{ height: 1, background: "var(--border,#2a2a3e)", margin: "4px 0 16px" }} />
+      <div style={{ height: 1, background: "var(--border,var(--bg-elevated))", margin: "4px 0 16px" }} />
       <p style={S.secTitle}>Vigencia del horario</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -320,7 +320,7 @@ function Step2Horario({ form, set }) {
             onChange={e => set("fecha_fin", e.target.value)} style={S.inp} />
         </div>
       </div>
-      <p style={{ color: "var(--text-tertiary,#6b6b8a)", fontSize: 11, marginTop: 8 }}>
+      <p style={{ color: "var(--text-tertiary,var(--text-secondary))", fontSize: 11, marginTop: 8 }}>
         Deja "Hasta" vacío si la clase no tiene fecha de fin definida.
       </p>
 
@@ -332,15 +332,15 @@ function Step2Horario({ form, set }) {
 function ConfirmSalir({ onConfirm, onCancel }) {
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 10, background: "rgba(0,0,0,.7)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, borderRadius: "22px 22px 0 0" }}>
-      <div style={{ background: "var(--bg-card,#12121f)", borderRadius: 20, padding: "24px 20px", maxWidth: 300, width: "100%", textAlign: "center", border: "1px solid var(--border,#2a2a3e)" }}>
+      <div style={{ background: "var(--bg-card,var(--bg-base))", borderRadius: 20, padding: "24px 20px", maxWidth: 300, width: "100%", textAlign: "center", border: "1px solid var(--border,var(--bg-elevated))" }}>
         <p style={{ fontSize: 28, marginBottom: 10 }}>⚠️</p>
-        <p style={{ color: "var(--text-primary,#e8e8f0)", fontSize: 15, fontWeight: 700, marginBottom: 8 }}>¿Salir sin guardar?</p>
-        <p style={{ color: "var(--text-secondary,#9999b3)", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>Perderás todos los datos ingresados en este formulario.</p>
+        <p style={{ color: "var(--text-primary,var(--text-primary))", fontSize: 15, fontWeight: 700, marginBottom: 8 }}>¿Salir sin guardar?</p>
+        <p style={{ color: "var(--text-secondary,var(--text-tertiary))", fontSize: 13, marginBottom: 20, lineHeight: 1.5 }}>Perderás todos los datos ingresados en este formulario.</p>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: "11px", border: "1.5px solid var(--border-strong,#2e2e42)", borderRadius: 12, background: "var(--bg-elevated,#1e1e2e)", color: "var(--text-primary,#e8e8f0)", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, fontSize: 13 }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: "11px", border: "1.5px solid var(--border-strong,var(--bg-elevated))", borderRadius: 12, background: "var(--bg-elevated,var(--bg-elevated))", color: "var(--text-primary,var(--text-primary))", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, fontSize: 13 }}>
             Seguir editando
           </button>
-          <button onClick={onConfirm} style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "rgba(244,63,94,.15)", color: "#f87171", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13 }}>
+          <button onClick={onConfirm} style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "var(--col-danger-soft)", color: "var(--col-danger)", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13 }}>
             Salir sin guardar
           </button>
         </div>
@@ -568,11 +568,11 @@ export default function NuevaClaseWizard({ clase, gymId, miembros, instructores,
 
         <div style={S.header}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <h2 style={{ color: "var(--text-primary,#e8e8f0)", fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: "linear-gradient(135deg,#6c63ff,#e040fb)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>📅</span>
+            <h2 style={{ color: "var(--text-primary,var(--text-primary))", fontSize: 17, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 32, height: 32, borderRadius: 9, flexShrink: 0, background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>📅</span>
               {esEdicion ? "Editar clase" : "Nueva clase"}
             </h2>
-            <button onClick={handleIntentarCerrar} style={{ background: "var(--bg-elevated,#1e1e2e)", border: "1px solid var(--border,#2a2a3e)", borderRadius: 10, width: 32, height: 32, cursor: "pointer", color: "var(--text-primary,#e8e8f0)", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            <button onClick={handleIntentarCerrar} style={{ background: "var(--bg-elevated,var(--bg-elevated))", border: "1px solid var(--border,var(--bg-elevated))", borderRadius: 10, width: 32, height: 32, cursor: "pointer", color: "var(--text-primary,var(--text-primary))", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
           </div>
           <ProgressBar step={step} />
         </div>

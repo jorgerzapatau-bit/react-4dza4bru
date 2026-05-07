@@ -27,7 +27,7 @@ function ResultOverlay({ result, onDismiss }) {
   const isWarn = result.resultado === "vencido";
 
   const bg      = isOk ? "rgba(22,101,52,.97)"  : isWarn ? "rgba(120,53,15,.97)" : "rgba(127,29,29,.97)";
-  const border  = isOk ? "#22c55e" : isWarn ? "#f59e0b" : "#f43f5e";
+  const border  = isOk ? "var(--col-success)" : isWarn ? "var(--col-warning)" : "var(--col-danger)";
   const icon    = isOk ? "✅" : isWarn ? "⏰" : "🚫";
   const title   = isOk ? "ACCESO PERMITIDO" : isWarn ? "MEMBRESÍA VENCIDA" : "ACCESO DENEGADO";
 
@@ -100,7 +100,7 @@ function ResultOverlay({ result, onDismiss }) {
 function LogItem({ entry }) {
   const isOk   = entry.resultado === "permitido";
   const isWarn = entry.resultado === "vencido";
-  const color  = isOk ? "#22c55e" : isWarn ? "#f59e0b" : "#f43f5e";
+  const color  = isOk ? "var(--col-success)" : isWarn ? "var(--col-warning)" : "var(--col-danger)";
   const icon   = isOk ? "✓" : isWarn ? "⏰" : "✕";
   const label  = isOk ? "Permitido" : isWarn ? "Vencido" : "Denegado";
   const time   = new Date(entry.at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -117,11 +117,11 @@ function LogItem({ entry }) {
         fontSize: 14, fontWeight: 700,
       }}>{icon}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600,
+        <p style={{ color: "var(--border)", fontSize: 13, fontWeight: 600,
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {entry.nombre || "Desconocido"}
         </p>
-        <p style={{ color: "#64748b", fontSize: 11, marginTop: 1 }}>{label} · {time}</p>
+        <p style={{ color: "var(--text-secondary)", fontSize: 11, marginTop: 1 }}>{label} · {time}</p>
       </div>
     </div>
   );
@@ -285,21 +285,21 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
   useEffect(() => () => stopCamera(), []); // eslint-disable-line
 
   // eslint-disable-next-line no-unused-vars
-  const bg     = darkMode ? "#0a0a12" : "#f4f5f9";
-  const cardBg = darkMode ? "#0d0f1e" : "#ffffff";
+  const bg     = darkMode ? "var(--bg-base)" : "#f4f5f9";
+  const cardBg = darkMode ? "#0d0f1e" : "var(--text-inverse)";
   const border = darkMode ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.07)";
-  const text   = darkMode ? "#e2e8f0" : "#1e293b";
-  const muted  = darkMode ? "#64748b" : "#94a3b8";
+  const text   = darkMode ? "var(--border)" : "var(--bg-elevated)";
+  const muted  = darkMode ? "var(--text-secondary)" : "var(--text-secondary)";
 
   return (
     <div style={{ padding: "20px 16px 40px", maxWidth: 560, margin: "0 auto", fontFamily: "inherit" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-        .scan-input { background: ${darkMode?"#111427":"#f8fafc"}; border: 1.5px solid ${border};
+        .scan-input { background: ${darkMode?"var(--bg-card)427":"#f8fafc"}; border: 1.5px solid ${border};
           border-radius: 12px; padding: 10px 14px; color: ${text}; font-size: 14px;
           font-family: inherit; outline: none; width: 100%; }
-        .scan-input:focus { border-color: #6c63ff; }
-        .scan-btn { background: linear-gradient(135deg,#6c63ff,#e040fb); border: none;
+        .scan-input:focus { border-color: var(--col-accent); }
+        .scan-btn { background: linear-gradient(135deg,var(--col-accent),var(--col-accent)); border: none;
           border-radius: 12px; padding: 10px 20px; color: #fff; font-weight: 700;
           font-size: 14px; cursor: pointer; white-space: nowrap; font-family: inherit; }
       `}</style>
@@ -320,9 +320,9 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
       {/* Stats strip */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[
-          { label: "Total hoy", value: stats.total, color: "#a78bfa" },
-          { label: "Permitidos", value: stats.ok, color: "#22c55e" },
-          { label: "Denegados", value: stats.denied, color: "#f43f5e" },
+          { label: "Total hoy", value: stats.total, color: "var(--col-accent-text)" },
+          { label: "Permitidos", value: stats.ok, color: "var(--col-success)" },
+          { label: "Denegados", value: stats.denied, color: "var(--col-danger)" },
         ].map(s => (
           <div key={s.label} style={{ background: cardBg, border: `1px solid ${border}`,
             borderRadius: 16, padding: "12px 14px", textAlign: "center" }}>
@@ -357,10 +357,10 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
                     top: t !== "" ? t : undefined, right: r !== "" ? r : undefined,
                     bottom: b !== "" ? b : undefined, left: l !== "" ? l : undefined,
                     width: 28, height: 28,
-                    borderTop:    (t !== "" && l !== "") || (t !== "" && r !== "") ? "3px solid #6c63ff" : "none",
-                    borderBottom: (b !== "" && l !== "") || (b !== "" && r !== "") ? "3px solid #6c63ff" : "none",
-                    borderLeft:   (t !== "" && l !== "") || (b !== "" && l !== "") ? "3px solid #6c63ff" : "none",
-                    borderRight:  (t !== "" && r !== "") || (b !== "" && r !== "") ? "3px solid #6c63ff" : "none",
+                    borderTop:    (t !== "" && l !== "") || (t !== "" && r !== "") ? "3px solid var(--col-accent)" : "none",
+                    borderBottom: (b !== "" && l !== "") || (b !== "" && r !== "") ? "3px solid var(--col-accent)" : "none",
+                    borderLeft:   (t !== "" && l !== "") || (b !== "" && l !== "") ? "3px solid var(--col-accent)" : "none",
+                    borderRight:  (t !== "" && r !== "") || (b !== "" && r !== "") ? "3px solid var(--col-accent)" : "none",
                     borderRadius: (t !== "" && l !== "") ? "4px 0 0 0" : (t !== "" && r !== "") ? "0 4px 0 0"
                       : (b !== "" && r !== "") ? "0 0 4px 0" : "0 0 0 4px",
                   }} />
@@ -368,7 +368,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
                 {/* Scan line */}
                 <div style={{
                   position: "absolute", left: 0, right: 0, height: 2,
-                  background: "linear-gradient(90deg,transparent,#6c63ff,#e040fb,transparent)",
+                  background: "linear-gradient(90deg,transparent,var(--col-accent),var(--col-accent),transparent)",
                   animation: "scanline 2s ease-in-out infinite",
                 }} />
                 <style>{`@keyframes scanline{0%,100%{top:0}50%{top:100%}}`}</style>
@@ -379,7 +379,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
           {/* Placeholder when camera off */}
           {!scanning && (
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center", color: "#4b4b6a" }}>
+              alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)" }}>
               <div style={{ fontSize: 48, marginBottom: 8 }}>📷</div>
               <p style={{ fontSize: 13 }}>Cámara inactiva</p>
             </div>
@@ -388,7 +388,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
           {camError && (
             <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center",
               justifyContent: "center", padding: 24, textAlign: "center" }}>
-              <p style={{ color: "#f43f5e", fontSize: 13 }}>{camError}</p>
+              <p style={{ color: "var(--col-danger)", fontSize: 13 }}>{camError}</p>
             </div>
           )}
         </div>
@@ -398,7 +398,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
           {!scanning ? (
             <button onClick={startCamera} style={{
               width: "100%", padding: "13px", border: "none", borderRadius: 14, cursor: "pointer",
-              background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
+              background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", color: "#fff",
               fontWeight: 700, fontSize: 14, fontFamily: "inherit",
               boxShadow: "0 4px 20px rgba(108,99,255,.35)",
             }}>
@@ -407,7 +407,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
           ) : (
             <button onClick={stopCamera} style={{
               width: "100%", padding: "13px", borderRadius: 14, cursor: "pointer",
-              background: "rgba(244,63,94,.1)", color: "#f43f5e", border: "1px solid rgba(244,63,94,.3)",
+              background: "var(--col-danger-soft)", color: "var(--col-danger)", border: "1px solid var(--col-danger-border)",
               fontWeight: 700, fontSize: 14, fontFamily: "inherit",
             }}>
               ⏹ Detener cámara

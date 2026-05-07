@@ -42,8 +42,8 @@ const DIAS_SHORT = {
 };
 
 const COLORES_PRESET = [
-  "#6c63ff", "#e040fb", "#f43f5e", "#f59e0b",
-  "#10b981", "#3b82f6", "#ec4899", "#f97316",
+  "var(--col-accent)", "var(--col-accent)", "var(--col-danger)", "var(--col-warning)",
+  "var(--col-success)", "var(--col-accent)", "#ec4899", "var(--col-warning)",
 ];
 
 const DURACIONES = [
@@ -56,7 +56,7 @@ const DURACIONES = [
 const FORM_CLASE_INICIAL = {
   nombre: "", descripcion: "", instructor_id: "",
   instructor_nombre: "", edad_min: "0", edad_max: "99",
-  cupo_max: "20", color: "#6c63ff", activo: true,
+  cupo_max: "20", color: "var(--col-accent)", activo: true,
   planes_ids: [], // IDs de planes_membresia vinculados
 };
 
@@ -99,7 +99,7 @@ function DiaChip({ label, activo, onClick }) {
         padding: "5px 10px", border: "none", borderRadius: 8, cursor: "pointer",
         fontFamily: "inherit", fontSize: 10, fontWeight: 700, letterSpacing: .5,
         transition: "all .15s",
-        background: activo ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+        background: activo ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
         color: activo ? "#fff" : "var(--text-secondary)",
         boxShadow: activo ? "0 2px 8px rgba(108,99,255,.35)" : "none",
       }}
@@ -131,7 +131,7 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
     : inscripciones.filter(i => i.clase_id === clase.id && i.estado === "activa").length;
 
   const pct = clase.cupo_max > 0 ? Math.round((inscritos / clase.cupo_max) * 100) : 0;
-  const cupoColor = pct >= 90 ? "#f87171" : pct >= 70 ? "#f59e0b" : "#4ade80";
+  const cupoColor = pct >= 90 ? "var(--col-danger)" : pct >= 70 ? "var(--col-warning)" : "var(--col-success)";
 
   return (
     <div
@@ -139,7 +139,7 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
       style={{
         background: "var(--bg-card)",
         border: "1px solid var(--border)",
-        borderLeft: `4px solid ${clase.color || "#6c63ff"}`,
+        borderLeft: `4px solid ${clase.color || "var(--col-accent)"}`,
         borderRadius: "0 18px 18px 0",
         padding: "16px 16px 14px",
         cursor: "pointer",
@@ -153,7 +153,7 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
       {/* Fondo decorativo */}
       <div style={{
         position: "absolute", top: -20, right: -20, width: 80, height: 80,
-        borderRadius: "50%", background: clase.color || "#6c63ff", opacity: .06, pointerEvents: "none",
+        borderRadius: "50%", background: clase.color || "var(--col-accent)", opacity: .06, pointerEvents: "none",
       }} />
 
       {/* Header */}
@@ -177,7 +177,7 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
           <div key={h.id} style={{ marginBottom: 6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
               <span style={{ fontSize: 13 }}>🕐</span>
-              <span style={{ color: clase.color || "#6c63ff", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
+              <span style={{ color: clase.color || "var(--col-accent)", fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
                 {fmtHora(h.hora_inicio)} - {fmtHora(h.hora_fin)}
               </span>
             </div>
@@ -200,8 +200,8 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
             width: 28, height: 28, borderRadius: "50%",
-            background: `${clase.color || "#6c63ff"}22`,
-            color: clase.color || "#6c63ff",
+            background: `${clase.color || "var(--col-accent)"}22`,
+            color: clase.color || "var(--col-accent)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 10, fontWeight: 700,
           }}>
@@ -238,8 +238,8 @@ function ClaseCard({ clase, horarios, inscripciones, miembros, txs, planes, onSe
             {planesVinculados.map(p => (
               <span key={p.id} style={{
                 fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5,
-                background: "rgba(108,99,255,.12)", color: "#a78bfa",
-                border: "1px solid rgba(108,99,255,.2)",
+                background: "var(--col-accent-soft)", color: "var(--col-accent-text)",
+                border: "1px solid var(--col-accent-border)",
               }}>
                 💳 {p.nombre}
               </span>
@@ -264,7 +264,7 @@ function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
           instructor_nombre: clase.instructor_nombre || "",
           edad_min: String(clase.edad_min ?? 0), edad_max: String(clase.edad_max ?? 99),
           cupo_max: String(clase.cupo_max ?? 20),
-          color: clase.color || "#6c63ff", activo: clase.activo !== false,
+          color: clase.color || "var(--col-accent)", activo: clase.activo !== false,
           // Inferir planes vinculados desde planes.clases_vinculadas
           planes_ids: (planes || [])
             .filter(p => (p.clases_vinculadas || []).map(String).includes(String(clase.id)))
@@ -331,7 +331,7 @@ function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
   return (
     <Modal title={esEdicion ? "Editar clase" : "Nueva clase"} onClose={onClose}>
       {error && (
-        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f87171", fontSize: 12 }}>
+        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "var(--col-danger)", fontSize: 12 }}>
           {error}
         </div>
       )}
@@ -369,8 +369,8 @@ function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
           Planes con acceso
         </p>
         {(!planes || planes.length === 0) ? (
-          <div style={{ background: "rgba(108,99,255,.08)", border: "1px dashed rgba(108,99,255,.3)", borderRadius: 12, padding: "12px 14px" }}>
-            <p style={{ color: "#a78bfa", fontSize: 12, textAlign: "center" }}>
+          <div style={{ background: "var(--col-accent-soft)", border: "1px dashed var(--col-accent-border)", borderRadius: 12, padding: "12px 14px" }}>
+            <p style={{ color: "var(--col-accent-text)", fontSize: 12, textAlign: "center" }}>
               💳 Primero crea planes en <strong>Membresías</strong> y luego vincúlalos aquí.
             </p>
           </div>
@@ -387,9 +387,9 @@ function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
                   )}
                   style={{
                     width: "100%", padding: "11px 14px",
-                    border: seleccionado ? "2px solid #6c63ff" : "1.5px solid rgba(255,255,255,.08)",
+                    border: seleccionado ? "2px solid var(--col-accent)" : "1.5px solid rgba(255,255,255,.08)",
                     borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                    background: seleccionado ? "rgba(108,99,255,.12)" : "var(--bg-elevated)",
+                    background: seleccionado ? "var(--col-accent-soft)" : "var(--bg-elevated)",
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     transition: "all .18s",
                   }}
@@ -397,19 +397,19 @@ function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                     <div style={{
                       width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-                      border: `2px solid ${seleccionado ? "#6c63ff" : "rgba(255,255,255,.2)"}`,
-                      background: seleccionado ? "#6c63ff" : "transparent",
+                      border: `2px solid ${seleccionado ? "var(--col-accent)" : "rgba(255,255,255,.2)"}`,
+                      background: seleccionado ? "var(--col-accent)" : "transparent",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
                       {seleccionado && <span style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>✓</span>}
                     </div>
-                    <span style={{ color: seleccionado ? "#c4b5fd" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionado ? 700 : 500 }}>
+                    <span style={{ color: seleccionado ? "var(--col-accent-text)" : "var(--text-primary)", fontSize: 13, fontWeight: seleccionado ? 700 : 500 }}>
                       {p.nombre}
                     </span>
                   </div>
                   <span style={{
-                    background: seleccionado ? "rgba(108,99,255,.2)" : "rgba(255,255,255,.06)",
-                    color: seleccionado ? "#c4b5fd" : "var(--text-secondary)",
+                    background: seleccionado ? "var(--col-accent-border)" : "rgba(255,255,255,.06)",
+                    color: seleccionado ? "var(--col-accent-text)" : "var(--text-secondary)",
                     borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 700,
                     fontFamily: "'DM Mono', monospace",
                   }}>
@@ -457,7 +457,7 @@ function ModalClase({ clase, gymId, miembros, planes, onSave, onClose }) {
             onClick={() => set("activo", !form.activo)}
             style={{
               width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
-              background: form.activo ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+              background: form.activo ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
               position: "relative", transition: "background .2s", flexShrink: 0,
             }}
           >
@@ -538,7 +538,7 @@ function ModalHorario({ horario, claseId, gymId, onSave, onClose }) {
   return (
     <Modal title={esEdicion ? "Editar horario" : "Nuevo horario"} onClose={onClose}>
       {error && (
-        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f87171", fontSize: 12 }}>
+        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "var(--col-danger)", fontSize: 12 }}>
           {error}
         </div>
       )}
@@ -677,21 +677,21 @@ function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, on
     <Modal title={`Inscribir a ${clase.nombre}`} onClose={onClose}>
       {/* Info cupo */}
       <div style={{
-        background: `${clase.color || "#6c63ff"}14`,
-        border: `1px solid ${clase.color || "#6c63ff"}30`,
+        background: `${clase.color || "var(--col-accent)"}14`,
+        border: `1px solid ${clase.color || "var(--col-accent)"}30`,
         borderRadius: 12, padding: "10px 16px", marginBottom: 16,
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <div>
           <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Cupo disponible</p>
-          <p style={{ color: cupoDisponible > 0 ? "#4ade80" : "#f87171", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
+          <p style={{ color: cupoDisponible > 0 ? "var(--col-success)" : "var(--col-danger)", fontSize: 20, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>
             {cupoDisponible} / {clase.cupo_max}
           </p>
         </div>
         {(clase.edad_min > 0 || clase.edad_max < 99) && (
           <div style={{ textAlign: "right" }}>
             <p style={{ color: "var(--text-secondary)", fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Rango de edad</p>
-            <p style={{ color: clase.color || "#6c63ff", fontSize: 16, fontWeight: 700 }}>
+            <p style={{ color: clase.color || "var(--col-accent)", fontSize: 16, fontWeight: 700 }}>
               {clase.edad_min}–{clase.edad_max} años
             </p>
           </div>
@@ -700,30 +700,30 @@ function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, on
 
       {/* Info membresía requerida */}
       {planesVinculados.length > 0 && (
-        <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
-          <p style={{ color: "#a78bfa", fontSize: 11, fontWeight: 600, margin: "0 0 4px" }}>💳 Requiere membresía activa:</p>
+        <div style={{ background: "var(--col-accent-soft)", border: "1px solid var(--col-accent-border)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
+          <p style={{ color: "var(--col-accent-text)", fontSize: 11, fontWeight: 600, margin: "0 0 4px" }}>💳 Requiere membresía activa:</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {planesVinculados.map(p => (
-              <span key={p.id} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 5, background: "rgba(108,99,255,.15)", color: "#c4b5fd" }}>{p.nombre}</span>
+              <span key={p.id} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 5, background: "var(--col-accent-soft)", color: "var(--col-accent-text)" }}>{p.nombre}</span>
             ))}
           </div>
         </div>
       )}
 
       {cupoDisponible <= 0 && (
-        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f87171", fontSize: 12, textAlign: "center" }}>
+        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "var(--col-danger)", fontSize: 12, textAlign: "center" }}>
           🚫 Esta clase está llena.
         </div>
       )}
 
       {error && (
-        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f87171", fontSize: 12 }}>
+        <div style={{ background: "rgba(248,113,113,.12)", border: "1px solid rgba(248,113,113,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "var(--col-danger)", fontSize: 12 }}>
           {error}
         </div>
       )}
 
       {advertenciaEdad && (
-        <div style={{ background: "rgba(245,158,11,.12)", border: "1px solid rgba(245,158,11,.3)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "#f59e0b", fontSize: 12 }}>
+        <div style={{ background: "var(--col-warning-soft)", border: "1px solid var(--col-warning-border)", borderRadius: 10, padding: "10px 14px", marginBottom: 14, color: "var(--col-warning)", fontSize: 12 }}>
           {advertenciaEdad}
         </div>
       )}
@@ -761,9 +761,9 @@ function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, on
                 >
                   <div style={{
                     width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
-                    background: "linear-gradient(135deg,#6c63ff33,#e040fb33)",
+                    background: "linear-gradient(135deg,var(--col-accent)33,var(--col-accent)33)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#a78bfa", fontWeight: 700, fontSize: 12, overflow: "hidden",
+                    color: "var(--col-accent-text)", fontWeight: 700, fontSize: 12, overflow: "hidden",
                   }}>
                     {m.foto ? <img src={m.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : avatarIniciales(m.nombre)}
                   </div>
@@ -771,8 +771,8 @@ function ModalInscribir({ clase, gymId, miembros, txs, inscripciones, planes, on
                     <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{m.nombre}</p>
                     <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>
                       {edad !== null ? `${edad} años` : "Sin edad"}
-                      {!edadOk && <span style={{ color: "#f87171" }}> · Edad fuera de rango</span>}
-                      {edadOk && !tienePlan && planesIds.size > 0 && <span style={{ color: "#f59e0b" }}> · Sin membresía</span>}
+                      {!edadOk && <span style={{ color: "var(--col-danger)" }}> · Edad fuera de rango</span>}
+                      {edadOk && !tienePlan && planesIds.size > 0 && <span style={{ color: "var(--col-warning)" }}> · Sin membresía</span>}
                     </p>
                   </div>
                 </button>
@@ -870,13 +870,13 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
       {/* Header info */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <span style={{
-          background: `${clase.color || "#6c63ff"}20`,
-          color: clase.color || "#6c63ff",
+          background: `${clase.color || "var(--col-accent)"}20`,
+          color: clase.color || "var(--col-accent)",
           borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700,
         }}>
           {alumnosConMembresia.length} / {clase.cupo_max} alumnos
         </span>
-        <span style={{ background: "rgba(74,222,128,.12)", color: "#4ade80", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
+        <span style={{ background: "var(--col-success-soft)", color: "var(--col-success)", borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700 }}>
           {planesVinculados.length > 0
             ? `💳 ${planesVinculados.length} plan${planesVinculados.length !== 1 ? "es" : ""}`
             : "Sin plan vinculado"
@@ -900,7 +900,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
             style={{
               flex: 1, padding: "8px", border: "none", borderRadius: 10, cursor: "pointer",
               fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-              background: tabActiva === t.k ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+              background: tabActiva === t.k ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
               color: tabActiva === t.k ? "#fff" : "var(--text-secondary)",
             }}
           >{t.l}</button>
@@ -913,13 +913,13 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
           {/* Aviso informativo cuando hay planes vinculados */}
           {planesIds.size > 0 && (
             <div style={{
-              background: "rgba(108,99,255,.08)",
-              border: "1px solid rgba(108,99,255,.2)",
+              background: "var(--col-accent-soft)",
+              border: "1px solid var(--col-accent-border)",
               borderRadius: 12, padding: "9px 13px", marginBottom: 12,
               display: "flex", alignItems: "center", gap: 8,
             }}>
               <span style={{ fontSize: 14 }}>💳</span>
-              <p style={{ color: "#a78bfa", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
+              <p style={{ color: "var(--col-accent-text)", fontSize: 11, margin: 0, lineHeight: 1.4 }}>
                 Se muestran automáticamente los miembros con membresía activa vinculada a esta clase.
               </p>
             </div>
@@ -982,8 +982,8 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                 {/* Avatar */}
                 <div style={{
                   width: 38, height: 38, borderRadius: "50%", flexShrink: 0, overflow: "hidden",
-                  background: `${clase.color || "#6c63ff"}22`,
-                  color: clase.color || "#6c63ff",
+                  background: `${clase.color || "var(--col-accent)"}22`,
+                  color: clase.color || "var(--col-accent)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 13, fontWeight: 700,
                 }}>
@@ -998,7 +998,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                   <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                     {m.nombre}
                   </p>
-                  <p style={{ color: urgente ? "#f59e0b" : "var(--text-tertiary)", fontSize: 11 }}>
+                  <p style={{ color: urgente ? "var(--col-warning)" : "var(--text-tertiary)", fontSize: 11 }}>
                     {edad !== null ? `${edad} años · ` : ""}
                     {urgente
                       ? `⚠️ Vence en ${diasRestantes}d (${venceTexto})`
@@ -1010,7 +1010,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                 {/* Badge plan */}
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
-                  background: "rgba(74,222,128,.12)", color: "#4ade80",
+                  background: "var(--col-success-soft)", color: "var(--col-success)",
                   flexShrink: 0,
                 }}>
                   ✓ Activo
@@ -1049,12 +1049,12 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
-                  <p style={{ color: clase.color || "#6c63ff", fontSize: 15, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginBottom: 4 }}>
+                  <p style={{ color: clase.color || "var(--col-accent)", fontSize: 15, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginBottom: 4 }}>
                     {fmtHora(h.hora_inicio)} — {fmtHora(h.hora_fin)}
                   </p>
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 4 }}>
                     {(h.dias_semana || []).map(d => (
-                      <span key={d} style={{ background: `${clase.color || "#6c63ff"}18`, color: clase.color || "#6c63ff", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
+                      <span key={d} style={{ background: `${clase.color || "var(--col-accent)"}18`, color: clase.color || "var(--col-accent)", borderRadius: 5, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>
                         {DIAS_SHORT[d?.toLowerCase()] || d}
                       </span>
                     ))}
@@ -1072,7 +1072,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
                       ✏️
                     </button>
                     <button onClick={() => onEliminarHorario(h)}
-                      style={{ border: "none", background: "rgba(248,113,113,.12)", color: "#f87171", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12 }}>
+                      style={{ border: "none", background: "rgba(248,113,113,.12)", color: "var(--col-danger)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12 }}>
                       🗑️
                     </button>
                   </div>
@@ -1086,8 +1086,8 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
       {/* Tab: Membresías */}
       {tabActiva === "membresias" && (
         <>
-          <div style={{ background: "rgba(108,99,255,.08)", border: "1px solid rgba(108,99,255,.2)", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
-            <p style={{ color: "#a78bfa", fontSize: 12, margin: 0 }}>💳 Planes de membresía que incluyen acceso a esta clase.</p>
+          <div style={{ background: "var(--col-accent-soft)", border: "1px solid var(--col-accent-border)", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
+            <p style={{ color: "var(--col-accent-text)", fontSize: 12, margin: 0 }}>💳 Planes de membresía que incluyen acceso a esta clase.</p>
           </div>
           {planesVinculados.length === 0 ? (
             <div style={{ textAlign: "center", padding: "28px 0" }}>
@@ -1103,7 +1103,7 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
             }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                background: "linear-gradient(135deg,rgba(108,99,255,.25),rgba(224,64,251,.2))",
+                background: "linear-gradient(135deg,var(--col-accent-soft),rgba(224,64,251,.2))",
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
               }}>💳</div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1114,8 +1114,8 @@ function ModalDetalle({ clase, horarios, inscripciones, miembros, txs, gymId, is
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6,
-                background: p.activo ? "rgba(74,222,128,.12)" : "rgba(248,113,113,.1)",
-                color: p.activo ? "#4ade80" : "#f87171",
+                background: p.activo ? "var(--col-success-soft)" : "rgba(248,113,113,.1)",
+                color: p.activo ? "var(--col-success)" : "var(--col-danger)",
               }}>{p.activo ? "Activo" : "Inactivo"}</span>
             </div>
           ))}
@@ -1293,12 +1293,12 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <div style={{
               width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-              background: "linear-gradient(135deg,#6c63ff,#e040fb)",
+              background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
             }}>📅</div>
             <div style={{ flex: 1 }}>
               <h1 style={{ color: "var(--text-primary)", fontSize: 19, fontWeight: 700, lineHeight: 1.2 }}>
-                Gestión de <span style={{ background: "linear-gradient(90deg,#6c63ff,#e040fb)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Horarios</span>
+                Gestión de <span style={{ background: "linear-gradient(90deg,var(--col-accent),var(--col-accent))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Horarios</span>
               </h1>
               <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>Sincronización de clases y grupos operativos</p>
             </div>
@@ -1320,7 +1320,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                   style={{
                     border: "none", borderRadius: 12, padding: "8px 16px", cursor: "pointer",
                     fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                    background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
+                    background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", color: "#fff",
                     boxShadow: "0 3px 14px rgba(108,99,255,.35)",
                   }}
                 >
@@ -1334,9 +1334,9 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
             {[
               { label: "Clases activas",    val: stats.clasesActivas, icon: "📚", color: "var(--text-primary)" },
-              { label: "Instructores",      val: instructores.length, icon: "👤", color: "#4ade80" },
-              { label: "Alumnos inscritos", val: stats.totalInscritos, icon: "👥", color: "#f59e0b" },
-              { label: "Clase más popular", val: stats.masPopular?.nombre || "N/A", icon: "🏆", color: "#f87171", small: true },
+              { label: "Instructores",      val: instructores.length, icon: "👤", color: "var(--col-success)" },
+              { label: "Alumnos inscritos", val: stats.totalInscritos, icon: "👥", color: "var(--col-warning)" },
+              { label: "Clase más popular", val: stats.masPopular?.nombre || "N/A", icon: "🏆", color: "var(--col-danger)", small: true },
             ].map((s, i) => (
               <div key={i} style={{
                 background: "var(--bg-card)", border: "1px solid var(--border)",
@@ -1384,7 +1384,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
               style={{
                 flexShrink: 0, padding: "5px 14px", border: "none", borderRadius: 20, cursor: "pointer",
                 fontFamily: "inherit", fontSize: 11, fontWeight: 700,
-                background: filtroDia === "todos" ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                background: filtroDia === "todos" ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
                 color: filtroDia === "todos" ? "#fff" : "var(--text-secondary)",
               }}
             >
@@ -1395,7 +1395,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                 style={{
                   flexShrink: 0, padding: "5px 14px", border: "none", borderRadius: 20, cursor: "pointer",
                   fontFamily: "inherit", fontSize: 11, fontWeight: 700,
-                  background: filtroDia === d.key ? "linear-gradient(135deg,#6c63ff,#e040fb)" : "var(--bg-elevated)",
+                  background: filtroDia === d.key ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))" : "var(--bg-elevated)",
                   color: filtroDia === d.key ? "#fff" : "var(--text-secondary)",
                 }}
               >
@@ -1412,7 +1412,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
 
           {loading ? (
             <div style={{ textAlign: "center", padding: "60px 0" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(108,99,255,.2)", borderTopColor: "#6c63ff", margin: "0 auto 14px", animation: "spin .8s linear infinite" }} />
+              <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid var(--col-accent-border)", borderTopColor: "var(--col-accent)", margin: "0 auto 14px", animation: "spin .8s linear infinite" }} />
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
               <p style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Cargando clases...</p>
             </div>
@@ -1428,7 +1428,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                   style={{
                     marginTop: 12, border: "none", borderRadius: 12, padding: "10px 22px",
                     cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700,
-                    background: "linear-gradient(135deg,#6c63ff,#e040fb)", color: "#fff",
+                    background: "linear-gradient(135deg,var(--col-accent),var(--col-accent))", color: "#fff",
                   }}
                 >
                   + Crear primera clase
@@ -1554,7 +1554,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                   Cancelar
                 </button>
                 <button onClick={() => handleDarBaja(confirmDarBaja)}
-                  style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
+                  style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,var(--col-danger),var(--col-danger))", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }}>
                   Dar de baja
                 </button>
               </div>
@@ -1566,14 +1566,14 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
       {/* Confirmación eliminar horario */}
       {confirmEliminarHorario && (() => {
         const h = confirmEliminarHorario;
-        const color = modalDetalle?.color || "#6c63ff";
+        const color = modalDetalle?.color || "var(--col-accent)";
         return (
           <div style={{
             position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", backdropFilter: "blur(8px)",
             zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
           }}>
             <div style={{ background: "var(--bg-card)", borderRadius: 20, padding: "28px 24px", maxWidth: 340, width: "100%", textAlign: "center", boxShadow: "0 24px 60px rgba(0,0,0,.4)" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(244,63,94,.12)", border: "2px solid rgba(244,63,94,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 16px" }}>🗑️</div>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--col-danger-soft)", border: "2px solid rgba(244,63,94,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, margin: "0 auto 16px" }}>🗑️</div>
               <h3 style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 700, marginBottom: 6 }}>¿Eliminar horario?</h3>
               <p style={{ color, fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace", marginBottom: 6 }}>
                 {fmtHora(h.hora_inicio)} — {fmtHora(h.hora_fin)}
@@ -1592,7 +1592,7 @@ export default function HorariosScreen({ gymId, miembros, txs, gymConfig, onAddT
                   Cancelar
                 </button>
                 <button onClick={doEliminarHorario}
-                  style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,#f43f5e,#e11d48)", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13 }}>
+                  style={{ flex: 1, padding: "11px", border: "none", borderRadius: 12, background: "linear-gradient(135deg,var(--col-danger),var(--col-danger))", color: "#fff", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13 }}>
                   Eliminar
                 </button>
               </div>

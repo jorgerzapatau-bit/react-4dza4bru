@@ -26,7 +26,7 @@ export default function InstructorSelect({
   value = "",
   onChange,
   placeholder = "— Sin instructor —",
-  color = "#6c63ff",
+  color = "var(--col-accent)",
 }) {
   const [open, setOpen]       = useState(false);
   const [query, setQuery]     = useState("");
@@ -72,13 +72,13 @@ export default function InstructorSelect({
 
   const triggerStyle = {
     width: "100%",
-    background: "var(--bg-elevated, #1e1e2e)",
+    background: "var(--bg-elevated, var(--bg-elevated))",
     border: open
       ? `1.5px solid ${color}`
-      : "1px solid var(--border-strong, #2e2e42)",
+      : "1px solid var(--border-strong, var(--bg-elevated))",
     borderRadius: open ? "12px 12px 0 0" : 12,
     padding: "11px 14px",
-    color: "var(--text-primary, #e8e8f0)",
+    color: "var(--text-primary, var(--text-primary))",
     fontSize: 13, fontFamily: "inherit",
     cursor: "pointer",
     display: "flex", alignItems: "center", gap: 10,
@@ -90,7 +90,7 @@ export default function InstructorSelect({
   const dropdownStyle = {
     position: "absolute",
     top: "100%", left: 0, right: 0,
-    background: "var(--bg-elevated, #1e1e2e)",
+    background: "var(--bg-elevated, var(--bg-elevated))",
     border: `1.5px solid ${color}`,
     borderTop: "none",
     borderRadius: "0 0 12px 12px",
@@ -132,21 +132,21 @@ export default function InstructorSelect({
               }
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: "var(--text-primary, #e8e8f0)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+              <p style={{ color: "var(--text-primary, var(--text-primary))", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                 {selected.nombre}
               </p>
               {selected.especialidad && (
-                <p style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                <p style={{ color: "var(--text-tertiary, var(--text-secondary))", fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                   {selected.especialidad}
                 </p>
               )}
             </div>
           </>
         ) : (
-          <span style={{ color: "var(--text-tertiary, #6b6b8a)", flex: 1 }}>{placeholder}</span>
+          <span style={{ color: "var(--text-tertiary, var(--text-secondary))", flex: 1 }}>{placeholder}</span>
         )}
         <svg width="12" height="12" viewBox="0 0 12 12" style={{ flexShrink: 0, transition: "transform .15s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
-          <path fill="var(--text-tertiary, #6b6b8a)" d="M6 8L1 3h10z" />
+          <path fill="var(--text-tertiary, var(--text-secondary))" d="M6 8L1 3h10z" />
         </svg>
       </div>
 
@@ -154,7 +154,7 @@ export default function InstructorSelect({
       {open && (
         <div style={dropdownStyle}>
           {/* Búsqueda */}
-          <div style={{ padding: "8px 10px", borderBottom: "1px solid var(--border, #2a2a3e)", flexShrink: 0 }}>
+          <div style={{ padding: "8px 10px", borderBottom: "1px solid var(--border, var(--bg-elevated))", flexShrink: 0 }}>
             <input
               ref={inputRef}
               type="text"
@@ -162,9 +162,9 @@ export default function InstructorSelect({
               onChange={e => setQuery(e.target.value)}
               placeholder="Buscar instructor..."
               style={{
-                width: "100%", background: "var(--bg-card, #12121f)",
-                border: "1px solid var(--border, #2a2a3e)", borderRadius: 8,
-                padding: "8px 10px", color: "var(--text-primary, #e8e8f0)",
+                width: "100%", background: "var(--bg-card, var(--bg-base))",
+                border: "1px solid var(--border, var(--bg-elevated))", borderRadius: 8,
+                padding: "8px 10px", color: "var(--text-primary, var(--text-primary))",
                 fontSize: 12, fontFamily: "inherit", outline: "none",
                 boxSizing: "border-box",
               }}
@@ -182,23 +182,23 @@ export default function InstructorSelect({
                 background: !value ? `${color}15` : "transparent",
                 cursor: "pointer", fontFamily: "inherit",
                 display: "flex", alignItems: "center", gap: 10,
-                textAlign: "left", borderBottom: "1px solid var(--border, #2a2a3e)",
+                textAlign: "left", borderBottom: "1px solid var(--border, var(--bg-elevated))",
               }}
-              onMouseEnter={e => { if (value) e.currentTarget.style.background = "var(--bg-card, #12121f)"; }}
+              onMouseEnter={e => { if (value) e.currentTarget.style.background = "var(--bg-card, var(--bg-base))"; }}
               onMouseLeave={e => { if (value) e.currentTarget.style.background = "transparent"; }}
               onMouseDown={e => { e.preventDefault(); handleSelect(null); }}
             >
               <div style={{
                 width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                background: "var(--border, #2a2a3e)",
+                background: "var(--border, var(--bg-elevated))",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 14,
               }}>🚫</div>
-              <span style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 12 }}>Sin instructor</span>
+              <span style={{ color: "var(--text-tertiary, var(--text-secondary))", fontSize: 12 }}>Sin instructor</span>
             </button>
 
             {filtrados.length === 0 && (
-              <p style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 12, textAlign: "center", padding: "16px 0" }}>
+              <p style={{ color: "var(--text-tertiary, var(--text-secondary))", fontSize: 12, textAlign: "center", padding: "16px 0" }}>
                 Sin resultados
               </p>
             )}
@@ -215,10 +215,10 @@ export default function InstructorSelect({
                     background: isSel ? `${color}18` : "transparent",
                     cursor: "pointer", fontFamily: "inherit",
                     display: "flex", alignItems: "center", gap: 10,
-                    textAlign: "left", borderBottom: "1px solid var(--border, #2a2a3e)",
+                    textAlign: "left", borderBottom: "1px solid var(--border, var(--bg-elevated))",
                     transition: "background .12s",
                   }}
-                  onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "var(--bg-card, #12121f)"; }}
+                  onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = "var(--bg-card, var(--bg-base))"; }}
                   onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = "transparent"; }}
                   onMouseDown={e => { e.preventDefault(); handleSelect(inst); }}
                 >
@@ -237,14 +237,14 @@ export default function InstructorSelect({
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
-                      color: isSel ? color : "var(--text-primary, #e8e8f0)",
+                      color: isSel ? color : "var(--text-primary, var(--text-primary))",
                       fontSize: 13, fontWeight: isSel ? 700 : 500,
                       overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis",
                     }}>
                       {inst.nombre}
                     </p>
                     {inst.especialidad && (
-                      <p style={{ color: "var(--text-tertiary, #6b6b8a)", fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                      <p style={{ color: "var(--text-tertiary, var(--text-secondary))", fontSize: 11, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
                         {inst.especialidad}
                       </p>
                     )}

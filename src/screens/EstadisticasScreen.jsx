@@ -51,34 +51,34 @@ export default function EstadisticasScreen({
         {/* Annual summary cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
           {[
-            { label: "Ingresos anuales", val: totalIngYear, c: "#22d3ee", bg: "rgba(34,211,238,.08)", bc: "rgba(34,211,238,.18)" },
-            { label: "Gastos anuales", val: totalGasYear, c: "#f43f5e", bg: "rgba(244,63,94,.08)", bc: "rgba(244,63,94,.18)" },
-            { label: "Utilidad anual", val: totalUtilYear, c: totalUtilYear >= 0 ? "#4ade80" : "#f87171", bg: totalUtilYear >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", bc: totalUtilYear >= 0 ? "rgba(74,222,128,.2)" : "rgba(248,113,113,.2)" },
+            { label: "Ingresos anuales", val: totalIngYear, c: "var(--col-info)", bg: "rgba(34,211,238,.08)", bc: "rgba(34,211,238,.18)" },
+            { label: "Gastos anuales", val: totalGasYear, c: "var(--col-danger)", bg: "var(--col-danger-soft)", bc: "rgba(244,63,94,.18)" },
+            { label: "Utilidad anual", val: totalUtilYear, c: totalUtilYear >= 0 ? "var(--col-success)" : "var(--col-danger)", bg: totalUtilYear >= 0 ? "rgba(74,222,128,.08)" : "rgba(248,113,113,.08)", bc: totalUtilYear >= 0 ? "var(--col-success-border)" : "rgba(248,113,113,.2)" },
           ].map((k, i) => (
             <div key={i} style={{ background: k.bg, border: `1px solid ${k.bc}`, borderRadius: 16, padding: "12px 10px" }}>
-              <p style={{ color: "#8b949e", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{k.label}</p>
+              <p style={{ color: "var(--text-secondary)", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: .4, marginBottom: 4 }}>{k.label}</p>
               <p style={{ color: k.c, fontSize: 13, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt(k.val)}</p>
             </div>
           ))}
         </div>
 
         {/* Mejor mes */}
-        <div style={{ background: "linear-gradient(135deg,rgba(108,99,255,.15),rgba(224,64,251,.1))", border: "1px solid rgba(108,99,255,.25)", borderRadius: 16, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: "linear-gradient(135deg,var(--col-accent-soft),rgba(224,64,251,.1))", border: "1px solid var(--col-accent-soft)", borderRadius: 16, padding: "12px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>🏆 Mejor mes</p>
+            <p style={{ color: "var(--col-accent-text)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: .5, marginBottom: 3 }}>🏆 Mejor mes</p>
             <p style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 700 }}>{mejorMes.label} {mejorMes.year}</p>
           </div>
-          <p style={{ color: "#4ade80", fontSize: 16, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt(mejorMes.util)}</p>
+          <p style={{ color: "var(--col-success)", fontSize: 16, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{fmt(mejorMes.util)}</p>
         </div>
 
         {/* Controls: filter tabs + chart type toggle */}
         <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
           <div style={{ flex: 1, display: "flex", gap: 3, background: "var(--bg-elevated)", borderRadius: 12, padding: 3 }}>
-            {[["Todo","#a78bfa"], ["Ingresos","#22d3ee"], ["Gastos","#f43f5e"], ["Utilidad","#4ade80"]].map(([label, clr], i) => (
+            {[["Todo","var(--col-accent-text)"], ["Ingresos","var(--col-info)"], ["Gastos","var(--col-danger)"], ["Utilidad","var(--col-success)"]].map(([label, clr], i) => (
               <button key={i} onClick={() => setStatsTab(i)}
                 style={{ flex: 1, padding: "7px 0", border: "none", borderRadius: 9, cursor: "pointer", fontFamily: "inherit",
                   background: statsTab === i ? `${clr}25` : "transparent",
-                  color: statsTab === i ? clr : "#8b949e",
+                  color: statsTab === i ? clr : "var(--text-secondary)",
                   fontSize: 10, fontWeight: statsTab === i ? 700 : 500,
                   borderBottom: statsTab === i ? `2px solid ${clr}` : "2px solid transparent",
                   transition: "all .2s" }}>{label}</button>
@@ -94,9 +94,9 @@ export default function EstadisticasScreen({
         {(() => {
           const CHART_H = 140;
           const SERIES = [
-            { key: "ing", color: "#22d3ee", label: "Ing" },
-            { key: "gas", color: "#f43f5e", label: "Gas" },
-            { key: "util", color: "#4ade80", negColor: "#f87171", label: "Util" },
+            { key: "ing", color: "var(--col-info)", label: "Ing" },
+            { key: "gas", color: "var(--col-danger)", label: "Gas" },
+            { key: "util", color: "var(--col-success)", negColor: "var(--col-danger)", label: "Util" },
           ];
           const activeSeries = statsTab === 0 ? SERIES : statsTab === 1 ? [SERIES[0]] : statsTab === 2 ? [SERIES[1]] : [SERIES[2]];
           const allVals = mesesData.flatMap(d => activeSeries.map(s => Math.abs(d[s.key])));
@@ -125,7 +125,7 @@ export default function EstadisticasScreen({
                   })}
                 </div>
                 {statsTab === 0 && <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 10 }}>
-                  {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} /><span style={{ color: "#8b949e", fontSize: 9 }}>{s.label}</span></div>)}
+                  {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 8, height: 8, borderRadius: 2, background: s.color }} /><span style={{ color: "var(--text-secondary)", fontSize: 9 }}>{s.label}</span></div>)}
                 </div>}
               </div>
             );
@@ -147,7 +147,7 @@ export default function EstadisticasScreen({
           return (
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 20, padding: "16px 12px 10px", marginBottom: 16 }}>
               <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width: "100%", height: H + 20, overflow: "visible" }}>
-                {[0.25, 0.5, 0.75, 1].map(f => <line key={f} x1={0} y1={H - f * H * 0.9 - 8} x2={W} y2={H - f * H * 0.9 - 8} stroke="#21262d" strokeWidth="1" />)}
+                {[0.25, 0.5, 0.75, 1].map(f => <line key={f} x1={0} y1={H - f * H * 0.9 - 8} x2={W} y2={H - f * H * 0.9 - 8} stroke="var(--bg-elevated)" strokeWidth="1" />)}
                 {activeSeries.map(s => {
                   const points = pts(s);
                   const d = pathD(points);
@@ -158,14 +158,14 @@ export default function EstadisticasScreen({
                       <defs><linearGradient id={`grad-${s.key}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={clr} stopOpacity="0.25"/><stop offset="100%" stopColor={clr} stopOpacity="0"/></linearGradient></defs>
                       <path d={areaD} fill={`url(#grad-${s.key})`} />
                       <path d={d} fill="none" stroke={clr} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      {points.map(([x,y], i) => <circle key={i} cx={x} cy={y} r={mesesData[i].isCurrent ? 4 : 2.5} fill={clr} stroke="#13131f" strokeWidth="1.5" />)}
+                      {points.map(([x,y], i) => <circle key={i} cx={x} cy={y} r={mesesData[i].isCurrent ? 4 : 2.5} fill={clr} stroke="var(--bg-base)" strokeWidth="1.5" />)}
                     </g>
                   );
                 })}
-                {mesesData.map((d, i) => <text key={i} x={(i / (mesesData.length-1)) * W} y={H + 16} textAnchor="middle" fill={d.isCurrent ? "var(--text-primary)" : "#8b949e"} fontSize="8" fontWeight={d.isCurrent ? "700" : "400"}>{d.label}</text>)}
+                {mesesData.map((d, i) => <text key={i} x={(i / (mesesData.length-1)) * W} y={H + 16} textAnchor="middle" fill={d.isCurrent ? "var(--text-primary)" : "var(--text-secondary)"} fontSize="8" fontWeight={d.isCurrent ? "700" : "400"}>{d.label}</text>)}
               </svg>
               {statsTab === 0 && <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 4 }}>
-                {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 16, height: 2, background: s.color, borderRadius: 2 }} /><span style={{ color: "#8b949e", fontSize: 9 }}>{s.label}</span></div>)}
+                {SERIES.map(s => <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 16, height: 2, background: s.color, borderRadius: 2 }} /><span style={{ color: "var(--text-secondary)", fontSize: 9 }}>{s.label}</span></div>)}
               </div>}
             </div>
           );
@@ -173,20 +173,20 @@ export default function EstadisticasScreen({
 
         {/* Month detail list */}
         <div style={{ marginTop: 16 }}>
-          <p style={{ color: "#8b949e", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Detalle por mes</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: .5, marginBottom: 10 }}>Detalle por mes</p>
           {[...mesesData].reverse().map((d, i) => (
             <div key={i} onClick={() => { setSelMes({ year: d.year, month: d.month }); setScreen("dashboard"); }}
-              style={{ background: d.isCurrent ? "rgba(108,99,255,.12)" : "var(--bg-card)", border: d.isCurrent ? "1px solid rgba(108,99,255,.3)" : "1px solid var(--border)", borderRadius: 16, padding: "12px 16px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              style={{ background: d.isCurrent ? "var(--col-accent-soft)" : "var(--bg-card)", border: d.isCurrent ? "1px solid var(--col-accent-border)" : "1px solid var(--border)", borderRadius: 16, padding: "12px 16px", marginBottom: 8, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{d.label} {d.year} {d.isCurrent ? <span style={{ color: "#a78bfa", fontSize: 10, marginLeft: 6 }}>· Actual</span> : ""}</p>
+                <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600 }}>{d.label} {d.year} {d.isCurrent ? <span style={{ color: "var(--col-accent-text)", fontSize: 10, marginLeft: 6 }}>· Actual</span> : ""}</p>
                 <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                  <span style={{ color: "#22d3ee", fontSize: 11 }}>↑ {fmt(d.ing)}</span>
-                  <span style={{ color: "#f43f5e", fontSize: 11 }}>↓ {fmt(d.gas)}</span>
+                  <span style={{ color: "var(--col-info)", fontSize: 11 }}>↑ {fmt(d.ing)}</span>
+                  <span style={{ color: "var(--col-danger)", fontSize: 11 }}>↓ {fmt(d.gas)}</span>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <p style={{ color: d.util >= 0 ? "#4ade80" : "#f87171", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{d.util >= 0 ? "+" : ""}{fmt(d.util)}</p>
-                <p style={{ color: "#8b949e", fontSize: 10, marginTop: 2 }}>utilidad</p>
+                <p style={{ color: d.util >= 0 ? "var(--col-success)" : "var(--col-danger)", fontSize: 14, fontWeight: 700, fontFamily: "'DM Mono',monospace" }}>{d.util >= 0 ? "+" : ""}{fmt(d.util)}</p>
+                <p style={{ color: "var(--text-secondary)", fontSize: 10, marginTop: 2 }}>utilidad</p>
               </div>
             </div>
           ))}
@@ -209,15 +209,15 @@ export default function EstadisticasScreen({
             <button onClick={() => setModal("calendario")}
               style={{ width: "100%", marginTop: 4, marginBottom: 4, padding: "14px 16px", border: "1px solid var(--border)", borderRadius: 20, cursor: "pointer", fontFamily: "inherit", background: "var(--bg-card)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,rgba(108,99,255,.3),rgba(224,64,251,.3))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📅</div>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg,var(--col-accent-border),rgba(224,64,251,.3))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📅</div>
                 <div style={{ textAlign: "left" }}>
                   <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 700 }}>Calendario</p>
-                  <p style={{ color: "#8b949e", fontSize: 11 }}>Cumpleaños y vencimientos</p>
+                  <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>Cumpleaños y vencimientos</p>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {evCount > 0 && <span style={{ background: "rgba(167,139,250,.2)", color: "#a78bfa", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{evCount} este mes</span>}
-                <span style={{ color: "#8b949e", fontSize: 16 }}>›</span>
+                {evCount > 0 && <span style={{ background: "rgba(167,139,250,.2)", color: "var(--col-accent-text)", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{evCount} este mes</span>}
+                <span style={{ color: "var(--text-secondary)", fontSize: 16 }}>›</span>
               </div>
             </button>
           );
@@ -226,7 +226,7 @@ export default function EstadisticasScreen({
         {/* Reporte PDF */}
         <div style={{ marginTop: 20, marginBottom: 20, background: "var(--bg-card)", borderRadius: 20, padding: 16, border: "1px solid var(--border)" }}>
           <p style={{ color: "var(--text-primary)", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📄 Descargar reporte mensual</p>
-          <p style={{ color: "#8b949e", fontSize: 12, marginBottom: 14 }}>Genera un PDF con el resumen financiero y lista de miembros del mes seleccionado.</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: 12, marginBottom: 14 }}>Genera un PDF con el resumen financiero y lista de miembros del mes seleccionado.</p>
           <ReportePDF txs={txs} miembros={miembros} gymConfig={gymConfig} getMembershipInfo={getMembershipInfo} MESES_LABEL={MESES_LABEL} />
         </div>
         </div>

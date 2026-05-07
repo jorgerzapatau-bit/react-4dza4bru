@@ -9,7 +9,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
   const isGasto = tx.tipo === "gasto";
   const isMembresía = tx.categoria === "Membresías" || tx.categoria === "Mensualidades";
   const cats = isGasto ? getCatGas(gymConfig) : getCatIng(gymConfig);
-  const color = isGasto ? "#f43f5e" : "#22d3ee";
+  const color = isGasto ? "var(--col-danger)" : "var(--col-info)";
   const desc = tx.desc || tx.descripcion || "";
 
   // Extraer info del miembro vinculado
@@ -116,7 +116,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
     >
       <span
         style={{
-          color: "#8b949e",
+          color: "var(--text-secondary)",
           fontSize: 12,
           fontWeight: 600,
           textTransform: "uppercase",
@@ -174,14 +174,14 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               padding: 24,
               width: "100%",
               maxWidth: 340,
-              border: "1px solid rgba(245,158,11,.3)",
+              border: "1px solid var(--col-warning-border)",
             }}
           >
             <div style={{ textAlign: "center", marginBottom: 16 }}>
               <p style={{ fontSize: 36, marginBottom: 8 }}>⚠️</p>
               <h3
                 style={{
-                  color: "#fbbf24",
+                  color: "var(--col-warning)",
                   fontSize: 16,
                   fontWeight: 700,
                   marginBottom: 8,
@@ -189,7 +189,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               >
                 Modificando mes pasado
               </h3>
-              <p style={{ color: "#8b949e", fontSize: 13, lineHeight: 1.6 }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.6 }}>
                 Estás por editar un movimiento de{" "}
                 <strong style={{ color: "var(--text-primary)" }}>{mesNombre}</strong>. Esto
                 afectará los totales y estadísticas de ese mes.
@@ -197,14 +197,14 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
             </div>
             <div
               style={{
-                background: "rgba(245,158,11,.08)",
-                border: "1px solid rgba(245,158,11,.2)",
+                background: "var(--col-warning-soft)",
+                border: "1px solid var(--col-warning-border)",
                 borderRadius: 12,
                 padding: "10px 14px",
                 marginBottom: 18,
               }}
             >
-              <p style={{ color: "#f59e0b", fontSize: 11, lineHeight: 1.6 }}>
+              <p style={{ color: "var(--col-warning)", fontSize: 11, lineHeight: 1.6 }}>
                 💡 Si es un error de captura, edítalo. Si es información nueva,
                 considera un movimiento nuevo.
               </p>
@@ -213,14 +213,14 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               <Btn
                 full
                 outline
-                color="#8b949e"
+                color="var(--text-secondary)"
                 onClick={() => setConfirmMesPasado(false)}
               >
                 Cancelar
               </Btn>
               <Btn
                 full
-                color="#f59e0b"
+                color="var(--col-warning)"
                 onClick={() => {
                   setConfirmMesPasado(false);
                   setEditing(true);
@@ -239,8 +239,8 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
           {esMesPasado && (
             <div
               style={{
-                background: "rgba(245,158,11,.08)",
-                border: "1px solid rgba(245,158,11,.2)",
+                background: "var(--col-warning-soft)",
+                border: "1px solid var(--col-warning-border)",
                 borderRadius: 12,
                 padding: "8px 14px",
                 marginBottom: 14,
@@ -250,7 +250,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               }}
             >
               <span style={{ fontSize: 14 }}>📅</span>
-              <p style={{ color: "#f59e0b", fontSize: 11, fontWeight: 600 }}>
+              <p style={{ color: "var(--col-warning)", fontSize: 11, fontWeight: 600 }}>
                 Movimiento de {mesNombre}
               </p>
             </div>
@@ -262,9 +262,9 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
                 background: esMembresíaReal
                   ? "rgba(167,139,250,.12)"
                   : isGasto
-                  ? "rgba(244,63,94,.12)"
-                  : "rgba(34,211,238,.12)",
-                color: esMembresíaReal ? "#a78bfa" : color,
+                  ? "var(--col-danger-soft)"
+                  : "var(--col-info-soft)",
+                color: esMembresíaReal ? "var(--col-accent-text)" : color,
                 borderRadius: 20,
                 padding: "6px 20px",
                 fontSize: 13,
@@ -297,14 +297,14 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
                 esMembresíaReal
                   ? "rgba(167,139,250,.15)"
                   : isGasto
-                  ? "rgba(244,63,94,.15)"
+                  ? "var(--col-danger-soft)"
                   : "rgba(34,211,238,.15)"
               }`,
             }}
           >
             <p
               style={{
-                color: "#8b949e",
+                color: "var(--text-secondary)",
                 fontSize: 11,
                 fontWeight: 600,
                 textTransform: "uppercase",
@@ -316,7 +316,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
             </p>
             <p
               style={{
-                color: esMembresíaReal ? "#a78bfa" : color,
+                color: esMembresíaReal ? "var(--col-accent-text)" : color,
                 fontSize: 32,
                 fontWeight: 700,
                 fontFamily: "'DM Mono',monospace",
@@ -329,7 +329,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
           {/* Member header */}
           {miembro && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--bg-elevated)", borderRadius: 14, padding: "12px 14px", marginBottom: 16 }}>
-              <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,#6c63ff33,#e040fb33)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a78bfa", fontWeight: 700, fontSize: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "linear-gradient(135deg,var(--col-accent)33,var(--col-accent)33)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--col-accent-text)", fontWeight: 700, fontSize: 16 }}>
                 {miembro.foto ? <img src={miembro.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : miembro.nombre.charAt(0)}
               </div>
               <div>
@@ -351,18 +351,18 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
             <Row label="Categoría" value={tx.categoria} />
             <Row label={esMembresíaReal ? "Inicio" : "Fecha"} value={fmtDate(tx.fecha)} />
             {venceManualDelDesc && (
-              <Row label="Vencimiento" value={fmtDate(venceManualDelDesc)} accent="#22d3ee" />
+              <Row label="Vencimiento" value={fmtDate(venceManualDelDesc)} accent="var(--col-info)" />
             )}
             {duracionDias && <Row label="Duración" value={`${duracionDias} días`} />}
           </div>
 
           <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-            <Btn full outline color="#8b949e" onClick={onClose}>
+            <Btn full outline color="var(--text-secondary)" onClick={onClose}>
               Cerrar
             </Btn>
             <Btn
               full
-              color={esMembresíaReal ? "#a78bfa" : color}
+              color={esMembresíaReal ? "var(--col-accent-text)" : color}
               onClick={handleEditClick}
             >
               ✏️ Editar
@@ -375,8 +375,8 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
           {esMesPasado && (
             <div
               style={{
-                background: "rgba(245,158,11,.08)",
-                border: "1px solid rgba(245,158,11,.25)",
+                background: "var(--col-warning-soft)",
+                border: "1px solid var(--col-warning-border)",
                 borderRadius: 12,
                 padding: "10px 14px",
                 marginBottom: 14,
@@ -386,7 +386,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               }}
             >
               <span>⚠️</span>
-              <p style={{ color: "#f59e0b", fontSize: 11 }}>
+              <p style={{ color: "var(--col-warning)", fontSize: 11 }}>
                 Editando movimiento de <strong>{mesNombre}</strong> — los
                 cambios afectarán ese mes.
               </p>
@@ -416,7 +416,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
                 <div>
                   <p
                     style={{
-                      color: "#8b949e",
+                      color: "var(--text-secondary)",
                       fontSize: 11,
                       fontWeight: 600,
                       marginBottom: 5,
@@ -460,7 +460,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
                 <div>
                   <p
                     style={{
-                      color: "#8b949e",
+                      color: "var(--text-secondary)",
                       fontSize: 11,
                       fontWeight: 600,
                       marginBottom: 5,
@@ -483,7 +483,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
                       border: "1px solid rgba(34,211,238,.3)",
                       borderRadius: 12,
                       padding: "12px 10px",
-                      color: "#22d3ee",
+                      color: "var(--col-info)",
                       fontSize: 13,
                       fontFamily: "inherit",
                       outline: "none",
@@ -493,7 +493,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               </div>
               {duracionDias && (
                 <div style={{ textAlign: "right", marginBottom: 12 }}>
-                  <span style={{ color: "#22d3ee", fontSize: 12, fontWeight: 700 }}>
+                  <span style={{ color: "var(--col-info)", fontSize: 12, fontWeight: 700 }}>
                     {duracionDias} días
                   </span>
                 </div>
@@ -527,7 +527,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
             <Btn
               full
               outline
-              color="#8b949e"
+              color="var(--text-secondary)"
               onClick={() => {
                 setEditing(false);
                 setConfirmDel(false);
@@ -537,7 +537,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
             </Btn>
             <Btn
               full
-              color={esMembresíaReal ? "#a78bfa" : color}
+              color={esMembresíaReal ? "var(--col-accent-text)" : color}
               onClick={handleSave}
             >
               Guardar ✓
@@ -549,7 +549,7 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
               <Btn
                 full
                 outline
-                color="#f43f5e"
+                color="var(--col-danger)"
                 onClick={() => setConfirmDel(true)}
               >
                 🗑 Eliminar movimiento
@@ -557,26 +557,26 @@ export default function EditTxModal({ tx, onClose, onSave, onDelete, miembros = 
             ) : (
               <div
                 style={{
-                  background: "rgba(244,63,94,.1)",
-                  border: "1px solid rgba(244,63,94,.3)",
+                  background: "var(--col-danger-soft)",
+                  border: "1px solid var(--col-danger-border)",
                   borderRadius: 14,
                   padding: 14,
                   textAlign: "center",
                 }}
               >
-                <p style={{ color: "#f87171", fontSize: 13, marginBottom: 12 }}>
+                <p style={{ color: "var(--col-danger)", fontSize: 13, marginBottom: 12 }}>
                   ¿Eliminar este movimiento?
                 </p>
                 <div style={{ display: "flex", gap: 8 }}>
                   <Btn
                     full
                     outline
-                    color="#8b949e"
+                    color="var(--text-secondary)"
                     onClick={() => setConfirmDel(false)}
                   >
                     Cancelar
                   </Btn>
-                  <Btn full color="#f43f5e" onClick={() => onDelete(tx.id)}>
+                  <Btn full color="var(--col-danger)" onClick={() => onDelete(tx.id)}>
                     Sí, eliminar
                   </Btn>
                 </div>
