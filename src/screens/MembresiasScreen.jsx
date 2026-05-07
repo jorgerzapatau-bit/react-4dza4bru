@@ -427,7 +427,7 @@ function ImagePicker({ value, onChange }) {
               style={{
                 position: "absolute", top: -8, right: -8,
                 width: 24, height: 24, borderRadius: "50%",
-                background: C.red, border: "2px solid #1c1c2e",
+                background: C.red, border: "2px solid var(--bg-base)",
                 color: "#fff", fontSize: 14, lineHeight: 1,
                 cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>×</button>

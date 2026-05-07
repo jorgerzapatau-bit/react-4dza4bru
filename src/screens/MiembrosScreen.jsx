@@ -178,7 +178,7 @@ export default function MiembrosScreen({
                           {isDojo && m.grado_actual && (() => {
                             const g = getGradoInfo(m.grado_actual);
                             return (
-                              <span title={m.grado_actual} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 6, background: g.kyu < 0 ? "rgba(168,85,247,.2)" : `${g.color}22`, color: g.kyu < 0 ? "#c084fc" : g.color === "var(--text-inverse)" ? "var(--border-strong)" : g.color, border: `1px solid ${g.kyu < 0 ? "rgba(168,85,247,.4)" : g.color === "var(--text-inverse)" ? "rgba(255,255,255,.3)" : `${g.color}55`}` }}>
+                              <span title={m.grado_actual} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 6, background: g.kyu < 0 ? "rgba(168,85,247,.2)" : `${g.color}22`, color: g.kyu < 0 ? "var(--col-accent-text)" : g.color === "var(--text-inverse)" ? "var(--border-strong)" : g.color, border: `1px solid ${g.kyu < 0 ? "rgba(168,85,247,.4)" : g.color === "var(--text-inverse)" ? "rgba(255,255,255,.3)" : `${g.color}55`}` }}>
                                 {g.emoji} {m.grado_actual.split(" ")[0]}
                               </span>
                             );

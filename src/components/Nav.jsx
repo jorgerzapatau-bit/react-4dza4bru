@@ -143,7 +143,7 @@ function ThemeToggle({ darkMode, setDarkMode, collapsed }) {
           </span>
           <span style={{
             marginLeft: "auto", width: 36, height: 20, borderRadius: 10,
-            background: darkMode ? "#334155" : "var(--border-strong)",
+            background: darkMode ? "var(--bg-elevated)" : "var(--border-strong)",
             position: "relative", flexShrink: 0, transition: "background .2s",
           }}>
             <span style={{

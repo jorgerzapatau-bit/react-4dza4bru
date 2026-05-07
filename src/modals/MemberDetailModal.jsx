@@ -326,7 +326,7 @@ function CongelarModal({ m, onClose, onConfirm }) {
                 border: "1px solid rgba(96,165,250,.3)",
                 borderRadius: 12,
                 padding: "12px 14px",
-                color: fechaDesc ? "#fff" : "#484f58",
+                color: fechaDesc ? "#fff" : "var(--text-secondary)",
                 fontSize: 14,
                 fontFamily: "inherit",
                 outline: "none",
@@ -2340,7 +2340,7 @@ export default function MemberDetailModal({
         const diasR = diasParaVencer(memInfo.vence);
         const diasColor = diasR === null ? "var(--text-tertiary,var(--text-secondary))"
           : diasR <= 0  ? "var(--col-danger)"
-          : diasR <= 5  ? "#fb923c"
+          : diasR <= 5  ? "var(--col-warning)"
           : diasR <= 15 ? "var(--col-warning)"
           : "var(--col-success)";
         const diasLabel = diasR === null ? null
@@ -2391,7 +2391,7 @@ export default function MemberDetailModal({
                   width: 72, height: 72, borderRadius: "50%",
                   background: isPagoPendiente ? "linear-gradient(135deg,var(--col-warning),var(--col-warning))"
                     : esActivo   ? "linear-gradient(135deg,var(--col-accent),var(--col-accent))"
-                    : esVencido  ? "linear-gradient(135deg,var(--col-danger),#fb923c)"
+                    : esVencido  ? "linear-gradient(135deg,var(--col-danger),var(--col-warning))"
                     : "linear-gradient(135deg,var(--border-strong),var(--text-tertiary))",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 26, color: "#fff", fontWeight: 800, overflow: "hidden",
@@ -2433,10 +2433,10 @@ export default function MemberDetailModal({
                       : esCongelado ? "rgba(37,99,235,.12)"
                       : esVencido   ? "rgba(220,38,38,.12)"
                       : "rgba(100,116,139,.12)",
-                    color: isPagoPendiente ? "#b45309"
-                      : esActivo    ? "#15803d"
-                      : esCongelado ? "#1d4ed8"
-                      : esVencido   ? "#b91c1c"
+                    color: isPagoPendiente ? "var(--col-warning)"
+                      : esActivo    ? "var(--col-success)"
+                      : esCongelado ? "var(--col-info)"
+                      : esVencido   ? "var(--col-danger)"
                       : "var(--text-secondary,var(--text-tertiary))",
                     border: "none",
                     borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700,
@@ -2472,7 +2472,7 @@ export default function MemberDetailModal({
                   {m.beca && (
                     <span style={{
                       background: "var(--col-warning-soft)",
-                      color: "#b45309",
+                      color: "var(--col-warning-dark, var(--col-warning))",
                       border: "1px solid var(--col-warning-border)",
                       borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 600,
                     }}>Beca</span>
@@ -2624,7 +2624,7 @@ export default function MemberDetailModal({
                 <button onClick={() => { setEditing(true); setClasesEdit(clasesDelMiembro); }} style={{
                   flex:1, padding:"9px 4px", borderRadius:8,
                   border:"1px solid rgba(220,38,38,.3)", background:"rgba(220,38,38,.06)",
-                  color:"#b91c1c", fontSize:10, fontWeight:600,
+                  color:"var(--col-danger)", fontSize:10, fontWeight:600,
                   cursor:"pointer", fontFamily:"inherit",
                   display:"flex", alignItems:"center", justifyContent:"center", gap:3,
                 }}><span style={{fontSize:14}}>⚠️</span><span>Tutor</span></button>
@@ -2647,7 +2647,7 @@ export default function MemberDetailModal({
       {/* ── Tabs ── */}
       <div style={{
         display: "flex", gap: 6, padding: "8px 16px",
-        background: "var(--bg-elevated,#f1f5f9)",
+        background: "var(--bg-elevated,var(--bg-elevated))",
         borderBottom: "1px solid var(--border,rgba(0,0,0,.08))",
       }}>
         {[
@@ -3042,7 +3042,7 @@ export default function MemberDetailModal({
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                   }}>
                                     {seleccionada
-                                      ? <span style={{ color: "#0f172a", fontSize: 13, fontWeight: 900 }}>✓</span>
+                                      ? <span style={{ color: "var(--text-inverse)", fontSize: 13, fontWeight: 900 }}>✓</span>
                                       : <span style={{ color: "var(--text-secondary)", fontSize: 16, lineHeight: 1 }}>+</span>
                                     }
                                   </div>
@@ -3232,7 +3232,7 @@ export default function MemberDetailModal({
                         : `Cumpleaños en ${diasCumple} días`}
                     </p>
                     {edad !== null && (
-                      <p style={{ color: "#92400e", fontSize: 11, marginTop: 2 }}>
+                      <p style={{ color: "var(--col-warning)", fontSize: 11, marginTop: 2 }}>
                         {diasCumple === 0 ? `¡Cumple ${edad} años hoy!` : `Cumplirá ${edad + 1} años`}
                       </p>
                     )}
@@ -3259,7 +3259,7 @@ export default function MemberDetailModal({
                 const badge = mesesCliente === null ? null
                   : mesesCliente < 2   ? { label: "Nuevo",     emoji: "🌱", color: "var(--col-success)", bg: "var(--col-success-soft)"   }
                   : mesesCliente < 6   ? { label: "Regular",   emoji: "⭐", color: "var(--col-warning)", bg: "var(--col-warning-soft)"  }
-                  : mesesCliente < 12  ? { label: "Frecuente", emoji: "🏅", color: "#6366f1", bg: "rgba(99,102,241,.1)"  }
+                  : mesesCliente < 12  ? { label: "Frecuente", emoji: "🏅", color: "var(--col-accent)", bg: "rgba(99,102,241,.1)"  }
                   :                      { label: "VIP",        emoji: "👑", color: "var(--col-accent)", bg: "rgba(224,64,251,.12)" };
 
                 // Solo alertas que requieren acción inmediata
@@ -3669,7 +3669,7 @@ export default function MemberDetailModal({
                               {m.tutor_nombre}
                             </p>
                             {m.tutor_parentesco && (
-                              <p style={{ color: "#92400e", fontSize: 11, margin: "1px 0 0" }}>{m.tutor_parentesco}</p>
+                              <p style={{ color: "var(--col-warning)", fontSize: 11, margin: "1px 0 0" }}>{m.tutor_parentesco}</p>
                             )}
                           </div>
                         </div>

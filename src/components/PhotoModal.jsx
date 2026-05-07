@@ -150,7 +150,7 @@ export default function PhotoModal({ onClose, onCapture, titulo = "📸 Foto del
     }}>
       <div style={{
         width: "100%",
-        background: "#191928",
+        background: "var(--bg-base)",
         borderRadius: "28px 28px 0 0",
         padding: "24px 24px 44px",
         animation: "slideUp .3s ease",

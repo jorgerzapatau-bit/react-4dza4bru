@@ -285,8 +285,8 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
   useEffect(() => () => stopCamera(), []); // eslint-disable-line
 
   // eslint-disable-next-line no-unused-vars
-  const bg     = darkMode ? "var(--bg-base)" : "#f4f5f9";
-  const cardBg = darkMode ? "#0d0f1e" : "var(--text-inverse)";
+  const bg     = darkMode ? "var(--bg-base)" : "var(--bg-elevated)";
+  const cardBg = darkMode ? "var(--bg-base)" : "var(--text-inverse)";
   const border = darkMode ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.07)";
   const text   = darkMode ? "var(--border)" : "var(--bg-elevated)";
   const muted  = darkMode ? "var(--text-secondary)" : "var(--text-secondary)";
@@ -295,7 +295,7 @@ export default function ScannerScreen({ gymId, miembros, txs, darkMode }) {
     <div style={{ padding: "20px 16px 40px", maxWidth: 560, margin: "0 auto", fontFamily: "inherit" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-        .scan-input { background: ${darkMode?"var(--bg-card)427":"#f8fafc"}; border: 1.5px solid ${border};
+        .scan-input { background: ${darkMode?"var(--bg-card)427":"var(--bg-elevated)"}; border: 1.5px solid ${border};
           border-radius: 12px; padding: 10px 14px; color: ${text}; font-size: 14px;
           font-family: inherit; outline: none; width: 100%; }
         .scan-input:focus { border-color: var(--col-accent); }

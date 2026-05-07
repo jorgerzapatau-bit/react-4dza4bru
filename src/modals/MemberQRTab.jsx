@@ -172,7 +172,7 @@ function QRCanvas({ url }) {
         text: url,
         width: 240,
         height: 240,
-        colorDark: "#000000",
+        colorDark: "var(--bg-base)",
         colorLight: "var(--text-inverse)",
         correctLevel: window.QRCode.CorrectLevel.H,
       });
@@ -286,7 +286,7 @@ export default function MemberQRTab({ m, gymId, onMemberUpdate, darkMode }) {
   const border = darkMode ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.08)";
   const muted  = darkMode ? "var(--text-secondary)" : "var(--text-secondary)";
   const text   = darkMode ? "var(--border)" : "var(--bg-elevated)";
-  const cardBg = darkMode ? "var(--bg-card)427" : "#f8fafc";
+  const cardBg = darkMode ? "var(--bg-card)427" : "var(--bg-elevated)";
 
   if (loading) return (
     <div style={{ textAlign: "center", padding: "48px 0" }}>

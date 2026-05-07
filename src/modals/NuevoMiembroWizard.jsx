@@ -97,7 +97,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
   ctx.fillRect(0, 0, W, H);
 
   // Header background
-  ctx.fillStyle = "#f5f5f5";
+  ctx.fillStyle = "var(--bg-elevated)";
   ctx.fillRect(0, 0, W, HEADER_H);
 
   // Header border bottom
@@ -158,7 +158,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
 
   // Facebook
   if (facebook) {
-    ctx.fillStyle = "#555";
+    ctx.fillStyle = "var(--text-secondary)";
     ctx.font = "11px Arial, sans-serif";
     ctx.fillText(`Facebook: ${facebook}`, W/2, 90);
   }
@@ -184,7 +184,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
   ctx.textAlign = "left";
   let y = HEADER_H + 8;
   rows.forEach((row, i) => {
-    const bg = i % 2 === 0 ? "#fff" : "#fafafa";
+    const bg = i % 2 === 0 ? "#fff" : "var(--bg-card)";
     ctx.fillStyle = bg;
     ctx.fillRect(0, y, W, ROW_H);
     ctx.strokeStyle = "#e8e8e8";
@@ -194,7 +194,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
     ctx.stroke();
 
     if (row.sub) {
-      ctx.fillStyle = "#666";
+      ctx.fillStyle = "var(--text-tertiary)";
       ctx.font = "12px Arial";
       ctx.textAlign = "center";
       ctx.fillText(row.value, W/2, y + ROW_H - 10);
@@ -206,7 +206,7 @@ async function _generarComprobantePNGLegacy({ gymConfig, miembro, plan, monto, f
       ctx.fillText(row.value, W/2, y + ROW_H - 8);
       ctx.textAlign = "left";
     } else {
-      ctx.fillStyle = "#555";
+      ctx.fillStyle = "var(--text-secondary)";
       ctx.font = "12px Arial";
       ctx.fillText(row.label, 20, y + ROW_H - 10);
       ctx.fillStyle = "var(--bg-card)";
@@ -1148,8 +1148,8 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
 
   // Header degradado suave morado
   const grad = ctx.createLinearGradient(0, 0, W, 0);
-  grad.addColorStop(0, "#f3f0ff");
-  grad.addColorStop(1, "#ede9fe");
+  grad.addColorStop(0, "var(--bg-elevated)");
+  grad.addColorStop(1, "var(--col-accent-soft)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, HEADER_H);
 
@@ -1159,7 +1159,7 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
 
   // Emoji dojo + texto header
   ctx.textAlign = "center";
-  ctx.fillStyle = "#5b21b6";
+  ctx.fillStyle = "var(--col-accent)";
   ctx.font = "bold 13px Arial";
   ctx.letterSpacing = "2px";
   ctx.fillText("🥋  IDENTIFICACIÓN DIGITAL", W / 2, HEADER_H / 2 + 5);
@@ -1167,7 +1167,7 @@ async function generarIDDigitalPNG({ miembro, gymConfig, codigoAcceso }) {
   // Área QR con borde redondeado (simulado)
   const qrX = (W - QR_SIZE) / 2;
   const qrY = HEADER_H + QR_PAD;
-  ctx.fillStyle = "#f8f8f8";
+  ctx.fillStyle = "var(--bg-elevated)";
   ctx.strokeStyle = "var(--border)";
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -1324,7 +1324,7 @@ async function generarComprobantePagoPNG({ gymConfig, miembro, plan, monto, plan
   rows.forEach((row, i) => {
     const rh = row.type === "desglose" ? DESGLOSE_ROW_H : ROW_H;
     const bg = i % 2 === 0 ? "var(--text-inverse)" : "var(--bg-elevated)";
-    ctx.fillStyle = row.highlight ? "#f0fdf4" : bg;
+    ctx.fillStyle = row.highlight ? "var(--col-success-soft)" : bg;
     ctx.fillRect(0, y, W, rh);
     ctx.strokeStyle = "var(--bg-elevated)"; ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(0, y + rh - 0.5); ctx.lineTo(W, y + rh - 0.5); ctx.stroke();

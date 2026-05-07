@@ -660,7 +660,7 @@ ${corte.desgloseGasto.map(([c, v]) => `  · ${CAT_ICON[c] || "📌"} ${c}: $${Nu
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                     <p style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{t.desc || t.descripcion || "—"}</p>
-                    {esMayor && <span style={{ background: "rgba(250,204,21,.15)", color: "#ca8a04", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700, flexShrink: 0 }}>★ Mayor</span>}
+                    {esMayor && <span style={{ background: "rgba(250,204,21,.15)", color: "var(--col-warning)", borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 700, flexShrink: 0 }}>★ Mayor</span>}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ background: isIng ? "var(--col-success-soft)" : "rgba(248,113,113,.12)", color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 700 }}>{t.categoria}</span>

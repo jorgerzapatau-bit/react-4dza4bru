@@ -73,7 +73,7 @@ export default function LoginScreen({ gymConfig, gymId, onLogin }) {
   const isDojo  = gymConfig?.tipo_negocio === "dojo";
   const iconFallback = isDojo ? "🥋" : "💪";
   const gradientColors = isDojo
-    ? "linear-gradient(135deg,var(--bg-card),#4c1d95)"
+    ? "linear-gradient(135deg,var(--bg-card),var(--bg-card))"
     : "linear-gradient(135deg,var(--col-accent),var(--col-accent))";
 
   // ── Login ────────────────────────────────────

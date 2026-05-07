@@ -43,7 +43,7 @@ const DIAS_SHORT = {
 
 const COLORES_PRESET = [
   "var(--col-accent)", "var(--col-accent)", "var(--col-danger)", "var(--col-warning)",
-  "var(--col-success)", "var(--col-accent)", "#ec4899", "var(--col-warning)",
+  "var(--col-success)", "var(--col-accent)", "var(--col-info)", "var(--col-warning)",
 ];
 
 const DURACIONES = [

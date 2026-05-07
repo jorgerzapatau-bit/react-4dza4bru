@@ -933,7 +933,7 @@ function ModalDetalleReserva({ reservation, product, miembro, payments, onAddPay
       ) : (
         <div style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 6 }}>
           {payments.map(p => (
-            <div key={p.id} style={{ background: "var(--bg-card,#191928)", border: "1px solid var(--col-success-soft)", borderRadius: 10, padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div key={p.id} style={{ background: "var(--bg-card,var(--bg-base))", border: "1px solid var(--col-success-soft)", borderRadius: 10, padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <p style={{ color: "var(--col-success)", fontSize: 13, fontWeight: 700 }}>{fmt(p.amount)}</p>
                 <p style={{ color: "var(--text-secondary)", fontSize: 11 }}>{p.payment_method} · {fmtDate(p.created_at?.slice(0, 10))}</p>

@@ -97,7 +97,7 @@ export default function DashboardScreen({
           {tab === 0 && (
             <>
               {/* Utilidad neta — ancho completo */}
-              <div className="card dash-col-full" style={{ background: "linear-gradient(135deg,#5c54e8 0%,#c336e0 100%)", borderRadius: 22, padding: "22px 26px", marginBottom: 16, boxShadow: "0 8px 32px rgba(108,99,255,.35)", position: "relative", overflow: "hidden" }}>
+              <div className="card dash-col-full" style={{ background: "linear-gradient(135deg,var(--col-accent) 0%,var(--col-accent) 100%)", borderRadius: 22, padding: "22px 26px", marginBottom: 16, boxShadow: "0 8px 32px rgba(108,99,255,.35)", position: "relative", overflow: "hidden" }}>
                 <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, background: "rgba(255,255,255,.08)", borderRadius: "50%", pointerEvents: "none" }} />
                 <div style={{ position: "absolute", bottom: -30, right: 30, width: 100, height: 100, background: "rgba(255,255,255,.05)", borderRadius: "50%", pointerEvents: "none" }} />
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, position: "relative", zIndex: 1 }}>
@@ -204,7 +204,7 @@ export default function DashboardScreen({
                             </div>
                             <div style={{ flex: 1 }}>
                               <p style={{ color: "var(--col-warning)", fontSize: 12, fontWeight: 600 }}>{m.nombre}</p>
-                              <p style={{ color: "#92662a", fontSize: 10 }}>⚠️ Sin sexo registrado · Toca para completar</p>
+                              <p style={{ color: "var(--col-warning)", fontSize: 10 }}>⚠️ Sin sexo registrado · Toca para completar</p>
                             </div>
                             <span style={{ color: "var(--col-warning)", fontSize: 16 }}>›</span>
                           </div>
@@ -236,7 +236,7 @@ export default function DashboardScreen({
                                 </p>
                               </div>
                               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                                <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "var(--col-warning-soft)", color: m.diasVence === 0 ? "var(--col-danger)" : m.diasVence <= 1 ? "#fca5a5" : "var(--col-warning)", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
+                                <span style={{ background: m.diasVence === 0 ? "rgba(239,68,68,.25)" : m.diasVence <= 1 ? "rgba(239,68,68,.15)" : "var(--col-warning-soft)", color: m.diasVence === 0 ? "var(--col-danger)" : m.diasVence <= 1 ? "var(--col-danger-soft)" : "var(--col-warning)", borderRadius: 8, padding: "3px 8px", fontSize: 10, fontWeight: 700 }}>
                                   {m.diasVence === 0 ? "HOY 🚨" : m.diasVence === 1 ? "MAÑANA" : `${m.diasVence}d`}
                                 </span>
                                 <span style={{ color: "var(--col-wa)", fontSize: 10, fontWeight: 600 }}>💬 WhatsApp</span>

@@ -571,8 +571,8 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
           .card{animation:fadeUp .35s ease both;}
           .card:nth-child(2){animation-delay:.07s}.card:nth-child(3){animation-delay:.14s}.card:nth-child(4){animation-delay:.21s}
           .rh:hover{background:rgba(255,255,255,.06)!important;transition:background .2s;}
-          input::placeholder{color:#3d3d5c;}
-          select option{background:#191928;}
+          input::placeholder{color:var(--bg-elevated);}
+          select option{background:var(--bg-base);}
           button:active{opacity:.75;}
           .wa-pulse{animation:pulse 2s infinite;}
         `}</style>
@@ -620,7 +620,7 @@ export default function GymApp({ gymId: GYM_ID, currentUser, userRole = "admin",
         {/* ═══ LOADING ═══ */}
         {loading && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-            <div style={{ width: 60, height: 60, borderRadius: 20, background: isDojo ? "linear-gradient(135deg,var(--bg-card),#4c1d95)" : "linear-gradient(135deg,var(--col-accent),var(--col-accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, boxShadow: isDojo ? "0 8px 32px rgba(76,29,149,.5)" : "0 8px 32px rgba(108,99,255,.4)" }}>{isDojo ? "🥋" : "💪"}</div>
+            <div style={{ width: 60, height: 60, borderRadius: 20, background: isDojo ? "linear-gradient(135deg,var(--bg-card),var(--bg-card))" : "linear-gradient(135deg,var(--col-accent),var(--col-accent))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, boxShadow: isDojo ? "0 8px 32px rgba(76,29,149,.5)" : "0 8px 32px rgba(108,99,255,.4)" }}>{isDojo ? "🥋" : "💪"}</div>
             <p style={{ color: "var(--col-accent-text)", fontSize: 14, fontWeight: 600 }}>{isDojo ? `Cargando ${gymConfig?.nombre || "Dojo"}...` : "Cargando GymFit Pro..."}</p>
             <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,.1)", overflow: "hidden" }}>
               <div style={{ height: "100%", background: "linear-gradient(90deg,var(--col-accent),var(--col-accent))", animation: "slideRight 1s infinite", borderRadius: 2 }} />
