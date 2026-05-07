@@ -106,9 +106,9 @@ function NavBtn({ label, icon, active, onClick, badge, totalRecordatorios, darkM
       onMouseEnter={e => { if (!active) e.currentTarget.style.background = hoverBg; }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
     >
-      <span style={{ color: active ? "#fff" : (darkMode ? "var(--text-tertiary)" : "var(--text-secondary)"), display: "flex", flexShrink: 0 }}>{icon}</span>
+      <span style={{ color: active ? "#fff" : (darkMode ? "var(--text-secondary)" : "var(--text-primary)"), display: "flex", flexShrink: 0 }}>{icon}</span>
       {!collapsed && (
-        <span style={{ fontSize: 14, fontWeight: active ? 600 : 500, color: active ? "#fff" : (darkMode ? "var(--text-secondary)" : "var(--border-strong)"), flex: 1, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden" }}>{label}</span>
+        <span style={{ fontSize: 14, fontWeight: active ? 600 : 500, color: active ? "#fff" : (darkMode ? "var(--text-secondary)" : "var(--text-primary)"), flex: 1, textAlign: "left", whiteSpace: "nowrap", overflow: "hidden" }}>{label}</span>
       )}
       {badge && totalRecordatorios > 0 && (
         <span className="wa-pulse" style={{ position: collapsed ? "absolute" : "static", top: collapsed ? 6 : "auto", right: collapsed ? 6 : "auto", width: 7, height: 7, background: "var(--col-danger)", borderRadius: "50%", flexShrink: 0 }} />
@@ -130,7 +130,7 @@ function ThemeToggle({ darkMode, setDarkMode, collapsed }) {
         padding: collapsed ? "10px" : "10px 12px",
         cursor: "pointer", fontFamily: "inherit",
         background: "transparent", transition: "background .15s, padding .2s",
-        color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)",
+        color: darkMode ? "var(--text-secondary)" : "var(--text-tertiary)",
       }}
       onMouseEnter={e => e.currentTarget.style.background = darkMode ? "var(--bg-card)" : "var(--bg-elevated)"}
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
@@ -188,7 +188,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
     const isCollapsed = isMobileDrawer ? false : collapsed;
     const sectionStyle = {
       fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
-      textTransform: "uppercase", color: darkMode ? "var(--text-tertiary)" : "var(--text-secondary)",
+      textTransform: "uppercase", color: darkMode ? "var(--text-tertiary)" : "var(--text-tertiary)",
       padding: "16px 12px 6px", display: isCollapsed ? "none" : "block",
     };
     return (
@@ -209,7 +209,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
             style={{
               border: "none", background: "transparent", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)",
+              color: darkMode ? "var(--text-secondary)" : "var(--text-tertiary)",
               padding: 4, borderRadius: 8, flexShrink: 0,
             }}
             onMouseEnter={e => e.currentTarget.style.background = darkMode ? "var(--bg-card)" : "var(--bg-elevated)"}
@@ -236,7 +236,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
                 <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? "var(--border)" : "var(--bg-card)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {gymNombre}
                 </div>
-                <div style={{ fontSize: 9, color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 1 }}>
+                <div style={{ fontSize: 9, color: darkMode ? "var(--text-secondary)" : "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: ".8px", marginTop: 1 }}>
                   {isOwner ? "👑 Dueño" : "🛡️ Administrador"}
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function Nav({ screen, setScreen, setTab, setModal, totalRecordat
           style={{
             border: "none", background: "transparent", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            color: darkMode ? "var(--text-secondary)" : "var(--text-secondary)", padding: 6, borderRadius: 8,
+            color: darkMode ? "var(--text-secondary)" : "var(--text-tertiary)", padding: 6, borderRadius: 8,
           }}
         >
           {IC.hamburger}
